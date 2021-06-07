@@ -1,0 +1,26 @@
+adIdentifiers:
+  - tomcat
+
+initConfig:
+
+  ## @param isJmx - boolean - required
+  ## Whether or not this file is a configuration for a JMX integration.
+  #
+  isJmx: true
+
+  ## @param collectDefaultMetrics - boolean - required
+  ## Whether or not the check should collect all default metrics for this integration.
+  #
+  collectDefaultMetrics: true
+
+instances:
+
+    ## @param host - string - required
+    ## Tomcat host to connect to.
+    #
+  - host: "%%host%%"
+
+    ## @param port - integer - required
+    ## Tomcat port to connect to.
+    #
+    port: "9012"

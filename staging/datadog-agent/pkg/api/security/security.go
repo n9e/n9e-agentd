@@ -1,0 +1,229 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
+package security
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/hex"
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"math/big"
+	"net"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"k8s.io/klog/v2"
+)
+
+const (
+	//authTokenName                 = "auth_token" // move to config/config.go
+	authTokenMinimalLen           = 32
+	clusterAgentAuthTokenFilename = "cluster_agent.auth_token"
+)
+
+// GenerateKeyPair create a public/private keypair
+func GenerateKeyPair(bits int) (*rsa.PrivateKey, error) {
+	privKey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		return nil, fmt.Errorf("generating random key: %v", err)
+	}
+
+	return privKey, nil
+}
+
+// CertTemplate create x509 certificate template
+func CertTemplate() (*x509.Certificate, error) {
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate serial number: %s", err)
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(10 * 365 * 24 * time.Hour)
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Organization: []string{"Datadog, Inc."},
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		BasicConstraintsValid: true,
+	}
+
+	return &template, nil
+}
+
+// GenerateRootCert generates a root certificate
+func GenerateRootCert(hosts []string, bits int) (
+	cert *x509.Certificate, certPEM []byte, rootKey *rsa.PrivateKey, err error) {
+
+	rootCertTmpl, err := CertTemplate()
+	if err != nil {
+		return
+	}
+
+	rootKey, err = GenerateKeyPair(bits)
+	if err != nil {
+		return
+	}
+
+	// describe what the certificate will be used for
+	rootCertTmpl.IsCA = true
+	rootCertTmpl.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
+	rootCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+
+	for _, h := range hosts {
+		if ip := net.ParseIP(h); ip != nil {
+			rootCertTmpl.IPAddresses = append(rootCertTmpl.IPAddresses, ip)
+		} else {
+			rootCertTmpl.DNSNames = append(rootCertTmpl.DNSNames, h)
+		}
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, rootCertTmpl, rootCertTmpl, &rootKey.PublicKey, rootKey)
+	if err != nil {
+		return
+	}
+	// parse the resulting certificate so we can use it again
+	cert, err = x509.ParseCertificate(certDER)
+	if err != nil {
+		return
+	}
+	// PEM encode the certificate (this is a standard TLS encoding)
+	b := pem.Block{Type: "CERTIFICATE", Bytes: certDER}
+	certPEM = pem.EncodeToMemory(&b)
+	return
+}
+
+// GetAuthTokenFilepath returns the path to the auth_token file.
+func GetAuthTokenFilepath() string {
+	return config.C.AuthTokenFilePath
+}
+
+// FetchAuthToken gets the authentication token from the auth token file & creates one if it doesn't exist
+// Requires that the config has been set up before calling
+func FetchAuthToken() (string, error) {
+	return fetchAuthToken(false)
+}
+
+// CreateOrFetchToken gets the authentication token from the auth token file & creates one if it doesn't exist
+// Requires that the config has been set up before calling
+func CreateOrFetchToken() (string, error) {
+	return fetchAuthToken(true)
+}
+
+func fetchAuthToken(tokenCreationAllowed bool) (string, error) {
+	authTokenFile := GetAuthTokenFilepath()
+
+	// Create a new token if it doesn't exist and if permitted by calling func
+	if _, e := os.Stat(authTokenFile); os.IsNotExist(e) && tokenCreationAllowed {
+		key := make([]byte, authTokenMinimalLen)
+		_, e = rand.Read(key)
+		if e != nil {
+			return "", fmt.Errorf("can't create agent authentication token value: %s", e)
+		}
+
+		// Write the auth token to the auth token file (platform-specific)
+		e = saveAuthToken(hex.EncodeToString(key), authTokenFile)
+		if e != nil {
+			return "", fmt.Errorf("error writing authentication token file on fs: %s", e)
+		}
+		klog.Infof("Saved a new authentication token to %s", authTokenFile)
+	}
+	// Read the token
+	authTokenRaw, e := ioutil.ReadFile(authTokenFile)
+	if e != nil {
+		return "", fmt.Errorf("unable to read authentication token file: " + e.Error())
+	}
+
+	// Do some basic validation
+	authToken := string(authTokenRaw)
+	if len(authToken) < authTokenMinimalLen {
+		return "", fmt.Errorf("invalid authentication token: must be at least %d characters in length", authTokenMinimalLen)
+	}
+
+	return authToken, nil
+}
+
+// DeleteAuthToken removes auth_token file (test clean up)
+func DeleteAuthToken() error {
+	return os.Remove(config.C.AuthTokenFilePath)
+}
+
+// GetClusterAgentAuthToken load the authentication token from:
+// 1st. the configuration value of "cluster_agent.auth_token" in datadog.yaml
+// 2nd. from the filesystem
+// If using the token from the filesystem, the token file must be next to the datadog.yaml
+// with the filename: cluster_agent.auth_token, it will fail if the file does not exist
+func GetClusterAgentAuthToken() (string, error) {
+	return getClusterAgentAuthToken(false)
+}
+
+// CreateOrGetClusterAgentAuthToken load the authentication token from:
+// 1st. the configuration value of "cluster_agent.auth_token" in datadog.yaml
+// 2nd. from the filesystem
+// If using the token from the filesystem, the token file must be next to the datadog.yaml
+// with the filename: cluster_agent.auth_token, if such file does not exist it will be
+// created and populated with a newly generated token.
+func CreateOrGetClusterAgentAuthToken() (string, error) {
+	return getClusterAgentAuthToken(true)
+}
+
+func getClusterAgentAuthToken(tokenCreationAllowed bool) (string, error) {
+	cf := config.C
+	authToken := cf.ClusterAgent.AuthToken
+	if authToken != "" {
+		klog.Infof("Using configured cluster_agent.auth_token")
+		return authToken, validateAuthToken(authToken)
+	}
+
+	// load the cluster agent auth token from filesystem
+	tokenAbsPath := filepath.Join(cf.FileUsedDir, clusterAgentAuthTokenFilename)
+	klog.V(5).Infof("Empty cluster_agent.auth_token, loading from %s", tokenAbsPath)
+
+	// Create a new token if it doesn't exist
+	if _, e := os.Stat(tokenAbsPath); os.IsNotExist(e) && tokenCreationAllowed {
+		key := make([]byte, authTokenMinimalLen)
+		_, e = rand.Read(key)
+		if e != nil {
+			return "", fmt.Errorf("can't create cluster agent authentication token value: %s", e)
+		}
+
+		// Write the auth token to the auth token file (platform-specific)
+		e = saveAuthToken(hex.EncodeToString(key), tokenAbsPath)
+		if e != nil {
+			return "", fmt.Errorf("error writing authentication token file on fs: %s", e)
+		}
+		klog.Infof("Saved a new authentication token for the Cluster Agent at %s", tokenAbsPath)
+	}
+
+	_, err := os.Stat(tokenAbsPath)
+	if err != nil {
+		return "", fmt.Errorf("empty cluster_agent.auth_token and cannot find %q: %s", tokenAbsPath, err)
+	}
+	b, err := ioutil.ReadFile(tokenAbsPath)
+	if err != nil {
+		return "", fmt.Errorf("empty cluster_agent.auth_token and cannot read %s: %s", tokenAbsPath, err)
+	}
+	klog.V(5).Infof("cluster_agent.auth_token loaded from %s", tokenAbsPath)
+
+	authToken = string(b)
+	return authToken, validateAuthToken(authToken)
+}
+
+func validateAuthToken(authToken string) error {
+	if len(authToken) < authTokenMinimalLen {
+		return fmt.Errorf("cluster agent authentication token length must be greater than %d, curently: %d", authTokenMinimalLen, len(authToken))
+	}
+	return nil
+}

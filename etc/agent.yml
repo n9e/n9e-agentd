@@ -1,0 +1,94 @@
+agent:
+  hostname: test
+  site: http://localhost:8080
+  apiKey: 1234
+  maxProcs: 4
+  coreDump: true
+  exporterPort: 8070
+  pprof: true
+  expvar: true
+  metrics: true
+  authTokenFile: # dir(configfile)/auth_token
+  logPayloads: true
+  enablePayloads:
+    events: false
+    series: true
+    serviceChecks: false
+    sketches: false
+    jsonToV1Intake: false
+  logsConfig:
+    enabled: true
+    useSSL: false
+    url: "localhost:8080"
+  forwarder:
+    additionalEndpoints:
+      #- site: http://localhost:8081
+      #  apiKeys: ["1234"]
+  statsd:
+    enabled: true
+    socket: /tmp/agent-statsd.socket
+    pipeName:
+    port: 8125
+    packetBufferFlushTimeout: 1s
+    metricsStatsEnable: true
+  configProviders:
+#    - name: http
+#      polling: false
+#      templateUrl: http://127.0.0.1:8080
+#      templateDir: /api/connect-rules
+#      token:
+
+
+
+  logs:
+    enabled: true
+    containerCollectAll: false
+    socks5ProxyAddress: # <HOST>:<PORT>
+    endpoint:
+    apiKey:
+    NoSSL:  false
+    expectedTagsDuration: 0
+    frameSize: 9000
+    openFilesLimit: 100
+    processingRules:
+    k8sContainerUseFile: false
+    dockerContainerUseFile: false
+    dockerContainerForceUseFile: false
+
+
+  outputs:
+    n9e: # grpc
+      - endpoints: ["transfer.n9e.com"]
+    file:
+      - files: ["stdout", "/tmp/metrics.out"]
+        ## Files to write to, "stdout" is a specially handled file.
+        ## Use batch serialization format instead of line based delimiting.  The
+        ## batch format allows for the production of non line based output formats and
+        ## may more efficiently encode metric groups.
+        # useBatchFormat: false
+        
+        ## The file will be rotated after the time interval specified.  When set
+        ## to 0 no time based rotation is performed.
+        # rotationInterval: 0d
+        
+        ## The logfile will be rotated when it becomes larger than the specified
+        ## size.  When set to 0 no size based rotation is performed.
+        # rotationMaxSize: 0
+        
+        ## Maximum number of rotated archives to keep, any older logs are deleted.
+        ## If set to -1, no archives are removed.
+        # rotationMaxArchives: 5
+        
+        ## Data format to output.
+        ## Each data format has its own unique set of configuration options, read
+        ## more about them here:
+        ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_OUTPUT.md
+        dataFormat: influx
+  
+
+
+apiserver:
+  ipcAddress: localhost
+  cmdPort: 8071
+  serverTimeout: 5s
+

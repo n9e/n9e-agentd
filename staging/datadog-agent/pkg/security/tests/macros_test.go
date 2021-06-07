@@ -1,0 +1,59 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
+// +build functionaltests
+
+package tests
+
+import (
+	"os"
+	"testing"
+
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
+	"gotest.tools/assert"
+)
+
+func TestMacros(t *testing.T) {
+	macros := []*rules.MacroDefinition{
+		{
+			ID:         "testmacro",
+			Expression: `"{{.Root}}/test-macro"`,
+		},
+		{
+			ID:         "testmacro2",
+			Expression: `["{{.Root}}/test-macro"]`,
+		},
+	}
+
+	rules := []*rules.RuleDefinition{
+		{
+			ID:         "test_rule",
+			Expression: `testmacro in testmacro2 && mkdir.file.path in testmacro2`,
+		},
+	}
+
+	test, err := newTestModule(macros, rules, testOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer test.Close()
+
+	testFile, _, err := test.Path("test-macro")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Mkdir(testFile, 0777); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(testFile)
+
+	event, _, err := test.GetEvent()
+	if err != nil {
+		t.Error(err)
+	} else {
+		assert.Equal(t, event.GetType(), "mkdir", "wrong event type")
+	}
+}

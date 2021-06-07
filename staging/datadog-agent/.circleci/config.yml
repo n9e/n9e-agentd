@@ -1,0 +1,362 @@
+version: 2
+
+# This file uses YAML anchors to deduplicate steps
+# see https://circleci.com/blog/circleci-hacks-reuse-yaml-in-your-circleci-config-with-yaml/
+# and https://learnxinyminutes.com/docs/yaml/
+
+experimental:
+  # For some reason filtering out notifications keeps being undocumented and
+  # marked as experimental but as of today, it's still working.
+  notify:
+    branches:
+      only:
+        - master
+
+templates:
+  job_template: &job_template
+    docker:
+      - image: datadog/datadog-agent-runner-circle:go11511
+        environment:
+          USE_SYSTEM_LIBS: "1"
+    working_directory: /go/src/github.com/DataDog/datadog-agent
+
+  step_templates:
+    - restore_cache: &restore_deps
+        keys:
+          # The first match will be used. Doing that so new branches
+          # use master's cache but don't pollute it back.
+          #
+          # If incremental dep fails, increase the cache gen number
+          # in restore_deps AND save_deps
+          # See https://github.com/DataDog/datadog-agent/pull/2384
+          - gen18-godeps-{{ .Branch }}-{{ .Revision }}
+          - gen18-godeps-{{ .Branch }}-
+          - gen18-godeps-master-
+    - save_cache: &save_deps
+        key: gen18-godeps-{{ .Branch }}-{{ .Revision }}
+    - restore_cache: &restore_source
+        keys:
+          # Cache retrieval is faster than full git checkout
+          - v5-repo-{{ .Revision }}
+    - save_cache: &save_source
+        key: v5-repo-{{ .Revision }}
+
+jobs:
+  checkout_code:
+    docker:
+      - image: alpine/git:latest
+    working_directory: /go/src/github.com/DataDog/datadog-agent
+    steps:
+      - checkout
+      - save_cache:
+          <<: *save_source
+          paths:
+            - /go/src/github.com/DataDog/datadog-agent
+
+  dependencies:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: setup python deps
+          command: |
+            python3 -m pip install wheel
+            python3 -m pip install -r requirements.txt
+            python3 -m pip install flake8~=3.8.3 flake8-bugbear~=20.1.4 flake8-unused-arguments==0.0.6 black~=19.10b0 isort~=5.2.2
+      - run:
+          name: grab go deps
+          command: |
+            inv deps --verbose
+      - run:
+          name: build rtloader
+          command: |
+            inv rtloader.make --install-prefix=/go/src/github.com/DataDog/datadog-agent/dev
+            inv rtloader.install
+      - run:
+          name: lint rtloader
+          command: |
+            inv rtloader.format --raise-if-changed
+      - run:
+          name: test rtloader
+          command: |
+            inv rtloader.test
+      - run:
+          name: install go tooling
+          command: |
+            inv -e install-tools
+      - save_cache:
+          <<: *save_deps
+          paths:
+            - /go/pkg/mod
+            - /go/bin
+            - /go/src/github.com/DataDog/datadog-agent/dev
+            - /usr/local/lib/python3.6/dist-packages
+            - /usr/local/bin
+
+  unit_tests:
+    <<: *job_template
+    resource_class: large
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: run unit tests
+          command: inv -e test --rerun-fails=2 --python-runtimes 3 --coverage --race --profile --fail-on-fmt --cpus 3
+      - run:
+          name: upload code coverage results
+          # Never fail on coverage upload
+          command: bash <(curl -s https://codecov.io/bash) -f profile.cov -F linux || true
+
+  integration_tests:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - setup_remote_docker
+      - run:
+          name: run integration tests
+          command: inv -e integration-tests --race --remote-docker
+
+  release_note:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          command: inv -e lint-releasenote
+          name: run PR check for release note
+
+  team_label:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          command: inv -e lint-teamassignment
+          name: run PR check for team assignment labels
+
+  milestone:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          command: inv -e lint-milestone
+          name: run PR check for milestone assignment
+
+  licenses_linting:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: run license linting
+          command: inv -e lint-licenses
+
+  filename_linting:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: run filename linting
+          command: inv -e lint-filenames
+
+  shell_linting:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: Install shellcheck
+          command: inv -e install-shellcheck
+      - run:
+          name: Print shellcheck version
+          command: shellcheck --version
+      - run:
+          name: Run shellcheck
+          #Excludes:
+          #SC2028: echo may not expand escape sequences. Use printf.
+          #SC2059: Don't use variables in the printf format string. Use printf "..%s.." "$foo".
+          command: shellcheck --severity=info -e SC2059 -e SC2028 --shell=bash ./cmd/**/*.sh ./omnibus/package-scripts/*/*
+
+  python_linting:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: lint python files
+          command: inv -e lint-python
+
+  docker_tests:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - setup_remote_docker
+      - run:
+          name: run docker image tests
+          command: inv -e docker.test
+      - run:
+          name: run docker image integration tests
+          command: inv -e docker.integration-tests
+
+  build_binaries:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: build dogstatsd
+          command: inv -e dogstatsd.build --static
+      - run:
+          name: build agent
+          command: inv -e agent.build --exclude-rtloader
+
+  build_iot_agent:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: build iot agent
+          command: inv -e agent.build --iot
+      - run:
+          name: test iot agent
+          command: ./bin/agent/agent -c ./bin/agent/dist check cpu
+
+  documentation_generation:
+    <<: *job_template
+    steps:
+      - restore_cache: *restore_source
+      - restore_cache: *restore_deps
+      - run:
+          name: generate doxygen documentation
+          command: inv -e rtloader.generate-doc
+
+  macos_tests:
+    macos:
+      xcode: 11.7.0
+    environment:
+      BUILDIMAGES_VERSION: "aa0a9b99830e937e32986359794361aeb95940f5" # datadog-agent-buildimages commit to fetch to get the MacOS scripts
+    working_directory: ~/go/src/github.com/DataDog/datadog-agent
+    steps:
+      - checkout
+      - run:
+          name: Remove existing packages
+          command: |
+            brew remove --force $(brew list --formula)
+      - restore_cache:
+          keys:
+            # If incremental dep fails, increase the cache version number
+            # See https://github.com/DataDog/datadog-agent/pull/2384
+            - v5-macosdeps-{{ .Branch }}-{{ .Revision }}
+            - v5-macosdeps-{{ .Branch }}-
+            - v5-macosdeps-master-
+      - run:
+          name: Setup runner
+          command: |
+            bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent-buildimages/$BUILDIMAGES_VERSION/macos/builder_setup.sh)"
+      - run:
+          name: Install python deps & clang-format
+          command: |
+            brew install clang-format || brew link --overwrite clang-format
+            python3 -m pip install -r requirements.txt
+      - save_cache:
+          key: v5-macosdeps-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - /usr/local/bin
+            - /usr/local/Cellar
+            - /usr/local/lib
+            - /usr/local/Frameworks
+            - /usr/local/opt
+      - run:
+          name: Compile rtloader
+          command: |
+            source ~/.build_setup
+
+            inv rtloader.make --install-prefix=$GOPATH/src/github.com/DataDog/datadog-agent/dev
+            inv rtloader.install
+      - run:
+          name: Lint rtloader
+          command: |
+            source ~/.build_setup
+
+            inv rtloader.format --raise-if-changed
+      - run:
+          name: Test rtloader
+          command: |
+            source ~/.build_setup
+
+            inv rtloader.test
+      - run:
+          name: Run tests
+          command: |
+            source ~/.build_setup
+            inv -e install-tools
+            inv -e deps
+            inv -e test --rerun-fails=2 --python-runtimes 3 --coverage --race --profile --fail-on-fmt --cpus 3
+
+workflows:
+  version: 2
+  test_and_build:
+    jobs:
+      - checkout_code
+      - macos_tests
+      - dependencies:
+          requires:
+            - checkout_code
+      - unit_tests:
+          requires:
+            - dependencies
+      - integration_tests:
+          requires:
+            - dependencies
+      - release_note:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - dependencies
+      - team_label:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - dependencies
+      - milestone:
+          filters:
+            branches:
+              ignore: master
+          requires:
+            - dependencies
+      - licenses_linting:
+          requires:
+            - dependencies
+      - filename_linting:
+          requires:
+            - dependencies
+      - shell_linting:
+          requires:
+            - dependencies
+      - python_linting:
+          requires:
+            - dependencies
+      - docker_tests:
+          requires:
+            - dependencies
+      - documentation_generation:
+          requires:
+            - dependencies
+      - build_binaries:
+          requires:
+            - unit_tests
+            - integration_tests
+            - docker_tests
+      - build_iot_agent:
+          requires:
+            - unit_tests
+            - integration_tests
+            - docker_tests

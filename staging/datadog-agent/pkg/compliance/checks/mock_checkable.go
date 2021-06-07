@@ -1,0 +1,22 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
+package checks
+
+import (
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
+
+	"github.com/stretchr/testify/mock"
+)
+
+type mockCheckable struct {
+	mock.Mock
+}
+
+func (m *mockCheckable) check(env env.Env) (*compliance.Report, error) {
+	args := m.Called(env)
+	return args.Get(0).(*compliance.Report), args.Error(1)
+}

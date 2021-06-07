@@ -1,0 +1,265 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
+// +build kubeapiserver
+
+package leaderelection
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"sync"
+	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/leaderelection"
+	rl "k8s.io/client-go/tools/leaderelection/resourcelock"
+
+	"context"
+
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"k8s.io/klog/v2"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+)
+
+const (
+	defaultLeaderLeaseDuration = 60 * time.Second
+	defaultLeaseName           = "datadog-leader-election"
+	getLeaderTimeout           = 10 * time.Second
+)
+
+var (
+	globalLeaderEngine *LeaderEngine
+)
+
+// LeaderEngine is a structure for the LeaderEngine client to run leader election
+// on Kubernetes clusters
+type LeaderEngine struct {
+	initRetry retry.Retrier
+
+	running bool
+	m       sync.Mutex
+	once    sync.Once
+
+	HolderIdentity      string
+	LeaseDuration       time.Duration
+	LeaseName           string
+	LeaderNamespace     string
+	coreClient          corev1.CoreV1Interface
+	ServiceName         string
+	leaderIdentityMutex sync.RWMutex
+	leaderElector       *leaderelection.LeaderElector
+
+	// leaderIdentity is the HolderIdentity of the current leader.
+	leaderIdentity string
+
+	// leaderMetric indicates whether this instance is leader
+	leaderMetric telemetry.Gauge
+}
+
+func newLeaderEngine() *LeaderEngine {
+	return &LeaderEngine{
+		LeaseName:       defaultLeaseName,
+		LeaderNamespace: common.GetResourcesNamespace(),
+		ServiceName:     config.Datadog.GetString("cluster_agent.kubernetes_service_name"),
+		leaderMetric:    metrics.NewLeaderMetric(),
+	}
+}
+
+// ResetGlobalLeaderEngine is a helper to remove the current LeaderEngine global
+// It is ONLY to be used for tests
+func ResetGlobalLeaderEngine() {
+	globalLeaderEngine = nil
+	telemetry.Reset()
+}
+
+// GetLeaderEngine returns a leader engine client with default parameters.
+func GetLeaderEngine() (*LeaderEngine, error) {
+	return GetCustomLeaderEngine("", defaultLeaderLeaseDuration)
+}
+
+// GetCustomLeaderEngine wraps GetLeaderEngine for testing purposes.
+func GetCustomLeaderEngine(holderIdentity string, ttl time.Duration) (*LeaderEngine, error) {
+	if globalLeaderEngine == nil {
+		globalLeaderEngine = newLeaderEngine()
+		globalLeaderEngine.HolderIdentity = holderIdentity
+		globalLeaderEngine.LeaseDuration = ttl
+		globalLeaderEngine.initRetry.SetupRetrier(&retry.Config{ //nolint:errcheck
+			Name:              "leaderElection",
+			AttemptMethod:     globalLeaderEngine.init,
+			Strategy:          retry.Backoff,
+			InitialRetryDelay: 1 * time.Second,
+			MaxRetryDelay:     5 * time.Minute,
+		})
+	}
+	err := globalLeaderEngine.initRetry.TriggerRetry()
+	if err != nil {
+		klog.V(5).Infof("Leader Election init error: %s", err)
+		return nil, err
+	}
+	return globalLeaderEngine, nil
+}
+
+func (le *LeaderEngine) init() error {
+	var err error
+
+	if le.HolderIdentity == "" {
+		le.HolderIdentity, err = os.Hostname()
+		if err != nil {
+			klog.V(5).Infof("cannot get hostname: %s", err)
+			return err
+		}
+	}
+	klog.V(5).Infof("Init LeaderEngine with HolderIdentity: %q", le.HolderIdentity)
+
+	leaseDuration := config.Datadog.GetInt("leader_lease_duration")
+	if leaseDuration > 0 {
+		le.LeaseDuration = time.Duration(leaseDuration) * time.Second
+	} else {
+		le.LeaseDuration = defaultLeaderLeaseDuration
+	}
+	klog.V(5).Infof("LeaderLeaseDuration: %s", le.LeaseDuration.String())
+
+	// Using GetAPIClient (no retry) as LeaderElection is already wrapped in a retrier
+	apiClient, err := apiserver.GetAPIClient()
+	if err != nil {
+		klog.Errorf("Not Able to set up a client for the Leader Election: %s", err)
+		return err
+	}
+
+	le.coreClient = apiClient.Cl.CoreV1().(*corev1.CoreV1Client)
+
+	// check if we can get ConfigMap.
+	_, err = le.coreClient.ConfigMaps(le.LeaderNamespace).Get(context.TODO(), defaultLeaseName, metav1.GetOptions{})
+	if err != nil && errors.IsNotFound(err) == false {
+		klog.Errorf("Cannot retrieve ConfigMap from the %s namespace: %s", le.LeaderNamespace, err)
+		return err
+	}
+
+	le.leaderElector, err = le.newElection()
+	if err != nil {
+		klog.Errorf("Could not initialize the Leader Election process: %s", err)
+		return err
+	}
+	klog.V(5).Infof("Leader Engine for %q successfully initialized", le.HolderIdentity)
+	return nil
+}
+
+// StartLeaderElectionRun starts the runLeaderElection once
+func (le *LeaderEngine) StartLeaderElectionRun() {
+	le.once.Do(
+		func() {
+			go le.runLeaderElection()
+		},
+	)
+}
+
+// EnsureLeaderElectionRuns start the Leader election process if not already running,
+// return nil if the process is effectively running
+func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
+	le.m.Lock()
+	defer le.m.Unlock()
+
+	if le.running {
+		klog.V(5).Infof("Currently Leader: %t. Leader identity: %q", le.IsLeader(), le.GetLeader())
+		return nil
+	}
+
+	le.StartLeaderElectionRun()
+
+	timeout := time.After(getLeaderTimeout)
+	tick := time.NewTicker(time.Second)
+	defer tick.Stop()
+	for {
+		klog.V(6).Infof("Waiting for new leader identity...")
+		select {
+		case <-tick.C:
+			leaderIdentity := le.GetLeader()
+			if leaderIdentity != "" {
+				klog.Infof("Leader election running, current leader is %q", leaderIdentity)
+				le.running = true
+				return nil
+			}
+		case <-timeout:
+			return fmt.Errorf("leader election still not running, timeout after %s", getLeaderTimeout)
+		}
+	}
+}
+
+func (le *LeaderEngine) runLeaderElection() {
+	for {
+		klog.Infof("Starting leader election process for %q...", le.HolderIdentity)
+		le.leaderElector.Run(context.Background())
+		klog.Info("Leader election lost")
+	}
+}
+
+// GetLeader returns the identity of the last observed leader or returns the empty string if
+// no leader has yet been observed.
+func (le *LeaderEngine) GetLeader() string {
+	le.leaderIdentityMutex.RLock()
+	defer le.leaderIdentityMutex.RUnlock()
+
+	return le.leaderIdentity
+}
+
+// GetLeaderIP returns the IP the leader can be reached at, assuming its
+// identity is its pod name. Returns empty if we are the leader.
+// The result is not cached.
+func (le *LeaderEngine) GetLeaderIP() (string, error) {
+	leaderName := le.GetLeader()
+	if leaderName == "" || leaderName == le.HolderIdentity {
+		return "", nil
+	}
+
+	endpointList, err := le.coreClient.Endpoints(le.LeaderNamespace).Get(context.TODO(), le.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	target, err := apiserver.SearchTargetPerName(endpointList, leaderName)
+	if err != nil {
+		return "", err
+	}
+	return target.IP, nil
+}
+
+// IsLeader returns true if the last observed leader was this client else returns false.
+func (le *LeaderEngine) IsLeader() bool {
+	return le.GetLeader() == le.HolderIdentity
+}
+
+// GetLeaderElectionRecord is used in for the Flare and for the Status commands.
+func GetLeaderElectionRecord() (leaderDetails rl.LeaderElectionRecord, err error) {
+	var led rl.LeaderElectionRecord
+	client, err := apiserver.GetAPIClient()
+	if err != nil {
+		return led, err
+	}
+
+	c := client.Cl.CoreV1()
+
+	leaderNamespace := common.GetResourcesNamespace()
+	leaderElectionCM, err := c.ConfigMaps(leaderNamespace).Get(context.TODO(), defaultLeaseName, metav1.GetOptions{})
+	if err != nil {
+		return led, err
+	}
+	klog.V(5).Infof("LeaderElection cm is %#v", leaderElectionCM)
+	annotation, found := leaderElectionCM.Annotations[rl.LeaderElectionRecordAnnotationKey]
+	if !found {
+		return led, apiserver.ErrNotFound
+	}
+	err = json.Unmarshal([]byte(annotation), &led)
+	if err != nil {
+		return led, err
+	}
+	return led, nil
+}
