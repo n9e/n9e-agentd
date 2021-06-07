@@ -63,8 +63,7 @@ func NewDefaultConfig() *Config {
 }
 
 const (
-	defaultConfig = `
-# agent default config
+	defaultConfig = `# agent default config
 site: http://localhost:8080
 hostname: test
 maxProcs: 4
@@ -121,6 +120,7 @@ statsd:
   contextExpirySeconds: 300s
   mapperCacheSize: 1000
   stringInternerSize: 4096
+  statsEnable: true
   metricsStatsEnable: false
 
 
@@ -295,7 +295,5 @@ forwarder:
   flushToDiskMemRatio: 0.5
   storageMaxSizeInBytes: 0
   storageMaxDiskRatio: 0.95
-
-
 `
 )

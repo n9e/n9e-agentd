@@ -455,7 +455,7 @@ type Statsd struct {
 	ExpirySeconds                     time.Duration    `yaml:"expirySeconds"`                     // dogstatsd_expiry_seconds
 	StatsEnable                       bool             `yaml:"statsEnable"`                       // dogstatsd_stats_enable
 	StatsBuffer                       int              `yaml:"statsBuffer"`                       // dogstatsd_stats_buffer
-	MetricsStatsEnable                bool             `yaml:"metricsStatsEnable"`                // dogstatsd_metrics_stats_enable
+	MetricsStatsEnable                bool             `yaml:"metricsStatsEnable"`                // dogstatsd_metrics_stats_enable - for debug
 	BufferSize                        int              `yaml:"bufferSize"`                        // dogstatsd_buffer_size
 	MetricNamespace                   string           `yaml:"metricNamespace"`                   // statsd_metric_namespace
 	MetricNamespaceBlacklist          []string         `yaml:"metricNamespaceBlacklist"`          // statsd_metric_namespace_blacklist
