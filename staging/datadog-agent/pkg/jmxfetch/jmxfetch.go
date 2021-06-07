@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	api "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"

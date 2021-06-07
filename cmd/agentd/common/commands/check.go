@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"github.com/n9e/n9e-agentd/cmd/agent/app/standalone"
-	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/cmd/agentd/app/standalone"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"

@@ -19,7 +19,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"k8s.io/klog/v2"
 
-	"github.com/n9e/n9e-agentd/cmd/agent/common/signals"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common/signals"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"

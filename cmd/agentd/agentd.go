@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/n9e/n9e-agentd/cmd/agent/app"
+	"github.com/n9e/n9e-agentd/cmd/agentd/app"
 	"github.com/yubo/golib/staging/logs"
 	"k8s.io/klog/v2"
 )

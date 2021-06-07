@@ -18,10 +18,10 @@ import (
 	/*
 		"gopkg.in/yaml.v2"
 
-		"github.com/n9e/n9e-agentd/cmd/agent/api/response"
-		"github.com/n9e/n9e-agentd/cmd/agent/app/settings"
-		"github.com/n9e/n9e-agentd/cmd/agent/common"
-		"github.com/n9e/n9e-agentd/cmd/agent/gui"
+		"github.com/n9e/n9e-agentd/cmd/agentd/api/response"
+		"github.com/n9e/n9e-agentd/cmd/agentd/app/settings"
+		"github.com/n9e/n9e-agentd/cmd/agentd/common"
+		"github.com/n9e/n9e-agentd/cmd/agentd/gui"
 		"github.com/n9e/n9e-agentd/pkg/options"
 		"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 		"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"

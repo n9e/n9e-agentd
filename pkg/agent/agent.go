@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/n9e/n9e-agentd/cmd/agent/common"
-	"github.com/n9e/n9e-agentd/cmd/agent/common/misconfig"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/n9e/n9e-agentd/pkg/options"

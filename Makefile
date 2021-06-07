@@ -1,7 +1,6 @@
 .PHONY: clean test
 
-APP_NAME=agent
-#DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -and -not -path "./staging/*")
+APP_NAME=agentd
 DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -and -not -path "./staging/*")
 TARGETS=directories build/$(APP_NAME)
 
@@ -12,13 +11,13 @@ GO_TAGS                   := jmx,kubelet
 all: $(TARGETS)
 
 .PHONY: devrun dev
-	# /opt/datadog-agent/bin/agent/agent run -p /opt/datadog-agent/run/agent.pid
+
 devrun:
-	@echo "./build/agent -c ./etc/agent.yml"
+	@echo "./build/agentd -c ./etc/agent.yml"
 
 .PHONY: run
 run:
-	./build/agent -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
+	./build/agentd -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
 
 dev:
 	APP_NAME=$(APP_NAME) watcher --logtostderr -v 10 -e build -e .git -e docs -e plugins -e tmp -e vendor -e staging -f .go -d 1000
