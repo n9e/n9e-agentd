@@ -84,6 +84,8 @@ func TestConfig(t *testing.T) {
 {
   "initConfig": { "tiemout": 3 },
   "instances": [{
+    "minCollectionInterval": 10,
+    "tags": ["a:1", "b:2"],
     "port": 123,
     "protocol": "tcp"
   }]

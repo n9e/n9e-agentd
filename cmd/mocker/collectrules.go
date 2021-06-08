@@ -24,7 +24,6 @@ type CollectRules struct {
 }
 
 func (c *CollectRules) Set(configs []integration.Config) {
-
 	var rs []api.CollectRule
 	for _, config := range configs {
 		r, err := configToRule(config)
@@ -35,10 +34,11 @@ func (c *CollectRules) Set(configs []integration.Config) {
 	}
 
 	c.Lock()
+	defer c.Unlock()
+
 	c.rules = rs
 	c.latestUpdatedAt = time.Now().Unix()
 	klog.Infof("rules %d", len(rs))
-	c.Unlock()
 }
 
 func (c *CollectRules) GetRules() []api.CollectRule {

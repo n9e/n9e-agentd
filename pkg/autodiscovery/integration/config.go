@@ -40,32 +40,32 @@ const (
 // When a new field is added to this struct, please evaluate whether it should be computed in the config Digest
 // and update the field's documentation and the Digest method accordingly
 type Config struct {
-	Name                    string       `yaml:"checkName" json:"checkName"`                             // the name of the check (include in digest: true)
-	Instances               []Data       `yaml:"instances" json:"instances"`                             // the list of instances in Yaml (include in digest: true)
-	InitConfig              Data         `yaml:"initConfig" json:"initConfig"`                           // the initConfig in Yaml (include in digest: true)
-	MetricConfig            Data         `yaml:"metricConfig" json:"metricConfig"`                       // the metric config in Yaml (jmx check only) (include in digest: false)
-	LogsConfig              Data         `yaml:"logs" json:"logs"`                                       // the logs config in Yaml (logs-agent only) (include in digest: true)
-	ADIdentifiers           []string     `yaml:"adIdentifiers" json:"adIdentifiers"`                     // the list of AutoDiscovery identifiers (optional) (include in digest: true)
-	Provider                string       `yaml:"provider" json:"provider"`                               // the provider that issued the config (include in digest: false)
-	Entity                  string       `yaml:"-" json:"-"`                                             // the entity ID (optional) (include in digest: true)
-	TaggerEntity            string       `yaml:"-" json:"-"`                                             // the tagger entity ID (optional) (include in digest: false)
-	ClusterCheck            bool         `yaml:"clusterCheck" json:"clusterCheck"`                       // cluster-check configuration flag (include in digest: false)
-	NodeName                string       `yaml:"nodeName" json:"nodeName"`                               // node name in case of an endpoint check backed by a pod (include in digest: true)
-	CreationTime            CreationTime `yaml:"-" json:"-"`                                             // creation time of service (include in digest: false)
-	Source                  string       `yaml:"source" json:"source"`                                   // the source of the configuration (include in digest: false)
-	IgnoreAutodiscoveryTags bool         `yaml:"ignoreAutodiscoveryTags" json:"ignoreAutodiscoveryTags"` // used to ignore tags coming from autodiscovery (include in digest: true)
-	MetricsExcluded         bool         `yaml:"-" json:"-"`                                             // whether metrics collection is disabled (set by container listeners only) (include in digest: false)
-	LogsExcluded            bool         `yaml:"-" json:"-"`                                             // whether logs collection is disabled (set by container listeners only) (include in digest: false)
+	Name                    string       `json:"checkName"`               // the name of the check (include in digest: true)
+	Instances               []Data       `json:"instances"`               // the list of instances in Yaml (include in digest: true)
+	InitConfig              Data         `json:"initConfig"`              // the initConfig in Yaml (include in digest: true)
+	MetricConfig            Data         `json:"metricConfig"`            // the metric config in Yaml (jmx check only) (include in digest: false)
+	LogsConfig              Data         `json:"logs"`                    // the logs config in Yaml (logs-agent only) (include in digest: true)
+	ADIdentifiers           []string     `json:"adIdentifiers"`           // the list of AutoDiscovery identifiers (optional) (include in digest: true)
+	Provider                string       `json:"provider"`                // the provider that issued the config (include in digest: false)
+	Entity                  string       `json:"-"`                       // the entity ID (optional) (include in digest: true)
+	TaggerEntity            string       `json:"-"`                       // the tagger entity ID (optional) (include in digest: false)
+	ClusterCheck            bool         `json:"clusterCheck"`            // cluster-check configuration flag (include in digest: false)
+	NodeName                string       `json:"nodeName"`                // node name in case of an endpoint check backed by a pod (include in digest: true)
+	CreationTime            CreationTime `json:"-"`                       // creation time of service (include in digest: false)
+	Source                  string       `json:"source"`                  // the source of the configuration (include in digest: false)
+	IgnoreAutodiscoveryTags bool         `json:"ignoreAutodiscoveryTags"` // used to ignore tags coming from autodiscovery (include in digest: true)
+	MetricsExcluded         bool         `json:"-"`                       // whether metrics collection is disabled (set by container listeners only) (include in digest: false)
+	LogsExcluded            bool         `json:"-"`                       // whether logs collection is disabled (set by container listeners only) (include in digest: false)
 }
 
 // CommonInstanceConfig holds the reserved fields for the yaml instance data
 type CommonInstanceConfig struct {
-	MinCollectionInterval int      `yaml:"minCollectionInterval"`
-	EmptyDefaultHostname  bool     `yaml:"emptyDefaultHostname"`
-	Tags                  []string `yaml:"tags"`
-	Service               string   `yaml:"service"`
-	Name                  string   `yaml:"name"`
-	Namespace             string   `yaml:"namespace"`
+	MinCollectionInterval int      `json:"minCollectionInterval"` // This changes the collection interval of the check - default: 15
+	EmptyDefaultHostname  bool     `json:"emptyDefaultHostname"`  // This forces the check to send metrics with no hostname. This is useful for cluster-level checks.
+	Tags                  []string `json:"tags"`                  // A list of tags to attach to every metric and service check emitted by this instance, <key_1>:<value_1>
+	Service               string   `json:"service"`               // Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
+	Name                  string   `json:"name"`                  //
+	Namespace             string   `json:"namespace"`             //
 }
 
 // CommonGlobalConfig holds the reserved fields for the yaml init_config data
