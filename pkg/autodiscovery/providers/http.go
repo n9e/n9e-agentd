@@ -2,7 +2,6 @@ package providers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -13,7 +12,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers/names"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
-	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 )
 
@@ -133,63 +131,22 @@ func (p *HttpConfigProvider) Collect() ([]integration.Config, error) {
 			klog.Warningf("%s %s is not a valid config file: %s", rule.Type, rule.Name, err)
 			continue
 		}
-		configs = append(configs, config)
+		configs = append(configs, *config)
 	}
 
 	return configs, nil
 }
 
-func (p *HttpConfigProvider) convertConfig(rule api.CollectRule) (config integration.Config, err error) {
-
-	var cf api.CollectRuleConfig
-
-	if err = json.Unmarshal([]byte(rule.Data), &cf); err != nil {
-		err = fmt.Errorf("Skipping, json.Unmarshal %s", err)
-		return
+func (p *HttpConfigProvider) convertConfig(rule api.CollectRule) (*integration.Config, error) {
+	config, err := ParseJSONConfig([]byte(rule.Data))
+	if err != nil {
+		return nil, err
 	}
-
 	config.Name = rule.Type
-
-	if cf.MetricConfig == nil && cf.LogsConfig == nil && len(cf.Instances) < 1 {
-		err = fmt.Errorf("rule contains no valid instances", rule.Type, rule.Name)
-		return
-	}
-
-	if cf.InitConfig != nil {
-		config.InitConfig, _ = yaml.Marshal(cf.InitConfig)
-	}
-	if len(cf.Instances) > 0 {
-		for _, instance := range cf.Instances {
-			rawConf, _ := yaml.Marshal(instance)
-			config.Instances = append(config.Instances, rawConf)
-		}
-	}
-	// If JMX metrics were found, add them to the config
-	if cf.MetricConfig != nil {
-		config.MetricConfig, _ = yaml.Marshal(cf.MetricConfig)
-	}
-
-	// If logs was found, add it to the config
-	if cf.LogsConfig != nil {
-		logsConfig := make(map[string]interface{})
-		logsConfig["logs"] = cf.LogsConfig
-		config.LogsConfig, _ = yaml.Marshal(logsConfig)
-	}
-
-	config.ADIdentifiers = cf.ADIdentifiers
-	config.ClusterCheck = cf.ClusterCheck
-	config.IgnoreAutodiscoveryTags = cf.IgnoreAutodiscoveryTags
 	config.Provider = names.Http
-
-	// DockerImages entry was found: we ignore it if no ADIdentifiers has been found
-	if len(cf.DockerImages) > 0 && len(cf.ADIdentifiers) == 0 {
-		err = errors.New("the 'docker_images' section is deprecated, please use 'ad_identifiers' instead")
-		return
-	}
-
 	config.Source = "http:" + rule.Name
 
-	return
+	return config, nil
 }
 
 // IsUpToDate updates the list of AD templates versions in the Agent's cache and checks the list is up to date compared to http's data.

@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
-	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/expfmt"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/util/tls"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"github.com/yubo/golib/staging/util/yaml"
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
+	"sigs.k8s.io/yaml"
 )
 
 const checkName = "prometheus"
@@ -28,26 +28,26 @@ type PromInitConfig struct {
 }
 
 type PromInstanceConfig struct {
-	PrometheusUrl           string            `yaml:"prometheusUrl"`           // prometheus_url
-	Namespace               string            `yaml:"namespace"`               // namespace
-	Metrics                 []string          `yaml:"metrics"`                 // metrics
-	PrometheusMetricsPrefix string            `yaml:"prometheusMetricsPrefix"` // prometheus_metrics_prefix
-	HealthServiceCheck      bool              `yaml:"healthServiceCheck"`      // health_service_check
-	LabelToHostname         string            `yaml:"labelToHostname"`         // label_to_hostname
-	LabelJoins              interface{}       `yaml:"labelJoins"`              // label_joins
-	LabelsMapper            map[string]string `yaml:"labelsMapper"`            // labels_mapper
-	TypeOverrides           map[string]string `yaml:"typeOverrides"`           // type_overrides
-	Tags                    []string          `yaml:"tags"`                    // tags
-	SendHistogramsBuckets   bool              `yaml:"sendHistogramsBuckets"`   // send_histograms_buckets
-	SendMonotonicCounter    bool              `yaml:"sendMonotonicCounter"`    // send_monotonic_counter
-	ExcludeLabels           []string          `yaml:"excludeLabels"`           // exclude_labels
-	SslCert                 string            `yaml:"sslCert"`                 // ssl_cert
-	SslPrivateKey           string            `yaml:"sslPrivateKey"`           // ssl_private_key
-	SslCaCert               string            `yaml:"sslCaCert"`               // ssl_ca_cert
-	PrometheusTimeout       time.Duration     `yaml:"prometheusTimeout"`       // prometheus_timeout
-	MaxReturnedMetrics      int               `yaml:"maxReturnedMetrics"`      // max_returned_metrics
-	tls.ClientConfig        `yaml:"-"`
-	PromInitConfig          `yaml:"-"`
+	PrometheusUrl           string            `json:"prometheusUrl"`           // prometheus_url
+	Namespace               string            `json:"namespace"`               // namespace
+	Metrics                 []string          `json:"metrics"`                 // metrics
+	PrometheusMetricsPrefix string            `json:"prometheusMetricsPrefix"` // prometheus_metrics_prefix
+	HealthServiceCheck      bool              `json:"healthServiceCheck"`      // health_service_check
+	LabelToHostname         string            `json:"labelToHostname"`         // label_to_hostname
+	LabelJoins              interface{}       `json:"labelJoins"`              // label_joins
+	LabelsMapper            map[string]string `json:"labelsMapper"`            // labels_mapper
+	TypeOverrides           map[string]string `json:"typeOverrides"`           // type_overrides
+	Tags                    []string          `json:"tags"`                    // tags
+	SendHistogramsBuckets   bool              `json:"sendHistogramsBuckets"`   // send_histograms_buckets
+	SendMonotonicCounter    bool              `json:"sendMonotonicCounter"`    // send_monotonic_counter
+	ExcludeLabels           []string          `json:"excludeLabels"`           // exclude_labels
+	SslCert                 string            `json:"sslCert"`                 // ssl_cert
+	SslPrivateKey           string            `json:"sslPrivateKey"`           // ssl_private_key
+	SslCaCert               string            `json:"sslCaCert"`               // ssl_ca_cert
+	PrometheusTimeout       time.Duration     `json:"prometheusTimeout"`       // prometheus_timeout
+	MaxReturnedMetrics      int               `json:"maxReturnedMetrics"`      // max_returned_metrics
+	tls.ClientConfig        `json:"-"`
+	PromInitConfig          `json:"-"`
 }
 
 type promConfig struct {

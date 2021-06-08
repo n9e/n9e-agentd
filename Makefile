@@ -52,11 +52,5 @@ env:
 	yum install -y systemd-devel
 
 
-.PHONY: mocker
 mocker:
-	go build -o build/mocker ./cmd/mocker && \
-	./build/mocker
-
-build/mocker: $(shell find cmd/mocker)
-	go build -o $@  ./cmd/mocker
-
+	go build -o build/mocker ./cmd/mocker

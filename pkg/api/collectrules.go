@@ -1,5 +1,12 @@
 package api
 
+import (
+	"encoding/json"
+	"fmt"
+
+	"sigs.k8s.io/yaml"
+)
+
 type CollectRule struct {
 	Name      string `json:"name"`       // -> Config.instances[$]
 	Type      string `json:"type"`       // -> Config.Name
@@ -17,14 +24,34 @@ type CollectRulesSummary struct {
 	Total           int   `json:"total"`
 }
 
+// from pkg/autodiscovery/providers/file.go: configFormat
 // format of collectRule.Data
-type CollectRuleConfig struct {
-	ADIdentifiers           []string      `json:"adIdentifiers" yaml:"adIdentifiers"`
-	ClusterCheck            bool          `json:"clusterCheck" yaml:"clusterCheck"`
-	InitConfig              interface{}   `yaml:"initConfig"`
-	MetricConfig            interface{}   `json:"jmxMetrics" yaml:"jmxMetrics"`
-	LogsConfig              interface{}   `json:"logs" yaml:"logs"`
-	Instances               []interface{} `json:"instances" yaml:"instances"`
-	DockerImages            []string      `json:"dockerImages" yaml:"dockerImages"`                       // Only imported for deprecation warning
-	IgnoreAutodiscoveryTags bool          `json:"ignoreAutodiscoveryTags" yaml:"ignoreAutodiscoveryTags"` // Use to ignore tags coming from autodiscovery
+type ConfigFormat struct {
+	ADIdentifiers           []string      `json:"adIdentifiers"`
+	ClusterCheck            bool          `json:"clusterCheck"`
+	InitConfig              interface{}   `json:"initConfig"`
+	MetricConfig            interface{}   `json:"jmxMetrics"`
+	LogsConfig              interface{}   `json:"logs"`
+	Instances               []interface{} `json:"instances"`
+	IgnoreAutodiscoveryTags bool          `json:"ignoreAutodiscoveryTags"` // Use to ignore tags coming from autodiscovery
+}
+
+// Converts YAML to JSON then uses JSON to unmarshal into ConfigFormat
+func ParseConfigFormatYaml(data []byte) (*ConfigFormat, error) {
+	var cf ConfigFormat
+	if err := yaml.Unmarshal(data, &cf); err != nil {
+		return nil, fmt.Errorf("yaml.Unmarshal %s", err)
+	}
+
+	return &cf, nil
+}
+
+func ParseConfigFormatJson(data []byte) (*ConfigFormat, error) {
+	var cf ConfigFormat
+	err := json.Unmarshal(data, &cf)
+	if err != nil {
+		return nil, fmt.Errorf("json.Unmarshal %s", err)
+	}
+
+	return &cf, nil
 }

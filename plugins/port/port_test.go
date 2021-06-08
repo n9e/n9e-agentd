@@ -5,6 +5,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery/validation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,7 +70,28 @@ func listenTCP() net.Listener {
 			panic(fmt.Sprintf("failed to listen on a port: %v", err))
 		}
 	}
-	fmt.Printf("bind %s\n", l.Addr().String())
-
 	return l
+}
+
+func TestConfig(t *testing.T) {
+	cases := []struct {
+		config string
+		ok     bool
+	}{
+		{"", false},
+		{"{}", false},
+		{`
+{
+  "initConfig": { "tiemout": 3 },
+  "instances": [{
+    "port": 123,
+    "protocol": "tcp"
+  }]
+}`, true},
+	}
+
+	for _, c := range cases {
+		err := validation.ValidateJSONConfig(checkName, []byte(c.config))
+		assert.Equal(t, c.ok, err == nil)
+	}
 }

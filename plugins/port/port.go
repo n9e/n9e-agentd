@@ -11,21 +11,21 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"github.com/yubo/golib/staging/util/yaml"
+	"sigs.k8s.io/yaml"
 )
 
 const checkName = "port"
 
 type InitConfig struct {
-	Timeout int `yaml:"timeout"`
+	Timeout int `json:"timeout"`
 }
 
 type InstanceConfig struct {
-	Protocol   string        `yaml:"protocol" description:"udp or tcp"`
-	Port       int           `yaml:"port"`
-	addrs      []string      `yaml:"-"`
-	timeout    time.Duration `yaml:"-"`
-	InitConfig `yaml:"-"`
+	Protocol   string        `json:"protocol" description:"udp or tcp"`
+	Port       int           `json:"port"`
+	addrs      []string      `json:"-"`
+	timeout    time.Duration `json:"-"`
+	InitConfig `json:"-"`
 }
 
 type checkConfig struct {

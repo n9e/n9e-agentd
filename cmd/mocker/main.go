@@ -42,17 +42,18 @@ func main() {
 	}
 
 	var port int
+	var confd string
 	flag.IntVar(&port, "port", 8080, "listen port")
+	flag.StringVar(&confd, "confd", "./etc/mocker.d", "config dir")
 	flag.Parse()
 
 	for _, r := range routes {
 		http.HandleFunc(r.pattern, payloadHandle(r.payload))
 	}
 
-	installCollectRules()
+	installCollectRules(confd)
 
 	klog.Infof("listen :%d", port)
-
 	klog.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
