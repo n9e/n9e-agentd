@@ -59,9 +59,8 @@ var (
 )
 
 type Config struct {
-	FileUsedDir    string `yaml:"-"`
-	ConfigFilePath string `yaml:"-"`
-
+	FileUsedDir                          string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
+	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d
 	Site                                 string                   `yaml:"site"`                                 // site
 	DdUrl                                bool                     `yaml:"ddUrl"`                                // dd_url
 	Listeners                            []Listeners              `yaml:"listeners"`                            // listeners

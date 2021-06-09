@@ -134,7 +134,6 @@ func (c *Check) Run() error {
 	collectMetrics(sender, mfs)
 
 	sender.Commit()
-
 	return nil
 }
 

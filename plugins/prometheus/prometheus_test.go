@@ -33,7 +33,7 @@ go_goroutines 15
 test_metric{label="value"} 1.0
 `
 
-func TestPromSummry(t *testing.T) {
+func TestCollect(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, sampleTextFormat)
 	}))
