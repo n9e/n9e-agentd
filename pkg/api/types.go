@@ -75,7 +75,7 @@ type ScriptCollectFormat struct {
 		Env     string `json:"env"`
 		Timeout int    `json:"timeout"`
 	} `json:"initConfig"`
-	Instances struct {
+	Instances []struct {
 		CommonInstanceConfig
 		FilePath string `json:"filePath"`
 		Root     string `json:"root"`
@@ -90,7 +90,7 @@ type PortCollectFormat struct {
 	InitConfig struct {
 		Timeout int `json:"timeout"`
 	} `json:"initConfig"`
-	Instances struct {
+	Instances []struct {
 		CommonInstanceConfig
 		Protocol string `json:"protocol" description:"udp or tcp"`
 		Port     int    `json:"port"`
