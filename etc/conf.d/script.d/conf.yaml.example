@@ -1,5 +1,5 @@
 initConfig:
-  ## @param root - string - optional
+  ## @param root - string - optional - default: {PWD}/script.d
   # root: /etc/n9e-agentd/script.d
 
   ## @param env - string - optional

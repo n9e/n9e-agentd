@@ -72,12 +72,13 @@ func TestGetFiles(t *testing.T) {
 
 }
 
-const sampleTextFormat = `[
-{"metric":"test1", "value":1, counterType:"GUAGE", "tags":"a=1"},
-{"metric":"test2", "value":2, counterType:"COUNTER", "tags":"a=2"},
-{"metric":"test3", "value":3, counterType:"MONOTONIC_COUNT", "tags":"a=3"},
+const sampleTextFormat = `
+echo '[
+{"metric":"test1", "value":1, "counterType":"GUAGE", "tags":"a=1"},
+{"metric":"test2", "value":2, "counterType":"COUNTER", "tags":"a=2"},
+{"metric":"test3", "value":3, "counterType":"MONOTONIC_COUNT", "tags":"a=3"},
 {"metric":"test4", "value":4, "tags":"a=4"}
-]`
+]'`
 
 func TestCollect(t *testing.T) {
 	flag.Set("v", "10")
@@ -85,7 +86,7 @@ func TestCollect(t *testing.T) {
 	flag.Parse()
 
 	dir := createTestDir([]templateFile{
-		{"test.sh", "cat"},
+		{"test.sh", sampleTextFormat},
 	})
 	// Clean up after the test; another quirk of running as an example.
 	defer os.RemoveAll(dir)
@@ -94,8 +95,7 @@ func TestCollect(t *testing.T) {
 	err := check.Configure([]byte(fmt.Sprintf(`
 filePath: "/bin/sh"
 params: "%s" 
-stdin: '%s' 
-`, filepath.Join(dir, "test.sh"), sampleTextFormat)), nil, "test")
+`, filepath.Join(dir, "test.sh"))), nil, "test")
 	assert.Nil(t, err)
 
 	sender := mocksender.NewMockSender(check.ID())
@@ -108,5 +108,8 @@ stdin: '%s'
 	err = check.Run()
 	assert.Nil(t, err)
 
-	sender.AssertCalled(t, "Gauge", "go_gc_duration_seconds_quantile", float64(0.00010425500000000001), "", []string{"quantile:0"})
+	sender.AssertCalled(t, "Gauge", "test1", float64(1), "", []string{"a:1"})
+	sender.AssertCalled(t, "Rate", "test2", float64(2), "", []string{"a:2"})
+	sender.AssertCalled(t, "MonotonicCount", "test3", float64(3), "", []string{"a:3"})
+	sender.AssertCalled(t, "Gauge", "test4", float64(4), "", []string{"a:4"})
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"sigs.k8s.io/yaml"
 )
 

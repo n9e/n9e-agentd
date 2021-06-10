@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
@@ -78,8 +77,10 @@ func defaultInstanceConfig() InstanceConfig {
 
 func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (*checkConfig, error) {
 	instance := defaultInstanceConfig()
+	pwd, _ := os.Getwd()
+
 	initConfig := InitConfig{
-		Root:    filepath.Join(config.C.FileUsedDir, "script.d"),
+		Root:    filepath.Join(pwd, "script.d"),
 		Timeout: defaultTimeout,
 	}
 
@@ -169,7 +170,7 @@ func (c *Check) collect(sender aggregator.Sender) error {
 	cf := c.config
 
 	for _, file := range c.getFiles() {
-		klog.Infof("file %s", file)
+		klog.V(4).Infof("file %s", file)
 
 		ctx, _ := context.WithTimeout(context.Background(), cf.timeout)
 		cmd := exec.CommandContext(ctx, file, cf.params...)
@@ -183,7 +184,7 @@ func (c *Check) collect(sender aggregator.Sender) error {
 
 		cmd.Env = cf.env
 
-		err := cmd.Start()
+		err := cmd.Run()
 		if err != nil {
 			klog.Warningf("%s run err %s", file, err)
 			if err := stderr.String(); err != "" {
@@ -194,12 +195,15 @@ func (c *Check) collect(sender aggregator.Sender) error {
 
 		out := stdout.Bytes()
 		if len(out) == 0 {
-			klog.V(6).Infof("stdout of %s is blank", file)
+			klog.Infof("stdout of %s is blank", file)
 			continue
 		}
-		klog.V(10).Infof("%s stdout: %s", file, string(out))
+		klog.V(6).Infof("%s stdout: %s", file, string(out))
 
-		send(sender, out)
+		if err := send(sender, out); err != nil {
+			klog.Warningf("send of %s err %s", file, err)
+			continue
+		}
 	}
 
 	sender.Commit()
