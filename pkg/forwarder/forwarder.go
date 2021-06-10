@@ -18,7 +18,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder/internal/retry"
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"k8s.io/klog/v2"
 )
 

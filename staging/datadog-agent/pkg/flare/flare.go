@@ -19,7 +19,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 var datadogSupportURL = "/support/flare"

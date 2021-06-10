@@ -24,7 +24,7 @@ import (
 	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 /*

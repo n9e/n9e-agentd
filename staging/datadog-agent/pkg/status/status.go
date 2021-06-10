@@ -26,7 +26,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"k8s.io/klog/v2"
 
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"

@@ -19,7 +19,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/executable"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 var (

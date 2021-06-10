@@ -25,7 +25,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 var checkID1 check.ID = "1"

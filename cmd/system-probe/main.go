@@ -23,7 +23,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/profiling"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 // Flag values

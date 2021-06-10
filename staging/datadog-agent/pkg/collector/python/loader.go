@@ -22,7 +22,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	agentConfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 
 	"k8s.io/klog/v2"
 )

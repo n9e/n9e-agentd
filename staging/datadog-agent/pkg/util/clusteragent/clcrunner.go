@@ -17,7 +17,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 /*

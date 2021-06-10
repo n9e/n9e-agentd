@@ -34,7 +34,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/DataDog/datadog-go/statsd"
 )
 

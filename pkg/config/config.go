@@ -14,7 +14,7 @@ import (
 	logstypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
 	snmptypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"k8s.io/klog/v2"
 )
 

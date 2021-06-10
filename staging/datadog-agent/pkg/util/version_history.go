@@ -13,7 +13,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 type versionHistoryEntry struct {

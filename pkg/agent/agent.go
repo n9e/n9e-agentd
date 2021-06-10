@@ -27,7 +27,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
 	ddutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
 )

@@ -16,7 +16,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 const (

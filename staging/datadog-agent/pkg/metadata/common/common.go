@@ -6,7 +6,7 @@
 package common
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 // CachePrefix is the common root to use to prefix all the cache

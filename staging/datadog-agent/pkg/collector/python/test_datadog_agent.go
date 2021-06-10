@@ -17,7 +17,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/externalhost"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/clustername"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/version"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 import "C"
