@@ -28,11 +28,11 @@ var (
 		{api.RoutePathCheckRuns, nil},
 		{api.RoutePathIntake, nil},
 		{api.RoutePathValidate, nil},
-		{api.RoutePathHostMetadata, nil},
 		{api.RoutePathMetadata, nil},
 		{api.RoutePathCollector, nil},
 		{api.RoutePathContainer, nil},
 		{api.RoutePathOrchestrator, nil},
+		//{api.RoutePathHostMetadata, nil},
 	}
 )
 

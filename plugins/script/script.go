@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
@@ -131,6 +132,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 			config.env = append(config.env, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
+	config.env = append(syscall.Environ(), config.env...)
 
 	if len(instance.Params) > 0 {
 		config.params = strings.Fields(instance.Params)

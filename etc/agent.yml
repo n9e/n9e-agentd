@@ -3,7 +3,7 @@ agent:
   site: http://localhost:8080
   apiKey: 1234
   maxProcs: 4
-  coreDump: true
+  coreDump: false
   exporterPort: 8070
   pprof: true
   expvar: true
@@ -12,10 +12,11 @@ agent:
   logPayloads: true
   enablePayloads:
     events: false
-    series: true
+    series: false
     serviceChecks: false
     sketches: false
-    jsonToV1Intake: false
+    jsonToV1Intake: true
+    hostMetadata: true
   logsConfig:
     enabled: true
     useSSL: false

@@ -17,7 +17,8 @@ devrun:
 
 .PHONY: run
 run:
-	./build/agentd -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
+	./build/agentd -c ./etc/agent.yml --vmodule=metadata=10  2>&1
+	#./build/agentd -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
 
 dev:
 	APP_NAME=$(APP_NAME) watcher --logtostderr -v 10 -e build -e .git -e docs -e plugins -e tmp -e vendor -e staging -f .go -d 1000

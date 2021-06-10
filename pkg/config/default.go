@@ -105,8 +105,10 @@ enablePayloads:
   events: false
   serviceChecks: false
   sketches: false
-  jsonToV1Intake: false
+  jsonToV1Intake: true
   metadata: false
+  hostMetadata: true
+  agentchecksMetadata: false
 
 statsd:
   enabled: true

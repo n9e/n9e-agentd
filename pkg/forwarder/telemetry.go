@@ -28,8 +28,8 @@ var (
 	eventsEndpoint        = transaction.Endpoint{Route: api.RoutePathEvents, Name: "events_v2"}
 	serviceChecksEndpoint = transaction.Endpoint{Route: api.RoutePathServiceChecks, Name: "services_checks_v2"}
 	sketchSeriesEndpoint  = transaction.Endpoint{Route: api.RoutePathSketchSeries, Name: "sketches_v2"}
-	hostMetadataEndpoint  = transaction.Endpoint{Route: api.RoutePathHostMetadata, Name: "host_metadata_v2"}
-	metadataEndpoint      = transaction.Endpoint{Route: api.RoutePathMetadata, Name: "metadata_v2"}
+	//hostMetadataEndpoint  = transaction.Endpoint{Route: api.RoutePathHostMetadata, Name: "host_metadata_v2"}
+	metadataEndpoint = transaction.Endpoint{Route: api.RoutePathMetadata, Name: "metadata_v2"}
 
 	processesEndpoint    = transaction.Endpoint{Route: api.RoutePathCollector, Name: "process"}
 	rtProcessesEndpoint  = transaction.Endpoint{Route: api.RoutePathCollector, Name: "rtprocess"}
@@ -73,7 +73,7 @@ func initEndpointExpvars() {
 		connectionsEndpoint,
 		containerEndpoint,
 		eventsEndpoint,
-		hostMetadataEndpoint,
+		//hostMetadataEndpoint,
 		metadataEndpoint,
 		orchestratorEndpoint,
 		processesEndpoint,

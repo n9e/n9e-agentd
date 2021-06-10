@@ -11,10 +11,10 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/common/types"
 	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	logstypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
 	snmptypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/types"
-	"github.com/n9e/n9e-agentd/pkg/version"
 	"k8s.io/klog/v2"
 )
 
@@ -330,12 +330,14 @@ type SystemProbe struct {
 }
 
 type EnablePayloads struct {
-	Events         bool `yaml:"events"`         // enable_payloads.events
-	Series         bool `yaml:"series"`         // enable_payloads.series
-	ServiceChecks  bool `yaml:"serviceChecks"`  // enable_payloads.service_checks
-	Sketches       bool `yaml:"sketches"`       // enable_payloads.sketches
-	JsonToV1Intake bool `yaml:"jsonToV1Intake"` // enable_payloads.json_to_v1_intake
-	Metadata       bool `yaml:"metadata"`       //
+	Events              bool `yaml:"events"`              // enable_payloads.events
+	Series              bool `yaml:"series"`              // enable_payloads.series
+	ServiceChecks       bool `yaml:"serviceChecks"`       // enable_payloads.service_checks
+	Sketches            bool `yaml:"sketches"`            // enable_payloads.sketches
+	JsonToV1Intake      bool `yaml:"jsonToV1Intake"`      // enable_payloads.json_to_v1_intake
+	Metadata            bool `yaml:"metadata"`            //
+	HostMetadata        bool `yaml:"hostMetadata"`        //
+	AgentchecksMetadata bool `yaml:"agentchecksMetadata"` //
 }
 
 type ExternalMetricsProvider struct {

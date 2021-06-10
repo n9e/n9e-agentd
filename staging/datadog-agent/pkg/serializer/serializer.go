@@ -114,12 +114,14 @@ type Serializer struct {
 	// might collect data considered too sensitive (database IP and
 	// such). By default every kind of payload is enabled since
 	// almost every user won't fall into this use case.
-	enableEvents         bool
-	enableSeries         bool
-	enableServiceChecks  bool
-	enableSketches       bool
-	enableJSONToV1Intake bool
-	enableMetadata       bool // SubmitHostMetadata, SubmitAgentChecksMetadata, SubmitMetadata
+	enableEvents              bool
+	enableSeries              bool
+	enableServiceChecks       bool
+	enableSketches            bool
+	enableJSONToV1Intake      bool
+	enableMetadata            bool
+	enableHostMetadata        bool
+	enableAgentchecksMetadata bool
 	//enableJSONStream              bool
 	//enableServiceChecksJSONStream bool
 	//enableEventsJSONStream        bool
@@ -133,12 +135,14 @@ func NewSerializer(forwarder forwarder.Forwarder, orchestratorForwarder forwarde
 		Forwarder:             forwarder,
 		orchestratorForwarder: orchestratorForwarder,
 		//seriesJSONPayloadBuilder: stream.NewJSONPayloadBuilder(cf.EnableJsonStreamSharedCompressorBuffers),
-		enableEvents:         cf.EnablePayloads.Events,
-		enableSeries:         cf.EnablePayloads.Series,
-		enableServiceChecks:  cf.EnablePayloads.ServiceChecks,
-		enableSketches:       cf.EnablePayloads.Sketches,
-		enableJSONToV1Intake: cf.EnablePayloads.JsonToV1Intake,
-		enableMetadata:       cf.EnablePayloads.Metadata,
+		enableEvents:              cf.EnablePayloads.Events,
+		enableSeries:              cf.EnablePayloads.Series,
+		enableServiceChecks:       cf.EnablePayloads.ServiceChecks,
+		enableSketches:            cf.EnablePayloads.Sketches,
+		enableJSONToV1Intake:      cf.EnablePayloads.JsonToV1Intake,
+		enableMetadata:            cf.EnablePayloads.Metadata,
+		enableHostMetadata:        cf.EnablePayloads.HostMetadata,
+		enableAgentchecksMetadata: cf.EnablePayloads.AgentchecksMetadata,
 		//enableJSONStream:              stream.Available && cf.EnableStreamPayloadSerialization,
 		//enableServiceChecksJSONStream: stream.Available && cf.EnableServiceChecksStreamPayloadSerialization,
 		//enableEventsJSONStream:        stream.Available && cf.EnableEventsStreamPayloadSerialization,
@@ -162,6 +166,12 @@ func NewSerializer(forwarder forwarder.Forwarder, orchestratorForwarder forwarde
 	}
 	if !s.enableMetadata {
 		klog.Warning("metadata payloads are disabled: all metadata will be dropped")
+	}
+	if !s.enableHostMetadata {
+		klog.Warning("host metadata payloads are disabled: all host metadata will be dropped")
+	}
+	if !s.enableAgentchecksMetadata {
+		klog.Warning("agentchecks metadata payloads are disabled: all agentchecks metadata will be dropped")
 	}
 
 	return s
@@ -313,7 +323,7 @@ func (s *Serializer) SendMetadata(m marshaler.Marshaler) error {
 
 // SendHostMetadata serializes a metadata payload and sends it to the forwarder
 func (s *Serializer) SendHostMetadata(m marshaler.Marshaler) error {
-	if !s.enableMetadata {
+	if !s.enableHostMetadata {
 		klog.V(5).Info("host metadata payloads are disabled: dropping it")
 		return nil
 	}
@@ -322,7 +332,7 @@ func (s *Serializer) SendHostMetadata(m marshaler.Marshaler) error {
 
 // SendAgentchecksMetadata serializes a metadata payload and sends it to the forwarder
 func (s *Serializer) SendAgentchecksMetadata(m marshaler.Marshaler) error {
-	if !s.enableMetadata {
+	if !s.enableAgentchecksMetadata {
 		klog.V(5).Info("agent metadata payloads are disabled: dropping it")
 		return nil
 	}

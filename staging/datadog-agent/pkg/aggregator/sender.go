@@ -240,7 +240,7 @@ func (s *checkSender) SendRawMetricSample(sample *metrics.MetricSample) {
 func (s *checkSender) sendMetricSample(metric string, value float64, hostname string, tags []string, mType metrics.MetricType, flushFirstValue bool) {
 	tags = append(tags, s.checkTags...)
 
-	klog.V(6).Info(mType.String(), " sample: ", metric, ": ", value, " for hostname: ", hostname, " tags: ", tags)
+	klog.V(11).Info(mType.String(), " sample: ", metric, ": ", value, " for hostname: ", hostname, " tags: ", tags)
 
 	metricSample := &metrics.MetricSample{
 		Name:            metric,
