@@ -1,5 +1,7 @@
 agent:
   hostname: test
+  ident: $ip
+  alias: $host
   site: http://localhost:8080
   apiKey: 1234
   maxProcs: 4
@@ -12,7 +14,7 @@ agent:
   logPayloads: true
   enablePayloads:
     events: false
-    series: false
+    series: true
     serviceChecks: false
     sketches: false
     jsonToV1Intake: true
@@ -34,7 +36,7 @@ agent:
     metricsStatsEnable: true
   configProviders:
 #    - name: http
-#      polling: false
+#      polling: true
 #      templateUrl: http://127.0.0.1:8080
 #      templateDir: /api/connect-rules
 #      token:

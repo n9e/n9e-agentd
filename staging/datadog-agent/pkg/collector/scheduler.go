@@ -158,7 +158,7 @@ func (s *CheckScheduler) getChecks(config integration.Config) ([]check.Check, er
 
 		err := yaml.Unmarshal(instance, &instanceConfig)
 		if err != nil {
-			klog.Warningf("Unable to parse instance config for check `%s`: %v", config.Name, instance)
+			klog.Warningf("Unable to parse instance config for check `%s`: %v %v", config.Name, string(instance), err)
 			continue
 		}
 

@@ -2,6 +2,7 @@ package all
 
 import (
 	// plugin checks
+	_ "github.com/n9e/n9e-agentd/plugins/log"
 	_ "github.com/n9e/n9e-agentd/plugins/port"
 	_ "github.com/n9e/n9e-agentd/plugins/prometheus"
 

@@ -19,6 +19,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	agentpayload "github.com/n9e/agent-payload/gogen"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/ckey"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
@@ -90,6 +91,8 @@ func (series Series) Marshal() ([]byte, error) {
 				Points:         marshalPoints(serie.Points),
 				Tags:           util.SanitizeTags(serie.Tags),
 				SourceTypeName: serie.SourceTypeName,
+				Ident:          config.C.Ident,
+				Alias:          config.C.Alias,
 			})
 	}
 

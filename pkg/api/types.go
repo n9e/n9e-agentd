@@ -95,3 +95,13 @@ type PortCollectFormat struct {
 		Port     int    `json:"port"`
 	} `json:"instances"`
 }
+
+type logCollectFormat struct {
+	Instances []struct {
+		CommonInstanceConfig
+		MetricName  string            `json:"metricName"`  //
+		FilePath    string            `json:"filePath"`    //
+		Pattern     string            `json:"pattern"`     //
+		TagsPattern map[string]string `json:"tagsPattern"` //
+	} `json:"instances"`
+}

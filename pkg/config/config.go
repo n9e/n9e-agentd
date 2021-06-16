@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -59,6 +60,8 @@ var (
 )
 
 type Config struct {
+	Ident                                string                   `yaml:"ident"`
+	Alias                                string                   `yaml:"alias"`
 	FileUsedDir                          string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
 	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d
 	Site                                 string                   `yaml:"site"`                                 // site
@@ -270,7 +273,38 @@ func (p *Config) Validate() error {
 		return err
 	}
 
+	p.Ident = configEval(p.Ident)
+	p.Alias = configEval(p.Alias)
+
+	if strings.Index(p.Ident, "localhost") >= 0 {
+		return fmt.Errorf("agent.ident should not include 'localhost'")
+	}
+
 	return nil
+}
+
+func configEval(value string) string {
+	switch strings.ToLower(value) {
+	case "$ip":
+		return getOutboundIP()
+	case "$host":
+		host, _ := os.Hostname()
+		return host
+	default:
+		return value
+	}
+}
+
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "127.0.0.1"
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
 }
 
 func (p *Config) Prepare(configFile string) error {

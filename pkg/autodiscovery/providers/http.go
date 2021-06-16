@@ -24,7 +24,7 @@ type Client struct {
 	client   http.Client
 }
 
-func NewClient(endpoint, path, agentID, token string) (*Client, error) {
+func newClient(endpoint, path, agentID, token string) (*Client, error) {
 	cli := &Client{
 		endpoint: endpoint,
 		path:     path,
@@ -50,6 +50,9 @@ func (c *Client) get(path string) ([]byte, error) {
 	//req = req.WithContext(ctx)
 	req.Header = c.Header
 	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -60,11 +63,11 @@ func (c *Client) get(path string) ([]byte, error) {
 		return nil, fmt.Errorf("Error code %q received while sending transaction to %q: %s, dropping it", resp.Status, logURL, string(body))
 	}
 
-	klog.V(6).Infof("body %s", string(body))
+	klog.V(11).Infof("body %s", string(body))
 	return body, nil
 }
 
-func (c *Client) GetCollectRules() ([]api.CollectRule, error) {
+func (c *Client) getCollectRules() ([]api.CollectRule, error) {
 	b, err := c.get(api.RoutePathGetCollectRules + "?id=" + c.agentID)
 	if err != nil {
 		return nil, err
@@ -78,7 +81,7 @@ func (c *Client) GetCollectRules() ([]api.CollectRule, error) {
 	return rules, nil
 }
 
-func (c *Client) GetCollectRulesSummary() (*api.CollectRulesSummary, error) {
+func (c *Client) getCollectRulesSummary() (*api.CollectRulesSummary, error) {
 	b, err := c.get(api.RoutePathGetCollectRulesSummary + "?id=" + c.agentID)
 	if err != nil {
 		return nil, err
@@ -102,7 +105,7 @@ type HttpConfigProvider struct {
 
 // NewHttpConfigProvider creates a client connection to http and create a new HttpConfigProvider
 func NewHttpConfigProvider(cf config.ConfigurationProviders) (ConfigProvider, error) {
-	cli, err := NewClient(cf.TemplateURL, cf.TemplateDir, config.C.Hostname, cf.Token)
+	cli, err := newClient(cf.TemplateURL, cf.TemplateDir, config.C.Hostname, cf.Token)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to instantiate the http client: %s", err)
 	}
@@ -118,11 +121,12 @@ func NewHttpConfigProvider(cf config.ConfigurationProviders) (ConfigProvider, er
 // TODO: cache templates and last-modified index to avoid future full crawl if no template changed.
 func (p *HttpConfigProvider) Collect() ([]integration.Config, error) {
 	klog.V(6).Infof("entering Collect()")
-	rules, err := p.Client.GetCollectRules()
+	rules, err := p.Client.getCollectRules()
 	if err != nil {
 		klog.V(6).Infof("GetCollectRules err %s", err)
 		return nil, err
 	}
+	klog.V(6).Infof("Collect() get %d rules", len(rules))
 
 	var configs []integration.Config
 	for _, rule := range rules {
@@ -144,7 +148,7 @@ func (p *HttpConfigProvider) convertConfig(rule api.CollectRule) (*integration.C
 	}
 	config.Name = rule.Type
 	config.Provider = names.Http
-	config.Source = "http:" + rule.Name
+	config.Source = fmt.Sprintf("http:%s:%d", rule.Name, rule.ID)
 
 	return config, nil
 }
@@ -152,7 +156,7 @@ func (p *HttpConfigProvider) convertConfig(rule api.CollectRule) (*integration.C
 // IsUpToDate updates the list of AD templates versions in the Agent's cache and checks the list is up to date compared to http's data.
 func (p *HttpConfigProvider) IsUpToDate() (bool, error) {
 	klog.V(6).Infof("entering IsUpToDate")
-	summary, err := p.Client.GetCollectRulesSummary()
+	summary, err := p.Client.getCollectRulesSummary()
 	if err != nil {
 		klog.V(6).Infof("IsUpToDate %s", err)
 		return false, err

@@ -10,6 +10,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -77,6 +78,11 @@ func startCollectFileConfig(path string) {
 			klog.Errorf("collect err %s", err)
 			continue
 		}
+		for _, c := range configs {
+			for _, i := range c.Instances {
+				klog.V(6).Infof("%s", string(i))
+			}
+		}
 		rules.Set(configs)
 	}
 }
@@ -105,12 +111,52 @@ func configToRule(config integration.Config) (rule api.CollectRule, err error) {
 		Type: config.Name,
 	}
 
-	buf, err := json.Marshal(config)
+	c := api.ConfigFormat{
+		ADIdentifiers:           config.ADIdentifiers,
+		ClusterCheck:            config.ClusterCheck,
+		IgnoreAutodiscoveryTags: config.IgnoreAutodiscoveryTags,
+	}
+
+	yaml.Unmarshal(config.InitConfig, &c.InitConfig) //nolint:errcheck
+
+	var instances []interface{}
+	for _, i := range config.Instances {
+		var instance interface{}
+		yaml.Unmarshal(i, &instance) //nolint:errcheck
+		instances = append(instances, instance)
+	}
+	c.Instances = instances
+
+	yaml.Unmarshal(config.LogsConfig, &c.LogsConfig) //nolint:errcheck
+
+	buf, err := yaml.Marshal(c)
 	if err != nil {
+		klog.Error(err)
 		return rule, err
+
+	}
+	buf, err = yaml.YAMLToJSON(buf)
+	if err != nil {
+		klog.Error(err)
+		return rule, err
+	}
+	{
+		klog.Infof("%s", string(buf))
+		printInstances(c)
+		var c api.ConfigFormat
+		if err := json.Unmarshal(buf, &c); err != nil {
+			klog.Errorf("ummarshal err %s", err)
+		}
+		printInstances(c)
 	}
 
 	rule.Data = string(buf)
 
 	return rule, nil
+}
+
+func printInstances(config api.ConfigFormat) {
+	for i, c := range config.Instances {
+		klog.Infof("%d %s", i, c)
+	}
 }
