@@ -5,7 +5,7 @@ instances:
     ## @param prometheusUrl - string - required
     ## The URL where your application metrics are exposed by Prometheus.
     #
-  - prometheusUrl: http://localhost:10055/metrics
+  - prometheusUrl: http://localhost:9100/metrics
 
     ## @param namespace - string - required
     ## The namespace to be appended before all metrics namespace
