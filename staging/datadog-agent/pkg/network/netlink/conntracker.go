@@ -12,7 +12,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"k8s.io/klog/v2"
 	ct "github.com/florianl/go-conntrack"
 	"github.com/hashicorp/golang-lru/simplelru"

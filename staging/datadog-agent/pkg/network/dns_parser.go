@@ -3,7 +3,7 @@ package network
 import (
 	"bytes"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/pkg/errors"

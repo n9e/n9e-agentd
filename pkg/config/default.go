@@ -65,6 +65,7 @@ func NewDefaultConfig() *Config {
 const (
 	defaultConfig = `# agent default config
 site: http://localhost:8080
+n9eSeriesFormat: true
 hostname: test
 maxProcs: 4
 coreDump: true

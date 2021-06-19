@@ -12,8 +12,8 @@ import (
 
 	"github.com/n9e/n9e-agentd/cmd/system-probe/api"
 	"github.com/n9e/n9e-agentd/cmd/system-probe/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/encoding"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
+	"github.com/n9e/n9e-agentd/pkg/process/encoding"
+	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"k8s.io/klog/v2"
 )
 

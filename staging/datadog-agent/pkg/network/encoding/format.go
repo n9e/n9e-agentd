@@ -7,7 +7,7 @@ import (
 	model "github.com/n9e/agent-payload/process"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/http"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/gogo/protobuf/proto"
 )
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	aconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 )
 
 const (

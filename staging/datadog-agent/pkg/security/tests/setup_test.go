@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 
 	sysconfig "github.com/n9e/n9e-agentd/cmd/system-probe/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/module"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/probe"

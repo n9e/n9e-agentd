@@ -1122,6 +1122,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRW
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/n9e/agent-payload v0.0.0-20210615093938-b362aefd98b7 h1:n7FFuxaORI6eFjAo24d+os+nVms7MYb6fit/UDyvj/k=
 github.com/n9e/agent-payload v0.0.0-20210615093938-b362aefd98b7/go.mod h1:qglO/Vsh4hMXMbrLk5LOQtni/pCCCksIDyn3hbmWKCY=
+github.com/n9e/agent-payload v0.0.0-20210619031503-b72325474651 h1:wxnQEQ3YjmxDYTFdzAH8Md3RxqlkmTZxudbBiruO+uQ=
+github.com/n9e/agent-payload v0.0.0-20210619031503-b72325474651/go.mod h1:qglO/Vsh4hMXMbrLk5LOQtni/pCCCksIDyn3hbmWKCY=
 github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8/go.mod h1:86wM1zFnC6/uDBfZGNwB65O+pR2OFi5q/YQaEUid1qA=
 github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
 github.com/naoina/toml v0.1.1/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=

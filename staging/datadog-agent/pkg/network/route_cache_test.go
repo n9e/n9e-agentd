@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

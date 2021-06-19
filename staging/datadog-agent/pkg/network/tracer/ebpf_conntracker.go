@@ -18,7 +18,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/ebpf/probes"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/netlink"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"k8s.io/klog/v2"
 	"github.com/DataDog/ebpf"
 	"github.com/DataDog/ebpf/manager"

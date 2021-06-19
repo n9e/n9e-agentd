@@ -10,7 +10,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/netlink/testutil"
 	nettestutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/testutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	ct "github.com/florianl/go-conntrack"
 	"github.com/stretchr/testify/require"
 	"github.com/vishvananda/netns"

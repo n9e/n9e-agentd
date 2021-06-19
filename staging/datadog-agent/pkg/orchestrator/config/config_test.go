@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
-	apicfg "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util/api/config"
+	apicfg "github.com/n9e/n9e-agentd/pkg/process/util/api/config"
 	"github.com/stretchr/testify/suite"
 )
 

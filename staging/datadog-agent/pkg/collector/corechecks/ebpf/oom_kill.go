@@ -4,7 +4,7 @@
 // Copyright 2016-present Datadog, Inc.
 
 // FIXME: we require the `cgo` build tag because of this dep relationship:
-// github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net depends on `github.com/n9e/agent-payload/process`,
+// github.com/n9e/n9e-agentd/pkg/process/net depends on `github.com/n9e/agent-payload/process`,
 // which has a hard dependency on `github.com/DataDog/zstd_0`, which requires CGO.
 // Should be removed once `github.com/n9e/agent-payload/process` can be imported with CGO disabled.
 // +build cgo
@@ -26,7 +26,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
-	process_net "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net"
+	process_net "github.com/n9e/n9e-agentd/pkg/process/net"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"k8s.io/klog/v2"

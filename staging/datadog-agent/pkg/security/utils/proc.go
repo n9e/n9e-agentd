@@ -19,7 +19,7 @@ import (
 	"github.com/DataDog/gopsutil/process"
 	"github.com/moby/sys/mountinfo"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 )
 
 // Getpid returns the current process ID in the host namespace

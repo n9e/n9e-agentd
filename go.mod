@@ -98,7 +98,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.0
 	github.com/miekg/dns v1.1.31
 	github.com/moby/sys/mountinfo v0.4.0
-	github.com/n9e/agent-payload v0.0.0-20210615093938-b362aefd98b7
+	github.com/n9e/agent-payload v0.0.0-20210619031503-b72325474651
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852 // indirect
 	github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830 // indirect

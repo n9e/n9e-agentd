@@ -2,13 +2,8 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
-
-	aconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
 )
 
 // ModuleName is a typed alias for string, used only for module names
@@ -63,23 +58,23 @@ type Config struct {
 
 // New creates a config object for system-probe. It assumes no configuration has been loaded as this point.
 func New(configPath string) (*Config, error) {
-	aconfig.Datadog.SetConfigName("system-probe")
+	//aconfig.Datadog.SetConfigName("system-probe")
 	// set the paths where a config file is expected
 	if len(configPath) != 0 {
 		// if the configuration file path was supplied on the command line,
 		// add that first so it's first in line
-		aconfig.Datadog.AddConfigPath(configPath)
+		//aconfig.Datadog.AddConfigPath(configPath)
 		// If they set a config file directly, let's try to honor that
-		if strings.HasSuffix(configPath, ".yaml") {
-			aconfig.Datadog.SetConfigFile(configPath)
-		}
+		//if strings.HasSuffix(configPath, ".yaml") {
+		//	aconfig.Datadog.SetConfigFile(configPath)
+		//}
 	}
-	aconfig.Datadog.AddConfigPath(defaultConfigDir)
+	//aconfig.Datadog.AddConfigPath(defaultConfigDir)
 
-	_, err := aconfig.LoadWithoutSecret()
-	if err != nil {
-		return nil, err
-	}
+	//_, err := aconfig.LoadWithoutSecret()
+	//if err != nil {
+	//	return nil, err
+	//}
 	return load(configPath)
 }
 
@@ -93,90 +88,93 @@ func Merge(configPath string) (*Config, error) {
 		configPath = path.Join(defaultConfigDir, defaultConfigFileName)
 	}
 
-	if f, err := os.Open(configPath); err == nil {
-		err = aconfig.Datadog.MergeConfig(f)
-		_ = f.Close()
-		if err != nil {
-			return nil, fmt.Errorf("error merging system-probe config file: %s", err)
-		}
-	} else {
-		klog.Infof("no config exists at %s, ignoring...", configPath)
-	}
+	//if f, err := os.Open(configPath); err == nil {
+	//	err = aconfig.Datadog.MergeConfig(f)
+	//	_ = f.Close()
+	//	if err != nil {
+	//		return nil, fmt.Errorf("error merging system-probe config file: %s", err)
+	//	}
+	//} else {
+	//	klog.Infof("no config exists at %s, ignoring...", configPath)
+	//}
 
 	return load(configPath)
 }
 
 func load(configPath string) (*Config, error) {
-	cfg := aconfig.Datadog
+	return nil, fmt.Errorf("unsupported")
+	/*
+		cfg := aconfig.Datadog
 
-	if err := aconfig.ResolveSecrets(cfg, filepath.Base(configPath)); err != nil {
-		return nil, err
-	}
+		if err := aconfig.ResolveSecrets(cfg, filepath.Base(configPath)); err != nil {
+			return nil, err
+		}
 
-	c := &Config{
-		Enabled:             cfg.GetBool(key(spNS, "enabled")),
-		EnabledModules:      make(map[ModuleName]struct{}),
-		ExternalSystemProbe: cfg.GetBool(key(spNS, "external")),
+		c := &Config{
+			Enabled:             cfg.GetBool(key(spNS, "enabled")),
+			EnabledModules:      make(map[ModuleName]struct{}),
+			ExternalSystemProbe: cfg.GetBool(key(spNS, "external")),
 
-		SocketAddress:      cfg.GetString(key(spNS, "sysprobe_socket")),
-		MaxConnsPerMessage: cfg.GetInt(key(spNS, "max_conns_per_message")),
+			SocketAddress:      cfg.GetString(key(spNS, "sysprobe_socket")),
+			MaxConnsPerMessage: cfg.GetInt(key(spNS, "max_conns_per_message")),
 
-		LogFile:   cfg.GetString(key(spNS, "log_file")),
-		LogLevel:  cfg.GetString(key(spNS, "log_level")),
-		DebugPort: cfg.GetInt(key(spNS, "debug_port")),
+			LogFile:   cfg.GetString(key(spNS, "log_file")),
+			LogLevel:  cfg.GetString(key(spNS, "log_level")),
+			DebugPort: cfg.GetInt(key(spNS, "debug_port")),
 
-		ProfilingEnabled:     cfg.GetBool(key(spNS, "profiling.enabled")),
-		ProfilingSite:        cfg.GetString(key(spNS, "profiling.site")),
-		ProfilingURL:         cfg.GetString(key(spNS, "profiling.profile_dd_url")),
-		ProfilingAPIKey:      aconfig.SanitizeAPIKey(cfg.GetString(key(spNS, "profiling.api_key"))),
-		ProfilingEnvironment: cfg.GetString(key(spNS, "profiling.env")),
-	}
+			ProfilingEnabled:     cfg.GetBool(key(spNS, "profiling.enabled")),
+			ProfilingSite:        cfg.GetString(key(spNS, "profiling.site")),
+			ProfilingURL:         cfg.GetString(key(spNS, "profiling.profile_dd_url")),
+			ProfilingAPIKey:      aconfig.SanitizeAPIKey(cfg.GetString(key(spNS, "profiling.api_key"))),
+			ProfilingEnvironment: cfg.GetString(key(spNS, "profiling.env")),
+		}
 
-	if err := ValidateSocketAddress(c.SocketAddress); err != nil {
-		klog.Errorf("Could not parse %s.sysprobe_socket: %s", spNS, err)
-		c.SocketAddress = defaultSystemProbeAddress
-		cfg.Set(key(spNS, "sysprobe_socket"), c.SocketAddress)
-	}
+		if err := ValidateSocketAddress(c.SocketAddress); err != nil {
+			klog.Errorf("Could not parse %s.sysprobe_socket: %s", spNS, err)
+			c.SocketAddress = defaultSystemProbeAddress
+			cfg.Set(key(spNS, "sysprobe_socket"), c.SocketAddress)
+		}
 
-	if c.MaxConnsPerMessage > maxConnsMessageBatchSize {
-		klog.Warning("Overriding the configured connections count per message limit because it exceeds maximum")
-		c.MaxConnsPerMessage = defaultConnsMessageBatchSize
-		cfg.Set(key(spNS, "max_conns_per_message"), c.MaxConnsPerMessage)
-	}
+		if c.MaxConnsPerMessage > maxConnsMessageBatchSize {
+			klog.Warning("Overriding the configured connections count per message limit because it exceeds maximum")
+			c.MaxConnsPerMessage = defaultConnsMessageBatchSize
+			cfg.Set(key(spNS, "max_conns_per_message"), c.MaxConnsPerMessage)
+		}
 
-	// this check must come first so we can accurately tell if system_probe was explicitly enabled
-	if cfg.GetBool("network_config.enabled") {
-		klog.Info("network_config.enabled detected: enabling system-probe with network module running.")
-		c.EnabledModules[NetworkTracerModule] = struct{}{}
-	} else if c.Enabled && !cfg.IsSet("network_config.enabled") {
-		// This case exists to preserve backwards compatibility. If system_probe_config.enabled is explicitly set to true, and there is no network_config block,
-		// enable the connections/network check.
-		klog.Info("network_config not found, but system-probe was enabled, enabling network module by default")
-		c.EnabledModules[NetworkTracerModule] = struct{}{}
-	}
+		// this check must come first so we can accurately tell if system_probe was explicitly enabled
+		if cfg.GetBool("network_config.enabled") {
+			klog.Info("network_config.enabled detected: enabling system-probe with network module running.")
+			c.EnabledModules[NetworkTracerModule] = struct{}{}
+		} else if c.Enabled && !cfg.IsSet("network_config.enabled") {
+			// This case exists to preserve backwards compatibility. If system_probe_config.enabled is explicitly set to true, and there is no network_config block,
+			// enable the connections/network check.
+			klog.Info("network_config not found, but system-probe was enabled, enabling network module by default")
+			c.EnabledModules[NetworkTracerModule] = struct{}{}
+		}
 
-	if cfg.GetBool(key(spNS, "enable_tcp_queue_length")) {
-		klog.Info("system_probe_config.enable_tcp_queue_length detected, will enable system-probe with TCP queue length check")
-		c.EnabledModules[TCPQueueLengthTracerModule] = struct{}{}
-	}
-	if cfg.GetBool(key(spNS, "enable_oom_kill")) {
-		klog.Info("system_probe_config.enable_oom_kill detected, will enable system-probe with OOM Kill check")
-		c.EnabledModules[OOMKillProbeModule] = struct{}{}
-	}
-	if cfg.GetBool("runtime_security_config.enabled") || cfg.GetBool("runtime_security_config.fim_enabled") {
-		klog.Info("runtime_security_config.enabled or runtime_security_config.fim_enabled detected, enabling system-probe")
-		c.EnabledModules[SecurityRuntimeModule] = struct{}{}
-	}
-	if cfg.GetBool(key(spNS, "process_config.enabled")) {
-		klog.Info("process_config.enabled detected, enabling system-probe")
-		c.EnabledModules[ProcessModule] = struct{}{}
-	}
+		if cfg.GetBool(key(spNS, "enable_tcp_queue_length")) {
+			klog.Info("system_probe_config.enable_tcp_queue_length detected, will enable system-probe with TCP queue length check")
+			c.EnabledModules[TCPQueueLengthTracerModule] = struct{}{}
+		}
+		if cfg.GetBool(key(spNS, "enable_oom_kill")) {
+			klog.Info("system_probe_config.enable_oom_kill detected, will enable system-probe with OOM Kill check")
+			c.EnabledModules[OOMKillProbeModule] = struct{}{}
+		}
+		if cfg.GetBool("runtime_security_config.enabled") || cfg.GetBool("runtime_security_config.fim_enabled") {
+			klog.Info("runtime_security_config.enabled or runtime_security_config.fim_enabled detected, enabling system-probe")
+			c.EnabledModules[SecurityRuntimeModule] = struct{}{}
+		}
+		if cfg.GetBool(key(spNS, "process_config.enabled")) {
+			klog.Info("process_config.enabled detected, enabling system-probe")
+			c.EnabledModules[ProcessModule] = struct{}{}
+		}
 
-	if len(c.EnabledModules) > 0 {
-		c.Enabled = true
-	}
+		if len(c.EnabledModules) > 0 {
+			c.Enabled = true
+		}
 
-	return c, nil
+		return c, nil
+	*/
 }
 
 // ModuleIsEnabled returns a bool indicating if the given module name is enabled.

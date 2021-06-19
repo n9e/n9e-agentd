@@ -19,7 +19,7 @@ var (
 		pattern string
 		payload interface{}
 	}{
-		{api.RoutePathSeries, agentpayload.MetricsPayload{}},
+		{api.RoutePathSeries, agentpayload.N9EMetricsPayload{}},
 		{api.RoutePathSketchSeries, agentpayload.SketchPayload{}},
 		{api.RoutePathEvents, agentpayload.EventsPayload{}},
 		{api.RoutePathServiceChecks, agentpayload.ServiceChecksPayload{}},

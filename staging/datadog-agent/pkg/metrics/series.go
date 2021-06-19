@@ -77,6 +77,10 @@ func marshalPoints(points []Point) []*agentpayload.MetricsPayload_Sample_Point {
 
 // Marshal serialize timeseries using agent-payload definition
 func (series Series) Marshal() ([]byte, error) {
+	if config.C.N9eSeriesFormat {
+		return series.N9eMarshal()
+	}
+
 	payload := &agentpayload.MetricsPayload{
 		Samples:  []*agentpayload.MetricsPayload_Sample{},
 		Metadata: &agentpayload.CommonMetadata{},
@@ -89,11 +93,35 @@ func (series Series) Marshal() ([]byte, error) {
 				Type:           serie.MType.String(),
 				Host:           serie.Host,
 				Points:         marshalPoints(serie.Points),
-				Tags:           util.SanitizeTags(serie.Tags),
+				Tags:           serie.Tags,
 				SourceTypeName: serie.SourceTypeName,
-				Ident:          config.C.Ident,
-				Alias:          config.C.Alias,
 			})
+	}
+
+	return proto.Marshal(payload)
+}
+
+func (series Series) N9eMarshal() ([]byte, error) {
+	payload := &agentpayload.N9EMetricsPayload{
+		Samples:  []*agentpayload.N9EMetricsPayload_Sample{},
+		Metadata: &agentpayload.CommonMetadata{},
+	}
+
+	for _, serie := range series {
+		for _, point := range serie.Points {
+			payload.Samples = append(payload.Samples,
+				&agentpayload.N9EMetricsPayload_Sample{
+					Ident:          config.C.Ident,
+					Alias:          config.C.Alias,
+					Metric:         util.SanitizeMetric(serie.Name),
+					Tags:           util.SanitizeMapTags(serie.Tags),
+					Time:           int64(point.Ts),
+					Value:          point.Value,
+					Type:           serie.MType.String(), // extra, no used
+					SourceTypeName: serie.SourceTypeName, // extra, nouse
+				})
+
+		}
 	}
 
 	return proto.Marshal(payload)

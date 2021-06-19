@@ -16,7 +16,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util/api/headers"
+	"github.com/n9e/n9e-agentd/pkg/process/util/api/headers"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/split"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"

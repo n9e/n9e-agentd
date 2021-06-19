@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
 	"k8s.io/klog/v2"
 	"github.com/mdlayher/netlink"

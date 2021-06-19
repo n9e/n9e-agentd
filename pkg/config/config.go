@@ -62,6 +62,7 @@ var (
 type Config struct {
 	Ident                                string                   `yaml:"ident"`
 	Alias                                string                   `yaml:"alias"`
+	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`
 	FileUsedDir                          string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
 	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d
 	Site                                 string                   `yaml:"site"`                                 // site
@@ -253,7 +254,7 @@ type Config struct {
 	ExternalMetricsProvider              ExternalMetricsProvider  `yaml:"externalMetricsProvider"`              // external_metrics_provider.*
 	EnablePayloads                       EnablePayloads           `yaml:"enablePayloads"`                       // enable_payloads.*
 	SystemProbe                          SystemProbe              `yaml:"systemProbe"`                          // system_probe_config.*
-	N9e                                  N9e                      `yaml:"n9e"`
+	//N9e                                  N9e                      `yaml:"n9e"`
 }
 
 func (p Config) String() string {
@@ -324,10 +325,11 @@ func (p *Config) Prepare(configFile string) error {
 	return nil
 }
 
-type N9e struct {
-	Enabled  bool   `yaml:"enabled"`
-	Endpoint string `yaml:"endpoint"`
-}
+//type N9e struct {
+//	Enabled  bool   `yaml:"enabled"`
+//	Endpoint string `yaml:"endpoint"`
+//	V5Format bool   `yaml:"v5Format"`
+//}
 
 type SystemProbe struct {
 	Enabled                      bool                `yaml:"enabled"`                      // system_probe_config.enabled & system_probe

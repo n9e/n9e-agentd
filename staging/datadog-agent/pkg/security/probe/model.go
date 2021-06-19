@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	pconfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
+	pconfig "github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
 )

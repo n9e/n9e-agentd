@@ -1,6 +1,6 @@
 package network
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+import "github.com/n9e/n9e-agentd/pkg/process/util"
 
 // ReverseDNS translates IPs to names
 type ReverseDNS interface {

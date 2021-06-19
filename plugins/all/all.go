@@ -2,9 +2,10 @@ package all
 
 import (
 	// plugin checks
-	_ "github.com/n9e/n9e-agentd/plugins/log"
-	_ "github.com/n9e/n9e-agentd/plugins/port"
-	_ "github.com/n9e/n9e-agentd/plugins/prometheus"
+	//_ "github.com/n9e/n9e-agentd/plugins/log"
+	//_ "github.com/n9e/n9e-agentd/plugins/port"
+	_ "github.com/n9e/n9e-agentd/plugins/process"
+	//_ "github.com/n9e/n9e-agentd/plugins/prometheus"
 
 	// register core checks
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/ksm"

@@ -5,7 +5,7 @@ package main
 import (
 	"flag"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 )
 
 func main() {

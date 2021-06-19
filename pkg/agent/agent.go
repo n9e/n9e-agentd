@@ -9,13 +9,15 @@ import (
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
+	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/healthprobe"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed/jmx"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
@@ -27,7 +29,6 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
 	ddutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
 )
@@ -151,6 +152,7 @@ func (p *module) start(ops *proc.HookOps) error {
 	// Enable core agent specific features like persistence-to-disk
 	options := forwarder.NewOptions(keysPerDomain)
 	options.EnabledFeatures = forwarder.SetFeature(options.EnabledFeatures, forwarder.CoreFeatures)
+	options.CompletionHandler = completionHandler
 	common.Forwarder = forwarder.NewDefaultForwarder(options)
 	klog.V(5).Infof("Starting forwarder")
 	common.Forwarder.Start() //nolint:errcheck
@@ -261,6 +263,12 @@ func (p *module) stop(ops *proc.HookOps) error {
 	klog.Info("See ya!")
 
 	return nil
+}
+
+func completionHandler(transaction *transaction.HTTPTransaction, statusCode int, body []byte, err error) {
+	if len(body) > 0 {
+		klog.Info("err %v code %d body %s", err, statusCode, string(body))
+	}
 }
 
 func init() {

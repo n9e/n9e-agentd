@@ -17,7 +17,7 @@ import (
 	"unsafe"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode"
-	pconfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
+	pconfig "github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf/probes"

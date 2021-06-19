@@ -17,7 +17,7 @@ import (
 	netebpf "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/ebpf"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/ebpf/probes"
 	filterpkg "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/filter"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
 	"github.com/DataDog/ebpf"
 	"github.com/DataDog/ebpf/manager"
