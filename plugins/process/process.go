@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/plugins/process/checks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -28,10 +28,6 @@ var (
 )
 
 type Collector struct {
-	// Set to 1 if enabled 0 is not. We're using an integer
-	// so we can use the sync/atomic for thread-safe access.
-	realTimeEnabled int32
-
 	groupID int32
 
 	rtIntervalCh chan time.Duration
@@ -48,8 +44,17 @@ type Collector struct {
 	cancel context.CancelFunc
 }
 
-// NewCollector creates a new Collector
-func NewCollector(cfg *config.AgentConfig) (*Collector, error) {
+func initCollector() (*Collector, error) {
+	c, err := newCollector(config.NewDefaultAgentConfig(false))
+	if err != nil {
+		return nil, err
+	}
+	c.run()
+	return c, nil
+}
+
+// newCollector creates a new Collector
+func newCollector(cfg *config.AgentConfig) (*Collector, error) {
 	sysInfo, err := checks.CollectSystemInfo(cfg)
 	if err != nil {
 		return nil, err
@@ -69,14 +74,9 @@ func NewCollector(cfg *config.AgentConfig) (*Collector, error) {
 
 		// Defaults for real-time on start
 		realTimeInterval: 2 * time.Second,
-		realTimeEnabled:  0,
 		ctx:              ctx,
 		cancel:           cancel,
 	}, nil
-}
-
-func (p *Collector) init() {
-	//TODO: check global pro
 }
 
 func (p *Collector) run() {
@@ -114,14 +114,10 @@ func (p *Collector) runCheck(c checks.Check) {
 	}
 }
 
-type InitConfig struct {
-}
-
 type InstanceConfig struct {
-	Name          string `json:"name"`          // no used
-	CollectMethod string `json:"collectMethod"` // enum: cmdline, cmd
-	Target        string `json:"target"`        //
-	Comment       string `json:"comment"`       // no used
+	checks.ProcessFilter `json:",inline"`
+	Name                 string `json:"name"`    // no used
+	Comment              string `json:"comment"` // no used
 	//CollectType   string         `json:"collect_type"`
 	//Id            int64          `json:"id"`
 	//Nid           int64          `json:"nid"`
@@ -135,13 +131,10 @@ type InstanceConfig struct {
 	//Jiffy         uint64         `json:"-"`
 	//RBytes        map[int]uint64 `json:"-"`
 	//WBytes        map[int]uint64 `json:"-"`
-
-	InitConfig `json:"-"`
 }
 
 type checkConfig struct {
 	InstanceConfig
-	InitConfig
 }
 
 func (p checkConfig) String() string {
@@ -152,22 +145,14 @@ func defaultInstanceConfig() InstanceConfig {
 	return InstanceConfig{}
 }
 
-func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (checkConfig, error) {
+func buildConfig(rawInstance integration.Data, _ integration.Data) (*checkConfig, error) {
 	instance := defaultInstanceConfig()
-	initConfig := InitConfig{}
 
-	err := yaml.Unmarshal(rawInitConfig, &initConfig)
-	if err != nil {
-		return checkConfig{}, err
+	if err := yaml.Unmarshal(rawInstance, &instance); err != nil {
+		return nil, err
 	}
 
-	err = yaml.Unmarshal(rawInstance, &instance)
-	if err != nil {
-		return checkConfig{}, err
-	}
-
-	return checkConfig{
-		InitConfig:     initConfig,
+	return &checkConfig{
 		InstanceConfig: instance,
 	}, nil
 }
@@ -175,7 +160,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 // Check doesn't need additional fields
 type Check struct {
 	core.CheckBase
-	config checkConfig
+	config *checkConfig
 }
 
 // Run executes the check
@@ -194,29 +179,24 @@ func (c *Check) Run() error {
 }
 
 // Configure the Prom check
-func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) error {
+func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) (err error) {
 	if collector == nil {
-		var err error
-		if collector, err = NewCollector(config.NewDefaultAgentConfig(false)); err != nil {
+		if collector, err = initCollector(); err != nil {
 			return err
 		}
-		collector.init()
 	}
 
 	// Must be called before c.CommonConfigure
 	c.BuildID(rawInstance, rawInitConfig)
 
-	err := c.CommonConfigure(rawInstance, source)
-	if err != nil {
+	if err = c.CommonConfigure(rawInstance, source); err != nil {
 		return fmt.Errorf("common configure failed: %s", err)
 	}
 
-	config, err := buildConfig(rawInstance, rawInitConfig)
-	if err != nil {
+	if c.config, err = buildConfig(rawInstance, rawInitConfig); err != nil {
 		return fmt.Errorf("build config failed: %s", err)
 	}
 
-	c.config = config
 	return nil
 }
 

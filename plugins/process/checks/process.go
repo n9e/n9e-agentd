@@ -8,11 +8,11 @@ import (
 
 	"github.com/DataDog/gopsutil/cpu"
 	model "github.com/n9e/agent-payload/process"
-	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/process/net"
 	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/pkg/process/util"
+	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
 	agentutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"k8s.io/klog/v2"
@@ -25,13 +25,19 @@ var Process = &ProcessCheck{probe: procutil.NewProcessProbe()}
 
 var errEmptyCPUTime = errors.New("empty CPU time information returned")
 
+type ProcessFilter struct {
+	Target        string `json:"target"`
+	CollectMethod string `json:"collectMethod" description:"cmdline or cmd"`
+}
+
 // ProcessCheck collects full state, including cmdline args and related metadata,
 // for live and running processes. The instance will store some state between
 // checks that will be used for rates, cpu calculations, etc.
 type ProcessCheck struct {
 	sync.RWMutex
 
-	probe *procutil.Probe
+	probe   *procutil.Probe
+	filters []ProcessFilter
 
 	sysInfo         *model.SystemInfo
 	lastCPUTime     cpu.TimesStat
@@ -48,6 +54,31 @@ type ProcessCheck struct {
 	lastPIDs atomic.Value
 
 	messages []*model.CollectorProc
+}
+
+func (p *ProcessCheck) Filters() []ProcessFilter {
+	p.RLock()
+	defer p.RUnlock()
+	return p.filters
+}
+
+func (p *ProcessCheck) AddFilter(filter ProcessFilter) {
+	p.Lock()
+	defer p.Unlock()
+	p.filters = append(p.filters, filter)
+}
+
+func (p *ProcessCheck) DelFilter(filter ProcessFilter) {
+	p.Lock()
+	defer p.Unlock()
+	for i, v := range p.filters {
+		if v.Target == filter.Target && v.CollectMethod == filter.CollectMethod {
+			p.filters[i] = p.filters[len(p.filters)-1]
+			p.filters = p.filters[:len(p.filters)-1]
+			return
+		}
+	}
+	return
 }
 
 func (p *ProcessCheck) GetProcs() {
