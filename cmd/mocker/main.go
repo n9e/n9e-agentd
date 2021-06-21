@@ -14,6 +14,21 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// datadog-agent/pkg/logs/processor/json.go
+type jsonPayload struct {
+	Message   string `json:"message"`
+	Status    string `json:"status"`
+	Timestamp int64  `json:"timestamp"`
+	Hostname  string `json:"hostname"`
+	Service   string `json:"service"`
+	Source    string `json:"source"`
+	Tags      string `json:"tags"`
+	Ident     string `json:"ident"`
+	Alias     string `json:"alias"`
+}
+
+type LogsPayload []jsonPayload
+
 var (
 	routes = []struct {
 		pattern string
@@ -24,7 +39,7 @@ var (
 		{api.RoutePathEvents, agentpayload.EventsPayload{}},
 		{api.RoutePathServiceChecks, agentpayload.ServiceChecksPayload{}},
 
-		{api.RoutePathLogs, nil},
+		{api.RoutePathLogs, LogsPayload{}},
 		{api.RoutePathCheckRuns, nil},
 		{api.RoutePathIntake, nil},
 		{api.RoutePathValidate, nil},
@@ -115,7 +130,7 @@ func readAll(r *http.Request, payload interface{}) {
 		fallthrough
 	default:
 		if err := json.Unmarshal(b, payload); err != nil {
-			klog.Errorf("%s %s Unmarshal err %s", r.Method, r.URL, err)
+			klog.Errorf("%s %s Unmarshal err %s body %s content-type %s", r.Method, r.URL, err, string(b), r.Header.Get("Content-Type"))
 			return
 		}
 	}

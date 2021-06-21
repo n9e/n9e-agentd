@@ -15,7 +15,8 @@ const (
 	RoutePathLogs          = "/v1/logs/input"
 	//RoutePathSeries        = "/api/v2/series"
 	//RoutePathHostMetadata  = "/api/v2/host_metadata"
-	//
-	RoutePathGetCollectRules        = "/api/collect-rules"
+
+	//RoutePathGetCollectRules        = "/api/collect-rules"
+	RoutePathGetCollectRules        = "/v1/n9e/collect-rules-belong-to-ident"
 	RoutePathGetCollectRulesSummary = "/api/collect-rules-summary"
 )

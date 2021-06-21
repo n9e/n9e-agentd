@@ -55,6 +55,7 @@ func (p *Processor) Stop() {
 
 // Flush processes synchronously the messages that this processor has to process.
 func (p *Processor) Flush(ctx context.Context) {
+	klog.V(6).Infof("---- entering flush")
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for {
@@ -84,6 +85,7 @@ func (p *Processor) run() {
 }
 
 func (p *Processor) processMessage(msg *message.Message) {
+	klog.V(6).Infof("---- entering processMessage")
 	metrics.LogsDecoded.Add(1)
 	metrics.TlmLogsDecoded.Inc()
 	if shouldProcess, redactedMsg := p.applyRedactingRules(msg); shouldProcess {

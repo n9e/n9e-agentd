@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
 )
 
@@ -29,6 +30,8 @@ type jsonServerlessPayload struct {
 	Service   string                `json:"service"`
 	Source    string                `json:"source"`
 	Tags      string                `json:"tags"`
+	Ident     string                `json:"ident"`
+	Alias     string                `json:"alias"`
 }
 
 type jsonServerlessMessage struct {
@@ -56,6 +59,7 @@ func (j *jsonServerlessEncoder) Encode(msg *message.Message, redactedMsg []byte)
 			RequestID: l.RequestID,
 		}
 	}
+	panic("--")
 
 	return json.Marshal(jsonServerlessPayload{
 		Message: jsonServerlessMessage{
@@ -68,5 +72,7 @@ func (j *jsonServerlessEncoder) Encode(msg *message.Message, redactedMsg []byte)
 		Service:   msg.Origin.Service(),
 		Source:    msg.Origin.Source(),
 		Tags:      msg.Origin.TagsToString(),
+		Ident:     config.C.Ident,
+		Alias:     config.C.Alias,
 	})
 }

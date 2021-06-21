@@ -11,6 +11,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/metrics"
+	"k8s.io/klog/v2"
 )
 
 // Strategy should contain all logic to send logs to a remote destination
@@ -54,6 +55,7 @@ func (s *Sender) Stop() {
 
 // Flush sends synchronously the messages that this sender has to send.
 func (s *Sender) Flush(ctx context.Context) {
+	klog.V(6).Infof("---- entering flush")
 	s.strategy.Flush(ctx)
 }
 
@@ -68,6 +70,7 @@ func (s *Sender) run() {
 // it will forever retry for the main destination unless the error is not retryable
 // and only try once for additionnal destinations.
 func (s *Sender) send(payload []byte) error {
+	klog.V(6).Infof("---- entering sned")
 	for {
 		err := s.destinations.Main.Send(payload)
 		if err != nil {

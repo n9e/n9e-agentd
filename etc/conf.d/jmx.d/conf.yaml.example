@@ -151,3 +151,4 @@ instances:
     ##  Configures the collection of default JVM metrics.
     #
     # collectDefaultJvmMetrics: true
+    #

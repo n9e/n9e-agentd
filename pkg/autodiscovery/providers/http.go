@@ -105,7 +105,7 @@ type HttpConfigProvider struct {
 
 // NewHttpConfigProvider creates a client connection to http and create a new HttpConfigProvider
 func NewHttpConfigProvider(cf config.ConfigurationProviders) (ConfigProvider, error) {
-	cli, err := newClient(cf.TemplateURL, cf.TemplateDir, config.C.Hostname, cf.Token)
+	cli, err := newClient(cf.TemplateURL, cf.TemplateDir, config.C.Ident, cf.Token)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to instantiate the http client: %s", err)
 	}

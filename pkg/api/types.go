@@ -96,12 +96,23 @@ type PortCollectFormat struct {
 	} `json:"instances"`
 }
 
-type logCollectFormat struct {
+type LogCollectFormat struct {
 	Instances []struct {
 		CommonInstanceConfig
 		MetricName  string            `json:"metricName"`  //
 		FilePath    string            `json:"filePath"`    //
 		Pattern     string            `json:"pattern"`     //
 		TagsPattern map[string]string `json:"tagsPattern"` //
+		Func        string            `json:"func"`        // count(c), histogram(h)
+	} `json:"instances"`
+}
+
+type ProcCollectFormat struct {
+	Instances []struct {
+		CommonInstanceConfig
+		Target        string `json:"target"`
+		CollectMethod string `json:"collectMethod" description:"name or cmdline"`
+		Name          string `json:"name"`    // no used
+		Comment       string `json:"comment"` // no used
 	} `json:"instances"`
 }

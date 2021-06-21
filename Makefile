@@ -17,7 +17,7 @@ devrun:
 
 .PHONY: run
 run:
-	./build/agentd -c ./etc/agent.yml --vmodule=process_rt=10  2>&1
+	./build/agentd -c ./etc/agent.yml --vmodule=sender=10  2>&1
 	#./build/agentd -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
 
 dev:

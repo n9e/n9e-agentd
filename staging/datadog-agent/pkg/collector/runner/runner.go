@@ -258,9 +258,9 @@ func (r *Runner) work() {
 		doLog, lastLog := shouldLog(check.ID())
 
 		if doLog {
-			klog.InfoS("Running check", "check", check)
-		} else {
 			klog.V(5).InfoS("Running check", "check", check)
+		} else {
+			klog.V(6).InfoS("Running check", "check", check)
 		}
 
 		// run the check
@@ -324,7 +324,7 @@ func (r *Runner) work() {
 			if lastLog {
 				l = l + fmt.Sprintf(", next runs will be logged every %v runs", config.C.LoggingFrequency)
 			}
-			klog.InfoS(l, "check", check.String())
+			klog.V(6).InfoS(l, "check", check.String())
 		} else {
 			klog.V(5).InfoS(l, "check", check.String())
 		}

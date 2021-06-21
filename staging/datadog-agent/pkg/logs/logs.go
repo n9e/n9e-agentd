@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
+	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/http"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
@@ -57,6 +57,8 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 	if IsAgentRunning() {
 		return nil
 	}
+
+	klog.V(6).Infof("entering start, serverless %v extraTags %v", serverless, extraTags)
 
 	// setup the sources and the services
 	sources := config.NewLogSources()
@@ -102,6 +104,8 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 		klog.Info("Starting a serverless logs-agent...")
 		agent = NewServerless(sources, services, processingRules, endpoints)
 	}
+
+	klog.V(6).Infof("endpoints %#v", endpoints)
 
 	agent.Start()
 	atomic.StoreInt32(&isRunning, 1)

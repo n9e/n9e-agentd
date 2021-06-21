@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
 )
 
@@ -29,6 +30,8 @@ type jsonPayload struct {
 	Service   string `json:"service"`
 	Source    string `json:"source"`
 	Tags      string `json:"tags"`
+	Ident     string `json:"ident"`
+	Alias     string `json:"alias"`
 }
 
 // Encode encodes a message into a JSON byte array.
@@ -37,6 +40,7 @@ func (j *jsonEncoder) Encode(msg *message.Message, redactedMsg []byte) ([]byte, 
 	if !msg.Timestamp.IsZero() {
 		ts = msg.Timestamp
 	}
+	panic("--")
 	return json.Marshal(jsonPayload{
 		Message:   toValidUtf8(redactedMsg),
 		Status:    msg.GetStatus(),
@@ -45,5 +49,7 @@ func (j *jsonEncoder) Encode(msg *message.Message, redactedMsg []byte) ([]byte, 
 		Service:   msg.Origin.Service(),
 		Source:    msg.Origin.Source(),
 		Tags:      msg.Origin.TagsToString(),
+		Ident:     config.C.Ident,
+		Alias:     config.C.Alias,
 	})
 }
