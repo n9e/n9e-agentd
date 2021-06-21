@@ -244,6 +244,7 @@ func (t *Tailer) forwardMessages() {
 		// normal case.
 		select {
 		case t.outputChan <- message.NewMessage(output.Content, origin, output.Status, output.IngestionTimestamp):
+			//klog.V(11).Infof("input.outputChan %p <- %s", t.outputChan, string(output.Content))
 		case <-t.forwardContext.Done():
 		}
 	}

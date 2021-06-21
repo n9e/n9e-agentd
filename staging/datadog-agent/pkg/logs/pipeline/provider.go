@@ -9,13 +9,13 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
+	"k8s.io/klog/v2"
 )
 
 // Provider provides message channels
@@ -105,6 +105,7 @@ func (p *provider) NextPipelineChan() chan *message.Message {
 
 // Flush flushes synchronously all the contained pipeline of this provider.
 func (p *provider) Flush(ctx context.Context) {
+	klog.V(6).Infof("provider flush entering")
 	for _, p := range p.pipelines {
 		select {
 		case <-ctx.Done():

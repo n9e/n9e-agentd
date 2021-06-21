@@ -17,6 +17,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/processor"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/sender"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
+	"k8s.io/klog/v2"
 )
 
 // Pipeline processes and sends messages to the backend
@@ -90,6 +91,7 @@ func (p *Pipeline) Stop() {
 
 // Flush flushes synchronously the processor and sender managed by this pipeline.
 func (p *Pipeline) Flush(ctx context.Context) {
+	klog.V(6).Infof("pipeline flush entering")
 	p.processor.Flush(ctx) // flush messages in the processor into the sender
 	p.sender.Flush(ctx)    // flush the sender
 }

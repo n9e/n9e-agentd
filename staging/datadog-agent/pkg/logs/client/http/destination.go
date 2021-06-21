@@ -72,6 +72,8 @@ func newDestination(endpoint types.Endpoint, contentType string, destinationsCon
 // Send sends a payload over HTTP,
 // the error returned can be retryable and it is the responsibility of the callee to retry.
 func (d *Destination) Send(payload []byte) error {
+	klog.V(10).Infof("-- send entering")
+	defer klog.V(10).Infof("-- send leaving")
 	ctx := d.destinationsContext.Context()
 
 	encodedPayload, err := d.contentEncoding.encode(payload)
@@ -125,6 +127,7 @@ func (d *Destination) Send(payload []byte) error {
 
 // SendAsync sends a payload in background.
 func (d *Destination) SendAsync(payload []byte) {
+	klog.V(10).Infof("-- sendAsync entering")
 	d.once.Do(func() {
 		payloadChan := make(chan []byte, config.ChanSize)
 		d.sendInBackground(payloadChan)

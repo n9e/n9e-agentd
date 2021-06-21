@@ -40,7 +40,6 @@ func (j *jsonEncoder) Encode(msg *message.Message, redactedMsg []byte) ([]byte, 
 	if !msg.Timestamp.IsZero() {
 		ts = msg.Timestamp
 	}
-	panic("--")
 	return json.Marshal(jsonPayload{
 		Message:   toValidUtf8(redactedMsg),
 		Status:    msg.GetStatus(),

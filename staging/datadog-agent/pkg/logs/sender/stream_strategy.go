@@ -40,5 +40,6 @@ func (s *streamStrategy) Send(inputChan chan *message.Message, outputChan chan *
 		metrics.LogsSent.Add(1)
 		metrics.TlmLogsSent.Inc()
 		outputChan <- message
+		//klog.V(11).Infof("outputChan %p <- %s", outputChan, string(message.Content))
 	}
 }

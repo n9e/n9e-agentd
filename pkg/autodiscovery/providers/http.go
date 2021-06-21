@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/url"
 
 	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
@@ -68,7 +69,7 @@ func (c *Client) get(path string) ([]byte, error) {
 }
 
 func (c *Client) getCollectRules() ([]api.CollectRule, error) {
-	b, err := c.get(api.RoutePathGetCollectRules + "?id=" + c.agentID)
+	b, err := c.get(api.RoutePathGetCollectRules + "?ident=" + url.QueryEscape(c.agentID))
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (c *Client) getCollectRules() ([]api.CollectRule, error) {
 }
 
 func (c *Client) getCollectRulesSummary() (*api.CollectRulesSummary, error) {
-	b, err := c.get(api.RoutePathGetCollectRulesSummary + "?id=" + c.agentID)
+	b, err := c.get(api.RoutePathGetCollectRulesSummary + "?ident=" + url.QueryEscape(c.agentID))
 	if err != nil {
 		return nil, err
 	}

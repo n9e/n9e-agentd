@@ -59,7 +59,6 @@ func (j *jsonServerlessEncoder) Encode(msg *message.Message, redactedMsg []byte)
 			RequestID: l.RequestID,
 		}
 	}
-	panic("--")
 
 	return json.Marshal(jsonServerlessPayload{
 		Message: jsonServerlessMessage{

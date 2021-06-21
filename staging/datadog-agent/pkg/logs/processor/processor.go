@@ -31,6 +31,7 @@ type Processor struct {
 
 // New returns an initialized Processor.
 func New(inputChan, outputChan chan *message.Message, processingRules []*types.ProcessingRule, encoder Encoder, diagnosticMessageReceiver diagnostic.MessageReceiver) *Processor {
+	//klog.V(6).Infof("process inputChan %p outputChan %p", inputChan, outputChan)
 	return &Processor{
 		inputChan:                 inputChan,
 		outputChan:                outputChan,
@@ -67,6 +68,7 @@ func (p *Processor) Flush(ctx context.Context) {
 				return
 			}
 			msg := <-p.inputChan
+			//klog.V(11).Infof("processor.inputChan %p -> %s", p.inputChan, string(msg.Content))
 			p.processMessage(msg)
 		}
 	}
@@ -78,6 +80,7 @@ func (p *Processor) run() {
 		p.done <- struct{}{}
 	}()
 	for msg := range p.inputChan {
+		//klog.V(11).Infof("processor.inputChan %p -> %s", p.inputChan, string(msg.Content))
 		p.processMessage(msg)
 		p.mu.Lock() // block here if we're trying to flush synchronously
 		p.mu.Unlock()
@@ -85,7 +88,7 @@ func (p *Processor) run() {
 }
 
 func (p *Processor) processMessage(msg *message.Message) {
-	klog.V(6).Infof("---- entering processMessage")
+	klog.V(6).Infof("entering processMessage")
 	metrics.LogsDecoded.Add(1)
 	metrics.TlmLogsDecoded.Inc()
 	if shouldProcess, redactedMsg := p.applyRedactingRules(msg); shouldProcess {
@@ -102,6 +105,7 @@ func (p *Processor) processMessage(msg *message.Message) {
 		}
 		msg.Content = content
 		p.outputChan <- msg
+		//klog.V(11).Infof("processor.outputChan %p <- %s", p.outputChan, string(msg.Content))
 	}
 }
 

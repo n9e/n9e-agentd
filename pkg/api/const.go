@@ -18,5 +18,5 @@ const (
 
 	//RoutePathGetCollectRules        = "/api/collect-rules"
 	RoutePathGetCollectRules        = "/v1/n9e/collect-rules-belong-to-ident"
-	RoutePathGetCollectRulesSummary = "/api/collect-rules-summary"
+	RoutePathGetCollectRulesSummary = "/v1/n9e/collect-rules-summary"
 )

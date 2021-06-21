@@ -160,10 +160,12 @@ func (a *RegistryAuditor) run() {
 		select {
 		case <-a.health.C:
 		case msg, isOpen := <-a.inputChan:
+
 			if !isOpen {
 				// inputChan has been closed, no need to update the registry anymore
 				return
 			}
+			//klog.V(11).Infof("auditor.outputChan %p -> %s", a.inputChan, string(msg.Content))
 			// update the registry with new entry
 			a.updateRegistry(msg.Origin.Identifier, msg.Origin.Offset, msg.Origin.LogSource.Config.TailingMode)
 		case <-cleanUpTicker.C:

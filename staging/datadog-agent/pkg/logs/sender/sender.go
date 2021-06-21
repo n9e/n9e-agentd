@@ -32,6 +32,7 @@ type Sender struct {
 
 // NewSender returns a new sender.
 func NewSender(inputChan chan *message.Message, outputChan chan *message.Message, destinations *client.Destinations, strategy Strategy) *Sender {
+	klog.V(6).Infof("sender inputChan %p outputChan %p", inputChan, outputChan)
 	return &Sender{
 		inputChan:    inputChan,
 		outputChan:   outputChan,
@@ -60,6 +61,8 @@ func (s *Sender) Flush(ctx context.Context) {
 }
 
 func (s *Sender) run() {
+	klog.V(6).Infof("---- entering run")
+	defer klog.V(6).Infof("---- leaving run")
 	defer func() {
 		s.done <- struct{}{}
 	}()
@@ -71,6 +74,8 @@ func (s *Sender) run() {
 // and only try once for additionnal destinations.
 func (s *Sender) send(payload []byte) error {
 	klog.V(6).Infof("---- entering sned")
+	klog.V(6).Infof("---- payload %s", string(payload))
+	defer klog.V(6).Infof("---- leaving payload")
 	for {
 		err := s.destinations.Main.Send(payload)
 		if err != nil {

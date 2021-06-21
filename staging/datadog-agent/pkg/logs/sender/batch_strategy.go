@@ -74,6 +74,7 @@ func (s *batchStrategy) syncFlush(inputChan chan *message.Message, outputChan ch
 			if !isOpen {
 				return
 			}
+			klog.V(6).Infof("[log] sender.inputChan %p -> %s", inputChan, string(m.Content))
 			s.processMessage(m, outputChan, send)
 		default:
 			return
@@ -97,6 +98,7 @@ func (s *batchStrategy) Send(inputChan chan *message.Message, outputChan chan *m
 				// inputChan has been closed, no more payloads are expected
 				return
 			}
+			//klog.V(11).Infof("[log] sender.inputChan %p -> %s", inputChan, string(m.Content))
 			s.processMessage(m, outputChan, send)
 		case <-flushTimer.C:
 			// the first message that was added to the buffer has been here for too long, send the payload now
@@ -109,7 +111,6 @@ func (s *batchStrategy) Send(inputChan chan *message.Message, outputChan chan *m
 }
 
 func (s *batchStrategy) processMessage(m *message.Message, outputChan chan *message.Message, send func([]byte) error) {
-	klog.V(10).Infof("processMessage %d", len(m.Content))
 	if m.Origin != nil {
 		m.Origin.LogSource.LatencyStats.Add(m.GetLatency())
 	}
@@ -160,5 +161,6 @@ func (s *batchStrategy) sendMessages(messages []*message.Message, outputChan cha
 
 	for _, message := range messages {
 		outputChan <- message
+		//klog.V(11).Infof("sender.outputChan %p <- %s", outputChan, string(message.Content))
 	}
 }
