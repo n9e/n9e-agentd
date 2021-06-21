@@ -8,8 +8,7 @@ package config
 // Pipeline constraints
 const (
 	ChanSize          = 100
-	NumberOfPipelines = 1
-	//NumberOfPipelines = 4
+	NumberOfPipelines = 4
 )
 
 const (

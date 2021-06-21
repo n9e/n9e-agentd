@@ -2,6 +2,7 @@ package checks
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,6 +11,7 @@ import (
 	model "github.com/n9e/agent-payload/process"
 	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/process/net"
+	"github.com/n9e/n9e-agentd/pkg/process/net/resolver"
 	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/pkg/process/util"
 	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
@@ -20,14 +22,29 @@ import (
 
 const emptyCtrID = ""
 
-// Process is a singleton ProcessCheck.
-var Process = &ProcessCheck{probe: procutil.NewProcessProbe()}
+var (
+	// Process is a singleton ProcessCheck.
+	Process = &ProcessCheck{probe: procutil.NewProcessProbe()}
 
-var errEmptyCPUTime = errors.New("empty CPU time information returned")
+	// LocalResolver is a singleton LocalResolver
+	LocalResolver = &resolver.LocalResolver{}
+
+	errEmptyCPUTime = errors.New("empty CPU time information returned")
+)
 
 type ProcessFilter struct {
 	Target        string `json:"target"`
-	CollectMethod string `json:"collectMethod" description:"cmdline or cmd"`
+	CollectMethod string `json:"collectMethod" description:"name or cmdline"`
+}
+
+func (f *ProcessFilter) Match(p *procutil.Process) bool {
+	switch f.CollectMethod {
+	case "name":
+		return p.Name == f.Target
+	case "cmdline":
+		return strings.Contains(strings.Join(p.Cmdline, " "), f.Target)
+	}
+	return false
 }
 
 // ProcessCheck collects full state, including cmdline args and related metadata,
@@ -37,7 +54,7 @@ type ProcessCheck struct {
 	sync.RWMutex
 
 	probe   *procutil.Probe
-	filters []ProcessFilter
+	filters []*ProcessFilter
 
 	sysInfo         *model.SystemInfo
 	lastCPUTime     cpu.TimesStat
@@ -56,29 +73,27 @@ type ProcessCheck struct {
 	messages []*model.CollectorProc
 }
 
-func (p *ProcessCheck) Filters() []ProcessFilter {
+func (p *ProcessCheck) Filters() []*ProcessFilter {
 	p.RLock()
 	defer p.RUnlock()
 	return p.filters
 }
 
-func (p *ProcessCheck) AddFilter(filter ProcessFilter) {
+func (p *ProcessCheck) AddFilter(filter *ProcessFilter) {
 	p.Lock()
 	defer p.Unlock()
 	p.filters = append(p.filters, filter)
 }
 
-func (p *ProcessCheck) DelFilter(filter ProcessFilter) {
+func (p *ProcessCheck) DelFilter(filter *ProcessFilter) {
 	p.Lock()
 	defer p.Unlock()
 	for i, v := range p.filters {
-		if v.Target == filter.Target && v.CollectMethod == filter.CollectMethod {
+		if v == filter {
 			p.filters[i] = p.filters[len(p.filters)-1]
 			p.filters = p.filters[:len(p.filters)-1]
-			return
 		}
 	}
-	return
 }
 
 func (p *ProcessCheck) GetProcs() {
@@ -142,9 +157,17 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 		}
 	}
 
-	procs, err := getAllProcesses(p.probe)
+	ps, err := getAllProcesses(p.probe)
 	if err != nil {
 		return nil, err
+	}
+	var procs map[int32]*procutil.Process
+	for _, filter := range p.filters {
+		for pid, p := range ps {
+			if filter.Match(p) {
+				procs[pid] = p
+			}
+		}
 	}
 
 	if sysProbeUtil != nil {
@@ -174,13 +197,12 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 		return nil, nil
 	}
 
-	connsByPID := Connections.getLastConnectionsByPID()
-	procsByCtr := fmtProcesses(cfg, procs, p.lastProcs, ctrByProc, cpuTimes[0], p.lastCPUTime, p.lastRun, connsByPID)
+	procsByCtr := fmtProcesses(cfg, procs, p.lastProcs, ctrByProc, cpuTimes[0], p.lastCPUTime, p.lastRun, nil)
 
-	ctrs := fmtContainers(ctrList, p.lastCtrRates, p.lastRun)
+	//ctrs := fmtContainers(ctrList, p.lastCtrRates, p.lastRun)
 
 	//messages, totalProcs, totalContainers := createProcCtrMessages(procsByCtr, ctrs, cfg, p.sysInfo, groupID, p.networkID)
-	messages, _, _ := createProcCtrMessages(procsByCtr, ctrs, cfg, p.sysInfo, groupID, p.networkID)
+	messages, _, _ := createProcCtrMessages(procsByCtr, nil, cfg, p.sysInfo, groupID, p.networkID)
 
 	// Store the last state for comparison on the next run.
 	// Note: not storing the filtered in case there are new processes that haven't had a chance to show up twice.

@@ -3,6 +3,8 @@ agent:
   ident: $ip
   alias: $host
   site: http://localhost:8080
+  histogramAggregates: ["max", "median", "avg", "count"]
+  histogramPercentiles: ["0.95"]
   apiKey: 1234
   maxProcs: 4
   coreDump: false

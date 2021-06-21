@@ -42,6 +42,9 @@ type Collector struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	process   *checks.ProcessCheck
+	rtProcess *checks.RTProcessCheck
 }
 
 func initCollector() (*Collector, error) {
@@ -76,6 +79,8 @@ func newCollector(cfg *config.AgentConfig) (*Collector, error) {
 		realTimeInterval: 2 * time.Second,
 		ctx:              ctx,
 		cancel:           cancel,
+		process:          checks.Process,
+		rtProcess:        checks.RTProcess,
 	}, nil
 }
 
@@ -116,21 +121,6 @@ func (p *Collector) runCheck(c checks.Check) {
 
 type InstanceConfig struct {
 	checks.ProcessFilter `json:",inline"`
-	Name                 string `json:"name"`    // no used
-	Comment              string `json:"comment"` // no used
-	//CollectType   string         `json:"collect_type"`
-	//Id            int64          `json:"id"`
-	//Nid           int64          `json:"nid"`
-	//Tags          string         `json:"tags"`
-	//Step          int            `json:"step"`
-	//Creator       string         `json:"creator"`
-	//Created       time.Time      `json:"created"`
-	//LastUpdator   string         `json:"last_updator"`
-	//LastUpdated   time.Time      `json:"last_updated"`
-	//ProcJiffy     map[int]uint64 `json:"-"`
-	//Jiffy         uint64         `json:"-"`
-	//RBytes        map[int]uint64 `json:"-"`
-	//WBytes        map[int]uint64 `json:"-"`
 }
 
 type checkConfig struct {
@@ -160,7 +150,8 @@ func buildConfig(rawInstance integration.Data, _ integration.Data) (*checkConfig
 // Check doesn't need additional fields
 type Check struct {
 	core.CheckBase
-	config *checkConfig
+	*Collector
+	filter *checks.ProcessFilter
 }
 
 // Run executes the check
@@ -178,6 +169,11 @@ func (c *Check) Run() error {
 	return nil
 }
 
+func (c *Check) Cancel() {
+	defer c.CheckBase.Cancel()
+	c.process.DelFilter(c.filter)
+}
+
 // Configure the Prom check
 func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) (err error) {
 	if collector == nil {
@@ -185,6 +181,7 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 			return err
 		}
 	}
+	c.Collector = collector
 
 	// Must be called before c.CommonConfigure
 	c.BuildID(rawInstance, rawInitConfig)
@@ -193,9 +190,13 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 		return fmt.Errorf("common configure failed: %s", err)
 	}
 
-	if c.config, err = buildConfig(rawInstance, rawInitConfig); err != nil {
+	config, err := buildConfig(rawInstance, rawInitConfig)
+	if err != nil {
 		return fmt.Errorf("build config failed: %s", err)
 	}
+	c.filter = &config.ProcessFilter
+
+	c.process.AddFilter(c.filter)
 
 	return nil
 }

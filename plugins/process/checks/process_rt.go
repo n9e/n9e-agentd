@@ -6,11 +6,11 @@ import (
 
 	"github.com/DataDog/gopsutil/cpu"
 	model "github.com/n9e/agent-payload/process"
-	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/process/net"
 	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/pkg/process/util"
+	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"k8s.io/klog/v2"
 )
@@ -111,16 +111,16 @@ func (r *RTProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 		return nil, nil
 	}
 
-	connsByPID := Connections.getLastConnectionsByPID()
-	chunkedStats := fmtProcessStats(cfg, procs, r.lastProcs, ctrList, cpuTimes[0], r.lastCPUTime, r.lastRun, connsByPID)
+	//connsByPID := Connections.getLastConnectionsByPID()
+	chunkedStats := fmtProcessStats(cfg, procs, r.lastProcs, ctrList, cpuTimes[0], r.lastCPUTime, r.lastRun, nil)
 	groupSize := len(chunkedStats)
-	chunkedCtrStats := fmtContainerStats(ctrList, r.lastCtrRates, r.lastRun, groupSize)
+	//chunkedCtrStats := fmtContainerStats(ctrList, r.lastCtrRates, r.lastRun, groupSize)
 	messages := make([]*model.CollectorRealTime, 0, groupSize)
 	for i := 0; i < groupSize; i++ {
 		messages = append(messages, &model.CollectorRealTime{
 			HostName:          cfg.HostName,
 			Stats:             chunkedStats[i],
-			ContainerStats:    chunkedCtrStats[i],
+			ContainerStats:    nil,
 			GroupId:           groupID,
 			GroupSize:         int32(groupSize),
 			NumCpus:           int32(len(r.sysInfo.Cpus)),
