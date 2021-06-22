@@ -82,6 +82,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 type Check struct {
 	core.CheckBase
 	config checkConfig
+	tags   []string
 }
 
 // Run executes the check
@@ -95,7 +96,7 @@ func (c *Check) Run() error {
 	if ok := c.check(); ok {
 		value = 1
 	}
-	sender.Gauge("proc.port.listen", float64(value), "", nil)
+	sender.Gauge("proc.port.listen", float64(value), "", c.tags)
 
 	sender.Commit()
 	return nil
@@ -117,6 +118,10 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 	}
 
 	c.config = config
+	c.tags = []string{
+		fmt.Sprintf("port:%d", config.Port),
+		fmt.Sprintf("protocol:%s", config.Protocol),
+	}
 	return nil
 }
 

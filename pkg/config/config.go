@@ -62,6 +62,8 @@ var (
 type Config struct {
 	Ident                                string                   `yaml:"ident"`
 	Alias                                string                   `yaml:"alias"`
+	Lang                                 string                   `yaml:"lang"`
+	EnableDocs                           bool                     `yaml:"enableDocs"`
 	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`
 	FileUsedDir                          string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
 	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d

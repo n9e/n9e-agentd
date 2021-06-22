@@ -67,6 +67,8 @@ const (
 site: http://localhost:8080
 n9eSeriesFormat: true
 hostname: test
+lang: zh
+enableDocs: true
 maxProcs: 4
 coreDump: true
 exporterPort: 8070

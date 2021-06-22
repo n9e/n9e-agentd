@@ -13,7 +13,9 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
+	"github.com/n9e/n9e-agentd/pkg/i18n"
 	"github.com/n9e/n9e-agentd/pkg/options"
+	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
@@ -97,10 +99,16 @@ func (p *module) start(ops *proc.HookOps) error {
 	// aggreator
 	// inputs
 
+	// i18n
+	i18n.SetDefaultPrinter(config.C.Lang, "zh")
+
 	// Setup expvar server
 	var port = config.C.ExpvarPort
+	if config.C.EnableDocs {
+		http.Handle("/docs/metrics", registrymetrics.Handler())
+	}
 	if config.C.Telemetry.Enabled {
-		http.Handle("/telemetry", telemetry.Handler())
+		http.Handle("/metrics", telemetry.Handler())
 	}
 	go func() {
 		err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), http.DefaultServeMux)
