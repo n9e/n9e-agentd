@@ -2,7 +2,7 @@ instances:
 
     ## @param collectMethod - string - required - enum: cmdline, name
     #
-  - collectMethod: namej
+  - collectMethod: name
 
     ## @param target - string - required
     #

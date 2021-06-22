@@ -79,50 +79,50 @@ func (c *Check) Run() error {
 		if !ok {
 			continue
 		}
-		collectProc(sender, proc, stat)
+		collectProc(sender, proc, stat, []string{"target:" + c.filter.Target})
 	}
 
 	sender.Commit()
 	return nil
 }
 
-func collectProc(sender aggregator.Sender, proc *model.Process, stat *model.ProcessStat) {
+func collectProc(sender aggregator.Sender, proc *model.Process, stat *model.ProcessStat, tags []string) {
 	sender.Count("proc.num", 1, "", nil)
 
 	// uptime
-	sender.Gauge("proc.uptime", float64(time.Now().Unix()-stat.CreateTime/1000), "", nil)
-	sender.Gauge("proc.createtime", float64(stat.CreateTime)/1000, "", nil)
+	sender.Gauge("proc.uptime", float64(time.Now().Unix()-stat.CreateTime/1000), "", tags)
+	sender.Gauge("proc.createtime", float64(stat.CreateTime)/1000, "", tags)
 
 	// fd
-	sender.Count("proc.open_fd_count", float64(stat.OpenFdCount), "", nil)
+	sender.Count("proc.open_fd_count", float64(stat.OpenFdCount), "", tags)
 
 	if mem := stat.Memory; mem != nil {
-		sender.Count("proc.mem.rss", float64(mem.Rss), "", nil)
-		sender.Count("proc.mem.vms", float64(mem.Vms), "", nil)
-		sender.Count("proc.mem.swap", float64(mem.Swap), "", nil)
-		sender.Count("proc.mem.shared", float64(mem.Shared), "", nil)
-		sender.Count("proc.mem.text", float64(mem.Text), "", nil)
-		sender.Count("proc.mem.lib", float64(mem.Lib), "", nil)
-		sender.Count("proc.mem.data", float64(mem.Data), "", nil)
-		sender.Count("proc.mem.dirty", float64(mem.Dirty), "", nil)
+		sender.Count("proc.mem.rss", float64(mem.Rss), "", tags)
+		sender.Count("proc.mem.vms", float64(mem.Vms), "", tags)
+		sender.Count("proc.mem.swap", float64(mem.Swap), "", tags)
+		sender.Count("proc.mem.shared", float64(mem.Shared), "", tags)
+		sender.Count("proc.mem.text", float64(mem.Text), "", tags)
+		sender.Count("proc.mem.lib", float64(mem.Lib), "", tags)
+		sender.Count("proc.mem.data", float64(mem.Data), "", tags)
+		sender.Count("proc.mem.dirty", float64(mem.Dirty), "", tags)
 	}
 
 	if cpu := stat.Cpu; cpu != nil {
-		sender.Count("proc.cpu.total", float64(cpu.TotalPct), "", nil)
-		sender.Count("proc.cpu.user", float64(cpu.UserPct), "", nil)
-		sender.Count("proc.cpu.sys", float64(cpu.SystemPct), "", nil)
-		sender.Count("proc.cpu.threads", float64(cpu.NumThreads), "", nil)
+		sender.Count("proc.cpu.total", float64(cpu.TotalPct), "", tags)
+		sender.Count("proc.cpu.user", float64(cpu.UserPct), "", tags)
+		sender.Count("proc.cpu.sys", float64(cpu.SystemPct), "", tags)
+		sender.Count("proc.cpu.threads", float64(cpu.NumThreads), "", tags)
 	}
 
 	if io := stat.IoStat; io != nil {
-		sender.Count("proc.io.read_rate", float64(io.ReadRate), "", nil)
-		sender.Count("proc.io.write_rate", float64(io.WriteRate), "", nil)
-		sender.Count("proc.io.readbytes_rate", float64(io.ReadBytesRate), "", nil)
-		sender.Count("proc.io.writebytes_rate", float64(io.WriteBytesRate), "", nil)
+		sender.Count("proc.io.read_rate", float64(io.ReadRate), "", tags)
+		sender.Count("proc.io.write_rate", float64(io.WriteRate), "", tags)
+		sender.Count("proc.io.readbytes_rate", float64(io.ReadBytesRate), "", tags)
+		sender.Count("proc.io.writebytes_rate", float64(io.WriteBytesRate), "", tags)
 	}
 	if net := stat.Networks; net != nil {
-		sender.Count("proc.net.conn_rate", float64(net.ConnectionRate), "", nil)
-		sender.Count("proc.net.bytes_rate", float64(net.BytesRate), "", nil)
+		sender.Count("proc.net.conn_rate", float64(net.ConnectionRate), "", tags)
+		sender.Count("proc.net.bytes_rate", float64(net.BytesRate), "", tags)
 	}
 }
 
