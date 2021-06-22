@@ -11,10 +11,8 @@ import (
 	model "github.com/n9e/agent-payload/process"
 	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/process/net"
-	"github.com/n9e/n9e-agentd/pkg/process/net/resolver"
 	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/pkg/process/util"
-	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
 	agentutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"k8s.io/klog/v2"
@@ -24,17 +22,14 @@ const emptyCtrID = ""
 
 var (
 	// Process is a singleton ProcessCheck.
-	Process = &ProcessCheck{probe: procutil.NewProcessProbe()}
-
-	// LocalResolver is a singleton LocalResolver
-	LocalResolver = &resolver.LocalResolver{}
-
+	Process         = &ProcessCheck{probe: procutil.NewProcessProbe()}
 	errEmptyCPUTime = errors.New("empty CPU time information returned")
 )
 
 type ProcessFilter struct {
-	Target        string `json:"target"`
-	CollectMethod string `json:"collectMethod" description:"name or cmdline"`
+	Target        string  `json:"target"`
+	CollectMethod string  `json:"collectMethod" description:"name or cmdline"`
+	Pids          []int32 `json:"-"`
 }
 
 func (f *ProcessFilter) Match(p *procutil.Process) bool {
@@ -53,24 +48,16 @@ func (f *ProcessFilter) Match(p *procutil.Process) bool {
 type ProcessCheck struct {
 	sync.RWMutex
 
-	probe   *procutil.Probe
-	filters []*ProcessFilter
-
-	sysInfo         *model.SystemInfo
-	lastCPUTime     cpu.TimesStat
-	lastProcs       map[int32]*procutil.Process
-	lastCtrRates    map[string]util.ContainerRateMetrics
-	lastCtrIDForPID map[int32]string
-	lastRun         time.Time
-	networkID       string
-
+	probe                  *procutil.Probe
+	filters                []*ProcessFilter
+	sysInfo                *model.SystemInfo
+	lastCPUTime            cpu.TimesStat
+	lastProcs              map[int32]*procutil.Process
+	lastRun                time.Time
+	networkID              string
 	notInitializedLogLimit *util.LogLimit
-
-	// lastPIDs is []int32 that holds PIDs that the check fetched last time,
-	// will be reused by RTProcessCheck to get stats
-	lastPIDs atomic.Value
-
-	messages []*model.CollectorProc
+	lastPIDs               atomic.Value // will be reused by RTProcessCheck to get stats
+	procsByPID             map[int32]*model.Process
 }
 
 func (p *ProcessCheck) Filters() []*ProcessFilter {
@@ -96,13 +83,11 @@ func (p *ProcessCheck) DelFilter(filter *ProcessFilter) {
 	}
 }
 
-func (p *ProcessCheck) GetProcs() {
+func (p *ProcessCheck) GetProcs() map[int32]*model.Process {
 	p.RLock()
 	defer p.RUnlock()
 
-	for _, v := range p.messages {
-		klog.V(5).Infof("%+v", n9eutil.Prettify(v))
-	}
+	return p.procsByPID
 }
 
 // Init initializes the singleton ProcessCheck.
@@ -144,28 +129,19 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 	}
 
 	var sysProbeUtil *net.RemoteSysProbeUtil
-	// if the Process module is disabled, we allow Probe to collect
-	// fields that require elevated permission to collect with best effort
-	if !cfg.CheckIsEnabled(config.ProcessModuleCheckName) {
-		procutil.WithPermission(true)(p.probe)
-	} else {
-		procutil.WithPermission(false)(p.probe)
-		if pu, err := net.GetRemoteSystemProbeUtil(); err == nil {
-			sysProbeUtil = pu
-		} else if p.notInitializedLogLimit.ShouldLog() {
-			klog.Warningf("could not initialize system-probe connection in process check: %v (will only log every 10 minutes)", err)
-		}
-	}
+	procutil.WithPermission(true)(p.probe)
 
 	ps, err := getAllProcesses(p.probe)
 	if err != nil {
 		return nil, err
 	}
-	var procs map[int32]*procutil.Process
+	procs := map[int32]*procutil.Process{}
 	for _, filter := range p.filters {
+		filter.Pids = filter.Pids[:0]
 		for pid, p := range ps {
 			if filter.Match(p) {
 				procs[pid] = p
+				filter.Pids = append(filter.Pids, pid)
 			}
 		}
 	}
@@ -181,37 +157,35 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 	}
 	p.lastPIDs.Store(lastPIDs)
 
-	ctrList, _ := util.GetContainers()
+	//ctrList, _ := util.GetContainers()
 
 	// Keep track of containers addresses
-	LocalResolver.LoadAddrs(ctrList)
+	//LocalResolver.LoadAddrs(ctrList)
 
-	ctrByProc := ctrIDForPID(ctrList)
+	//ctrByProc := ctrIDForPID(ctrList)
 	// End check early if this is our first run.
 	if p.lastProcs == nil {
 		p.lastProcs = procs
 		p.lastCPUTime = cpuTimes[0]
-		p.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
-		p.lastCtrIDForPID = ctrByProc
+		//p.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
+		//p.lastCtrIDForPID = ctrByProc
 		p.lastRun = time.Now()
 		return nil, nil
 	}
 
-	procsByCtr := fmtProcesses(cfg, procs, p.lastProcs, ctrByProc, cpuTimes[0], p.lastCPUTime, p.lastRun, nil)
+	connsByPID := Connections.getLastConnectionsByPID()
+	procsByPID := fmtProcesses(cfg, procs, p.lastProcs, nil, cpuTimes[0], p.lastCPUTime, p.lastRun, connsByPID)
 
 	//ctrs := fmtContainers(ctrList, p.lastCtrRates, p.lastRun)
-
-	//messages, totalProcs, totalContainers := createProcCtrMessages(procsByCtr, ctrs, cfg, p.sysInfo, groupID, p.networkID)
-	messages, _, _ := createProcCtrMessages(procsByCtr, nil, cfg, p.sysInfo, groupID, p.networkID)
 
 	// Store the last state for comparison on the next run.
 	// Note: not storing the filtered in case there are new processes that haven't had a chance to show up twice.
 	p.lastProcs = procs
-	p.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
+	//p.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
 	p.lastCPUTime = cpuTimes[0]
 	p.lastRun = time.Now()
-	p.lastCtrIDForPID = ctrByProc
-	p.messages = messages
+	//p.lastCtrIDForPID = ctrByProc
+	p.procsByPID = procsByPID
 
 	//statsd.Client.Gauge("datadog.process.containers.host_count", float64(totalContainers), []string{}, 1) //nolint:errcheck
 	//statsd.Client.Gauge("datadog.process.processes.host_count", float64(totalProcs), []string{}, 1)       //nolint:errcheck
@@ -225,64 +199,6 @@ func (p *ProcessCheck) GetLastPIDs() []int32 {
 		return result.([]int32)
 	}
 	return nil
-}
-
-func createProcCtrMessages(
-	procsByCtr map[string][]*model.Process,
-	containers []*model.Container,
-	cfg *config.AgentConfig,
-	sysInfo *model.SystemInfo,
-	groupID int32,
-	networkID string,
-) ([]*model.CollectorProc, int, int) {
-	totalProcs, totalContainers := 0, 0
-	msgs := make([]*model.CollectorProc, 0)
-
-	// we first split non-container processes in chunks
-	chunks := chunkProcesses(procsByCtr[emptyCtrID], cfg.MaxPerMessage)
-	for _, c := range chunks {
-		msgs = append(msgs, &model.CollectorProc{
-			HostName:          cfg.HostName,
-			NetworkId:         networkID,
-			Info:              sysInfo,
-			Processes:         c,
-			GroupId:           groupID,
-			ContainerHostType: cfg.ContainerHostType,
-		})
-	}
-
-	ctrProcs := make([]*model.Process, 0)
-	ctrs := make([]*model.Container, 0, len(containers))
-	for _, ctr := range containers {
-		if procs, ok := procsByCtr[ctr.Id]; ok {
-			ctrProcs = append(ctrProcs, procs...)
-		}
-		ctrs = append(ctrs, ctr)
-	}
-
-	if len(ctrs) > 0 {
-		msgs = append(msgs, &model.CollectorProc{
-			HostName:          cfg.HostName,
-			NetworkId:         networkID,
-			Info:              sysInfo,
-			Processes:         ctrProcs,
-			Containers:        ctrs,
-			GroupId:           groupID,
-			ContainerHostType: cfg.ContainerHostType,
-		})
-	}
-
-	// fill in GroupSize for each CollectorProc and convert them to final messages
-	// also count containers and processes
-	messages := make([]*model.CollectorProc, 0, len(msgs))
-	for _, m := range msgs {
-		m.GroupSize = int32(len(msgs))
-		messages = append(messages, m)
-		totalProcs += len(m.Processes)
-		totalContainers += len(m.Containers)
-	}
-
-	return messages, totalProcs, totalContainers
 }
 
 // chunkProcesses split non-container processes into chunks and return a list of chunks
@@ -323,8 +239,8 @@ func fmtProcesses(
 	syst2, syst1 cpu.TimesStat,
 	lastRun time.Time,
 	connsByPID map[int32][]*model.Connection,
-) map[string][]*model.Process {
-	procsByCtr := make(map[string][]*model.Process)
+) map[int32]*model.Process {
+	procsByPID := make(map[int32]*model.Process)
 	connCheckIntervalS := int(cfg.CheckIntervals[config.ConnectionsCheckName] / time.Second)
 
 	for _, fp := range procs {
@@ -351,16 +267,12 @@ func fmtProcesses(
 			ContainerId:            ctrByProc[fp.Pid],
 			Networks:               formatNetworks(connsByPID[fp.Pid], connCheckIntervalS),
 		}
-		_, ok := procsByCtr[proc.ContainerId]
-		if !ok {
-			procsByCtr[proc.ContainerId] = make([]*model.Process, 0)
-		}
-		procsByCtr[proc.ContainerId] = append(procsByCtr[proc.ContainerId], proc)
+		procsByPID[proc.Pid] = proc
 	}
 
 	cfg.Scrubber.IncrementCacheAge()
 
-	return procsByCtr
+	return procsByPID
 }
 
 func formatCommand(fp *procutil.Process) *model.Command {

@@ -1,8 +1,8 @@
 instances:
 
-    ## @param collectMethod - string - required - enum: cmdline, cmd
+    ## @param collectMethod - string - required - enum: cmdline, name
     #
-  - collectMethod: cmd
+  - collectMethod: namej
 
     ## @param target - string - required
     #

@@ -10,8 +10,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/process/net"
 	"github.com/n9e/n9e-agentd/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/pkg/process/util"
-	n9eutil "github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"k8s.io/klog/v2"
 )
 
@@ -22,26 +20,20 @@ var RTProcess = &RTProcessCheck{probe: procutil.NewProcessProbe()}
 // The instance stores state between checks for calculation of rates and CPU.
 type RTProcessCheck struct {
 	sync.RWMutex
-
-	sysInfo      *model.SystemInfo
-	lastCPUTime  cpu.TimesStat
-	lastProcs    map[int32]*procutil.Stats
-	lastCtrRates map[string]util.ContainerRateMetrics
-	lastRun      time.Time
-	messages     []*model.CollectorRealTime
-
+	sysInfo                *model.SystemInfo
+	lastCPUTime            cpu.TimesStat
+	lastProcs              map[int32]*procutil.Stats
+	lastRun                time.Time
+	statsByPID             map[int32]*model.ProcessStat
 	notInitializedLogLimit *util.LogLimit
-
-	probe *procutil.Probe
+	probe                  *procutil.Probe
 }
 
-func (p *RTProcessCheck) GetProcs() {
+func (p *RTProcessCheck) GetStats() map[int32]*model.ProcessStat {
 	p.RLock()
 	defer p.RUnlock()
 
-	for _, v := range p.messages {
-		klog.V(5).Infof("%+v", n9eutil.Prettify(v))
-	}
+	return p.statsByPID
 }
 
 // Init initializes a new RTProcessCheck instance.
@@ -78,18 +70,7 @@ func (r *RTProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 	}
 
 	var sysProbeUtil *net.RemoteSysProbeUtil
-	// if the Process module is disabled, we allow Probe to collect
-	// fields that require elevated permission to collect with best effort
-	if !cfg.CheckIsEnabled(config.ProcessModuleCheckName) {
-		procutil.WithPermission(true)(r.probe)
-	} else {
-		procutil.WithPermission(false)(r.probe)
-		if pu, err := net.GetRemoteSystemProbeUtil(); err == nil {
-			sysProbeUtil = pu
-		} else if r.notInitializedLogLimit.ShouldLog() {
-			klog.Warningf("could not initialize system-probe connection in rtprocess check: %v (will only log every 10 minutes)", err)
-		}
-	}
+	procutil.WithPermission(true)(r.probe)
 
 	procs, err := getAllProcStats(r.probe, lastPIDs)
 	if err != nil {
@@ -100,42 +81,27 @@ func (r *RTProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 		mergeStatWithSysprobeStats(procs, sysProbeUtil)
 	}
 
-	ctrList, _ := util.GetContainers()
+	//ctrList, _ := util.GetContainers()
 
 	// End check early if this is our first run.
 	if r.lastProcs == nil {
-		r.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
+		//r.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
 		r.lastProcs = procs
 		r.lastCPUTime = cpuTimes[0]
 		r.lastRun = time.Now()
 		return nil, nil
 	}
 
-	//connsByPID := Connections.getLastConnectionsByPID()
-	chunkedStats := fmtProcessStats(cfg, procs, r.lastProcs, ctrList, cpuTimes[0], r.lastCPUTime, r.lastRun, nil)
-	groupSize := len(chunkedStats)
-	//chunkedCtrStats := fmtContainerStats(ctrList, r.lastCtrRates, r.lastRun, groupSize)
-	messages := make([]*model.CollectorRealTime, 0, groupSize)
-	for i := 0; i < groupSize; i++ {
-		messages = append(messages, &model.CollectorRealTime{
-			HostName:          cfg.HostName,
-			Stats:             chunkedStats[i],
-			ContainerStats:    nil,
-			GroupId:           groupID,
-			GroupSize:         int32(groupSize),
-			NumCpus:           int32(len(r.sysInfo.Cpus)),
-			TotalMemory:       r.sysInfo.TotalMemory,
-			ContainerHostType: cfg.ContainerHostType,
-		})
-	}
+	connsByPID := Connections.getLastConnectionsByPID()
+	statsByPID := fmtProcessStats(cfg, procs, r.lastProcs, cpuTimes[0], r.lastCPUTime, r.lastRun, connsByPID)
 
 	// Store the last state for comparison on the next run.
 	// Note: not storing the filtered in case there are new processes that haven't had a chance to show up twice.
 	r.lastRun = time.Now()
 	r.lastProcs = procs
-	r.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
+	//r.lastCtrRates = util.ExtractContainerRateMetric(ctrList)
 	r.lastCPUTime = cpuTimes[0]
-	r.messages = messages
+	r.statsByPID = statsByPID
 
 	return nil, nil
 }
@@ -144,22 +110,14 @@ func (r *RTProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 func fmtProcessStats(
 	cfg *config.AgentConfig,
 	procs, lastProcs map[int32]*procutil.Stats,
-	ctrList []*containers.Container,
 	syst2, syst1 cpu.TimesStat,
 	lastRun time.Time,
 	connsByPID map[int32][]*model.Connection,
-) [][]*model.ProcessStat {
-	cidByPid := make(map[int32]string, len(ctrList))
-	for _, c := range ctrList {
-		for _, p := range c.Pids {
-			cidByPid[p] = c.ID
-		}
-	}
+) map[int32]*model.ProcessStat {
 
 	connCheckIntervalS := int(cfg.CheckIntervals[config.ConnectionsCheckName] / time.Second)
 
-	chunked := make([][]*model.ProcessStat, 0)
-	chunk := make([]*model.ProcessStat, 0, cfg.MaxPerMessage)
+	stats := make(map[int32]*model.ProcessStat)
 
 	for pid, fp := range procs {
 		// Skipping any processes that didn't exist in the previous run.
@@ -168,7 +126,7 @@ func fmtProcessStats(
 			continue
 		}
 
-		chunk = append(chunk, &model.ProcessStat{
+		stat := &model.ProcessStat{
 			Pid:                    pid,
 			CreateTime:             fp.CreateTime,
 			Memory:                 formatMemory(fp),
@@ -180,18 +138,12 @@ func fmtProcessStats(
 			IoStat:                 formatIO(fp, lastProcs[pid].IOStat, lastRun),
 			VoluntaryCtxSwitches:   uint64(fp.CtxSwitches.Voluntary),
 			InvoluntaryCtxSwitches: uint64(fp.CtxSwitches.Involuntary),
-			ContainerId:            cidByPid[pid],
-			Networks:               formatNetworks(connsByPID[pid], connCheckIntervalS),
-		})
-		if len(chunk) == cfg.MaxPerMessage {
-			chunked = append(chunked, chunk)
-			chunk = make([]*model.ProcessStat, 0, cfg.MaxPerMessage)
+			//ContainerId:            cidByPid[pid],
+			Networks: formatNetworks(connsByPID[pid], connCheckIntervalS),
 		}
+		stats[pid] = stat
 	}
-	if len(chunk) > 0 {
-		chunked = append(chunked, chunk)
-	}
-	return chunked
+	return stats
 }
 
 func calculateRate(cur, prev uint64, before time.Time) float32 {

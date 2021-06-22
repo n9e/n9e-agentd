@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	model "github.com/n9e/agent-payload/process"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/process/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
@@ -19,13 +20,149 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const (
-	checkName = "process"
-)
+const checkName = "process"
 
-var (
-	collector *Collector
-)
+var collector *Collector
+
+type InstanceConfig struct {
+	checks.ProcessFilter `json:",inline"`
+}
+
+type checkConfig struct {
+	InstanceConfig
+}
+
+func (p checkConfig) String() string {
+	return util.Prettify(p)
+}
+
+func defaultInstanceConfig() InstanceConfig {
+	return InstanceConfig{}
+}
+
+func buildConfig(rawInstance integration.Data, _ integration.Data) (*checkConfig, error) {
+	instance := defaultInstanceConfig()
+
+	if err := yaml.Unmarshal(rawInstance, &instance); err != nil {
+		return nil, err
+	}
+
+	return &checkConfig{
+		InstanceConfig: instance,
+	}, nil
+}
+
+// Check doesn't need additional fields
+type Check struct {
+	core.CheckBase
+	*Collector
+	filter *checks.ProcessFilter
+}
+
+// Run executes the check
+func (c *Check) Run() error {
+	klog.V(6).Infof("entering Run()")
+	sender, err := aggregator.GetSender(c.ID())
+	if err != nil {
+		return err
+	}
+
+	procs := c.process.GetProcs()
+	stats := c.rtProcess.GetStats()
+
+	for _, pid := range c.filter.Pids {
+		proc, ok := procs[pid]
+		if !ok {
+			continue
+		}
+		stat, ok := stats[pid]
+		if !ok {
+			continue
+		}
+		collectProc(sender, proc, stat)
+	}
+
+	sender.Commit()
+	return nil
+}
+
+func collectProc(sender aggregator.Sender, proc *model.Process, stat *model.ProcessStat) {
+	sender.Count("proc.num", 1, "", nil)
+
+	// uptime
+	sender.Gauge("proc.uptime", float64(time.Now().Unix()-stat.CreateTime/1000), "", nil)
+	sender.Gauge("proc.createtime", float64(stat.CreateTime)/1000, "", nil)
+
+	// fd
+	sender.Count("proc.open_fd_count", float64(stat.OpenFdCount), "", nil)
+
+	if mem := stat.Memory; mem != nil {
+		sender.Count("proc.mem.rss", float64(mem.Rss), "", nil)
+		sender.Count("proc.mem.vms", float64(mem.Vms), "", nil)
+		sender.Count("proc.mem.swap", float64(mem.Swap), "", nil)
+		sender.Count("proc.mem.shared", float64(mem.Shared), "", nil)
+		sender.Count("proc.mem.text", float64(mem.Text), "", nil)
+		sender.Count("proc.mem.lib", float64(mem.Lib), "", nil)
+		sender.Count("proc.mem.data", float64(mem.Data), "", nil)
+		sender.Count("proc.mem.dirty", float64(mem.Dirty), "", nil)
+	}
+
+	if cpu := stat.Cpu; cpu != nil {
+		sender.Count("proc.cpu.total", float64(cpu.TotalPct), "", nil)
+		sender.Count("proc.cpu.user", float64(cpu.UserPct), "", nil)
+		sender.Count("proc.cpu.sys", float64(cpu.SystemPct), "", nil)
+		sender.Count("proc.cpu.threads", float64(cpu.NumThreads), "", nil)
+	}
+
+	if io := stat.IoStat; io != nil {
+		sender.Count("proc.io.read_rate", float64(io.ReadRate), "", nil)
+		sender.Count("proc.io.write_rate", float64(io.WriteRate), "", nil)
+		sender.Count("proc.io.readbytes_rate", float64(io.ReadBytesRate), "", nil)
+		sender.Count("proc.io.writebytes_rate", float64(io.WriteBytesRate), "", nil)
+	}
+	if net := stat.Networks; net != nil {
+		sender.Count("proc.net.conn_rate", float64(net.ConnectionRate), "", nil)
+		sender.Count("proc.net.bytes_rate", float64(net.BytesRate), "", nil)
+	}
+}
+
+func (c *Check) Cancel() {
+	defer c.CheckBase.Cancel()
+	c.process.DelFilter(c.filter)
+}
+
+// Configure the Prom check
+func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) (err error) {
+	if collector == nil {
+		if collector, err = initCollector(); err != nil {
+			return err
+		}
+	}
+	c.Collector = collector
+
+	// Must be called before c.CommonConfigure
+	c.BuildID(rawInstance, rawInitConfig)
+
+	if err = c.CommonConfigure(rawInstance, source); err != nil {
+		return fmt.Errorf("common configure failed: %s", err)
+	}
+
+	config, err := buildConfig(rawInstance, rawInitConfig)
+	if err != nil {
+		return fmt.Errorf("build config failed: %s", err)
+	}
+	c.filter = &config.ProcessFilter
+
+	c.process.AddFilter(c.filter)
+
+	return nil
+}
+
+func checkFactory() check.Check {
+	return &Check{
+		CheckBase: core.NewCheckBase(checkName),
+	}
+}
 
 type Collector struct {
 	groupID int32
@@ -116,94 +253,6 @@ func (p *Collector) runCheck(c checks.Check) {
 
 	for _, s := range messages {
 		klog.V(6).Infof("process run check %s %s", c.Name(), s.String())
-	}
-}
-
-type InstanceConfig struct {
-	checks.ProcessFilter `json:",inline"`
-}
-
-type checkConfig struct {
-	InstanceConfig
-}
-
-func (p checkConfig) String() string {
-	return util.Prettify(p)
-}
-
-func defaultInstanceConfig() InstanceConfig {
-	return InstanceConfig{}
-}
-
-func buildConfig(rawInstance integration.Data, _ integration.Data) (*checkConfig, error) {
-	instance := defaultInstanceConfig()
-
-	if err := yaml.Unmarshal(rawInstance, &instance); err != nil {
-		return nil, err
-	}
-
-	return &checkConfig{
-		InstanceConfig: instance,
-	}, nil
-}
-
-// Check doesn't need additional fields
-type Check struct {
-	core.CheckBase
-	*Collector
-	filter *checks.ProcessFilter
-}
-
-// Run executes the check
-func (c *Check) Run() error {
-	klog.V(6).Infof("entering Run()")
-	sender, err := aggregator.GetSender(c.ID())
-	if err != nil {
-		return err
-	}
-
-	//checks.Process.GetProcs()
-	checks.RTProcess.GetProcs()
-	sender.Gauge("proc.process", 1, "", nil)
-	sender.Commit()
-	return nil
-}
-
-func (c *Check) Cancel() {
-	defer c.CheckBase.Cancel()
-	c.process.DelFilter(c.filter)
-}
-
-// Configure the Prom check
-func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) (err error) {
-	if collector == nil {
-		if collector, err = initCollector(); err != nil {
-			return err
-		}
-	}
-	c.Collector = collector
-
-	// Must be called before c.CommonConfigure
-	c.BuildID(rawInstance, rawInitConfig)
-
-	if err = c.CommonConfigure(rawInstance, source); err != nil {
-		return fmt.Errorf("common configure failed: %s", err)
-	}
-
-	config, err := buildConfig(rawInstance, rawInitConfig)
-	if err != nil {
-		return fmt.Errorf("build config failed: %s", err)
-	}
-	c.filter = &config.ProcessFilter
-
-	c.process.AddFilter(c.filter)
-
-	return nil
-}
-
-func checkFactory() check.Check {
-	return &Check{
-		CheckBase: core.NewCheckBase(checkName),
 	}
 }
 

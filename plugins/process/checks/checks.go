@@ -20,8 +20,8 @@ type Check interface {
 var All = []Check{
 	Process,
 	RTProcess,
+	Connections,
 	//Container,
 	//RTContainer,
-	//Connections,
 	//Pod,
 }
