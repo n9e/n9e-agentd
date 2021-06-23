@@ -796,11 +796,11 @@ func TestConvertNamespace(t *testing.T) {
 }
 
 func TestConvertNamespaceBlacklist(t *testing.T) {
-	parsed, err := parseAndEnrichSingleMetricMessage([]byte("datadog.agent.daemon:21|ms"), "testNamespace.", []string{"datadog.agent"}, "default-hostname")
+	parsed, err := parseAndEnrichSingleMetricMessage([]byte("agent.daemon:21|ms"), "testNamespace.", []string{"agent"}, "default-hostname")
 
 	assert.NoError(t, err)
 
-	assert.Equal(t, "datadog.agent.daemon", parsed.Name)
+	assert.Equal(t, "agent.daemon", parsed.Name)
 	assert.Equal(t, "default-hostname", parsed.Host)
 }
 

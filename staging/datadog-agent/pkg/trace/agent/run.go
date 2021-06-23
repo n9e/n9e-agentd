@@ -128,7 +128,7 @@ func Run(ctx context.Context) {
 	defer metrics.Flush()
 	defer timing.Stop()
 
-	metrics.Count("datadog.trace_agent.started", 1, nil, 1)
+	metrics.Count("trace_agent.started", 1, nil, 1)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

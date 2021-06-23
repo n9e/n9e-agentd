@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	containersCountMetricName = "datadog.security_agent.compliance.containers_running"
+	containersCountMetricName = "security_agent.compliance.containers_running"
 )
 
 // telemetry reports environment information (e.g containers running) when the compliance component is running

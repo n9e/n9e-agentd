@@ -27,7 +27,7 @@ func Test_getWebhookSkeleton(t *testing.T) {
 	customTimeout := int32(2)
 	webhook := func(to *int32) admiv1beta1.MutatingWebhook {
 		return admiv1beta1.MutatingWebhook{
-			Name: "datadog.webhook.foo",
+			Name: "webhook.foo",
 			ClientConfig: admiv1beta1.WebhookClientConfig{
 				Service: &admiv1beta1.ServiceReference{
 					Namespace: "default",

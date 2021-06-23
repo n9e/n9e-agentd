@@ -5,15 +5,15 @@ import (
 	"sort"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/process/net"
-	"k8s.io/klog/v2"
 	"github.com/DataDog/datadog-go/statsd"
+	"github.com/n9e/n9e-agentd/pkg/process/net"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/klog/v2"
 )
 
 // MetricName is used to determine the metric name for a given module
 func MetricName(moduleName string) string {
-	return fmt.Sprintf("datadog.system_probe.agent.%s", moduleName)
+	return fmt.Sprintf("system_probe.agent.%s", moduleName)
 }
 
 // ModuleMonitor is responsible for emitting heartbeat metrics for each

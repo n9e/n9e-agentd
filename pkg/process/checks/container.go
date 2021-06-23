@@ -113,7 +113,7 @@ func (c *ContainerCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 	c.lastRun = time.Now()
 	c.lastCtrIDForPID = ctrIDForPID(ctrList)
 
-	statsd.Client.Gauge("datadog.process.containers.host_count", totalContainers, []string{}, 1) //nolint:errcheck
+	statsd.Client.Gauge("process.containers.host_count", totalContainers, []string{}, 1) //nolint:errcheck
 	klog.V(5).Infof("collected %d containers in %s", int(totalContainers), time.Now().Sub(start))
 	return messages, nil
 }

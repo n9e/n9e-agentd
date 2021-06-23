@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
 )
 
 var then = time.Unix(123, 0)
@@ -21,7 +21,7 @@ var requestBody = `
 {
   "series": [
     {
-      "metric": "datadog.system_probe.agent.network_tracer",
+      "metric": "system_probe.agent.network_tracer",
       "points": [[123, 1]],
       "tags": ["version:8", "revision:123"],
       "host": "foobar",
@@ -29,7 +29,7 @@ var requestBody = `
       "interval": 0
     },
     {
-      "metric": "datadog.system_probe.agent.oom_kill_probe",
+      "metric": "system_probe.agent.oom_kill_probe",
       "points": [[123, 1]],
       "tags": ["version:8", "revision:123"],
       "host": "foobar",
@@ -59,7 +59,7 @@ func TestFlush(t *testing.T) {
 			payloads = args.Get(0).(forwarder.Payloads)
 		})
 
-	flusher.Flush([]string{"datadog.system_probe.agent.network_tracer", "datadog.system_probe.agent.oom_kill_probe"}, then)
+	flusher.Flush([]string{"system_probe.agent.network_tracer", "system_probe.agent.oom_kill_probe"}, then)
 	mockForwarder.AssertExpectations(t)
 	assert.JSONEq(t, requestBody, string(*payloads[0]))
 }

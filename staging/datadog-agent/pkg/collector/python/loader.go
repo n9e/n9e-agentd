@@ -15,14 +15,14 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/loaders"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	agentConfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/loaders"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 
 	"k8s.io/klog/v2"
 )
@@ -322,7 +322,7 @@ func reportPy3Warnings(checkName string, checkFilePath string) {
 	}
 	tags = append(tags, agentVersionTags...)
 	aggregator.AddRecurrentSeries(&metrics.Serie{
-		Name:   "datadog.agent.check_ready",
+		Name:   "agent.check_ready",
 		Points: []metrics.Point{{Value: metricValue}},
 		Tags:   tags,
 		MType:  metrics.APIGaugeType,

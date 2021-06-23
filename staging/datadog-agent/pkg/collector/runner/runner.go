@@ -295,7 +295,7 @@ func (r *Runner) work() {
 		}
 
 		if sender != nil && !longRunning {
-			sender.ServiceCheck("datadog.agent.check_status", serviceCheckStatus, hostname, serviceCheckTags, "")
+			sender.ServiceCheck("agent.check_status", serviceCheckStatus, hostname, serviceCheckTags, "")
 			sender.Commit()
 		}
 

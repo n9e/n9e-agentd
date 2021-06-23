@@ -7,10 +7,10 @@ package metrics
 
 var (
 	// MetricRuntimePrefix is the prefix of the metrics sent by the runtime security module
-	MetricRuntimePrefix = "datadog.runtime_security"
+	MetricRuntimePrefix = "runtime_security"
 
 	// MetricAgentPrefix is the prefix of the metrics sent by the runtime security agent
-	MetricAgentPrefix = "datadog.security_agent"
+	MetricAgentPrefix = "security_agent"
 
 	// Event server
 

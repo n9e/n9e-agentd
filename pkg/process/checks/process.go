@@ -147,8 +147,8 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 	p.lastRun = time.Now()
 	p.lastCtrIDForPID = ctrByProc
 
-	statsd.Client.Gauge("datadog.process.containers.host_count", float64(totalContainers), []string{}, 1) //nolint:errcheck
-	statsd.Client.Gauge("datadog.process.processes.host_count", float64(totalProcs), []string{}, 1)       //nolint:errcheck
+	statsd.Client.Gauge("process.containers.host_count", float64(totalContainers), []string{}, 1) //nolint:errcheck
+	statsd.Client.Gauge("process.processes.host_count", float64(totalProcs), []string{}, 1)       //nolint:errcheck
 	klog.V(5).Infof("collected processes in %s", time.Now().Sub(start))
 	return messages, nil
 }

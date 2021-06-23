@@ -170,7 +170,7 @@ func (a *Agent) Process(p *api.Payload) {
 		klog.V(5).Infof("Skipping received empty payload")
 		return
 	}
-	defer timing.Since("datadog.trace_agent.internal.process_payload_ms", time.Now())
+	defer timing.Since("trace_agent.internal.process_payload_ms", time.Now())
 	ts := p.Source
 	ss := new(writer.SampledSpans)
 	var sinputs []stats.Input

@@ -286,21 +286,21 @@ func splitPayload(p pb.ClientStatsPayload, maxEntriesPerPayload int) []clientSta
 var _ eventRecorder = (*StatsWriter)(nil)
 
 func (w *StatsWriter) report() {
-	metrics.Count("datadog.trace_agent.stats_writer.client_payloads", atomic.SwapInt64(&w.stats.ClientPayloads, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.stats_buckets", atomic.SwapInt64(&w.stats.StatsBuckets, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.stats_entries", atomic.SwapInt64(&w.stats.StatsEntries, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.splits", atomic.SwapInt64(&w.stats.Splits, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.stats_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.client_payloads", atomic.SwapInt64(&w.stats.ClientPayloads, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.stats_buckets", atomic.SwapInt64(&w.stats.StatsBuckets, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.stats_entries", atomic.SwapInt64(&w.stats.StatsEntries, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.splits", atomic.SwapInt64(&w.stats.Splits, 0), nil, 1)
+	metrics.Count("trace_agent.stats_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
 }
 
 // recordEvent implements eventRecorder.
 func (w *StatsWriter) recordEvent(t eventType, data *eventData) {
 	if data != nil {
-		metrics.Histogram("datadog.trace_agent.stats_writer.connection_fill", data.connectionFill, nil, 1)
-		metrics.Histogram("datadog.trace_agent.stats_writer.queue_fill", data.queueFill, nil, 1)
+		metrics.Histogram("trace_agent.stats_writer.connection_fill", data.connectionFill, nil, 1)
+		metrics.Histogram("trace_agent.stats_writer.queue_fill", data.queueFill, nil, 1)
 	}
 	switch t {
 	case eventTypeRetry:
@@ -309,7 +309,7 @@ func (w *StatsWriter) recordEvent(t eventType, data *eventData) {
 
 	case eventTypeSent:
 		klog.V(5).Infof("Flushed stats to the API; time: %s, bytes: %d", data.duration, data.bytes)
-		timing.Since("datadog.trace_agent.stats_writer.flush_duration", time.Now().Add(-data.duration))
+		timing.Since("trace_agent.stats_writer.flush_duration", time.Now().Add(-data.duration))
 		atomic.AddInt64(&w.stats.Bytes, int64(data.bytes))
 		atomic.AddInt64(&w.stats.Payloads, 1)
 
@@ -319,7 +319,7 @@ func (w *StatsWriter) recordEvent(t eventType, data *eventData) {
 
 	case eventTypeDropped:
 		w.easylog.Warn("Stats writer queue full. Payload dropped (%.2fKB).", float64(data.bytes)/1024)
-		metrics.Count("datadog.trace_agent.stats_writer.dropped", 1, nil, 1)
-		metrics.Count("datadog.trace_agent.stats_writer.dropped_bytes", int64(data.bytes), nil, 1)
+		metrics.Count("trace_agent.stats_writer.dropped", 1, nil, 1)
+		metrics.Count("trace_agent.stats_writer.dropped_bytes", int64(data.bytes), nil, 1)
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
@@ -106,9 +106,9 @@ func (c *Check) submitTelemetryMetrics(startTime time.Time, tags []string) {
 	c.sender.gauge("snmp.devices_monitored", float64(1), "", newTags)
 
 	// SNMP Performance metrics
-	c.sender.monotonicCount("datadog.snmp.check_interval", time.Duration(startTime.UnixNano()).Seconds(), "", newTags)
-	c.sender.gauge("datadog.snmp.check_duration", time.Since(startTime).Seconds(), "", newTags)
-	c.sender.gauge("datadog.snmp.submitted_metrics", float64(c.sender.submittedMetrics), "", newTags)
+	c.sender.monotonicCount("snmp.check_interval", time.Duration(startTime.UnixNano()).Seconds(), "", newTags)
+	c.sender.gauge("snmp.check_duration", time.Since(startTime).Seconds(), "", newTags)
+	c.sender.gauge("snmp.submitted_metrics", float64(c.sender.submittedMetrics), "", newTags)
 }
 
 // Configure configures the snmp checks

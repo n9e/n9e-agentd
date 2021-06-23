@@ -17,13 +17,13 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/executable"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 /*
@@ -228,7 +228,7 @@ func sendTelemetry(pythonVersion string) {
 		)
 	}
 	aggregator.AddRecurrentSeries(&metrics.Serie{
-		Name:   "datadog.agent.python.version",
+		Name:   "agent.python.version",
 		Points: []metrics.Point{{Value: 1.0}},
 		Tags:   tags,
 		MType:  metrics.APIGaugeType,

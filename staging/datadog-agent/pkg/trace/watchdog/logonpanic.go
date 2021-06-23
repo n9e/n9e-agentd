@@ -36,7 +36,7 @@ func LogOnPanic() {
 		errMsg := fmt.Sprintf("%v", err)
 		logMsg := "Unexpected panic: " + errMsg + "\n" + stacktrace
 
-		metrics.Gauge("datadog.trace_agent.panic", 1, []string{
+		metrics.Gauge("trace_agent.panic", 1, []string{
 			"err:" + shortErrMsg(errMsg),
 		}, 1)
 

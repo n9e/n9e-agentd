@@ -19,10 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/mocksender"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 	"k8s.io/klog/v2"
 )
@@ -233,9 +233,9 @@ tags:
 	sender.AssertMetric(t, "Gauge", "snmp.ifOutErrors", float64(201), "", row1Tags)
 	sender.AssertMetric(t, "Gauge", "snmp.ifOutErrors", float64(202), "", row2Tags)
 
-	sender.AssertMetricTaggedWith(t, "MonotonicCount", "datadog.snmp.check_interval", snmpGlobalTagsWithLoader)
-	sender.AssertMetricTaggedWith(t, "Gauge", "datadog.snmp.check_duration", snmpGlobalTagsWithLoader)
-	sender.AssertMetric(t, "Gauge", "datadog.snmp.submitted_metrics", 7, "", snmpGlobalTagsWithLoader)
+	sender.AssertMetricTaggedWith(t, "MonotonicCount", "snmp.check_interval", snmpGlobalTagsWithLoader)
+	sender.AssertMetricTaggedWith(t, "Gauge", "snmp.check_duration", snmpGlobalTagsWithLoader)
+	sender.AssertMetric(t, "Gauge", "snmp.submitted_metrics", 7, "", snmpGlobalTagsWithLoader)
 }
 
 func TestSupportedMetricTypes(t *testing.T) {
@@ -606,9 +606,9 @@ ip_address: 1.2.3.4
 
 	snmpTags := []string{"snmp_device:1.2.3.4"}
 
-	sender.AssertMetric(t, "Gauge", "datadog.snmp.submitted_metrics", 0.0, "", snmpTags)
-	sender.AssertMetricTaggedWith(t, "Gauge", "datadog.snmp.check_duration", snmpTags)
-	sender.AssertMetricTaggedWith(t, "MonotonicCount", "datadog.snmp.check_interval", snmpTags)
+	sender.AssertMetric(t, "Gauge", "snmp.submitted_metrics", 0.0, "", snmpTags)
+	sender.AssertMetricTaggedWith(t, "Gauge", "snmp.check_duration", snmpTags)
+	sender.AssertMetricTaggedWith(t, "MonotonicCount", "snmp.check_interval", snmpTags)
 	sender.AssertServiceCheck(t, "snmp.can_check", metrics.ServiceCheckCritical, "", snmpTags, "snmp connection error: can't connect")
 }
 
@@ -788,9 +788,9 @@ ip_address: 1.2.3.4
 
 			snmpTags := []string{"snmp_device:1.2.3.4"}
 
-			sender.AssertMetric(t, "Gauge", "datadog.snmp.submitted_metrics", 0.0, "", snmpTags)
-			sender.AssertMetricTaggedWith(t, "Gauge", "datadog.snmp.check_duration", snmpTags)
-			sender.AssertMetricTaggedWith(t, "MonotonicCount", "datadog.snmp.check_interval", snmpTags)
+			sender.AssertMetric(t, "Gauge", "snmp.submitted_metrics", 0.0, "", snmpTags)
+			sender.AssertMetricTaggedWith(t, "Gauge", "snmp.check_duration", snmpTags)
+			sender.AssertMetricTaggedWith(t, "MonotonicCount", "snmp.check_interval", snmpTags)
 
 			sender.AssertServiceCheck(t, "snmp.can_check", metrics.ServiceCheckCritical, "", snmpTags, tt.expectedErr)
 		})
@@ -840,9 +840,9 @@ metrics:
 	logs := b.String()
 
 	snmpTags := []string{"snmp_device:1.2.3.4"}
-	sender.AssertMetric(t, "Gauge", "datadog.snmp.submitted_metrics", 0.0, "", snmpTags)
-	sender.AssertMetricTaggedWith(t, "Gauge", "datadog.snmp.check_duration", snmpTags)
-	sender.AssertMetricTaggedWith(t, "MonotonicCount", "datadog.snmp.check_interval", snmpTags)
+	sender.AssertMetric(t, "Gauge", "snmp.submitted_metrics", 0.0, "", snmpTags)
+	sender.AssertMetricTaggedWith(t, "Gauge", "snmp.check_duration", snmpTags)
+	sender.AssertMetricTaggedWith(t, "MonotonicCount", "snmp.check_interval", snmpTags)
 
 	sender.AssertServiceCheck(t, "snmp.can_check", metrics.ServiceCheckOK, "", snmpTags, "")
 

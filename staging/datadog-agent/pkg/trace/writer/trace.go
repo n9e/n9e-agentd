@@ -224,7 +224,7 @@ func (w *TraceWriter) flush() {
 		return
 	}
 
-	defer timing.Since("datadog.trace_agent.trace_writer.encode_ms", time.Now())
+	defer timing.Since("trace_agent.trace_writer.encode_ms", time.Now())
 	defer w.resetBuffer()
 
 	klog.V(5).Infof("Serializing %d traces and %d APM events.", len(w.traces), len(w.events))
@@ -245,7 +245,7 @@ func (w *TraceWriter) flush() {
 
 	w.wg.Add(1)
 	go func() {
-		defer timing.Since("datadog.trace_agent.trace_writer.compress_ms", time.Now())
+		defer timing.Since("trace_agent.trace_writer.compress_ms", time.Now())
 		defer w.wg.Done()
 		p := newPayload(map[string]string{
 			"Content-Type":     "application/x-protobuf",
@@ -271,15 +271,15 @@ func (w *TraceWriter) flush() {
 }
 
 func (w *TraceWriter) report() {
-	metrics.Count("datadog.trace_agent.trace_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.bytes_uncompressed", atomic.SwapInt64(&w.stats.BytesUncompressed, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.bytes_estimated", atomic.SwapInt64(&w.stats.BytesEstimated, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.traces", atomic.SwapInt64(&w.stats.Traces, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.events", atomic.SwapInt64(&w.stats.Events, 0), nil, 1)
-	metrics.Count("datadog.trace_agent.trace_writer.spans", atomic.SwapInt64(&w.stats.Spans, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.bytes_uncompressed", atomic.SwapInt64(&w.stats.BytesUncompressed, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.bytes_estimated", atomic.SwapInt64(&w.stats.BytesEstimated, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.traces", atomic.SwapInt64(&w.stats.Traces, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.events", atomic.SwapInt64(&w.stats.Events, 0), nil, 1)
+	metrics.Count("trace_agent.trace_writer.spans", atomic.SwapInt64(&w.stats.Spans, 0), nil, 1)
 }
 
 var _ eventRecorder = (*TraceWriter)(nil)
@@ -287,8 +287,8 @@ var _ eventRecorder = (*TraceWriter)(nil)
 // recordEvent implements eventRecorder.
 func (w *TraceWriter) recordEvent(t eventType, data *eventData) {
 	if data != nil {
-		metrics.Histogram("datadog.trace_agent.trace_writer.connection_fill", data.connectionFill, nil, 1)
-		metrics.Histogram("datadog.trace_agent.trace_writer.queue_fill", data.queueFill, nil, 1)
+		metrics.Histogram("trace_agent.trace_writer.connection_fill", data.connectionFill, nil, 1)
+		metrics.Histogram("trace_agent.trace_writer.queue_fill", data.queueFill, nil, 1)
 	}
 	switch t {
 	case eventTypeRetry:
@@ -297,7 +297,7 @@ func (w *TraceWriter) recordEvent(t eventType, data *eventData) {
 
 	case eventTypeSent:
 		klog.V(5).Infof("Flushed traces to the API; time: %s, bytes: %d", data.duration, data.bytes)
-		timing.Since("datadog.trace_agent.trace_writer.flush_duration", time.Now().Add(-data.duration))
+		timing.Since("trace_agent.trace_writer.flush_duration", time.Now().Add(-data.duration))
 		atomic.AddInt64(&w.stats.Bytes, int64(data.bytes))
 		atomic.AddInt64(&w.stats.Payloads, 1)
 
@@ -307,7 +307,7 @@ func (w *TraceWriter) recordEvent(t eventType, data *eventData) {
 
 	case eventTypeDropped:
 		w.easylog.Warn("Trace writer queue full. Payload dropped (%.2fKB).", float64(data.bytes)/1024)
-		metrics.Count("datadog.trace_agent.trace_writer.dropped", 1, nil, 1)
-		metrics.Count("datadog.trace_agent.trace_writer.dropped_bytes", int64(data.bytes), nil, 1)
+		metrics.Count("trace_agent.trace_writer.dropped", 1, nil, 1)
+		metrics.Count("trace_agent.trace_writer.dropped_bytes", int64(data.bytes), nil, 1)
 	}
 }
