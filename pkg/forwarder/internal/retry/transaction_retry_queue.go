@@ -47,7 +47,7 @@ func BuildTransactionRetryQueue(
 	optionalDomainFolderPath string,
 	storageMaxSize int64,
 	dropPrioritySorter TransactionPrioritySorter,
-	domain string,
+	domain *transaction.Domain,
 	apiKeys []string) *TransactionRetryQueue {
 	var storage TransactionSerializer
 	var err error

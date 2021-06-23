@@ -2,7 +2,8 @@ agent:
   hostname: test
   ident: $ip
   alias: $host
-  site: http://localhost:8080
+  endpoints:
+    - http://localhost:8080
   histogramAggregates: ["max", "median", "avg", "count"]
   histogramPercentiles: ["0.95"]
   apiKey: 1234
@@ -37,11 +38,10 @@ agent:
     packetBufferFlushTimeout: 1s
     metricsStatsEnable: true
   configProviders:
-#    - name: http
-#      polling: true
-#      templateUrl: http://127.0.0.1:8080
-#      templateDir: /api/connect-rules
-#      token:
+    - name: http
+      polling: true
+      templateUrl: http://127.0.0.1:8080
+      token:
 
 
 

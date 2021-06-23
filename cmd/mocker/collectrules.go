@@ -42,20 +42,27 @@ func (c *CollectRules) Set(configs []integration.Config) {
 	klog.Infof("rules %d", len(rs))
 }
 
-func (c *CollectRules) GetRules() []api.CollectRule {
-	c.RLock()
-	defer c.RUnlock()
-
-	return c.rules
+type RulesPayload struct {
+	Data []api.CollectRule `json:"dat"`
+	Err  string            `json:"err"`
 }
 
-func (c *CollectRules) GetSummary() api.CollectRulesSummary {
+func (c *CollectRules) GetRules() api.CollectRuleWrap {
 	c.RLock()
 	defer c.RUnlock()
 
-	return api.CollectRulesSummary{
-		LatestUpdatedAt: c.latestUpdatedAt,
-		Total:           len(c.rules),
+	return api.CollectRuleWrap{Data: c.rules}
+}
+
+func (c *CollectRules) GetSummary() api.CollectRulesSummaryWrap {
+	c.RLock()
+	defer c.RUnlock()
+
+	return api.CollectRulesSummaryWrap{
+		Data: api.CollectRulesSummary{
+			LatestUpdatedAt: c.latestUpdatedAt,
+			Total:           len(c.rules),
+		},
 	}
 }
 

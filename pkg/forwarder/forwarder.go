@@ -212,34 +212,35 @@ func NewDefaultForwarder(options *Options) *DefaultForwarder {
 	for domain, keys := range options.KeysPerDomain {
 		//domain, _ := config.AddAgentVersionToDomain(domain, "app")
 		if keys == nil || len(keys) == 0 {
-			klog.Errorf("No API keys for domain '%s', dropping domain ", domain)
-		} else {
-			var domainFolderPath string
-			var err error
-			if optionalRemovalPolicy != nil {
-				domainFolderPath, err = optionalRemovalPolicy.RegisterDomain(domain)
-				if err != nil {
-					klog.Errorf("Retry queue storage on disk disabled. Cannot register the domain '%v': %v", domain, err)
-				}
-			}
-
-			transactionContainer := retry.BuildTransactionRetryQueue(
-				options.RetryQueuePayloadsTotalMaxSize,
-				flushToDiskMemRatio,
-				domainFolderPath,
-				storageMaxSize,
-				transactionContainerSort,
-				domain,
-				keys)
-
-			f.keysPerDomains[domain] = keys
-			f.domainForwarders[domain] = newDomainForwarder(
-				domain,
-				transactionContainer,
-				options.NumberOfWorkers,
-				options.ConnectionResetInterval,
-				domainForwarderSort)
+			klog.Warningf("No API keys for domain '%s'", domain)
 		}
+		var domainFolderPath string
+		var err error
+		if optionalRemovalPolicy != nil {
+			domainFolderPath, err = optionalRemovalPolicy.RegisterDomain(domain)
+			if err != nil {
+				klog.Errorf("Retry queue storage on disk disabled. Cannot register the domain '%v': %v", domain, err)
+			}
+		}
+
+		d := transaction.NewDomain(domain)
+
+		transactionContainer := retry.BuildTransactionRetryQueue(
+			options.RetryQueuePayloadsTotalMaxSize,
+			flushToDiskMemRatio,
+			domainFolderPath,
+			storageMaxSize,
+			transactionContainerSort,
+			d,
+			keys)
+
+		f.keysPerDomains[domain] = keys
+		f.domainForwarders[domain] = newDomainForwarder(
+			d,
+			transactionContainer,
+			options.NumberOfWorkers,
+			options.ConnectionResetInterval,
+			domainForwarderSort)
 	}
 
 	if optionalRemovalPolicy != nil {
@@ -358,7 +359,7 @@ func (f *DefaultForwarder) createAdvancedHTTPTransactions(endpoint transaction.E
 		for domain, apiKeys := range f.keysPerDomains {
 			for _, apiKey := range apiKeys {
 				t := transaction.NewHTTPTransaction()
-				t.Domain = domain
+				t.Domain = f.domainForwarders[domain].domain
 				t.Endpoint = endpoint
 				if apiKeyInQueryString {
 					t.Endpoint.Route = fmt.Sprintf("%s?api_key=%s", endpoint.Route, apiKey)
@@ -368,7 +369,7 @@ func (f *DefaultForwarder) createAdvancedHTTPTransactions(endpoint transaction.E
 				t.StorableOnDisk = storableOnDisk
 				t.Headers.Set(apiHTTPHeaderKey, apiKey)
 				t.Headers.Set(versionHTTPHeaderKey, version.AgentVersion)
-				t.Headers.Set(useragentHTTPHeaderKey, fmt.Sprintf("datadog-agent/%s", version.AgentVersion))
+				t.Headers.Set(useragentHTTPHeaderKey, fmt.Sprintf("n9e-agent/%s", version.AgentVersion))
 				if allowArbitraryTags {
 					t.Headers.Set(arbitraryTagHTTPHeaderKey, "true")
 				}
@@ -398,7 +399,7 @@ func (f *DefaultForwarder) sendHTTPTransactions(transactions []*transaction.HTTP
 	}
 
 	for _, t := range transactions {
-		if err := f.domainForwarders[t.Domain].sendHTTPTransactions(t); err != nil {
+		if err := f.domainForwarders[t.Domain.Raw()].sendHTTPTransactions(t); err != nil {
 			klog.Errorf(err.Error())
 		}
 	}
@@ -557,7 +558,7 @@ func (f *DefaultForwarder) submitProcessLikePayload(ep transaction.Endpoint, pay
 
 		txn.CompletionHandler = func(transaction *transaction.HTTPTransaction, statusCode int, body []byte, err error) {
 			internalResults <- Response{
-				Domain:     transaction.Domain,
+				Domain:     transaction.Domain.Current(),
 				Body:       body,
 				StatusCode: statusCode,
 				Err:        err,

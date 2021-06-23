@@ -9,14 +9,14 @@ import (
 	"expvar"
 	"fmt"
 	"net/http"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 const (
@@ -130,16 +130,17 @@ func (fh *forwarderHealth) healthCheckLoop() {
 
 // computeDomainsURL populates a map containing API Endpoints per API keys that belongs to the forwarderHealth struct
 func (fh *forwarderHealth) computeDomainsURL() {
-	for domain, apiKeys := range fh.keysPerDomains {
-		apiDomain := ""
-		re := regexp.MustCompile(`((us|eu)\d\.)?datadoghq.[a-z]+$`)
-		if re.MatchString(domain) {
-			apiDomain = "https://api." + re.FindString(domain)
-		} else {
-			apiDomain = domain
-		}
-		fh.keysPerAPIEndpoint[apiDomain] = append(fh.keysPerAPIEndpoint[apiDomain], apiKeys...)
-	}
+	fh.keysPerAPIEndpoint = fh.keysPerDomains
+	// for domain, apiKeys := range fh.keysPerDomains {
+	// 	apiDomain := ""
+	// 	re := regexp.MustCompile(`((us|eu)\d\.)?datadoghq.[a-z]+$`)
+	// 	if re.MatchString(domain) {
+	// 		apiDomain = "https://api." + re.FindString(domain)
+	// 	} else {
+	// 		apiDomain = domain
+	// 	}
+	// 	fh.keysPerAPIEndpoint[apiDomain] = append(fh.keysPerAPIEndpoint[apiDomain], apiKeys...)
+	// }
 }
 
 func (fh *forwarderHealth) setAPIKeyStatus(apiKey string, domain string, status expvar.Var) {
@@ -150,12 +151,27 @@ func (fh *forwarderHealth) setAPIKeyStatus(apiKey string, domain string, status 
 	apiKeyStatus.Set(obfuscatedKey, status)
 }
 
-func (fh *forwarderHealth) validateAPIKey(apiKey, domain string) (bool, error) {
+func (fh *forwarderHealth) validateAPIKeyByEndpoints(apiKey, domain string) (v bool, err error) {
+	if apiKey == "" {
+		return false, fmt.Errorf("empty apikey")
+	}
+
 	if apiKey == fakeAPIKey {
 		fh.setAPIKeyStatus(apiKey, domain, &apiKeyFake)
 		return true, nil
 	}
+	for _, d := range strings.Split(domain, ",") {
+		if v, err = fh.validateAPIKey(apiKey, d); err != nil {
+			continue
+		}
+		if v {
+			return
+		}
+	}
+	return
+}
 
+func (fh *forwarderHealth) validateAPIKey(apiKey, domain string) (bool, error) {
 	url := fmt.Sprintf("%s%s?api_key=%s", domain, v1ValidateEndpoint, apiKey)
 
 	transport := httputils.CreateHTTPTransport()
@@ -199,7 +215,7 @@ func (fh *forwarderHealth) hasValidAPIKey() bool {
 
 	for domain, apiKeys := range fh.keysPerAPIEndpoint {
 		for _, apiKey := range apiKeys {
-			v, err := fh.validateAPIKey(apiKey, domain)
+			v, err := fh.validateAPIKeyByEndpoints(apiKey, domain)
 			if err != nil {
 				klog.V(5).Info(err)
 				apiError = true

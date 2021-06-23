@@ -21,9 +21,19 @@ type CollectRule struct {
 	Updater   string `json:"updateBy"`   // deprecated
 }
 
+type CollectRuleWrap struct {
+	Data []CollectRule `json:"dat"`
+	Err  string        `json:"err"`
+}
+
 type CollectRulesSummary struct {
 	LatestUpdatedAt int64 `json:"latestUpdatedAt"`
 	Total           int   `json:"total"`
+}
+
+type CollectRulesSummaryWrap struct {
+	Data CollectRulesSummary `json:"dat"`
+	Err  string              `json:"err"`
 }
 
 // from pkg/autodiscovery/providers/file.go: configFormat

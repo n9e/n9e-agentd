@@ -60,15 +60,15 @@ var (
 )
 
 type Config struct {
-	Ident                                string                   `yaml:"ident"`
-	Alias                                string                   `yaml:"alias"`
-	Lang                                 string                   `yaml:"lang"`
-	EnableDocs                           bool                     `yaml:"enableDocs"`
-	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`
-	FileUsedDir                          string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
-	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d
-	Site                                 string                   `yaml:"site"`                                 // site
-	DdUrl                                bool                     `yaml:"ddUrl"`                                // dd_url
+	Ident           string   `yaml:"ident"`
+	Alias           string   `yaml:"alias"`
+	Lang            string   `yaml:"lang"`
+	EnableDocs      bool     `yaml:"enableDocs"`
+	N9eSeriesFormat bool     `yaml:"n9eSeriesFormat"`
+	FileUsedDir     string   `yaml:"-"`         // e.g. /etc/n9e-agentd/
+	ConfigFilePath  string   `yaml:"-"`         // e.g. /etc/n9e-agentd/conf.d
+	Endpoints       []string `yaml:"endpoints"` // site
+	//DdUrl                                bool                     `yaml:"ddUrl"`                                // dd_url
 	Listeners                            []Listeners              `yaml:"listeners"`                            // listeners
 	AuthTokenFilePath                    string                   `yaml:"authTokenFilePath"`                    // auth_token_file_path
 	ApiKey                               string                   `yaml:"apiKey"`                               // api_key
@@ -264,6 +264,17 @@ func (p Config) String() string {
 }
 
 func (p *Config) Validate() error {
+
+	if len(p.Endpoints) == 0 {
+		return fmt.Errorf("unable to get agent.endpoints")
+	}
+
+	for i, endpoint := range p.Endpoints {
+		if _, err := url.Parse(endpoint); err != nil {
+			return fmt.Errorf("could not parse agent.endpoint[%d]: %s %s", i, endpoint, err)
+		}
+	}
+
 	if err := p.Forwarder.Validate(); err != nil {
 		return err
 	}
@@ -523,35 +534,43 @@ func (p *Statsd) Validate() error {
 	return nil
 }
 
-type Endpoint struct {
-	Site    string   `yaml:"site"`
-	ApiKeys []string `yaml:"apiKeys"`
+type AdditionalEndpoint struct {
+	Endpoints []string `yaml:"endpoints"`
+	ApiKeys   []string `yaml:"apiKeys"`
 }
 
 type Forwarder struct {
-	Endpoints                []string      `yaml:"endpoints"`
-	AdditionalEndpoints      []Endpoint    `yaml:"additionalEndpoints"`      // additional_endpoints
-	ApikeyValidationInterval time.Duration `yaml:"apikeyValidationInterval"` // forwarder_apikey_validation_interval
-	BackoffBase              float64       `yaml:"backoffBase"`              // forwarder_backoff_base
-	BackoffFactor            float64       `yaml:"backoffFactor"`            // forwarder_backoff_factor
-	BackoffMax               float64       `yaml:"backoffMax"`               // forwarder_backoff_max
-	ConnectionResetInterval  time.Duration `yaml:"connectionResetInterval"`  // forwarder_connection_reset_interval
-	FlushToDiskMemRatio      float64       `yaml:"flushToDiskMemRatio"`      // forwarder_flush_to_disk_mem_ratio
-	NumWorkers               int           `yaml:"numWorkers"`               // forwarder_num_workers
-	OutdatedFileInDays       int           `yaml:"outdatedFileInDays"`       // forwarder_outdated_file_in_days
-	RecoveryInterval         int           `yaml:"recoveryInterval"`         // forwarder_recovery_interval
-	RecoveryReset            bool          `yaml:"recoveryReset"`            // forwarder_recovery_reset
-	StopTimeout              time.Duration `yaml:"stopTimeout"`              // forwarder_stop_timeout
-	StorageMaxDiskRatio      float64       `yaml:"storageMaxDiskRatio"`      // forwarder_storage_max_disk_ratio
-	StorageMaxSizeInBytes    int64         `yaml:"storageMaxSizeInBytes"`    // forwarder_storage_max_size_in_bytes
-	StoragePath              string        `yaml:"storagePath"`              // forwarder_storage_path
-	Timeout                  time.Duration `yaml:"timeout"`                  // forwarder_timeout
+	//Endpoints                []string             `yaml:"endpoints"`
+	AdditionalEndpoints      []AdditionalEndpoint `yaml:"additionalEndpoints"`      // additional_endpoints
+	ApikeyValidationInterval time.Duration        `yaml:"apikeyValidationInterval"` // forwarder_apikey_validation_interval
+	BackoffBase              float64              `yaml:"backoffBase"`              // forwarder_backoff_base
+	BackoffFactor            float64              `yaml:"backoffFactor"`            // forwarder_backoff_factor
+	BackoffMax               float64              `yaml:"backoffMax"`               // forwarder_backoff_max
+	ConnectionResetInterval  time.Duration        `yaml:"connectionResetInterval"`  // forwarder_connection_reset_interval
+	FlushToDiskMemRatio      float64              `yaml:"flushToDiskMemRatio"`      // forwarder_flush_to_disk_mem_ratio
+	NumWorkers               int                  `yaml:"numWorkers"`               // forwarder_num_workers
+	OutdatedFileInDays       int                  `yaml:"outdatedFileInDays"`       // forwarder_outdated_file_in_days
+	RecoveryInterval         int                  `yaml:"recoveryInterval"`         // forwarder_recovery_interval
+	RecoveryReset            bool                 `yaml:"recoveryReset"`            // forwarder_recovery_reset
+	StopTimeout              time.Duration        `yaml:"stopTimeout"`              // forwarder_stop_timeout
+	StorageMaxDiskRatio      float64              `yaml:"storageMaxDiskRatio"`      // forwarder_storage_max_disk_ratio
+	StorageMaxSizeInBytes    int64                `yaml:"storageMaxSizeInBytes"`    // forwarder_storage_max_size_in_bytes
+	StoragePath              string               `yaml:"storagePath"`              // forwarder_storage_path
+	Timeout                  time.Duration        `yaml:"timeout"`                  // forwarder_timeout
 	//RetryQueueMaxSize         int           `yaml:"retryQueueMaxSize"`         // forwarder_retry_queue_max_size
 	RetryQueuePayloadsMaxSize int `yaml:"retryQueuePayloadsMaxSize"` // forwarder_retry_queue_payloads_max_size
 
 }
 
 func (p *Forwarder) Validate() error {
+	for i, addtion := range p.AdditionalEndpoints {
+		for j, endpoint := range addtion.Endpoints {
+			if _, err := url.Parse(endpoint); err != nil {
+				return fmt.Errorf("could not parse agent.forwarder.addtionEndpoints[%d][%d] %s %s", i, j, endpoint, err)
+			}
+		}
+	}
+
 	if p.RecoveryInterval <= 0 {
 		return fmt.Errorf("Configured forwarder.recoveryInterval (%v) is not positive", p.RecoveryInterval)
 	}
@@ -827,56 +846,45 @@ func GetMultipleEndpoints() (map[string][]string, error) {
 
 // getMultipleEndpointsWithConfig implements the logic to extract the api keys per domain from an agent config
 func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error) {
-	// Validating domain
-	ddURL := config.Site
-	_, err := url.Parse(ddURL)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse main endpoint: %s", err)
-	}
+	endpoints := strings.Join(config.Endpoints, ",")
 
 	keysPerDomain := map[string][]string{
-		ddURL: {config.ApiKey},
+		endpoints: {config.ApiKey},
 	}
 
 	additionalEndpoints := config.Forwarder.AdditionalEndpoints
 	// merge additional endpoints into keysPerDomain
-	for _, endpoint := range additionalEndpoints {
+	for _, addition := range additionalEndpoints {
+		endpoints := strings.Join(addition.Endpoints, ",")
 
-		// Validating domain
-		domain := endpoint.Site
-		_, err := url.Parse(domain)
-		if err != nil {
-			return nil, fmt.Errorf("could not parse url from 'forwarder.additionalEndpoints' %s: %s", endpoint.Site, err)
-		}
-
-		if _, ok := keysPerDomain[domain]; ok {
-			for _, apiKey := range endpoint.ApiKeys {
-				keysPerDomain[domain] = append(keysPerDomain[domain], apiKey)
+		if _, ok := keysPerDomain[endpoints]; ok {
+			for _, apiKey := range addition.ApiKeys {
+				keysPerDomain[endpoints] = append(keysPerDomain[endpoints], apiKey)
 			}
 		} else {
-			keysPerDomain[domain] = endpoint.ApiKeys
+			keysPerDomain[endpoints] = addition.ApiKeys
 		}
 	}
 
 	// dedupe api keys and remove domains with no api keys (or empty ones)
-	for domain, apiKeys := range keysPerDomain {
-		dedupedAPIKeys := make([]string, 0, len(apiKeys))
-		seen := make(map[string]bool)
-		for _, apiKey := range apiKeys {
-			trimmedAPIKey := strings.TrimSpace(apiKey)
-			if _, ok := seen[trimmedAPIKey]; !ok && trimmedAPIKey != "" {
-				seen[trimmedAPIKey] = true
-				dedupedAPIKeys = append(dedupedAPIKeys, trimmedAPIKey)
-			}
-		}
+	// for endpoints, apiKeys := range keysPerDomain {
+	// 	dedupedAPIKeys := make([]string, 0, len(apiKeys))
+	// 	seen := make(map[string]bool)
+	// 	for _, apiKey := range apiKeys {
+	// 		trimmedAPIKey := strings.TrimSpace(apiKey)
+	// 		if _, ok := seen[trimmedAPIKey]; !ok && trimmedAPIKey != "" {
+	// 			seen[trimmedAPIKey] = true
+	// 			dedupedAPIKeys = append(dedupedAPIKeys, trimmedAPIKey)
+	// 		}
+	// 	}
 
-		if len(dedupedAPIKeys) > 0 {
-			keysPerDomain[domain] = dedupedAPIKeys
-		} else {
-			klog.Infof("No API key provided for domain \"%s\", removing domain from endpoints", domain)
-			delete(keysPerDomain, domain)
-		}
-	}
+	// 	if len(dedupedAPIKeys) > 0 {
+	// 		keysPerDomain[endpoints] = dedupedAPIKeys
+	// 	} else {
+	// 		klog.Infof("No API key provided for domain \"%s\", removing domain from endpoints", endpoints)
+	// 		delete(keysPerDomain, endpoints)
+	// 	}
+	// }
 
 	return keysPerDomain, nil
 }

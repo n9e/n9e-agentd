@@ -34,11 +34,11 @@ type HTTPTransactionsSerializer struct {
 	collection          HttpTransactionProtoCollection
 	apiKeyToPlaceholder *strings.Replacer
 	placeholderToAPIKey *strings.Replacer
-	domain              string
+	domain              *transaction.Domain
 }
 
 // NewHTTPTransactionsSerializer creates a new instance of HTTPTransactionsSerializer
-func NewHTTPTransactionsSerializer(domain string, apiKeys []string) *HTTPTransactionsSerializer {
+func NewHTTPTransactionsSerializer(domain *transaction.Domain, apiKeys []string) *HTTPTransactionsSerializer {
 	apiKeyToPlaceholder, placeholderToAPIKey := createReplacers(apiKeys)
 
 	return &HTTPTransactionsSerializer{

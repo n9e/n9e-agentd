@@ -64,7 +64,8 @@ func NewDefaultConfig() *Config {
 
 const (
 	defaultConfig = `# agent default config
-site: http://localhost:8080
+endpoints:
+  - http://localhost:8080
 n9eSeriesFormat: true
 hostname: test
 lang: zh
@@ -292,8 +293,8 @@ forwarder:
   numWorkers: 1
   stopTimeout: 2s
   backoffFactor: 2
-  backoffBase: 2
-  backoffMax: 64
+  backoffBase: 2 # 2s
+  backoffMax: 64 # 64s
   recoveryInterval: 2
   recoveryReset: false
   outdatedFileInDays: 10

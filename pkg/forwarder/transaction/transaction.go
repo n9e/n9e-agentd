@@ -12,9 +12,12 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptrace"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
@@ -162,12 +165,78 @@ const (
 
 	// TransactionPriorityHigh defines a transaction with an high priority
 	TransactionPriorityHigh Priority = iota
+
+	MinDomainChangeTime = 2
 )
+
+type Domain struct {
+	sync.RWMutex
+
+	domain  string
+	domains []string
+	idx     int
+	ts      time.Time
+}
+
+func NewDomain(domain string) *Domain {
+	domains := strings.Split(domain, ",")
+	return &Domain{
+		domain:  domain,
+		domains: domains,
+		idx:     rand.Intn(len(domains)),
+		ts:      time.Now().Add(time.Second * MinDomainChangeTime),
+	}
+}
+
+func (d *Domain) Raw() string {
+	d.Lock()
+	defer d.Unlock()
+
+	return d.domain
+}
+
+func (d *Domain) Next() {
+	d.Lock()
+	defer d.Unlock()
+
+	if now := time.Now(); now.After(d.ts) {
+		d.idx = (d.idx + 1) % len(d.domains)
+		d.ts = now.Add(time.Second * MinDomainChangeTime)
+		klog.V(6).Infof("domain.next() %d", d.idx)
+	}
+}
+
+func (d *Domain) Current() string {
+	d.RLock()
+	defer d.RUnlock()
+	return d.domains[d.idx]
+}
+
+func (d *Domain) String() string {
+	d.RLock()
+	defer d.RUnlock()
+
+	buf := &bytes.Buffer{}
+	for i, v := range d.domains {
+		if i == d.idx {
+			fmt.Fprintf(buf, "[%s],", v)
+		} else {
+			fmt.Fprintf(buf, "%s,", v)
+		}
+	}
+
+	if buf.Len() == 0 {
+		return ""
+	}
+
+	return buf.String()[:buf.Len()-1]
+
+}
 
 // HTTPTransaction represents one Payload for one Endpoint on one Domain.
 type HTTPTransaction struct {
 	// Domain represents the domain target by the HTTPTransaction.
-	Domain string
+	Domain *Domain
 	// Endpoint is the API Endpoint used by the HTTPTransaction.
 	Endpoint Endpoint
 	// Headers are the HTTP headers used by the HTTPTransaction.
@@ -241,7 +310,7 @@ func (t *HTTPTransaction) GetCreatedAt() time.Time {
 
 // GetTarget return the url used by the transaction
 func (t *HTTPTransaction) GetTarget() string {
-	url := t.Domain + t.Endpoint.Route
+	url := t.Domain.Current() + t.Endpoint.Route
 	return log.SanitizeURL(url) // sanitized url that can be logged
 }
 
@@ -277,6 +346,8 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 	// If the txn is retryable, return the error (if present) to the worker to allow it to be retried
 	// Otherwise, return nil so the txn won't be retried.
 	if t.Retryable {
+		// try change domain
+		t.Domain.Next()
 		return err
 	}
 
@@ -287,7 +358,7 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 // This will return  (http status code, response body, error).
 func (t *HTTPTransaction) internalProcess(ctx context.Context, client *http.Client) (int, []byte, error) {
 	reader := bytes.NewReader(*t.Payload)
-	url := t.Domain + t.Endpoint.Route
+	url := t.Domain.Current() + t.Endpoint.Route
 	transactionEndpointName := t.GetEndpointName()
 	logURL := log.SanitizeURL(url) // sanitized url that can be logged
 
@@ -295,7 +366,7 @@ func (t *HTTPTransaction) internalProcess(ctx context.Context, client *http.Clie
 	if err != nil {
 		klog.Errorf("Could not create request for transaction to invalid URL %q (dropping transaction): %s", logURL, err)
 		transactionsErrors.Add(1)
-		tlmTxErrors.Inc(t.Domain, transactionEndpointName, "invalid_request")
+		tlmTxErrors.Inc(t.Domain.Current(), transactionEndpointName, "invalid_request")
 		transactionsSentRequestErrors.Add(1)
 		return 0, nil, nil
 	}
@@ -310,7 +381,7 @@ func (t *HTTPTransaction) internalProcess(ctx context.Context, client *http.Clie
 		}
 		t.ErrorCount++
 		transactionsErrors.Add(1)
-		tlmTxErrors.Inc(t.Domain, transactionEndpointName, "cant_send")
+		tlmTxErrors.Inc(t.Domain.Current(), transactionEndpointName, "cant_send")
 		return 0, nil, fmt.Errorf("error while sending transaction, rescheduling it: %s", log.SanitizeURL(err.Error()))
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -332,30 +403,30 @@ func (t *HTTPTransaction) internalProcess(ctx context.Context, client *http.Clie
 		}
 		codeCount.Add(1)
 		transactionsHTTPErrors.Add(1)
-		tlmTxHTTPErrors.Inc(t.Domain, transactionEndpointName, statusCode)
+		tlmTxHTTPErrors.Inc(t.Domain.Current(), transactionEndpointName, statusCode)
 	}
 
 	if resp.StatusCode == 400 || resp.StatusCode == 404 || resp.StatusCode == 413 {
 		klog.Errorf("Error code %q received while sending transaction to %q: %s, dropping it", resp.Status, logURL, string(body))
 		TransactionsDroppedByEndpoint.Add(transactionEndpointName, 1)
 		TransactionsDropped.Add(1)
-		TlmTxDropped.Inc(t.Domain, transactionEndpointName)
+		TlmTxDropped.Inc(t.Domain.Current(), transactionEndpointName)
 		return resp.StatusCode, body, nil
 	} else if resp.StatusCode == 403 {
 		klog.Errorf("API Key invalid, dropping transaction for %s", logURL)
 		TransactionsDroppedByEndpoint.Add(transactionEndpointName, 1)
 		TransactionsDropped.Add(1)
-		TlmTxDropped.Inc(t.Domain, transactionEndpointName)
+		TlmTxDropped.Inc(t.Domain.Current(), transactionEndpointName)
 		return resp.StatusCode, body, nil
 	} else if resp.StatusCode > 400 {
 		t.ErrorCount++
 		transactionsErrors.Add(1)
-		tlmTxErrors.Inc(t.Domain, transactionEndpointName, "gt_400")
+		tlmTxErrors.Inc(t.Domain.Current(), transactionEndpointName, "gt_400")
 		return resp.StatusCode, body, fmt.Errorf("error %q while sending transaction to %q, rescheduling it", resp.Status, logURL)
 	}
 
-	tlmTxSuccessCount.Inc(t.Domain, transactionEndpointName)
-	tlmTxSuccessBytes.Add(float64(t.GetPayloadSize()), t.Domain, transactionEndpointName)
+	tlmTxSuccessCount.Inc(t.Domain.Current(), transactionEndpointName)
+	tlmTxSuccessBytes.Add(float64(t.GetPayloadSize()), t.Domain.Current(), transactionEndpointName)
 	TransactionsSuccessByEndpoint.Add(transactionEndpointName, 1)
 	transactionsSuccessBytesByEndpoint.Add(transactionEndpointName, int64(t.GetPayloadSize()))
 	transactionsSuccess.Add(1)

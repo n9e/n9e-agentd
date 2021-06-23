@@ -498,7 +498,7 @@ func (r *HTTPReceiver) handleTraces(v Version, w http.ResponseWriter, req *http.
 		// channel blocked, add a goroutine to ensure we never drop
 		r.wg.Add(1)
 		go func() {
-			metrics.Count("datadog.trace_agent.receiver.queued_send", 1, nil, 1)
+			metrics.Count("trace_agent.receiver.queued_send", 1, nil, 1)
 			defer func() {
 				r.wg.Done()
 				watchdog.LogOnPanic()

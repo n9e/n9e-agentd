@@ -74,12 +74,12 @@ func (c *Client) getCollectRules() ([]api.CollectRule, error) {
 		return nil, err
 	}
 
-	var rules []api.CollectRule
+	var rules api.CollectRuleWrap
 	if err := json.Unmarshal(b, &rules); err != nil {
 		return nil, err
 	}
 
-	return rules, nil
+	return rules.Data, nil
 }
 
 func (c *Client) getCollectRulesSummary() (*api.CollectRulesSummary, error) {
@@ -88,12 +88,13 @@ func (c *Client) getCollectRulesSummary() (*api.CollectRulesSummary, error) {
 		return nil, err
 	}
 
-	var summary api.CollectRulesSummary
+	var summary api.CollectRulesSummaryWrap
 	if err := json.Unmarshal(b, &summary); err != nil {
 		return nil, err
 	}
 
-	return &summary, nil
+	return &summary.Data, nil
+
 }
 
 // HttpConfigProvider implements the Config Provider interface
