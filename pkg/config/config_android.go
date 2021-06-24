@@ -21,15 +21,15 @@ func osinit() {
 }
 
 const (
-	defaultConfdPath            = ""
-	defaultAdditionalChecksPath = ""
-	defaultRunPath              = ""
+	defaultConfdPath            = "/opt/n9e-agentd/conf.d"
+	defaultAdditionalChecksPath = "/opt/n9e-agentd/checks.d"
+	defaultRunPath              = "/opt/n9e-agentd/run"
 	defaultSyslogURI            = ""
 	defaultGuiPort              = 5002
 	// defaultSecurityAgentLogFile points to the log file that will be used by the security-agent if not configured
 	defaultSecurityAgentLogFile = "/var/log/n9e/security-agent.log"
 	// defaultSystemProbeAddress is the default unix socket path to be used for connecting to the system probe
-	defaultSystemProbeAddress     = "/opt/n9e-agent/run/sysprobe.sock"
+	defaultSystemProbeAddress     = "/opt/n9e-agentd/run/sysprobe.sock"
 	defaultSystemProbeLogFilePath = "/var/log/n9e/system-probe.log"
 )
 

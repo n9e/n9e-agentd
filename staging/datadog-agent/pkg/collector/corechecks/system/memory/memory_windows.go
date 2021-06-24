@@ -13,9 +13,9 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"k8s.io/klog/v2"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/pdhutil"
+	"k8s.io/klog/v2"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 )
@@ -115,14 +115,14 @@ func (c *Check) Run() error {
 		sender.Gauge("system.swap.total", float64(s.Total)/mbSize, "", nil)
 		sender.Gauge("system.swap.free", float64(s.Free)/mbSize, "", nil)
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
-		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent)/100, "", nil)
+		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent), "", nil)
 	} else {
 		klog.Errorf("memory.Check: could not retrieve swap memory stats: %s", errSwap)
 	}
 
 	p, errPage := pageMemory()
 	if errPage == nil {
-		sender.Gauge("system.mem.pagefile.pct_free", float64(100-p.UsedPercent)/100, "", nil)
+		sender.Gauge("system.mem.pagefile.pct_free", float64(100-p.UsedPercent), "", nil)
 		sender.Gauge("system.mem.pagefile.total", float64(p.Total)/mbSize, "", nil)
 		sender.Gauge("system.mem.pagefile.free", float64(p.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pagefile.used", float64(p.Used)/mbSize, "", nil)

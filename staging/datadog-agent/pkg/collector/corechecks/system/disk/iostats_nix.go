@@ -13,11 +13,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"k8s.io/klog/v2"
 	"github.com/shirou/gopsutil/disk"
+	"k8s.io/klog/v2"
 )
 
 // For testing purpose

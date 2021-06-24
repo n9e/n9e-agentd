@@ -13,8 +13,8 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"k8s.io/klog/v2"
 )
@@ -122,14 +122,18 @@ func (c *Check) sendPartitionMetrics(sender aggregator.Sender, usage *disk.Usage
 	sender.Gauge(fmt.Sprintf(diskMetric, "used"), float64(usage.Used)/1024, "", tags)
 	sender.Gauge(fmt.Sprintf(diskMetric, "free"), float64(usage.Free)/1024, "", tags)
 	// FIXME(8.x): use percent, a lot more logical than in_use
-	sender.Gauge(fmt.Sprintf(diskMetric, "in_use"), usage.UsedPercent/100, "", tags)
+	//sender.Gauge(fmt.Sprintf(diskMetric, "in_use"), usage.UsedPercent/100, "", tags)
+	// 1 -> 100%
+	sender.Gauge(fmt.Sprintf(diskMetric, "in_use"), usage.UsedPercent, "", tags)
 
 	// Inodes metrics
 	sender.Gauge(fmt.Sprintf(inodeMetric, "total"), float64(usage.InodesTotal), "", tags)
 	sender.Gauge(fmt.Sprintf(inodeMetric, "used"), float64(usage.InodesUsed), "", tags)
 	sender.Gauge(fmt.Sprintf(inodeMetric, "free"), float64(usage.InodesFree), "", tags)
 	// FIXME(8.x): use percent, a lot more logical than in_use
-	sender.Gauge(fmt.Sprintf(inodeMetric, "in_use"), usage.InodesUsedPercent/100, "", tags)
+	//sender.Gauge(fmt.Sprintf(inodeMetric, "in_use"), usage.InodesUsedPercent/100, "", tags)
+	// fraction -> percent
+	sender.Gauge(fmt.Sprintf(inodeMetric, "in_use"), usage.InodesUsedPercent, "", tags)
 
 }
 

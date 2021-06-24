@@ -164,6 +164,6 @@ func configToRule(config integration.Config) (rule api.CollectRule, err error) {
 
 func printInstances(config api.ConfigFormat) {
 	for i, c := range config.Instances {
-		klog.Infof("%d %s", i, c)
+		klog.Infof("%d %v", i, c)
 	}
 }

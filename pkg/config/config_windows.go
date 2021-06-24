@@ -39,6 +39,3 @@ func osinit() {
 		winutil.LogEventViewer(ServiceName, 0x8000000F, defaultConfdPath)
 	}
 }
-
-// NewAssetFs  Should never be called on non-android
-func setAssetFs(config Config) {}

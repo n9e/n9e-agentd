@@ -45,7 +45,7 @@ const (
 	ClusterIDCacheKey = "orchestratorClusterID"
 
 	// DefaultRuntimePoliciesDir is the default policies directory used by the runtime security module
-	DefaultRuntimePoliciesDir = "/opt/n9e-agent/runtime-security.d"
+	DefaultRuntimePoliciesDir = "/opt/n9e-agentd/runtime-security.d"
 )
 
 var (
@@ -60,14 +60,15 @@ var (
 )
 
 type Config struct {
-	Ident           string   `yaml:"ident"`
-	Alias           string   `yaml:"alias"`
-	Lang            string   `yaml:"lang"`
-	EnableDocs      bool     `yaml:"enableDocs"`
-	N9eSeriesFormat bool     `yaml:"n9eSeriesFormat"`
-	FileUsedDir     string   `yaml:"-"`         // e.g. /etc/n9e-agentd/
-	ConfigFilePath  string   `yaml:"-"`         // e.g. /etc/n9e-agentd/conf.d
-	Endpoints       []string `yaml:"endpoints"` // site
+	Ident           string `yaml:"ident"`
+	Alias           string `yaml:"alias"`
+	Lang            string `yaml:"lang"`
+	EnableDocs      bool   `yaml:"enableDocs"`
+	N9eSeriesFormat bool   `yaml:"n9eSeriesFormat"`
+	//WorkDir         string   `yaml:"workDir"`
+	WorkDir        string   `yaml:"-"`         // e.g. /etc/n9e-agentd/
+	ConfigFilePath string   `yaml:"-"`         // e.g. /etc/n9e-agentd/conf.d
+	Endpoints      []string `yaml:"endpoints"` // site
 	//DdUrl                                bool                     `yaml:"ddUrl"`                                // dd_url
 	Listeners                            []Listeners              `yaml:"listeners"`                            // listeners
 	AuthTokenFilePath                    string                   `yaml:"authTokenFilePath"`                    // auth_token_file_path
@@ -323,9 +324,9 @@ func getOutboundIP() string {
 
 func (p *Config) Prepare(configFile string) error {
 	p.ConfigFilePath = configFile
-	p.FileUsedDir = filepath.Dir(configFile)
+	p.WorkDir = filepath.Dir(configFile)
 	if p.AuthTokenFilePath == "" {
-		p.AuthTokenFilePath = filepath.Join(p.FileUsedDir, authTokenName)
+		p.AuthTokenFilePath = filepath.Join(p.WorkDir, authTokenName)
 	}
 
 	if ForceDefaultPython == "true" {

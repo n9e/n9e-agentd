@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
 	"k8s.io/klog/v2"
 
@@ -36,17 +35,17 @@ var (
 
 var (
 	// DefaultConfPath points to the folder containing datadog.yaml
-	DefaultConfPath = "c:\\programdata\\datadog"
+	DefaultConfPath = "c:\\programdata\\n9e"
 	// DefaultLogFile points to the log file that will be used if not configured
-	DefaultLogFile = "c:\\programdata\\datadog\\logs\\agent.log"
+	DefaultLogFile = "c:\\programdata\\n9e\\logs\\agent.log"
 	// DefaultDCALogFile points to the log file that will be used if not configured
-	DefaultDCALogFile = "c:\\programdata\\datadog\\logs\\cluster-agent.log"
+	DefaultDCALogFile = "c:\\programdata\\n9e\\logs\\cluster-agent.log"
 	//DefaultJmxLogFile points to the jmx fetch log file that will be used if not configured
-	DefaultJmxLogFile = "c:\\programdata\\datadog\\logs\\jmxfetch.log"
+	DefaultJmxLogFile = "c:\\programdata\\n9e\\logs\\jmxfetch.log"
 	// DefaultCheckFlareDirectory a flare friendly location for checks to be written
-	DefaultCheckFlareDirectory = "c:\\programdata\\datadog\\logs\\checks\\"
+	DefaultCheckFlareDirectory = "c:\\programdata\\n9e\\logs\\checks\\"
 	// DefaultJMXFlareDirectory a flare friendly location for jmx command logs to be written
-	DefaultJMXFlareDirectory = "c:\\programdata\\datadog\\logs\\jmxinfo\\"
+	DefaultJMXFlareDirectory = "c:\\programdata\\n9e\\logs\\jmxinfo\\"
 )
 
 func init() {
@@ -65,7 +64,7 @@ func init() {
 //	seeConfig := `
 //<seelog>
 //	<outputs>
-//		<rollingfile type="size" filename="c:\\ProgramData\\DataDog\\Logs\\agent.log" maxsize="1000000" maxrolls="2" />
+//		<rollingfile type="size" filename="c:\\ProgramData\\n9e\\Logs\\agent.log" maxsize="1000000" maxrolls="2" />
 //	</outputs>
 //</seelog>`
 //	logger, _ := seelog.LoggerFromConfigAsBytes([]byte(seeConfig))
@@ -76,7 +75,7 @@ func getInstallPath() string {
 	// fetch the installation path from the registry
 	installpath := filepath.Join(_here, "..")
 	var s string
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\DataDog\Datadog Agent`, registry.QUERY_VALUE)
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\n9e\n9e agentd`, registry.QUERY_VALUE)
 	if err != nil {
 		klog.Warningf("Failed to open registry key: %s", err)
 	} else {
@@ -119,22 +118,8 @@ func GetViewsPath() string {
 	return viewsPath
 }
 
-// CheckAndUpgradeConfig checks to see if there's an old datadog.conf, and if
-// datadog.yaml is either missing or incomplete (no API key).  If so, upgrade it
+// CheckAndUpgradeConfig checks to see if there's an old n9e.conf, and if
+// n9e.yaml is either missing or incomplete (no API key).  If so, upgrade it
 func CheckAndUpgradeConfig() error {
-	datadogConfPath := filepath.Join(DefaultConfPath, "datadog.conf")
-	if _, err := os.Stat(datadogConfPath); os.IsNotExist(err) {
-		klog.V(5).Info("Previous config file not found, not upgrading")
-		return nil
-	}
-	config.Datadog.AddConfigPath(DefaultConfPath)
-	_, err := config.Load()
-	if err == nil {
-		// was able to read config, check for api key
-		if config.Datadog.GetString("api_key") != "" {
-			klog.V(5).Info("Datadog.yaml found, and API key present.  Not upgrading config")
-			return nil
-		}
-	}
-	return ImportConfig(DefaultConfPath, DefaultConfPath, false)
+	return nil
 }

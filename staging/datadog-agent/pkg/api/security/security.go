@@ -188,7 +188,7 @@ func getClusterAgentAuthToken(tokenCreationAllowed bool) (string, error) {
 	}
 
 	// load the cluster agent auth token from filesystem
-	tokenAbsPath := filepath.Join(cf.FileUsedDir, clusterAgentAuthTokenFilename)
+	tokenAbsPath := filepath.Join(cf.WorkDir, clusterAgentAuthTokenFilename)
 	klog.V(5).Infof("Empty cluster_agent.auth_token, loading from %s", tokenAbsPath)
 
 	// Create a new token if it doesn't exist

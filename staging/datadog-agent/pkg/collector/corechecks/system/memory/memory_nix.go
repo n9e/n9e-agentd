@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"k8s.io/klog/v2"
 	"github.com/shirou/gopsutil/mem"
+	"k8s.io/klog/v2"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
@@ -42,8 +42,9 @@ func (c *Check) Run() error {
 		sender.Gauge("system.mem.total", float64(v.Total)/mbSize, "", nil)
 		sender.Gauge("system.mem.free", float64(v.Free)/mbSize, "", nil)
 		sender.Gauge("system.mem.used", float64(v.Total-v.Free)/mbSize, "", nil)
+		sender.Gauge("system.mem.pct_used", (float64(v.Total-v.Free) / float64(v.Total)), "", nil)
 		sender.Gauge("system.mem.usable", float64(v.Available)/mbSize, "", nil)
-		sender.Gauge("system.mem.pct_usable", float64(v.Available)/float64(v.Total), "", nil)
+		sender.Gauge("system.mem.pct_usable", (float64(v.Available)/float64(v.Total))*100, "", nil)
 
 		switch runtimeOS {
 		case "linux":
@@ -66,7 +67,7 @@ func (c *Check) Run() error {
 		sender.Gauge("system.swap.total", float64(s.Total)/mbSize, "", nil)
 		sender.Gauge("system.swap.free", float64(s.Free)/mbSize, "", nil)
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
-		sender.Gauge("system.swap.pct_free", (100-s.UsedPercent)/100, "", nil)
+		sender.Gauge("system.swap.pct_free", (100 - s.UsedPercent), "", nil)
 	} else {
 		klog.Errorf("memory.Check: could not retrieve swap memory stats: %s", errSwap)
 	}

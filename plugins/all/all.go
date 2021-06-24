@@ -6,6 +6,7 @@ import (
 	_ "github.com/n9e/n9e-agentd/plugins/port"
 	_ "github.com/n9e/n9e-agentd/plugins/process"
 	_ "github.com/n9e/n9e-agentd/plugins/prometheus"
+	_ "github.com/n9e/n9e-agentd/plugins/script"
 
 	// register core checks
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/ksm"
@@ -19,6 +20,7 @@ import (
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/net"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/nvidia/jetson"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/snmp"
+	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system/cpu"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system/disk"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system/filehandles"

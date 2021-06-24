@@ -3,7 +3,7 @@ agent:
   ident: $ip
   alias: $host
   endpoints:
-    - http://localhost:8080
+    - http://localhost:8080 # mocker
   histogramAggregates: ["max", "median", "avg", "count"]
   histogramPercentiles: ["0.95"]
   apiKey: 1234
@@ -28,7 +28,8 @@ agent:
     url: "localhost:8080"
   forwarder:
     additionalEndpoints:
-      #- site: http://localhost:8081
+      #- endpoints:
+      #    - http://localhost:8080
       #  apiKeys: ["1234"]
   statsd:
     enabled: true
@@ -40,7 +41,8 @@ agent:
   configProviders:
     - name: http
       polling: true
-      templateUrl: http://127.0.0.1:8080
+      templateUrl: http://localhost:8080
+      #templateUrl: http://10.86.76.13:8085
       token:
 
 

@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"unsafe"
 
-	"k8s.io/klog/v2"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
+	"k8s.io/klog/v2"
 )
 import "path/filepath"
 
@@ -74,7 +74,7 @@ func getDefaultProgramDataDir() (path string, err error) {
 		// the path = windows.UTF16ToString... returns a
 		// go vet: "possible misuse of unsafe.Pointer"
 		path = windows.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(retstr))[:])
-		path = filepath.Join(path, "Datadog")
+		path = filepath.Join(path, "n9e")
 	}
 	return
 }
@@ -82,13 +82,13 @@ func getDefaultProgramDataDir() (path string, err error) {
 // GetProgramDataDir returns the current programdatadir, usually
 // c:\programdata\Datadog
 func GetProgramDataDir() (path string, err error) {
-	return GetProgramDataDirForProduct("Datadog Agent")
+	return GetProgramDataDirForProduct("n9e agentd")
 }
 
 // GetProgramDataDirForProduct returns the current programdatadir, usually
 // c:\programdata\Datadog given a product key name
 func GetProgramDataDirForProduct(product string) (path string, err error) {
-	keyname := "SOFTWARE\\Datadog\\" + product
+	keyname := "SOFTWARE\\n9e\\" + product
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE,
 		keyname,
 		registry.ALL_ACCESS)

@@ -43,7 +43,7 @@ func LoadComponents(cf *config.Config) {
 	// setup autodiscovery
 	confSearchPaths := []string{
 		cf.ConfdPath,
-		filepath.Join(cf.FileUsedDir, "conf.d"),
+		filepath.Join(cf.WorkDir, "conf.d"),
 		"",
 	}
 

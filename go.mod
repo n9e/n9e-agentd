@@ -185,6 +185,7 @@ replace (
 	github.com/spf13/cast => github.com/DataDog/cast v1.3.1-0.20190301154711-1ee8c8bd14a3
 	github.com/ugorji/go => github.com/ugorji/go v1.1.7
 	github.com/vishvananda/netlink => github.com/DataDog/netlink v1.0.1-0.20210312173533-6d628a7fc6f3
+	github.com/yubo/golib => ../../yubo/golib
 	google.golang.org/grpc => github.com/grpc/grpc-go v1.26.0
 	k8s.io/api => k8s.io/api v0.18.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.2
