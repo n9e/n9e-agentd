@@ -4,8 +4,8 @@ package network
 
 /*
 //! These includes are needed to use constants defined in the ddnpmapi
-#include <WinDef.h>
-#include <WinIoCtl.h>
+#include <windef.h>
+#include <winioctl.h>
 
 //! Defines the objects used to communicate with the driver as well as its control codes
 #include "ddnpmapi.h"
@@ -23,9 +23,9 @@ import (
 	"time"
 	"unsafe"
 
-	"k8s.io/klog/v2"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/windows"
+	"k8s.io/klog/v2"
 )
 
 // HandleType represents what type of data the windows handle created on the driver is intended to return. It implicitly implies if there are filters set for a handle

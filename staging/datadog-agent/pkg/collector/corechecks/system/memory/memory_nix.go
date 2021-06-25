@@ -42,7 +42,7 @@ func (c *Check) Run() error {
 		sender.Gauge("system.mem.total", float64(v.Total)/mbSize, "", nil)
 		sender.Gauge("system.mem.free", float64(v.Free)/mbSize, "", nil)
 		sender.Gauge("system.mem.used", float64(v.Total-v.Free)/mbSize, "", nil)
-		sender.Gauge("system.mem.pct_used", (float64(v.Total-v.Free) / float64(v.Total)), "", nil)
+		sender.Gauge("system.mem.pct_used", (float64(v.Total-v.Free)/float64(v.Total))*100, "", nil)
 		sender.Gauge("system.mem.usable", float64(v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pct_usable", (float64(v.Available)/float64(v.Total))*100, "", nil)
 

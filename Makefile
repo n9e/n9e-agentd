@@ -1,34 +1,44 @@
-.PHONY: clean test
+.PHONY: pkg clean release release
 
-APP_NAME=agentd
-DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -and -not -path "./staging/*")
-TARGETS=directories build/$(APP_NAME)
-
-GO_BUILD_LDFLAGS_CMD      := $(abspath ./scripts/go-build-ldflags.sh)
-GO_BUILD_LDFLAGS          := $(shell $(GO_BUILD_LDFLAGS_CMD) LDFLAG)
-GO_TAGS                   := jmx,kubelet
+VERSION=5.0.0
+RELEASE=rc1
+GENERATOR=RPM
+APP_NAME?=agentd
+CGO_ENABLED?=1
+OBJ=$(APP_NAME)
+RPM_FILE=$(APP_NAME)-$(VERSION)-$(RELEASE).$(shell uname -s).$(shell uname -m).rpm
+DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -a -not -path "./staging/*")
+TARGETS=directories build/agentd
+GO_BUILD_LDFLAGS_CMD=$(abspath ./scripts/go-build-ldflags.sh)
+GO_BUILD_LDFLAGS=$(shell $(GO_BUILD_LDFLAGS_CMD) LDFLAG)
 
 all: $(TARGETS)
 
-.PHONY: devrun dev
+pkg: build/$(RPM_FILE)
 
-devrun:
-	@echo "./build/agentd -c ./etc/agent.yml"
+pkgs: $(TARGETS)
+	docker run --rm \
+		-v $(PWD):/src \
+		--name golang-cross-builder \
+		--hostname golang-cross-builder \
+		-e GO_BUILD_LDFLAGS='$(GO_BUILD_LDFLAGS)' \
+		-e VERSION=$(VERSION) \
+		-e RELEASE=$(RELEASE) \
+		-it ghcr.io/gythialy/golang-cross-builder:v1.16.2 \
+		/src/scripts/pkgs.sh
 
-.PHONY: run
-run:
-	./build/agentd -c ./etc/agent.yml --vmodule=http=10,script=10,sender=10 \
-		2>&1
-	#./build/agentd -c ./etc/agent.yml --vmodule=prometheus=10  2>&1
-
-dev:
-	APP_NAME=$(APP_NAME) watcher --logtostderr -v 10 -e build -e .git -e docs -e plugins -e tmp -e vendor -e staging -f .go -d 1000
+	#VERSION=$(VERSION) RELEASE=$(RELEASE) \
+	#GO_BUILD_LDFLAGS='$(GO_BUILD_LDFLAGS)' \
+	#./scripts/package.sh
 
 
-build/$(APP_NAME): $(DEP_OBJS)
+build/_$(APP_NAME)/Makefile: $(TARGETS) Makefile
+	mkdir -p build/_$(APP_NAME); cd build/_$(APP_NAME); cmake ../.. -DAPP_NAME=$(APP_NAME) -DCPACK_PACKAGE_VERSION="$(VERSION)" -DCPACK_PACKAGE_RELEASE="$(RELEASE)" -DCPACK_GENERATOR="$(GENERATOR)"
+
+build/agentd: $(DEP_OBJS)
 	GO111MODULE=on \
-	go build -ldflags '$(GO_BUILD_LDFLAGS)' -tags '$(GO_TAGS)' \
-	-o $@  ./cmd/$(APP_NAME) && \
+	go build -ldflags '$(GO_BUILD_LDFLAGS)' \
+	-o $@ ./cmd/agentd && \
 	$@ version
 
 directories: build
@@ -36,23 +46,21 @@ directories: build
 build:
 	mkdir -p build
 
-%.pb.go: %.proto
-	protoc -I/usr/local/include -I. --go_out=plugins=grpc:$(GOPATH)/src $<
-
-%.pb.gw.go: %.proto
-	protoc -I/usr/local/include -I. \
-	  -I$(GOPATH)/src \
-	  -I$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
-	  --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
-	  $<
+build/$(RPM_FILE): build/_$(APP_NAME)/Makefile $(TARGETS)
+	cd build/_$(APP_NAME) && make package && cp -af $(RPM_FILE) ../
+	rpm -pql build/$(RPM_FILE)
 
 clean:
 	rm -rf build
 
-.PHONY: env
-env:
-	yum install -y systemd-devel
 
+release:
+	VERSION=$(VERSION) RELEASE=$(RELEASE) ./scripts/release.sh
 
-mocker:
-	go build -o build/mocker ./cmd/mocker
+devrun: build/agentd
+	@echo "./build/agentd start --config ./etc/agentd.yml -v 10 2>&1"
+
+dev: build/agentd
+	APP_NAME=agentd watcher -logtostderr \
+		 -v 10 -e build -e .git -e docs \
+		 -e plugins -e tmp -e vendor -e staging -f .go -d 1000

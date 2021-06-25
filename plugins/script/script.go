@@ -3,7 +3,6 @@ package script
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,18 +26,18 @@ const (
 )
 
 type InitConfig struct {
-	Root    string `json:"root"`
-	Env     string `json:"env"`
-	Timeout int    `json:"timeout"`
+	Root    string            `json:"root"`
+	Env     map[string]string `json:"env"`
+	Timeout int               `json:"timeout"`
 }
 
 type InstanceConfig struct {
-	FilePath string `json:"filePath"`
-	Root     string `json:"root"`
-	Params   string `json:"params"`
-	Env      string `json:"env"`
-	Stdin    string `json:"stdin"`
-	Timeout  int    `json:"timeout"`
+	FilePath string            `json:"filePath"`
+	Root     string            `json:"root"`
+	Params   string            `json:"params"`
+	Env      map[string]string `json:"env"`
+	Stdin    string            `json:"stdin"`
+	Timeout  int               `json:"timeout"`
 }
 
 type checkConfig struct {
@@ -99,7 +98,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 		instance.Root = initConfig.Root
 	}
 
-	if instance.Env == "" {
+	if len(instance.Env) == 0 {
 		instance.Env = initConfig.Env
 	}
 
@@ -123,12 +122,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 	}
 
 	if len(instance.Env) > 0 {
-		envs := make(map[string]string)
-		err := json.Unmarshal([]byte(instance.Env), &envs)
-		if err != nil {
-			return nil, fmt.Errorf("invalide env: %s", err)
-		}
-		for k, v := range envs {
+		for k, v := range instance.Env {
 			config.env = append(config.env, fmt.Sprintf("%s=%s", k, v))
 		}
 	}

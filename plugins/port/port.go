@@ -11,6 +11,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
 
@@ -62,7 +63,11 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 		return checkConfig{}, err
 	}
 	for _, addr := range ifAddrs {
-		instance.addrs = append(instance.addrs, fmt.Sprintf("%s:%d", addr.String(), instance.Port))
+		ip, _, err := net.ParseCIDR(addr.String())
+		if err != nil {
+			klog.Warningf("parse cidr %s %s", addr.String(), err)
+		}
+		instance.addrs = append(instance.addrs, fmt.Sprintf("%s:%d", ip.String(), instance.Port))
 	}
 
 	if initConfig.Timeout <= 0 {
@@ -127,6 +132,8 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 
 func (c *Check) check() bool {
 	cf := c.config
+
+	klog.V(6).Infof("port check address %v", cf.addrs)
 
 	if cf.Protocol == "udp" {
 		for i, addr := range cf.addrs {

@@ -8,6 +8,7 @@
 package file
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -92,7 +93,7 @@ func (t *Tailer) read() (int, error) {
 		return n, nil
 	} else if err != nil {
 		t.file.Source.Status.Error(err)
-		return n, klog.Error("Err: ", err)
+		return n, fmt.Errorf("Err: %s", err)
 	}
 	return n, nil
 }

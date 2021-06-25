@@ -13,7 +13,7 @@ import (
 
 // SetupCoreDump enables core dumps and sets the core dump size limit based on configuration
 func SetupCoreDump() error {
-	if config.Datadog.GetBool("go_core_dump") {
+	if config.C.CoreDump {
 		return fmt.Errorf("Not supported on Windows")
 	}
 	return nil

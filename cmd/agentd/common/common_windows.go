@@ -6,7 +6,6 @@
 package common
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
@@ -16,7 +15,6 @@ import (
 	// Init packages
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers/windows"
 
-	"github.com/cihub/seelog"
 	"golang.org/x/sys/windows/registry"
 )
 

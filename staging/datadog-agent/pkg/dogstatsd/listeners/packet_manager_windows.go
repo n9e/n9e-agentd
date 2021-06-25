@@ -20,9 +20,9 @@ type packetManager struct {
 }
 
 func newPacketManagerFromConfig(packetOut chan Packets, sharedPacketPool *PacketPool) *packetManager {
-	bufferSize := config.Datadog.GetInt("dogstatsd_buffer_size")
-	packetsBufferSize := config.Datadog.GetInt("dogstatsd_packet_buffer_size")
-	flushTimeout := config.Datadog.GetDuration("dogstatsd_packet_buffer_flush_timeout")
+	bufferSize := config.C.Statsd.BufferSize
+	packetsBufferSize := config.C.Statsd.PacketBufferSize
+	flushTimeout := config.C.Statsd.PacketBufferFlushTimeout
 
 	return newPacketManager(bufferSize, packetsBufferSize, flushTimeout, packetOut, sharedPacketPool)
 }

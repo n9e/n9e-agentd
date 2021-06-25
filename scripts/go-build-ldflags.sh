@@ -17,7 +17,7 @@ export BUILDER=$(whoami)@$(hostname)
 export RELEASE=$(whoami)@$(hostname)
 
 if [ "$MODE" = "LDFLAG" ]; then
-  LD_FLAGS="-w -X ${BASE_PACKAGE}.Revision=${GIT_REVISION} \
+  LD_FLAGS="-w -s -X ${BASE_PACKAGE}.Revision=${GIT_REVISION} \
   -X ${BASE_PACKAGE}.Branch=${GIT_BRANCH}               \
   -X ${BASE_PACKAGE}.Version=${GIT_VERSION}             \
   -X ${BASE_PACKAGE}.BuildDate=${BUILD_DATE}            \
