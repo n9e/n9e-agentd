@@ -275,7 +275,7 @@ func (p *module) stop(ops *proc.HookOps) error {
 
 func completionHandler(transaction *transaction.HTTPTransaction, statusCode int, body []byte, err error) {
 	if len(body) > 0 {
-		klog.Info("err %v code %d body %s", err, statusCode, string(body))
+		klog.InfoS("transaction completion", "err", err, "code", statusCode, "body", string(body))
 	}
 }
 
