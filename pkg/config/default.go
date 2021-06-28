@@ -67,6 +67,7 @@ const (
 endpoints:
   - http://localhost:8080
 n9eSeriesFormat: true
+verboseReport: true
 hostname: test
 lang: zh
 enableDocs: true

@@ -60,16 +60,15 @@ var (
 )
 
 type Config struct {
-	Ident           string `yaml:"ident"`
-	Alias           string `yaml:"alias"`
-	Lang            string `yaml:"lang"`
-	EnableDocs      bool   `yaml:"enableDocs"`
-	N9eSeriesFormat bool   `yaml:"n9eSeriesFormat"`
-	//WorkDir         string   `yaml:"workDir"`
-	WorkDir        string   `yaml:"-"`         // e.g. /etc/n9e-agentd/
-	ConfigFilePath string   `yaml:"-"`         // e.g. /etc/n9e-agentd/conf.d
-	Endpoints      []string `yaml:"endpoints"` // site
-	//DdUrl                                bool                     `yaml:"ddUrl"`                                // dd_url
+	Ident                                string                   `yaml:"ident"`
+	Alias                                string                   `yaml:"alias"`
+	Lang                                 string                   `yaml:"lang"`
+	EnableDocs                           bool                     `yaml:"enableDocs"`
+	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`                      // the payload format for forwarder
+	WorkDir                              string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
+	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d
+	Endpoints                            []string                 `yaml:"endpoints"`                            // site, dd_url
+	VerboseReport                        bool                     `yaml:"verboseReport"`                        // collects run in verbose mode, e.g. report both with cpu.used(sys+user), cpu.system & cpu.user
 	Listeners                            []Listeners              `yaml:"listeners"`                            // listeners
 	AuthTokenFilePath                    string                   `yaml:"authTokenFilePath"`                    // auth_token_file_path
 	ApiKey                               string                   `yaml:"apiKey"`                               // api_key

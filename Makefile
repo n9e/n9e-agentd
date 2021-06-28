@@ -53,7 +53,6 @@ build/$(RPM_FILE): build/_$(APP_NAME)/Makefile $(TARGETS)
 clean:
 	rm -rf build
 
-
 release:
 	VERSION=$(VERSION) RELEASE=$(RELEASE) ./scripts/release.sh
 

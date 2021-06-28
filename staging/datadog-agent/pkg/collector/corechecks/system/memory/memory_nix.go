@@ -14,6 +14,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"k8s.io/klog/v2"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 )
@@ -42,9 +43,11 @@ func (c *Check) Run() error {
 		sender.Gauge("system.mem.total", float64(v.Total)/mbSize, "", nil)
 		sender.Gauge("system.mem.free", float64(v.Free)/mbSize, "", nil)
 		sender.Gauge("system.mem.used", float64(v.Total-v.Free)/mbSize, "", nil)
-		sender.Gauge("system.mem.pct_used", (float64(v.Total-v.Free)/float64(v.Total))*100, "", nil)
 		sender.Gauge("system.mem.usable", float64(v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pct_usable", (float64(v.Available)/float64(v.Total))*100, "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.mem.pct_used", v.UsedPercent, "", nil)
+		}
 
 		switch runtimeOS {
 		case "linux":

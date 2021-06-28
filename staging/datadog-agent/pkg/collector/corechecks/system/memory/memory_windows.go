@@ -106,6 +106,9 @@ func (c *Check) Run() error {
 		sender.Gauge("system.mem.usable", float64(v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.used", float64(v.Total-v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pct_usable", float64(100-v.UsedPercent)/100, "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.mem.pct_used", v.UsedPercent, "", nil)
+		}
 	} else {
 		klog.Errorf("memory.Check: could not retrieve virtual memory stats: %s", errVirt)
 	}

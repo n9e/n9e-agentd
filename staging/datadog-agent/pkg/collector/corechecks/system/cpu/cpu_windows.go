@@ -16,13 +16,13 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/DataDog/gohai/cpu"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"k8s.io/klog/v2"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/pdhutil"
-	"github.com/DataDog/gohai/cpu"
 	"golang.org/x/sys/windows"
+	"k8s.io/klog/v2"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 )
@@ -101,6 +101,9 @@ func (c *Check) Run() error {
 		sender.Gauge("system.cpu.idle", idle*toPercent, "", nil)
 		sender.Gauge("system.cpu.stolen", stolen*toPercent, "", nil)
 		sender.Gauge("system.cpu.guest", guest*toPercent, "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.cpu.used", 100-(idle*toPercent), "", nil)
+		}
 	}
 	vals, err := c.counter.GetAllValues()
 	if err != nil {

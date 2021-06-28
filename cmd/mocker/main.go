@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"compress/zlib"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -90,9 +91,15 @@ type decode interface {
 func readAll(r *http.Request, payload interface{}) {
 	reader := r.Body
 
-	if r.Header.Get("Content-Encoding") == "gzip" {
-		var err error
+	var err error
+	if encoding := r.Header.Get("Content-Encoding"); encoding == "gzip" {
 		if reader, err = gzip.NewReader(r.Body); err != nil {
+			klog.Error(err)
+			return
+		}
+		defer reader.Close()
+	} else if encoding == "deflate" {
+		if reader, err = zlib.NewReader(r.Body); err != nil {
 			klog.Error(err)
 			return
 		}
@@ -106,11 +113,11 @@ func readAll(r *http.Request, payload interface{}) {
 	}
 
 	for k, v := range r.Header {
-		klog.Infof("%s %v", k, v)
+		klog.InfoS("header", "k", k, "v", v)
 	}
 
 	if payload == nil {
-		klog.Infof("%s %s [%d] %s", r.Method, r.URL, len(b), string(b))
+		klog.InfoS("recv", "method", r.Method, "url", r.URL, "payload.size", len(b))
 		return
 	}
 
@@ -135,5 +142,5 @@ func readAll(r *http.Request, payload interface{}) {
 		}
 	}
 	buf, _ := json.Marshal(payload)
-	klog.Infof("%s %s [%d] %s", r.Method, r.URL, len(b), string(buf))
+	klog.InfoS("recf", "method", r.Method, "url", r.URL, "payload.size", len(b), "payload", string(buf))
 }
