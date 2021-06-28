@@ -1,0 +1,4 @@
+chown -R ${APP_USER}:${APP_GROUP} ${PREFIX}
+systemctl daemon-reload >/dev/null 2>&1
+systemctl try-restart ${APP_NAME}.service >/dev/null 2>&1
+

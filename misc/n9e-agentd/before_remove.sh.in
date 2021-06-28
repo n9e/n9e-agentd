@@ -1,0 +1,2 @@
+systemctl --no-reload disable ${APP_NAME}.service > /dev/null 2>&1
+systemctl stop ${APP_NAME}.service >/dev/null 2>&1

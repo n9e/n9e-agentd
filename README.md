@@ -22,7 +22,7 @@ darwin-amd64/  mocker*       n9e-agentd-5.0.0-rc1.linux.amd64.tar.gz   windows-a
 
 Install
 ```
-mkdir -p /opt/n9e/agentd/{bin,run,logs}
+mkdir -p /opt/n9e/agentd/{bin,run,logs,tmp}
 cp -a build/agentd /opt/n9e/agentd/bin/
 cp -a misc/* /opt/n9e/agentd/ 
 cp /opt/n9e/agentd/etc/agentd.yaml.default /opt/n9e/agentd/etc/agentd.yaml

@@ -1,0 +1,41 @@
+#!/bin/sh
+# https://www.debian.org/doc/debian-policy/ap-flowcharts.html
+
+PATH=/usr/sbin:/usr/bin:$PATH
+
+# errors shouldn't cause script to exit
+set +e
+
+install_default_file() {
+	if [ ! -f "$1" ]; then
+		cp -a $2 $1
+		if [ -n "$3" ]; then
+			chmod $3 $1
+		fi
+	fi
+}
+
+after_install() {
+	${AFTER_INSTALL_SCRIPT}
+}
+
+after_upgrade() {
+	${AFTER_UPGRADE_SCRIPT}
+}
+
+case "$1" in
+	configure)
+		if [ -z "$2" ]; then
+    			# "after install" goes here
+			after_install
+		else
+    			# "after upgrade" goes here
+			after_upgrade
+		fi
+		;;
+	*)
+		;;
+esac
+
+# clear error termination state
+set -e

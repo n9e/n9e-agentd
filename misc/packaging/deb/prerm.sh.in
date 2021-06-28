@@ -1,0 +1,29 @@
+#!/bin/sh
+# https://www.debian.org/doc/debian-policy/ap-flowcharts.html
+
+PATH=/usr/sbin:/usr/bin:$PATH
+
+# errors shouldn't cause script to exit
+set +e
+
+before_remove() {
+	:
+	${BEFORE_REMOVE_SCRIPT}
+}
+
+case "$1" in
+	remove)
+		# do apt-get remove xxx
+		before_remove
+		;;
+	upgrade)
+		# do apt-get update xxx
+		;;
+	failed-upgrade|abort-upgrade)
+		;;
+	*)
+		;;
+esac
+
+# clear error termination state
+set -e
