@@ -94,7 +94,6 @@ python3LinterTimeout: 120s
 
 serverTimeout: 15s
 
-
 procRoot: /proc
 histogramAggregates: ["max", "median", "avg", "count"]
 histogramPercentiles: ["0.95"]
@@ -110,9 +109,9 @@ enablePayloads:
   events: false
   serviceChecks: false
   sketches: false
-  jsonToV1Intake: true
+  jsonToV1Intake: false
   metadata: false
-  hostMetadata: true
+  hostMetadata: false
   agentchecksMetadata: false
 
 statsd:
