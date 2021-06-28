@@ -4,4 +4,3 @@ tmp/
 core.*
 vendor/
 etc/mocker.d/
-scripts/
