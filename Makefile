@@ -47,10 +47,6 @@ directories: build
 build:
 	mkdir -p build
 
-build/$(RPM_FILE): build/_$(APP_NAME)/Makefile $(TARGETS)
-	cd build/_$(APP_NAME) && make package && cp -af $(RPM_FILE) ../
-	rpm -pql build/$(RPM_FILE)
-
 clean:
 	rm -rf build
 
