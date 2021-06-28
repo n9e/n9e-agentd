@@ -87,7 +87,7 @@ func (c *Check) Run() error {
 }
 
 func collectProc(sender aggregator.Sender, proc *model.Process, stat *model.ProcessStat, tags []string) {
-	sender.Count("proc.num", 1, "", nil)
+	sender.Count("proc.num", 1, "", tags)
 
 	// uptime
 	sender.Gauge("proc.uptime", float64(time.Now().Unix()-stat.CreateTime/1000), "", tags)
