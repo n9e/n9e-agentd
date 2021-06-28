@@ -1,0 +1,25 @@
+agent:
+  ident: $ip
+  alias: $host
+  endpoints:
+    - http://localhost:8000			# replace the server address here
+  #histogramAggregates: ["max", "median", "avg", "count"]
+  #histogramPercentiles: ["0.95"]
+  #hostname:
+  #maxProcs: 4
+  coreDump: false
+  #exporterPort: 8070
+  #pprof: true
+  #expvar: true
+  #metrics: true
+  #logPayloads: false
+  statsd:
+    enabled: true
+    #port: 8125
+    #packetBufferFlushTimeout: 100ms
+    #metricsStatsEnable: false
+  configProviders:
+    - name: http
+      polling: true
+      templateUrl: http://localhost:8000	# replace the server address here
+      #token:
