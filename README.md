@@ -53,9 +53,3 @@ cp -a misc/systemd/n9e-agentd.service /usr/lib/systemd/system/
 systemctl enable n9e-agentd
 systemctl start n9e-agentd
 ```
-
-## Configure
-```
-# /opt/n9e/agentd/etc/agentd.yaml
-
-```
