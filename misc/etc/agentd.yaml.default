@@ -22,4 +22,3 @@ agent:
     - name: http
       polling: true
       templateUrl: http://localhost:8000	# replace the server address here
-      #token:

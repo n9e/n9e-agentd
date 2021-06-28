@@ -1,6 +1,5 @@
 build/
 run/
-etc/
 tmp/
 core.*
 vendor/

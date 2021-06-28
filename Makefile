@@ -52,7 +52,7 @@ release:
 	VERSION=$(VERSION) RELEASE=$(RELEASE) ./scripts/release.sh
 
 devrun: build/agentd
-	@echo "./build/agentd start --config ./etc/agentd.yml -v 10 2>&1"
+	@echo "./build/agentd start --config ./run/etc/agentd.yml -v 10 2>&1"
 
 dev: build/agentd
 	APP_NAME=agentd watcher -logtostderr \
