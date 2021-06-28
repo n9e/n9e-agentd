@@ -6,22 +6,6 @@
 package config
 
 const (
-	defaultConfdPath            = "/opt/n9e/agentd/conf.d"
-	defaultAdditionalChecksPath = "/opt/n9e/agentd/checks.d"
-	defaultRunPath              = "/opt/n9e/agentd/run"
-	defaultSystemProbeAddress   = "/opt/n9e/agentd/run/sysprobe.sock"
-	defaultGuiPort              = 5002
-	//defaultSyslogURI            = "unixgram:///var/run/syslog"
-	// defaultSecurityAgentLogFile points to the log file that will be used by the security-agent if not configured
-	//defaultSecurityAgentLogFile = "/opt/datadog-agent/logs/security-agent.log"
-	// defaultSystemProbeAddress is the default unix socket path to be used for connecting to the system probe
-	//defaultSystemProbeLogFilePath = "/opt/datadog/agentd/logs/system-probe.log"
+	defaultSystemProbeAddress = "/opt/n9e/agentd/run/sysprobe.sock"
+	defaultGuiPort            = 5002
 )
-
-// called by init in config.go, to ensure any os-specific config is done
-// in time
-func osinit() {
-}
-
-// NewAssetFs  Should never be called on non-android
-func setAssetFs(config Config) {}

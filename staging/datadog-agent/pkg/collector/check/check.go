@@ -39,4 +39,6 @@ type Check interface {
 	ConfigSource() string
 	// IsTelemetryEnabled returns if telemetry is enabled for this check
 	IsTelemetryEnabled() bool
+	// sample config
+	SampleConfig() string
 }

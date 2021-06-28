@@ -130,6 +130,10 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 	return nil
 }
 
+func (c *Check) SampleConfig() string {
+	return ""
+}
+
 func (c *Check) check() bool {
 	cf := c.config
 

@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"path"
 	"time"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check/defaults"
@@ -51,13 +50,13 @@ func NewDefaultConfig() *Config {
 
 	cf.Statsd.MetricNamespaceBlacklist = StandardStatsdPrefixes
 	cf.Jmx.CheckPeriod = int(defaults.DefaultCheckInterval / time.Millisecond)
-	cf.LogsConfig.RunPath = defaultRunPath
+	//cf.LogsConfig.RunPath = defaultRunPath
 	cf.LogsConfig.AuditorTTL = DefaultAuditorTTL
-	cf.ConfdPath = defaultConfdPath
-	cf.AdditionalChecksd = defaultAdditionalChecksPath
+	//cf.ConfdPath = defaultConfdPath
+	//cf.AdditionalChecksd = defaultAdditionalChecksPath
 	cf.PythonVersion = DefaultPython
-	cf.RunPath = defaultRunPath
-	cf.Forwarder.StoragePath = path.Join(defaultRunPath, "transactions_to_retry")
+	//cf.RunPath = defaultRunPath
+	//cf.Forwarder.StoragePath = path.Join(defaultRunPath, "transactions_to_retry")
 
 	return cf
 }

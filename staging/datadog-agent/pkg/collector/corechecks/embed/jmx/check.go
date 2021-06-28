@@ -98,3 +98,7 @@ func (c *JMXCheck) GetWarnings() []error {
 func (c *JMXCheck) GetMetricStats() (map[string]int64, error) {
 	return make(map[string]int64), nil
 }
+
+func (c *JMXCheck) SampleConfig() string {
+	return "TODO"
+}

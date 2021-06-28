@@ -70,6 +70,10 @@ func (jl *JMXCheckLoader) String() string {
 	return "JMX Check Loader"
 }
 
+func (jl *JMXCheckLoader) SampleConfig() string {
+	return "TODO"
+}
+
 func init() {
 	factory := func() (check.Loader, error) {
 		return NewJMXCheckLoader()

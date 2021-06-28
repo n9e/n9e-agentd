@@ -20,8 +20,3 @@ const (
 	// defaultSystemProbeAddress is the default unix socket path to be used for connecting to the system probe
 	//defaultSystemProbeLogFilePath = "/var/log/n9e/system-probe.log"
 )
-
-// called by init in config.go, to ensure any os-specific config is done
-// in time
-func osinit() {
-}

@@ -45,7 +45,7 @@ const (
 	ClusterIDCacheKey = "orchestratorClusterID"
 
 	// DefaultRuntimePoliciesDir is the default policies directory used by the runtime security module
-	DefaultRuntimePoliciesDir = "/opt/n9e/agentd/runtime-security.d"
+	// DefaultRuntimePoliciesDir = "/opt/n9e/agentd/runtime-security.d"
 )
 
 var (
@@ -264,7 +264,6 @@ func (p Config) String() string {
 }
 
 func (p *Config) Validate() error {
-
 	if len(p.Endpoints) == 0 {
 		return fmt.Errorf("unable to get agent.endpoints")
 	}
@@ -293,6 +292,66 @@ func (p *Config) Validate() error {
 	if strings.Index(p.Ident, "localhost") >= 0 {
 		return fmt.Errorf("agent.ident should not include 'localhost'")
 	}
+
+	if err := p.ValidatePath(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Config) ValidatePath() error {
+	if p.WorkDir == "" {
+		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return err
+		}
+
+		// strip bin/
+		if filepath.Dir(dir) == "bin" {
+			dir = filepath.Dir(dir)
+		}
+
+		p.WorkDir = dir
+	}
+	if !IsDir(p.WorkDir) {
+		return fmt.Errorf("agent.workDir %s is not a dir", p.WorkDir)
+	}
+	os.Chdir(p.WorkDir)
+
+	// {prefix}/conf.d
+	if p.ConfdPath == "" {
+		p.ConfdPath = filepath.Join(p.WorkDir, "conf.d")
+	}
+	if !IsDir(p.ConfdPath) {
+		return fmt.Errorf("agent.confdPath %s is not a dir", p.ConfdPath)
+	}
+
+	// {prefix}/checks.d
+	if p.AdditionalChecksd == "" {
+		p.AdditionalChecksd = filepath.Join(p.WorkDir, "checks.d")
+	}
+	if !IsDir(p.AdditionalChecksd) {
+		return fmt.Errorf("agent.additionalChecks %s is not a dir", p.AdditionalChecksd)
+	}
+
+	// {prefix}/run
+	if p.RunPath == "" {
+		p.RunPath = filepath.Join(p.WorkDir, "run")
+	}
+	if !IsDir(p.RunPath) {
+		return fmt.Errorf("agent.runPath %s is not a dir", p.RunPath)
+	}
+	if p.LogsConfig.RunPath == "" {
+		p.LogsConfig.RunPath = p.RunPath
+	}
+
+	// {prefix}/run/transactions_to_retry
+	if p.Forwarder.StoragePath == "" {
+		p.Forwarder.StoragePath = filepath.Join(p.RunPath, "transactions_to_retry")
+	}
+
+	// {prefix}/{name}.sock
 
 	return nil
 }
@@ -323,7 +382,7 @@ func getOutboundIP() string {
 
 func (p *Config) Prepare(configFile string) error {
 	p.ConfigFilePath = configFile
-	p.WorkDir = filepath.Dir(configFile)
+
 	if p.AuthTokenFilePath == "" {
 		p.AuthTokenFilePath = filepath.Join(p.WorkDir, authTokenName)
 	}

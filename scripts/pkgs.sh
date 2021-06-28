@@ -31,13 +31,16 @@ for str in ${lists}; do
 		cxx=o64-clang++
 	fi
 
-	test -d ${dir} || mkdir -p ${dir}
+	test -d ${dir} || mkdir -p ${dir}/{bin,misc}
 	GO111MODULE=on CGO_ENABLED=1 GOOS=${os} GOARCH=${arch} \
 		CC=${cc} CXX=${cxx} \
 		go build -ldflags "${GO_BUILD_LDFLAGS}" \
 		-mod vendor \
-		-o ${dir}/${file} ../cmd/agentd
+		-o ${dir}/bin/${file} ../cmd/agentd
 	cp -a ../README.md ${dir}/
-	cp -a ../misc ${dir}/
+	cp -a ../misc/etc ${dir}/
+	cp -a ../misc/conf.d ${dir}/
+	cp -a ../misc/script.d ${dir}/
+	cp -a ../misc/systemd ${dir}/misc/
 	tar czvf n9e-agentd-${VERSION}-${RELEASE}.${os}.${arch}.tar.gz ${dir}
 done

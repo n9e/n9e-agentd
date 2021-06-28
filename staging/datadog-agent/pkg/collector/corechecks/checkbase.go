@@ -242,3 +242,12 @@ func (c *CheckBase) GetMetricStats() (map[string]int64, error) {
 	}
 	return sender.GetMetricStats(), nil
 }
+
+func (c *CheckBase) SampleConfig() string {
+	return sampleConfig
+}
+
+var sampleConfig = `
+instances:
+  - {}
+`
