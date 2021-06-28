@@ -23,7 +23,9 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
+	"github.com/DataDog/datadog-go/statsd"
 	"github.com/n9e/n9e-agentd/cmd/system-probe/api"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	sapi "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/api"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/config"
 	agentLogger "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/log"
@@ -34,8 +36,6 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/pkg/version"
-	"github.com/DataDog/datadog-go/statsd"
 )
 
 // Module represents the system-probe module for the runtime security agent
@@ -336,7 +336,7 @@ func NewModule(cfg *config.Config) (api.Module, error) {
 			return nil, err
 		}
 	} else {
-		klog.Warning("Logs won't be send to DataDog")
+		klog.Warning("Logs won't be send to server")
 	}
 
 	probe, err := sprobe.NewProbe(cfg, statsdClient)

@@ -1,0 +1,10 @@
+instances:
+  - {}
+
+logs:
+  - type: file
+    path: /tmp/cpu1
+    source: cpu1
+  - type: file
+    path: /tmp/cpu2
+    source: cpu2

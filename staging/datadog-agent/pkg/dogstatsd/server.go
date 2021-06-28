@@ -58,7 +58,7 @@ func init() {
 	dogstatsdExpvars.Set("UnterminatedMetricErrors", &dogstatsdUnterminatedMetricErrors)
 }
 
-// Server represent a Dogstatsd server
+// Server represent a statsd server
 type Server struct {
 	// listeners are the instantiated socket listener (UDS or UDP or both)
 	listeners []listeners.StatsdListener
@@ -139,7 +139,7 @@ func NewServer(aggregator *aggregator.BufferedAggregator, extraTags []string) (*
 		buff := cf.StatsBuffer
 		s, err := util.NewStats(uint32(buff))
 		if err != nil {
-			klog.Errorf("Dogstatsd: unable to start statistics facilities")
+			klog.Errorf("statsd: unable to start statistics facilities")
 		}
 		stats = s
 		dogstatsdExpvars.Set("PacketsLastSecond", &dogstatsdPacketsLastSec)
@@ -147,7 +147,7 @@ func NewServer(aggregator *aggregator.BufferedAggregator, extraTags []string) (*
 
 	var metricsStatsEnabled uint64 // we're using an uint64 for its atomic capacity
 	if cf.MetricsStatsEnable {
-		klog.Info("Dogstatsd: metrics statistics will be stored.")
+		klog.Info("statsd: metrics statistics will be stored.")
 		metricsStatsEnabled = 1
 	}
 
@@ -202,7 +202,7 @@ func NewServer(aggregator *aggregator.BufferedAggregator, extraTags []string) (*
 
 	defaultHostname, err := util.GetHostname()
 	if err != nil {
-		klog.Errorf("Dogstatsd: unable to determine default hostname: %s", err.Error())
+		klog.Errorf("statsd: unable to determine default hostname: %s", err.Error())
 	}
 
 	histToDist := cf.HistogramCopyToDistribution
@@ -423,7 +423,7 @@ func (s *Server) eolEnabled(sourceType listeners.SourceType) bool {
 
 func (s *Server) parsePackets(batcher *batcher, parser *parser, packets []*listeners.Packet, samples []metrics.MetricSample) []metrics.MetricSample {
 	for _, packet := range packets {
-		klog.V(6).Infof("Dogstatsd receive: %q", packet.Contents)
+		klog.V(6).Infof("statsd receive: %q", packet.Contents)
 		for {
 			message := nextMessage(&packet.Contents, s.eolEnabled(packet.Source))
 			if message == nil {
@@ -441,14 +441,14 @@ func (s *Server) parsePackets(batcher *batcher, parser *parser, packets []*liste
 			case serviceCheckType:
 				serviceCheck, err := s.parseServiceCheckMessage(parser, message, packet.Origin)
 				if err != nil {
-					s.errLog("Dogstatsd: error parsing service check '%q': %s", message, err)
+					s.errLog("statsd: error parsing service check '%q': %s", message, err)
 					continue
 				}
 				batcher.appendServiceCheck(serviceCheck)
 			case eventType:
 				event, err := s.parseEventMessage(parser, message, packet.Origin)
 				if err != nil {
-					s.errLog("Dogstatsd: error parsing event '%q': %s", message, err)
+					s.errLog("statsd: error parsing event '%q': %s", message, err)
 					continue
 				}
 				batcher.appendEvent(event)
@@ -458,7 +458,7 @@ func (s *Server) parsePackets(batcher *batcher, parser *parser, packets []*liste
 
 				samples, err = s.parseMetricMessage(samples, parser, message, packet.Origin)
 				if err != nil {
-					s.errLog("Dogstatsd: error parsing metric message '%q': %s", message, err)
+					s.errLog("statsd: error parsing metric message '%q': %s", message, err)
 					continue
 				}
 				for idx := range samples {
@@ -499,7 +499,7 @@ func (s *Server) parseMetricMessage(metricSamples []metrics.MetricSample, parser
 	if s.mapper != nil {
 		mapResult := s.mapper.Map(sample.name)
 		if mapResult != nil {
-			klog.V(6).Infof("Dogstatsd mapper: metric mapped from %q to %q with tags %v", sample.name, mapResult.Name, mapResult.Tags)
+			klog.V(6).Infof("statsd mapper: metric mapped from %q to %q with tags %v", sample.name, mapResult.Name, mapResult.Tags)
 			sample.name = mapResult.Name
 			sample.tags = append(sample.tags, mapResult.Tags...)
 		}
@@ -552,7 +552,7 @@ func (s *Server) parseServiceCheckMessage(parser *parser, message []byte, origin
 	return serviceCheck, nil
 }
 
-// Stop stops a running Dogstatsd server
+// Stop stops a running statsd server
 func (s *Server) Stop() {
 	close(s.stopChan)
 	for _, l := range s.listeners {
@@ -600,7 +600,7 @@ func (s *Server) EnableMetricsStats() {
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 100)
 		var closed bool
-		klog.V(5).Info("Starting the DogStatsD debug loop.")
+		klog.V(5).Info("Starting the statsD debug loop.")
 		for {
 			select {
 			case <-ticker.C:
@@ -609,7 +609,7 @@ func (s *Server) EnableMetricsStats() {
 					s.Debug.metricsCounts.currentSec = sec
 
 					if s.hasSpike() {
-						klog.Warningf("A burst of metrics has been detected by DogStatSd: here is the last 5 seconds count of metrics: %v", s.Debug.metricsCounts.counts)
+						klog.Warningf("A burst of metrics has been detected by statsd: here is the last 5 seconds count of metrics: %v", s.Debug.metricsCounts.counts)
 					}
 
 					s.Debug.metricsCounts.bucketIdx++
@@ -630,7 +630,7 @@ func (s *Server) EnableMetricsStats() {
 				break
 			}
 		}
-		klog.V(5).Info("Stopping the DogStatsD debug loop.")
+		klog.V(5).Info("Stopping the statsD debug loop.")
 		ticker.Stop()
 	}()
 }
@@ -661,7 +661,7 @@ func (s *Server) DisableMetricsStats() {
 		s.Debug.metricsCounts.closeChan <- struct{}{}
 	}
 
-	klog.Info("Disabling DogStatsD debug metrics stats.")
+	klog.Info("Disabling StatsD debug metrics stats.")
 }
 
 // GetJSONDebugStats returns jsonified debug statistics.

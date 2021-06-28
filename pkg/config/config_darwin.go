@@ -6,16 +6,16 @@
 package config
 
 const (
-	defaultConfdPath            = "/opt/n9e-agent/etc/conf.d"
-	defaultAdditionalChecksPath = "/opt/n9e-agent/etc/checks.d"
-	defaultRunPath              = "/opt/n9e-agent/run"
-	defaultSyslogURI            = "unixgram:///var/run/syslog"
+	defaultConfdPath            = "/opt/n9e/agentd/conf.d"
+	defaultAdditionalChecksPath = "/opt/n9e/agentd/checks.d"
+	defaultRunPath              = "/opt/n9e/agentd/run"
+	defaultSystemProbeAddress   = "/opt/n9e/agentd/run/sysprobe.sock"
 	defaultGuiPort              = 5002
+	//defaultSyslogURI            = "unixgram:///var/run/syslog"
 	// defaultSecurityAgentLogFile points to the log file that will be used by the security-agent if not configured
-	defaultSecurityAgentLogFile = "/opt/datadog-agent/logs/security-agent.log"
+	//defaultSecurityAgentLogFile = "/opt/datadog-agent/logs/security-agent.log"
 	// defaultSystemProbeAddress is the default unix socket path to be used for connecting to the system probe
-	defaultSystemProbeAddress     = "/opt/datadog-agent/run/sysprobe.sock"
-	defaultSystemProbeLogFilePath = "/opt/datadog-agent/logs/system-probe.log"
+	//defaultSystemProbeLogFilePath = "/opt/datadog/agentd/logs/system-probe.log"
 )
 
 // called by init in config.go, to ensure any os-specific config is done

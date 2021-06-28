@@ -240,7 +240,7 @@ func streamLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDogstatsdStats(w http.ResponseWriter, r *http.Request) {
-	klog.Info("Got a request for the Dogstatsd stats.")
+	klog.Info("Got a request for the statsd stats.")
 
 	if !config.Datadog.GetBool("use_dogstatsd") {
 		w.Header().Set("Content-Type", "application/json")
@@ -275,7 +275,7 @@ func getDogstatsdStats(w http.ResponseWriter, r *http.Request) {
 
 	jsonStats, err := common.DSD.GetJSONDebugStats()
 	if err != nil {
-		klog.Errorf("Error getting marshalled Dogstatsd stats: %s", err)
+		klog.Errorf("Error getting marshalled tatsd stats: %s", err)
 		body, _ := json.Marshal(map[string]string{"error": err.Error()})
 		http.Error(w, string(body), 500)
 		return

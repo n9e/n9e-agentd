@@ -11,13 +11,12 @@ import (
 	"runtime"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/pdhutil"
 	"k8s.io/klog/v2"
-
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 )
 
 // For testing purpose

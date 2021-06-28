@@ -18,6 +18,7 @@ import (
 
 	"github.com/DataDog/gohai/cpu"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/pdhutil"

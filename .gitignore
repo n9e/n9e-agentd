@@ -6,4 +6,3 @@ core.*
 vendor/
 etc/mocker.d/
 scripts/
-misc/

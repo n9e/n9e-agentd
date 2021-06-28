@@ -9,15 +9,15 @@
 package config
 
 const (
-	defaultConfdPath            = "/opt/n9e-agentd/conf.d"
-	defaultAdditionalChecksPath = "/opt/n9e-agentd/checks.d"
-	defaultRunPath              = "/opt/n9e-agentd/run"
+	defaultConfdPath            = "/opt/n9e/agentd/conf.d"
+	defaultAdditionalChecksPath = "/opt/n9e/agentd/checks.d"
+	defaultRunPath              = "/opt/n9e/agentd/run"
+	defaultSystemProbeAddress   = "/opt/n9e/agentd/run/sysprobe.sock"
 	defaultSyslogURI            = "unixgram:///dev/log"
 	defaultGuiPort              = -1
 	// defaultSecurityAgentLogFile points to the log file that will be used by the security-agent if not configured
 	//defaultSecurityAgentLogFile = "/var/log/n9e/security-agent.log"
 	// defaultSystemProbeAddress is the default unix socket path to be used for connecting to the system probe
-	defaultSystemProbeAddress = "/opt/n9e-agentd/run/sysprobe.sock"
 	//defaultSystemProbeLogFilePath = "/var/log/n9e/system-probe.log"
 )
 

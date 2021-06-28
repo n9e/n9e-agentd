@@ -45,7 +45,7 @@ const (
 	ClusterIDCacheKey = "orchestratorClusterID"
 
 	// DefaultRuntimePoliciesDir is the default policies directory used by the runtime security module
-	DefaultRuntimePoliciesDir = "/opt/n9e-agentd/runtime-security.d"
+	DefaultRuntimePoliciesDir = "/opt/n9e/agentd/runtime-security.d"
 )
 
 var (

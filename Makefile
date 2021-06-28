@@ -1,7 +1,7 @@
-.PHONY: pkg clean release release
+.PHONY: pkg clean release release dev devrun
 
 VERSION=5.0.0
-RELEASE=rc1
+RELEASE=rc2
 GENERATOR=RPM
 APP_NAME?=agentd
 CGO_ENABLED?=1
@@ -26,11 +26,6 @@ pkgs: $(TARGETS)
 		-e RELEASE=$(RELEASE) \
 		-it ghcr.io/gythialy/golang-cross-builder:v1.16.2 \
 		/src/scripts/pkgs.sh
-
-	#VERSION=$(VERSION) RELEASE=$(RELEASE) \
-	#GO_BUILD_LDFLAGS='$(GO_BUILD_LDFLAGS)' \
-	#./scripts/package.sh
-
 
 build/_$(APP_NAME)/Makefile: $(TARGETS) Makefile
 	mkdir -p build/_$(APP_NAME); cd build/_$(APP_NAME); cmake ../.. -DAPP_NAME=$(APP_NAME) -DCPACK_PACKAGE_VERSION="$(VERSION)" -DCPACK_PACKAGE_RELEASE="$(RELEASE)" -DCPACK_GENERATOR="$(GENERATOR)"

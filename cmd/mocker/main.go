@@ -59,7 +59,7 @@ func main() {
 
 	var port int
 	var confd string
-	flag.IntVar(&port, "port", 8080, "listen port")
+	flag.IntVar(&port, "port", 8000, "listen port")
 	flag.StringVar(&confd, "confd", "./etc/mocker.d", "config dir")
 	flag.Parse()
 
