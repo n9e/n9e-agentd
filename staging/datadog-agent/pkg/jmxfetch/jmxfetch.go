@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	api "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"gopkg.in/yaml.v2"
@@ -183,7 +183,7 @@ func (j *JMXFetch) Start(manage bool) error {
 	j.setDefaults()
 
 	cf := config.C.Jmx
-	classpath := filepath.Join(common.GetDistPath(), "jmx", jmxJarName)
+	classpath := filepath.Join(config.C.WorkDir, "jmx", jmxJarName)
 	if j.JavaToolsJarPath != "" {
 		classpath = fmt.Sprintf("%s%s%s", j.JavaToolsJarPath, string(os.PathListSeparator), classpath)
 	}

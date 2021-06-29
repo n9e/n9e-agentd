@@ -10,16 +10,15 @@ package common
 import (
 	"encoding/json"
 	"net/http"
-	"path/filepath"
 
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/executable"
-	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 var (
@@ -47,10 +46,7 @@ var (
 func GetPythonPaths() []string {
 	// wheels install in default site - already in sys.path; takes precedence over any additional location
 	return []string{
-		GetDistPath(),                            // common modules are shipped in the dist path directly or under the "checks/" sub-dir
-		PyChecksPath,                             // integrations-core legacy checks
-		filepath.Join(GetDistPath(), "checks.d"), // custom checks in the "checks.d/" sub-dir of the dist path
-		config.C.AdditionalChecksd,               // custom checks, least precedent check location
+		config.C.AdditionalChecksd, // custom checks, least precedent check location
 	}
 }
 

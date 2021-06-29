@@ -10,3 +10,5 @@ var (
 	defaultGuiPort            = 5002
 	defaultSystemProbeAddress = "localhost:3333"
 )
+
+const ServiceName = "Agent"
