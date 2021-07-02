@@ -19,11 +19,11 @@ var StandardJMXIntegrations = map[string]struct{}{
 
 // StandardStatsdPrefixes is a list of the statsd prefixes used by the agent and its components
 var StandardStatsdPrefixes = []string{
-	"n9e.agent",
-	"n9e.statsd",
-	"n9e.process",
-	"n9e.trace_agent",
-	"n9e.tracer",
+	"agent",
+	"statsd",
+	"process",
+	"trace_agent",
+	"tracer",
 
 	"activemq",
 	"activemq_58",

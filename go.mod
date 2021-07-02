@@ -63,6 +63,7 @@ require (
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-ole/go-ole v1.2.5
 	github.com/go-openapi/spec v0.20.3 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/godbus/dbus v4.1.0+incompatible

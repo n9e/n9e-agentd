@@ -1,6 +1,6 @@
 build/
 run/
-tmp/
+tmp
 core.*
 vendor/
 etc/mocker.d/

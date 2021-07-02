@@ -13,8 +13,8 @@ Cross compiling
 $ make pkgs
 
 $ ls build/
-agentd*        linux-amd64/  n9e-agentd-5.0.0-rc1.darwin.amd64.tar.gz  n9e-agentd-5.0.0-rc1.windows.amd64.tar.gz
-darwin-amd64/  mocker*       n9e-agentd-5.0.0-rc1.linux.amd64.tar.gz   windows-amd64/
+agentd*        linux-amd64/  n9e-agentd-5.0.0-rc3.darwin.amd64.tar.gz  n9e-agentd-5.0.0-rc3.windows.amd64.tar.gz
+darwin-amd64/  mocker*       n9e-agentd-5.0.0-rc3.linux.amd64.tar.gz   windows-amd64/
 ```
 
 
@@ -22,9 +22,9 @@ darwin-amd64/  mocker*       n9e-agentd-5.0.0-rc1.linux.amd64.tar.gz   windows-a
 
 Install
 ```
-mkdir -p /opt/n9e/agentd/{bin,run,logs,tmp}
-cp -a build/agentd /opt/n9e/agentd/bin/
-cp -a misc/* /opt/n9e/agentd/ 
+tar xzvf n9e-agentd-X.X.X.linux.amd64.tar.gz
+mkdir -p /opt/n9e
+mv ./linux-amd64 /opt/n9e/agentd
 cp /opt/n9e/agentd/etc/agentd.yaml.default /opt/n9e/agentd/etc/agentd.yaml
 ```
 
@@ -44,7 +44,7 @@ agent:
 
 Start agentd
 ```
-/opt/n9e/agentd/bin/agentd -c /opt/n9e/agentd/etc/agentd.yaml
+/opt/n9e/agentd/bin/n9e-agentd -c /opt/n9e/agentd/etc/agentd.yaml
 ```
 
 Use with systemd

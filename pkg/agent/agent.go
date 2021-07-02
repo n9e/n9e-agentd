@@ -71,6 +71,12 @@ func (p *module) start(ops *proc.HookOps) error {
 	ctx, configer := ops.ContextAndConfiger()
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
+	// ugly hack, FIXME
+	if _, err := os.Stat(configer.ConfigFilePath()); err != nil {
+		// path/to/whatever exists
+		klog.Warningf("--config %s error %s", configer.ConfigFilePath(), err)
+	}
+
 	cf := config.NewDefaultConfig()
 	if err := configer.ReadYaml(p.name, cf); err != nil {
 		return err

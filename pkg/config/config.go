@@ -308,7 +308,8 @@ func (p *Config) ValidatePath() error {
 		}
 
 		// strip bin/
-		if filepath.Dir(dir) == "bin" {
+		klog.Infof("dir %s %s", dir, filepath.Base(dir))
+		if filepath.Base(dir) == "bin" {
 			dir = filepath.Dir(dir)
 		}
 
@@ -317,6 +318,8 @@ func (p *Config) ValidatePath() error {
 	if !IsDir(p.WorkDir) {
 		return fmt.Errorf("agent.workDir %s is not a dir", p.WorkDir)
 	}
+
+	klog.Infof("Chdir to ${workdir} %s", p.WorkDir)
 	os.Chdir(p.WorkDir)
 
 	// {prefix}/conf.d
@@ -326,14 +329,16 @@ func (p *Config) ValidatePath() error {
 	if !IsDir(p.ConfdPath) {
 		return fmt.Errorf("agent.confdPath %s is not a dir", p.ConfdPath)
 	}
+	klog.Infof("agent.confdPath %s", p.ConfdPath)
 
 	// {prefix}/checks.d
 	if p.AdditionalChecksd == "" {
 		p.AdditionalChecksd = filepath.Join(p.WorkDir, "checks.d")
 	}
-	if !IsDir(p.AdditionalChecksd) {
-		return fmt.Errorf("agent.additionalChecks %s is not a dir", p.AdditionalChecksd)
-	}
+	//if !IsDir(p.AdditionalChecksd) {
+	//	return fmt.Errorf("agent.additionalChecks %s is not a dir", p.AdditionalChecksd)
+	//}
+	klog.Infof("agent.additionalChecks %s", p.AdditionalChecksd)
 
 	// {prefix}/run
 	if p.RunPath == "" {
@@ -345,11 +350,13 @@ func (p *Config) ValidatePath() error {
 	if p.LogsConfig.RunPath == "" {
 		p.LogsConfig.RunPath = p.RunPath
 	}
+	klog.Infof("agent.runPath %s", p.RunPath)
 
 	// {prefix}/run/transactions_to_retry
 	if p.Forwarder.StoragePath == "" {
 		p.Forwarder.StoragePath = filepath.Join(p.RunPath, "transactions_to_retry")
 	}
+	klog.Infof("agent.forwarder.storagePath %s", p.Forwarder.StoragePath)
 
 	// {prefix}/{name}.sock
 
@@ -599,25 +606,24 @@ type AdditionalEndpoint struct {
 }
 
 type Forwarder struct {
-	//Endpoints                []string             `yaml:"endpoints"`
-	AdditionalEndpoints      []AdditionalEndpoint `yaml:"additionalEndpoints"`      // additional_endpoints
-	ApikeyValidationInterval time.Duration        `yaml:"apikeyValidationInterval"` // forwarder_apikey_validation_interval
-	BackoffBase              float64              `yaml:"backoffBase"`              // forwarder_backoff_base
-	BackoffFactor            float64              `yaml:"backoffFactor"`            // forwarder_backoff_factor
-	BackoffMax               float64              `yaml:"backoffMax"`               // forwarder_backoff_max
-	ConnectionResetInterval  time.Duration        `yaml:"connectionResetInterval"`  // forwarder_connection_reset_interval
-	FlushToDiskMemRatio      float64              `yaml:"flushToDiskMemRatio"`      // forwarder_flush_to_disk_mem_ratio
-	NumWorkers               int                  `yaml:"numWorkers"`               // forwarder_num_workers
-	OutdatedFileInDays       int                  `yaml:"outdatedFileInDays"`       // forwarder_outdated_file_in_days
-	RecoveryInterval         int                  `yaml:"recoveryInterval"`         // forwarder_recovery_interval
-	RecoveryReset            bool                 `yaml:"recoveryReset"`            // forwarder_recovery_reset
-	StopTimeout              time.Duration        `yaml:"stopTimeout"`              // forwarder_stop_timeout
-	StorageMaxDiskRatio      float64              `yaml:"storageMaxDiskRatio"`      // forwarder_storage_max_disk_ratio
-	StorageMaxSizeInBytes    int64                `yaml:"storageMaxSizeInBytes"`    // forwarder_storage_max_size_in_bytes
-	StoragePath              string               `yaml:"storagePath"`              // forwarder_storage_path
-	Timeout                  time.Duration        `yaml:"timeout"`                  // forwarder_timeout
+	AdditionalEndpoints       []AdditionalEndpoint `yaml:"additionalEndpoints"`       // additional_endpoints
+	ApikeyValidationInterval  time.Duration        `yaml:"apikeyValidationInterval"`  // forwarder_apikey_validation_interval
+	BackoffBase               float64              `yaml:"backoffBase"`               // forwarder_backoff_base
+	BackoffFactor             float64              `yaml:"backoffFactor"`             // forwarder_backoff_factor
+	BackoffMax                float64              `yaml:"backoffMax"`                // forwarder_backoff_max
+	ConnectionResetInterval   time.Duration        `yaml:"connectionResetInterval"`   // forwarder_connection_reset_interval
+	FlushToDiskMemRatio       float64              `yaml:"flushToDiskMemRatio"`       // forwarder_flush_to_disk_mem_ratio
+	NumWorkers                int                  `yaml:"numWorkers"`                // forwarder_num_workers
+	OutdatedFileInDays        int                  `yaml:"outdatedFileInDays"`        // forwarder_outdated_file_in_days
+	RecoveryInterval          int                  `yaml:"recoveryInterval"`          // forwarder_recovery_interval
+	RecoveryReset             bool                 `yaml:"recoveryReset"`             // forwarder_recovery_reset
+	StopTimeout               time.Duration        `yaml:"stopTimeout"`               // forwarder_stop_timeout
+	StorageMaxDiskRatio       float64              `yaml:"storageMaxDiskRatio"`       // forwarder_storage_max_disk_ratio
+	StorageMaxSizeInBytes     int64                `yaml:"storageMaxSizeInBytes"`     // forwarder_storage_max_size_in_bytes
+	StoragePath               string               `yaml:"storagePath"`               // forwarder_storage_path
+	Timeout                   time.Duration        `yaml:"timeout"`                   // forwarder_timeout
+	RetryQueuePayloadsMaxSize int                  `yaml:"retryQueuePayloadsMaxSize"` // forwarder_retry_queue_payloads_max_size
 	//RetryQueueMaxSize         int           `yaml:"retryQueueMaxSize"`         // forwarder_retry_queue_max_size
-	RetryQueuePayloadsMaxSize int `yaml:"retryQueuePayloadsMaxSize"` // forwarder_retry_queue_payloads_max_size
 
 }
 

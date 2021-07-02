@@ -24,10 +24,10 @@ import (
 
 const checkName = "prometheus"
 
-type PromInitConfig struct {
+type InitConfig struct {
 }
 
-type PromInstanceConfig struct {
+type InstanceConfig struct {
 	PrometheusUrl           string            `json:"prometheusUrl"`           // prometheus_url
 	Namespace               string            `json:"namespace"`               // namespace
 	Metrics                 []string          `json:"metrics"`                 // metrics
@@ -47,20 +47,20 @@ type PromInstanceConfig struct {
 	PrometheusTimeout       time.Duration     `json:"prometheusTimeout"`       // prometheus_timeout
 	MaxReturnedMetrics      int               `json:"maxReturnedMetrics"`      // max_returned_metrics
 	tls.ClientConfig        `json:"-"`
-	PromInitConfig          `json:"-"`
+	InitConfig              `json:"-"`
 }
 
 type promConfig struct {
-	PromInstanceConfig
-	PromInitConfig
+	InstanceConfig
+	InitConfig
 }
 
 func (p promConfig) String() string {
 	return util.Prettify(p)
 }
 
-func defaultInstanceConfig() PromInstanceConfig {
-	return PromInstanceConfig{
+func defaultInstanceConfig() InstanceConfig {
+	return InstanceConfig{
 		SendHistogramsBuckets: true,
 		SendMonotonicCounter:  true,
 		PrometheusTimeout:     10 * time.Second,
@@ -70,7 +70,7 @@ func defaultInstanceConfig() PromInstanceConfig {
 
 func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (promConfig, error) {
 	instance := defaultInstanceConfig()
-	initConfig := PromInitConfig{}
+	initConfig := InitConfig{}
 
 	err := yaml.Unmarshal(rawInitConfig, &initConfig)
 	if err != nil {
@@ -83,8 +83,8 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 	}
 
 	return promConfig{
-		PromInitConfig:     initConfig,
-		PromInstanceConfig: instance,
+		InitConfig:     initConfig,
+		InstanceConfig: instance,
 	}, nil
 
 }
