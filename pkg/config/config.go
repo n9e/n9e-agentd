@@ -64,6 +64,7 @@ type Config struct {
 	Alias                                string                   `yaml:"alias"`
 	Lang                                 string                   `yaml:"lang"`
 	EnableDocs                           bool                     `yaml:"enableDocs"`
+	EnableN9eProvider                    bool                     `yaml:"enableN9eProvider"`
 	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`                      // the payload format for forwarder
 	WorkDir                              string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
 	ConfigFilePath                       string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/conf.d

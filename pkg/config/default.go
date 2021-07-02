@@ -65,6 +65,7 @@ verboseReport: true
 hostname: test
 lang: zh
 enableDocs: true
+enableN9eProvider: true
 maxProcs: 4
 coreDump: true
 exporterPort: 8070

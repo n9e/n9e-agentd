@@ -6,10 +6,10 @@
 package common
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"k8s.io/klog/v2"
 )
 
@@ -38,6 +38,14 @@ func setupAutoDiscovery(cf *config.Config, confSearchPaths []string, metaSchedul
 	}
 
 	configProviders := cf.ConfigProviders
+	if cf.EnableN9eProvider && len(cf.Endpoints) > 0 {
+		configProviders = append(configProviders, config.ConfigurationProviders{
+			Name:        "http",
+			Polling:     true,
+			TemplateURL: cf.Endpoints[0],
+			Token:       cf.ApiKey,
+		})
+	}
 
 	// Register additional configuration providers
 	var uniqueConfigProviders map[string]config.ConfigurationProviders

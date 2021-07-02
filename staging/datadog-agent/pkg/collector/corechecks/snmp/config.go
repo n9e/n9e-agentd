@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 )
@@ -17,30 +17,30 @@ var defaultRetries = 3
 var defaultTimeout = 2
 
 type snmpInitConfig struct {
-	Profiles      profileConfigMap `yaml:"profiles"`
-	GlobalMetrics []metricsConfig  `yaml:"global_metrics"`
-	OidBatchSize  Number           `yaml:"oid_batch_size"`
+	Profiles      profileConfigMap `json:"profiles"`
+	GlobalMetrics []metricsConfig  `json:"globalMetrics"`
+	OidBatchSize  Number           `json:"oidBatchSize"`
 }
 
 type snmpInstanceConfig struct {
-	IPAddress        string            `yaml:"ip_address"`
-	Port             Number            `yaml:"port"`
-	CommunityString  string            `yaml:"community_string"`
-	SnmpVersion      string            `yaml:"snmp_version"`
-	Timeout          Number            `yaml:"timeout"`
-	Retries          Number            `yaml:"retries"`
-	OidBatchSize     Number            `yaml:"oid_batch_size"`
-	User             string            `yaml:"user"`
-	AuthProtocol     string            `yaml:"authProtocol"`
-	AuthKey          string            `yaml:"authKey"`
-	PrivProtocol     string            `yaml:"privProtocol"`
-	PrivKey          string            `yaml:"privKey"`
-	ContextName      string            `yaml:"context_name"`
-	Metrics          []metricsConfig   `yaml:"metrics"`
-	MetricTags       []metricTagConfig `yaml:"metric_tags"`
-	Profile          string            `yaml:"profile"`
-	UseGlobalMetrics bool              `yaml:"use_global_metrics"`
-	ExtraTags        string            `yaml:"extra_tags"` // comma separated tags
+	IPAddress        string            `json:"ipAddress"`
+	Port             Number            `json:"port"`
+	CommunityString  string            `json:"communityString"`
+	SnmpVersion      string            `json:"snmpVersion"`
+	Timeout          Number            `json:"timeout"`
+	Retries          Number            `json:"retries"`
+	OidBatchSize     Number            `json:"oidBatchSize"`
+	User             string            `json:"user"`
+	AuthProtocol     string            `json:"authProtocol"`
+	AuthKey          string            `json:"authKey"`
+	PrivProtocol     string            `json:"privProtocol"`
+	PrivKey          string            `json:"privKey"`
+	ContextName      string            `json:"contextName"`
+	Metrics          []metricsConfig   `json:"metrics"`
+	MetricTags       []metricTagConfig `json:"metricTags"`
+	Profile          string            `json:"profile"`
+	UseGlobalMetrics bool              `json:"useGlobalMetrics"`
+	ExtraTags        string            `json:"extraTags"` // comma separated tags
 }
 
 type snmpConfig struct {

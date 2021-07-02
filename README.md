@@ -37,10 +37,6 @@ agent:
   alias: $host
   endpoints:
     - http://localhost:8000			# replace the server address here
-  configProviders:
-    - name: http
-      polling: true
-      templateUrl: http://localhost:8000	# replace the server address here
 ```
 
 Start agentd
