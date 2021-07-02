@@ -6,10 +6,8 @@
 package common
 
 import (
-	"path/filepath"
-
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector"
 	lsched "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/scheduler"
 	lstatus "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/status"
@@ -41,11 +39,7 @@ func LoadComponents(cf *config.Config) {
 	}
 
 	// setup autodiscovery
-	confSearchPaths := []string{
-		cf.ConfdPath,
-		filepath.Join(cf.WorkDir, "conf.d"),
-		"",
-	}
+	confSearchPaths := []string{cf.ConfdPath}
 
 	AC = setupAutoDiscovery(cf, confSearchPaths, metaScheduler)
 }
