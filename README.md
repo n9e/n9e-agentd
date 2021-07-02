@@ -10,6 +10,7 @@ make
 
 Cross compiling
 ```shell
+$ go mod vendor
 $ make pkgs
 
 $ ls build/
