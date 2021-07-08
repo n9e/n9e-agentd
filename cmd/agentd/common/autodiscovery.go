@@ -6,6 +6,8 @@
 package common
 
 import (
+	"strings"
+
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
@@ -42,7 +44,7 @@ func setupAutoDiscovery(cf *config.Config, confSearchPaths []string, metaSchedul
 		configProviders = append(configProviders, config.ConfigurationProviders{
 			Name:        "http",
 			Polling:     true,
-			TemplateURL: cf.Endpoints[0],
+			TemplateURL: strings.Join(cf.Endpoints, ","),
 			Token:       cf.ApiKey,
 		})
 	}

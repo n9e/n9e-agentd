@@ -12,26 +12,27 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers/names"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
 	"k8s.io/klog/v2"
 )
 
 type Client struct {
-	endpoint string
-	path     string
-	agentID  string
-	token    string
-	Header   http.Header
-	client   http.Client
+	path    string
+	agentID string
+	token   string
+	domain  *transaction.Domain
+	Header  http.Header
+	client  http.Client
 }
 
-func newClient(endpoint, path, agentID, token string) (*Client, error) {
+func newClient(endpoints, path, agentID, token string) (*Client, error) {
 	cli := &Client{
-		endpoint: endpoint,
-		path:     path,
-		agentID:  agentID,
-		Header:   make(http.Header, 0),
-		token:    token,
+		domain:  transaction.NewDomain(endpoints),
+		path:    path,
+		agentID: agentID,
+		Header:  make(http.Header, 0),
+		token:   token,
 	}
 	if token != "" {
 		cli.Header.Set("Authorization", "Bearer "+token)
@@ -40,12 +41,13 @@ func newClient(endpoint, path, agentID, token string) (*Client, error) {
 }
 
 func (c *Client) get(path string) ([]byte, error) {
-	url := c.endpoint + path
+	url := c.domain.Current() + path
 	klog.V(6).Infof("get %s", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	logURL := log.SanitizeURL(url) // sanitized url that can be logged
 	if err != nil {
+		c.domain.Next()
 		return nil, fmt.Errorf("Could not create request for transaction to invalid URL %q (dropping transaction): %s", logURL, err)
 	}
 	//req = req.WithContext(ctx)
