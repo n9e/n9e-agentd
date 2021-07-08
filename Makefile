@@ -17,14 +17,17 @@ all: $(TARGETS)
 
 include ./scripts/objs.mk
 
-pkg: build/$(RPM_FILE)
+rpm: build/$(RPM_FILE)
+
+pkg:
+	VERSION=$(VERSION) RELEASE=$(RELEASE) ./scripts/pkg.sh
 
 build/$(RPM_FILE): build/_$(APP_NAME)/Makefile $(TARGETS)
 	cd build/_$(APP_NAME) && make package && cp -af $(RPM_FILE) ../
 	rpm -pql build/$(RPM_FILE)
 
 pkgs: $(TARGETS)
-	APP_NAME=n9e-agentd make pkg
+	APP_NAME=n9e-agentd make rpm
 	docker run --rm \
 		-v $(PWD):/src \
 		--name golang-cross-builder \
@@ -36,7 +39,7 @@ pkgs: $(TARGETS)
 		/src/scripts/pkgs.sh
 
 build/n9e-agentd: $(DEP_OBJS)
-	GO111MODULE=on \
+	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) \
 	go build -ldflags '$(GO_BUILD_LDFLAGS)' \
 	-o $@ ./cmd/agentd && \
 	$@ version
