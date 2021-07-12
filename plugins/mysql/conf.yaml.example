@@ -25,51 +25,18 @@ init_config:
 #
 instances:
 
-    ## @param host - string - optional
-    ## MySQL host to connect to.
-    ## NOTE: Even if the host is "localhost", the agent connects to MySQL using TCP/IP, unless you also
-    ## provide a value for the sock key (below).
+    ## @param dsn - string - required
+    ## MySQL dsn to connect to.
+    ## [username[:password]@][protocol[(address)]]/[?tls=[true|false|skip-verify|custom]]
+    ## see https://github.com/go-sql-driver/mysql#dsn-data-source-name
+    ##  e.g.
+    ##    dsn: user:passwd@tcp(127.0.0.1:3306)/?tls=false
+    ##    dsn: user@tcp(127.0.0.1:3306)/?tls=false
+    ##    dsn: root:pw@unix(/tmp/mysql.sock)/?timeout=90s&collation=utf8mb4_unicode_ci
     #
-  - host: localhost
+  - dsn: root@tcp(127.0.0.1:3306)/?tls=false
 
-    ## @param user - string - optional
-    ## Username used to connect to MySQL.
-    #
-    user: datadog
-
-    ## @param pass - string - optional
-    ## Password associated to the MySQL user.
-    #
-    pass: <PASS>
-
-    ## @param port - number - optional - default: 3306
-    ## Port to use when connecting to MySQL.
-    #
-    port: 3306
-
-    ## @param sock - string - optional
-    ## Path to a Unix Domain Socket to use when connecting to MySQL (instead of a TCP socket).
-    ## If you specify a socket you dont need to specify a host.
-    #
-    # sock: <SOCK>
-
-    ## @param charset - string - optional
-    ## Charset you want to use.
-    #
-    # charset: utf8
-
-    ## @param defaults_file - string - optional
-    ## Path to an alternative configuration mechanism file.
-    ## If providing this then there is no need to specify host, port, user, pass or socket.
-    #
-    # defaults_file: <DEFAULTS_FILE>
-
-    ## @param connect_timeout - number - optional - default: 10
-    ## Maximum number of seconds to wait before timing out when connecting to MySQL.
-    #
-    # connect_timeout: 10
-
-    ## @param ssl - mapping - optional
+    ## @param tls - mapping - optional
     ## Use this section to configure a TLS connection between the Agent and MySQL.
     ##
     ## The following fields are supported:
@@ -77,11 +44,13 @@ instances:
     ## key: Path to a key file.
     ## cert: Path to a cert file.
     ## ca: Path to a CA bundle file.
+    ## insecureSkipVerify: Use TLS but skip chain & host verification
     #
-    # ssl:
+    # tls:
     #   key: <KEY_FILE_PATH>
     #   cert: <CERT_FILE_PATH>
     #   ca: <CA_PATH_FILE>
+    #   insecureSkipVerify: <true|false>
 
     ## @param use_global_custom_queries - string - optional - default: true
     ## How `global_custom_queries` should be used for this instance. There are 3 options:

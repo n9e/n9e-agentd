@@ -21,6 +21,12 @@ type StatementMetrics struct {
 	previousStatements map[string]map[string]interface{}
 }
 
+func NewMySQLStatementMetrics() *StatementMetrics {
+	return &StatementMetrics{
+		previousStatements: make(map[string]map[string]interface{}),
+	}
+}
+
 // Compute the first derivative of column-based metrics for a given set of rows. This function
 // takes the difference of the previous check run's values and the current check run's values
 // to produce a new set of rows whose values represent the total counts in the time elapsed
@@ -36,7 +42,7 @@ type StatementMetrics struct {
 // - **rows** (_List[dict]_) - rows from current check run
 // - **metrics** (_List[str]_) - the metrics to compute for each row
 // - **key** (_callable_) - function for an ID which uniquely identifies a row across runs
-func (p *StatementMetrics) computeDerivativeRows(rows []map[string]interface{}, metrics map[string]string, key func(map[string]interface{}) string) []map[string]interface{} {
+func (p *StatementMetrics) ComputeDerivativeRows(rows []map[string]interface{}, metrics map[string]string, key func(map[string]interface{}) string) []map[string]interface{} {
 	newCache := map[string]map[string]interface{}{}
 	result := []map[string]interface{}{}
 

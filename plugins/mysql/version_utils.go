@@ -7,15 +7,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var (
-	BUILDS = []string{"log", "standard", "debug", "valgrind", "embedded"}
-)
-
 func (c *Check) getVersion() error {
 	v := &c.version
-	_, err := c.queryRow("SELECT VERSION()", func() []interface{} {
-		return []interface{}{&v.rawVersion}
-	})
+	_, err := c.queryRow("SELECT VERSION()", &v.rawVersion)
 	if err != nil {
 		return err
 	}
@@ -26,6 +20,7 @@ func (c *Check) getVersion() error {
 	// https://mariadb.com/kb/en/library/version/
 	// and https://mariadb.com/kb/en/library/server-system-variables/#version
 	parts := strings.Split(v.rawVersion, "-")
+	v.version = parts[0]
 
 	for _, data := range parts {
 		if data == "MariaDB" {
@@ -54,7 +49,10 @@ type MySQLVersion struct {
 	build      string
 }
 
-func (p *MySQLVersion) versionCompatible(compatVersion [3]int) bool {
+func (p *MySQLVersion) versionCompatible(compatVersion ...int) bool {
+	if len(compatVersion) < 3 {
+		compatVersion = append(compatVersion, 0, 0, 0)
+	}
 	mysqlVersion := strings.Split(p.version, ".")
 	klog.V(5).Infof("MySQL version %v", mysqlVersion)
 
