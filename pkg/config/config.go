@@ -290,7 +290,7 @@ func (p *Config) Validate() error {
 	p.Ident = configEval(p.Ident)
 	p.Alias = configEval(p.Alias)
 
-	if strings.Index(p.Ident, "localhost") >= 0 {
+	if strings.Contains(p.Ident, "localhost") || strings.Contains(p.Ident, "127.0.0.1") {
 		return fmt.Errorf("agent.ident should not include 'localhost'")
 	}
 
@@ -317,7 +317,7 @@ func (p *Config) ValidatePath() error {
 		p.WorkDir = dir
 	}
 	if !IsDir(p.WorkDir) {
-		return fmt.Errorf("agent.workDir %s is not a dir", p.WorkDir)
+		return fmt.Errorf("agent.workDir %s does not exist, please create it", p.WorkDir)
 	}
 
 	klog.Infof("Chdir to ${workdir} %s", p.WorkDir)
@@ -328,7 +328,7 @@ func (p *Config) ValidatePath() error {
 		p.ConfdPath = filepath.Join(p.WorkDir, "conf.d")
 	}
 	if !IsDir(p.ConfdPath) {
-		return fmt.Errorf("agent.confdPath %s is not a dir", p.ConfdPath)
+		return fmt.Errorf("agent.confdPath %s does not exist, please create it", p.ConfdPath)
 	}
 	klog.Infof("agent.confdPath %s", p.ConfdPath)
 
@@ -337,7 +337,7 @@ func (p *Config) ValidatePath() error {
 		p.AdditionalChecksd = filepath.Join(p.WorkDir, "checks.d")
 	}
 	//if !IsDir(p.AdditionalChecksd) {
-	//	return fmt.Errorf("agent.additionalChecks %s is not a dir", p.AdditionalChecksd)
+	//	return fmt.Errorf("agent.additionalChecks %s does not exist, please create it", p.AdditionalChecksd)
 	//}
 	klog.Infof("agent.additionalChecks %s", p.AdditionalChecksd)
 
@@ -346,7 +346,7 @@ func (p *Config) ValidatePath() error {
 		p.RunPath = filepath.Join(p.WorkDir, "run")
 	}
 	if !IsDir(p.RunPath) {
-		return fmt.Errorf("agent.runPath %s is not a dir", p.RunPath)
+		return fmt.Errorf("agent.runPath %s does not exist, please create it", p.RunPath)
 	}
 	if p.LogsConfig.RunPath == "" {
 		p.LogsConfig.RunPath = p.RunPath
@@ -368,7 +368,7 @@ func configEval(value string) string {
 	switch strings.ToLower(value) {
 	case "$ip":
 		return getOutboundIP()
-	case "$host":
+	case "$host", "$hostname":
 		host, _ := os.Hostname()
 		return host
 	default:

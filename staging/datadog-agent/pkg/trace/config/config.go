@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,9 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	coreconfig "github.com/n9e/n9e-agentd/pkg/config"
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
 	"k8s.io/klog/v2"
 )
 
@@ -248,9 +246,9 @@ func (c *AgentConfig) NewHTTPTransport() *http.Transport {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-	if p := coreconfig.GetProxies(); p != nil {
-		transport.Proxy = httputils.GetProxyTransportFunc(p)
-	}
+	//if p := coreconfig.GetProxies(); p != nil {
+	//	transport.Proxy = httputils.GetProxyTransportFunc(p)
+	//}
 	return transport
 }
 
@@ -271,13 +269,14 @@ func Load(path string) (*AgentConfig, error) {
 }
 
 func prepareConfig(path string) (*AgentConfig, error) {
-	cfg := New()
-	config.Datadog.SetConfigFile(path)
-	if _, err := config.Load(); err != nil {
-		return cfg, err
-	}
-	cfg.ConfigPath = path
-	return cfg, nil
+	//cfg := New()
+	//config.Datadog.SetConfigFile(path)
+	//if _, err := config.Load(); err != nil {
+	//	return cfg, err
+	//}
+	//cfg.ConfigPath = path
+	//return cfg, nil
+	return nil, fmt.Errorf("unsupported")
 }
 
 // features keeps a map of all APM features as defined by the DD_APM_FEATURES

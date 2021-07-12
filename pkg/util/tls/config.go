@@ -10,20 +10,20 @@ import (
 
 // ClientConfig represents the standard client TLS config.
 type ClientConfig struct {
-	TLSCA              string `json:"tlsCA"`
-	TLSCert            string `json:"tlsCert"`
-	TLSKey             string `json:"tlsKey"`
-	InsecureSkipVerify bool   `json:"tlsInsecureSkipVerify"`
+	TLSCA              string `json:"ca"`
+	TLSCert            string `json:"cert"`
+	TLSKey             string `json:"key"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify"`
 }
 
 // ServerConfig represents the standard server TLS config.
 type ServerConfig struct {
-	TLSCert           string   `json:"tlsCert"`
-	TLSKey            string   `json:"tlsKey"`
-	TLSAllowedCACerts []string `json:"tlsAllowedCaCerts"`
-	TLSCipherSuites   []string `json:"tlsCipherSuites"`
-	TLSMinVersion     string   `json:"tlsMinVersion"`
-	TLSMaxVersion     string   `json:"tlsMaxVersion"`
+	TLSCert           string   `json:"cert"`
+	TLSKey            string   `json:"key"`
+	TLSAllowedCACerts []string `json:"allowedCaCerts"`
+	TLSCipherSuites   []string `json:"cipherSuites"`
+	TLSMinVersion     string   `json:"minVersion"`
+	TLSMaxVersion     string   `json:"maxVersion"`
 }
 
 // TLSConfig returns a tls.Config, may be nil without error if TLS is not

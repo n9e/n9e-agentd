@@ -25,7 +25,7 @@ func Exit(msg string) {
 		fmt.Println(msg)
 	} else {
 		klog.Error(msg)
-		log.Flush()
+		klog.Flush()
 	}
 	os.Exit(1)
 }
@@ -37,7 +37,7 @@ func Exitf(format string, args ...interface{}) {
 		fmt.Println("")
 	} else {
 		klog.Warningf(format, args...)
-		log.Flush()
+		klog.Flush()
 	}
 	os.Exit(1)
 }

@@ -9,15 +9,12 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/osutil"
-	"k8s.io/klog/v2"
 )
 
 // apiEndpointPrefix is the URL prefix prepended to the default site value from YamlAgentConfig.
@@ -118,234 +115,236 @@ type WriterConfig struct {
 }
 
 func (c *AgentConfig) applyDatadogConfig() error {
-	if len(c.Endpoints) == 0 {
-		c.Endpoints = []*Endpoint{{}}
-	}
-	if config.Datadog.IsSet("api_key") {
-		c.Endpoints[0].APIKey = config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
-	}
-	if config.Datadog.IsSet("hostname") {
-		c.Hostname = config.Datadog.GetString("hostname")
-	}
-	if config.Datadog.IsSet("log_level") {
-		c.LogLevel = config.Datadog.GetString("log_level")
-	}
-	if config.Datadog.IsSet("dogstatsd_port") {
-		c.StatsdPort = config.Datadog.GetInt("dogstatsd_port")
-	}
+	/*
+		if len(c.Endpoints) == 0 {
+			c.Endpoints = []*Endpoint{{}}
+		}
+		if config.C.IsSet("api_key") {
+			c.Endpoints[0].APIKey = config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
+		}
+		if config.Datadog.IsSet("hostname") {
+			c.Hostname = config.Datadog.GetString("hostname")
+		}
+		if config.Datadog.IsSet("log_level") {
+			c.LogLevel = config.Datadog.GetString("log_level")
+		}
+		if config.Datadog.IsSet("dogstatsd_port") {
+			c.StatsdPort = config.Datadog.GetInt("dogstatsd_port")
+		}
 
-	site := config.Datadog.GetString("site")
-	if site != "" {
-		c.Endpoints[0].Host = apiEndpointPrefix + site
-	}
-	if host := config.Datadog.GetString("apm_config.apm_dd_url"); host != "" {
-		c.Endpoints[0].Host = host
+		site := config.Datadog.GetString("site")
 		if site != "" {
-			klog.Infof("'site' and 'apm_dd_url' are both set, using endpoint: %q", host)
+			c.Endpoints[0].Host = apiEndpointPrefix + site
 		}
-	}
-	if config.Datadog.IsSet("apm_config.additional_endpoints") {
-		for url, keys := range config.Datadog.GetStringMapStringSlice("apm_config.additional_endpoints") {
-			if len(keys) == 0 {
-				klog.Errorf("'additional_endpoints' entries must have at least one API key present")
-				continue
-			}
-			for _, key := range keys {
-				key = config.SanitizeAPIKey(key)
-				c.Endpoints = append(c.Endpoints, &Endpoint{Host: url, APIKey: key})
+		if host := config.Datadog.GetString("apm_config.apm_dd_url"); host != "" {
+			c.Endpoints[0].Host = host
+			if site != "" {
+				klog.Infof("'site' and 'apm_dd_url' are both set, using endpoint: %q", host)
 			}
 		}
-	}
-
-	if config.Datadog.IsSet("proxy.no_proxy") {
-		proxyList := config.Datadog.GetStringSlice("proxy.no_proxy")
-		noProxy := make(map[string]bool, len(proxyList))
-		for _, host := range proxyList {
-			// map of hosts that need to be skipped by proxy
-			noProxy[host] = true
-		}
-		for _, e := range c.Endpoints {
-			e.NoProxy = noProxy[e.Host]
-		}
-	}
-	if addr := config.Datadog.GetString("proxy.https"); addr != "" {
-		url, err := url.Parse(addr)
-		if err == nil {
-			c.ProxyURL = url
-		} else {
-			klog.Errorf("Failed to parse proxy URL from proxy.https configuration: %s", err)
-		}
-	}
-
-	if config.Datadog.IsSet("skip_ssl_validation") {
-		c.SkipSSLValidation = config.Datadog.GetBool("skip_ssl_validation")
-	}
-	if config.Datadog.IsSet("apm_config.enabled") {
-		c.Enabled = config.Datadog.GetBool("apm_config.enabled")
-	}
-	if config.Datadog.IsSet("apm_config.log_file") {
-		c.LogFilePath = config.Datadog.GetString("apm_config.log_file")
-	}
-	if config.Datadog.IsSet("apm_config.env") {
-		c.DefaultEnv = config.Datadog.GetString("apm_config.env")
-		klog.V(5).Infof("Setting DefaultEnv to %q (from apm_config.env)", c.DefaultEnv)
-	} else if config.Datadog.IsSet("env") {
-		c.DefaultEnv = config.Datadog.GetString("env")
-		klog.V(5).Infof("Setting DefaultEnv to %q (from 'env' config option)", c.DefaultEnv)
-	} else if config.Datadog.IsSet("tags") {
-		for _, tag := range config.Datadog.GetStringSlice("tags") {
-			if strings.HasPrefix(tag, "env:") {
-				c.DefaultEnv = strings.TrimPrefix(tag, "env:")
-				klog.V(5).Infof("Setting DefaultEnv to %q (from `env:` entry under the 'tags' config option: %q)", c.DefaultEnv, tag)
-				break
+		if config.Datadog.IsSet("apm_config.additional_endpoints") {
+			for url, keys := range config.Datadog.GetStringMapStringSlice("apm_config.additional_endpoints") {
+				if len(keys) == 0 {
+					klog.Errorf("'additional_endpoints' entries must have at least one API key present")
+					continue
+				}
+				for _, key := range keys {
+					key = config.SanitizeAPIKey(key)
+					c.Endpoints = append(c.Endpoints, &Endpoint{Host: url, APIKey: key})
+				}
 			}
 		}
-	}
-	if config.Datadog.IsSet("apm_config.receiver_port") {
-		c.ReceiverPort = config.Datadog.GetInt("apm_config.receiver_port")
-	}
-	if config.Datadog.IsSet("apm_config.receiver_socket") {
-		c.ReceiverSocket = config.Datadog.GetString("apm_config.receiver_socket")
-	}
-	if config.Datadog.IsSet("apm_config.connection_limit") {
-		c.ConnectionLimit = config.Datadog.GetInt("apm_config.connection_limit")
-	}
-	if config.Datadog.IsSet("apm_config.extra_sample_rate") {
-		c.ExtraSampleRate = config.Datadog.GetFloat64("apm_config.extra_sample_rate")
-	}
-	if config.Datadog.IsSet("apm_config.max_events_per_second") {
-		c.MaxEPS = config.Datadog.GetFloat64("apm_config.max_events_per_second")
-	}
-	if config.Datadog.IsSet("apm_config.max_traces_per_second") {
-		c.TargetTPS = config.Datadog.GetFloat64("apm_config.max_traces_per_second")
-	}
-	if k := "apm_config.ignore_resources"; config.Datadog.IsSet(k) {
-		c.Ignore["resource"] = config.Datadog.GetStringSlice(k)
-	}
-	if k := "apm_config.max_payload_size"; config.Datadog.IsSet(k) {
-		c.MaxRequestBytes = config.Datadog.GetInt64(k)
-	}
-	if k := "apm_config.replace_tags"; config.Datadog.IsSet(k) {
-		rt := make([]*ReplaceRule, 0)
-		if err := config.Datadog.UnmarshalKey(k, &rt); err != nil {
-			klog.Errorf("Bad format for %q it should be of the form '[{\"name\": \"tag_name\",\"pattern\":\"pattern\",\"repl\":\"replace_str\"}]', error: %v", "apm_config.replace_tags", err)
-		} else {
-			err := compileReplaceRules(rt)
-			if err != nil {
-				osutil.Exitf("replace_tags: %s", err)
+
+		if config.Datadog.IsSet("proxy.no_proxy") {
+			proxyList := config.Datadog.GetStringSlice("proxy.no_proxy")
+			noProxy := make(map[string]bool, len(proxyList))
+			for _, host := range proxyList {
+				// map of hosts that need to be skipped by proxy
+				noProxy[host] = true
 			}
-			c.ReplaceTags = rt
+			for _, e := range c.Endpoints {
+				e.NoProxy = noProxy[e.Host]
+			}
 		}
-	}
-
-	if config.Datadog.IsSet("bind_host") || config.Datadog.IsSet("apm_config.apm_non_local_traffic") {
-		if config.Datadog.IsSet("bind_host") {
-			host := config.Datadog.GetString("bind_host")
-			c.StatsdHost = host
-			c.ReceiverHost = host
+		if addr := config.Datadog.GetString("proxy.https"); addr != "" {
+			url, err := url.Parse(addr)
+			if err == nil {
+				c.ProxyURL = url
+			} else {
+				klog.Errorf("Failed to parse proxy URL from proxy.https configuration: %s", err)
+			}
 		}
 
-		if config.Datadog.IsSet("apm_config.apm_non_local_traffic") && config.Datadog.GetBool("apm_config.apm_non_local_traffic") {
+		if config.Datadog.IsSet("skip_ssl_validation") {
+			c.SkipSSLValidation = config.Datadog.GetBool("skip_ssl_validation")
+		}
+		if config.Datadog.IsSet("apm_config.enabled") {
+			c.Enabled = config.Datadog.GetBool("apm_config.enabled")
+		}
+		if config.Datadog.IsSet("apm_config.log_file") {
+			c.LogFilePath = config.Datadog.GetString("apm_config.log_file")
+		}
+		if config.Datadog.IsSet("apm_config.env") {
+			c.DefaultEnv = config.Datadog.GetString("apm_config.env")
+			klog.V(5).Infof("Setting DefaultEnv to %q (from apm_config.env)", c.DefaultEnv)
+		} else if config.Datadog.IsSet("env") {
+			c.DefaultEnv = config.Datadog.GetString("env")
+			klog.V(5).Infof("Setting DefaultEnv to %q (from 'env' config option)", c.DefaultEnv)
+		} else if config.Datadog.IsSet("tags") {
+			for _, tag := range config.Datadog.GetStringSlice("tags") {
+				if strings.HasPrefix(tag, "env:") {
+					c.DefaultEnv = strings.TrimPrefix(tag, "env:")
+					klog.V(5).Infof("Setting DefaultEnv to %q (from `env:` entry under the 'tags' config option: %q)", c.DefaultEnv, tag)
+					break
+				}
+			}
+		}
+		if config.Datadog.IsSet("apm_config.receiver_port") {
+			c.ReceiverPort = config.Datadog.GetInt("apm_config.receiver_port")
+		}
+		if config.Datadog.IsSet("apm_config.receiver_socket") {
+			c.ReceiverSocket = config.Datadog.GetString("apm_config.receiver_socket")
+		}
+		if config.Datadog.IsSet("apm_config.connection_limit") {
+			c.ConnectionLimit = config.Datadog.GetInt("apm_config.connection_limit")
+		}
+		if config.Datadog.IsSet("apm_config.extra_sample_rate") {
+			c.ExtraSampleRate = config.Datadog.GetFloat64("apm_config.extra_sample_rate")
+		}
+		if config.Datadog.IsSet("apm_config.max_events_per_second") {
+			c.MaxEPS = config.Datadog.GetFloat64("apm_config.max_events_per_second")
+		}
+		if config.Datadog.IsSet("apm_config.max_traces_per_second") {
+			c.TargetTPS = config.Datadog.GetFloat64("apm_config.max_traces_per_second")
+		}
+		if k := "apm_config.ignore_resources"; config.Datadog.IsSet(k) {
+			c.Ignore["resource"] = config.Datadog.GetStringSlice(k)
+		}
+		if k := "apm_config.max_payload_size"; config.Datadog.IsSet(k) {
+			c.MaxRequestBytes = config.Datadog.GetInt64(k)
+		}
+		if k := "apm_config.replace_tags"; config.Datadog.IsSet(k) {
+			rt := make([]*ReplaceRule, 0)
+			if err := config.Datadog.UnmarshalKey(k, &rt); err != nil {
+				klog.Errorf("Bad format for %q it should be of the form '[{\"name\": \"tag_name\",\"pattern\":\"pattern\",\"repl\":\"replace_str\"}]', error: %v", "apm_config.replace_tags", err)
+			} else {
+				err := compileReplaceRules(rt)
+				if err != nil {
+					osutil.Exitf("replace_tags: %s", err)
+				}
+				c.ReplaceTags = rt
+			}
+		}
+
+		if config.Datadog.IsSet("bind_host") || config.Datadog.IsSet("apm_config.apm_non_local_traffic") {
+			if config.Datadog.IsSet("bind_host") {
+				host := config.Datadog.GetString("bind_host")
+				c.StatsdHost = host
+				c.ReceiverHost = host
+			}
+
+			if config.Datadog.IsSet("apm_config.apm_non_local_traffic") && config.Datadog.GetBool("apm_config.apm_non_local_traffic") {
+				c.ReceiverHost = "0.0.0.0"
+			}
+		} else if config.IsContainerized() {
+			// Automatically activate non local traffic in containerized environment if no explicit config set
+			klog.Info("Activating non-local traffic automatically in containerized environment, trace-agent will listen on 0.0.0.0")
 			c.ReceiverHost = "0.0.0.0"
 		}
-	} else if config.IsContainerized() {
-		// Automatically activate non local traffic in containerized environment if no explicit config set
-		klog.Info("Activating non-local traffic automatically in containerized environment, trace-agent will listen on 0.0.0.0")
-		c.ReceiverHost = "0.0.0.0"
-	}
 
-	if config.Datadog.IsSet("apm_config.obfuscation") {
-		var o ObfuscationConfig
-		err := config.Datadog.UnmarshalKey("apm_config.obfuscation", &o)
-		if err == nil {
-			c.Obfuscation = &o
-			if c.Obfuscation.RemoveStackTraces {
-				c.addReplaceRule("error.stack", `(?s).*`, "?")
+		if config.Datadog.IsSet("apm_config.obfuscation") {
+			var o ObfuscationConfig
+			err := config.Datadog.UnmarshalKey("apm_config.obfuscation", &o)
+			if err == nil {
+				c.Obfuscation = &o
+				if c.Obfuscation.RemoveStackTraces {
+					c.addReplaceRule("error.stack", `(?s).*`, "?")
+				}
 			}
 		}
-	}
 
-	if config.Datadog.IsSet("apm_config.filter_tags.require") {
-		tags := config.Datadog.GetStringSlice("apm_config.filter_tags.require")
-		for _, tag := range tags {
-			c.RequireTags = append(c.RequireTags, splitTag(tag))
+		if config.Datadog.IsSet("apm_config.filter_tags.require") {
+			tags := config.Datadog.GetStringSlice("apm_config.filter_tags.require")
+			for _, tag := range tags {
+				c.RequireTags = append(c.RequireTags, splitTag(tag))
+			}
 		}
-	}
-	if config.Datadog.IsSet("apm_config.filter_tags.reject") {
-		tags := config.Datadog.GetStringSlice("apm_config.filter_tags.reject")
-		for _, tag := range tags {
-			c.RejectTags = append(c.RejectTags, splitTag(tag))
+		if config.Datadog.IsSet("apm_config.filter_tags.reject") {
+			tags := config.Datadog.GetStringSlice("apm_config.filter_tags.reject")
+			for _, tag := range tags {
+				c.RejectTags = append(c.RejectTags, splitTag(tag))
+			}
 		}
-	}
 
-	// undocumented
-	if config.Datadog.IsSet("apm_config.max_cpu_percent") {
-		c.MaxCPU = config.Datadog.GetFloat64("apm_config.max_cpu_percent") / 100
-	}
-	if config.Datadog.IsSet("apm_config.max_memory") {
-		c.MaxMemory = config.Datadog.GetFloat64("apm_config.max_memory")
-	}
-
-	// undocumented writers
-	for key, cfg := range map[string]*WriterConfig{
-		"apm_config.trace_writer": c.TraceWriter,
-		"apm_config.stats_writer": c.StatsWriter,
-	} {
-		if err := config.Datadog.UnmarshalKey(key, cfg); err != nil {
-			klog.Errorf("Error reading writer config %q: %v", key, err)
+		// undocumented
+		if config.Datadog.IsSet("apm_config.max_cpu_percent") {
+			c.MaxCPU = config.Datadog.GetFloat64("apm_config.max_cpu_percent") / 100
 		}
-	}
-	if config.Datadog.IsSet("apm_config.connection_reset_interval") {
-		c.ConnectionResetInterval = getDuration(config.Datadog.GetInt("apm_config.connection_reset_interval"))
-	}
-	if config.Datadog.IsSet("apm_config.sync_flushing") {
-		c.SynchronousFlushing = config.Datadog.GetBool("apm_config.sync_flushing")
-	}
+		if config.Datadog.IsSet("apm_config.max_memory") {
+			c.MaxMemory = config.Datadog.GetFloat64("apm_config.max_memory")
+		}
 
-	// undocumented deprecated
-	if config.Datadog.IsSet("apm_config.analyzed_rate_by_service") {
-		rateByService := make(map[string]float64)
-		if err := config.Datadog.UnmarshalKey("apm_config.analyzed_rate_by_service", &rateByService); err != nil {
+		// undocumented writers
+		for key, cfg := range map[string]*WriterConfig{
+			"apm_config.trace_writer": c.TraceWriter,
+			"apm_config.stats_writer": c.StatsWriter,
+		} {
+			if err := config.Datadog.UnmarshalKey(key, cfg); err != nil {
+				klog.Errorf("Error reading writer config %q: %v", key, err)
+			}
+		}
+		if config.Datadog.IsSet("apm_config.connection_reset_interval") {
+			c.ConnectionResetInterval = getDuration(config.Datadog.GetInt("apm_config.connection_reset_interval"))
+		}
+		if config.Datadog.IsSet("apm_config.sync_flushing") {
+			c.SynchronousFlushing = config.Datadog.GetBool("apm_config.sync_flushing")
+		}
+
+		// undocumented deprecated
+		if config.Datadog.IsSet("apm_config.analyzed_rate_by_service") {
+			rateByService := make(map[string]float64)
+			if err := config.Datadog.UnmarshalKey("apm_config.analyzed_rate_by_service", &rateByService); err != nil {
+				return err
+			}
+			c.AnalyzedRateByServiceLegacy = rateByService
+			if len(rateByService) > 0 {
+				klog.Warning("analyzed_rate_by_service is deprecated, please use analyzed_spans instead")
+			}
+		}
+		// undocumeted
+		if k := "apm_config.analyzed_spans"; config.Datadog.IsSet(k) {
+			for key, rate := range config.Datadog.GetStringMap("apm_config.analyzed_spans") {
+				serviceName, operationName, err := parseServiceAndOp(key)
+				if err != nil {
+					klog.Errorf("Error parsing names: %v", err)
+					continue
+				}
+				if floatrate, err := toFloat64(rate); err != nil {
+					klog.Errorf("Invalid value for apm_config.analyzed_spans: %v", err)
+				} else {
+					if _, ok := c.AnalyzedSpansByService[serviceName]; !ok {
+						c.AnalyzedSpansByService[serviceName] = make(map[string]float64)
+					}
+					c.AnalyzedSpansByService[serviceName][operationName] = floatrate
+				}
+			}
+		}
+
+		// undocumented
+		if config.Datadog.IsSet("apm_config.dd_agent_bin") {
+			c.DDAgentBin = config.Datadog.GetString("apm_config.dd_agent_bin")
+		}
+
+		if err := c.loadDeprecatedValues(); err != nil {
 			return err
 		}
-		c.AnalyzedRateByServiceLegacy = rateByService
-		if len(rateByService) > 0 {
-			klog.Warning("analyzed_rate_by_service is deprecated, please use analyzed_spans instead")
+
+		if strings.ToLower(c.LogLevel) == "debug" && !config.Datadog.IsSet("apm_config.log_throttling") {
+			// if we are in "debug mode" and log throttling behavior was not
+			// set by the user, disable it
+			c.LogThrottling = false
 		}
-	}
-	// undocumeted
-	if k := "apm_config.analyzed_spans"; config.Datadog.IsSet(k) {
-		for key, rate := range config.Datadog.GetStringMap("apm_config.analyzed_spans") {
-			serviceName, operationName, err := parseServiceAndOp(key)
-			if err != nil {
-				klog.Errorf("Error parsing names: %v", err)
-				continue
-			}
-			if floatrate, err := toFloat64(rate); err != nil {
-				klog.Errorf("Invalid value for apm_config.analyzed_spans: %v", err)
-			} else {
-				if _, ok := c.AnalyzedSpansByService[serviceName]; !ok {
-					c.AnalyzedSpansByService[serviceName] = make(map[string]float64)
-				}
-				c.AnalyzedSpansByService[serviceName][operationName] = floatrate
-			}
-		}
-	}
-
-	// undocumented
-	if config.Datadog.IsSet("apm_config.dd_agent_bin") {
-		c.DDAgentBin = config.Datadog.GetString("apm_config.dd_agent_bin")
-	}
-
-	if err := c.loadDeprecatedValues(); err != nil {
-		return err
-	}
-
-	if strings.ToLower(c.LogLevel) == "debug" && !config.Datadog.IsSet("apm_config.log_throttling") {
-		// if we are in "debug mode" and log throttling behavior was not
-		// set by the user, disable it
-		c.LogThrottling = false
-	}
+	*/
 
 	return nil
 }
@@ -354,27 +353,29 @@ func (c *AgentConfig) applyDatadogConfig() error {
 // backwards compatibility with Agent 5. These should eventually be removed.
 // TODO(x): remove them gradually or fully in a future release.
 func (c *AgentConfig) loadDeprecatedValues() error {
-	cfg := config.Datadog
-	if cfg.IsSet("apm_config.api_key") {
-		c.Endpoints[0].APIKey = config.SanitizeAPIKey(config.Datadog.GetString("apm_config.api_key"))
-	}
-	if cfg.IsSet("apm_config.log_level") {
-		c.LogLevel = config.Datadog.GetString("apm_config.log_level")
-	}
-	if cfg.IsSet("apm_config.log_throttling") {
-		c.LogThrottling = cfg.GetBool("apm_config.log_throttling")
-	}
-	if cfg.IsSet("apm_config.bucket_size_seconds") {
-		d := time.Duration(cfg.GetInt("apm_config.bucket_size_seconds"))
-		c.BucketInterval = d * time.Second
-	}
-	if cfg.IsSet("apm_config.receiver_timeout") {
-		c.ReceiverTimeout = cfg.GetInt("apm_config.receiver_timeout")
-	}
-	if cfg.IsSet("apm_config.watchdog_check_delay") {
-		d := time.Duration(cfg.GetInt("apm_config.watchdog_check_delay"))
-		c.WatchdogInterval = d * time.Second
-	}
+	/*
+		cfg := config.Datadog
+		if cfg.IsSet("apm_config.api_key") {
+			c.Endpoints[0].APIKey = config.SanitizeAPIKey(config.Datadog.GetString("apm_config.api_key"))
+		}
+		if cfg.IsSet("apm_config.log_level") {
+			c.LogLevel = config.Datadog.GetString("apm_config.log_level")
+		}
+		if cfg.IsSet("apm_config.log_throttling") {
+			c.LogThrottling = cfg.GetBool("apm_config.log_throttling")
+		}
+		if cfg.IsSet("apm_config.bucket_size_seconds") {
+			d := time.Duration(cfg.GetInt("apm_config.bucket_size_seconds"))
+			c.BucketInterval = d * time.Second
+		}
+		if cfg.IsSet("apm_config.receiver_timeout") {
+			c.ReceiverTimeout = cfg.GetInt("apm_config.receiver_timeout")
+		}
+		if cfg.IsSet("apm_config.watchdog_check_delay") {
+			d := time.Duration(cfg.GetInt("apm_config.watchdog_check_delay"))
+			c.WatchdogInterval = d * time.Second
+		}
+	*/
 	return nil
 }
 

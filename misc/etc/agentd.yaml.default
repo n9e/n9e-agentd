@@ -1,14 +1,62 @@
+#########################
+## Agent Configuration ##
+#########################
+
 agent:
+  ## @param ident - string - required
+  ## configure the ident field to send for metrics, Choices are:
+  ## * $ip: public ip address
+  ## * $hostname: system's host name
+  ## You can also customize this field
+  #
   ident: $ip
-  alias: $host
+
+  ## @param ident - string - required
+  ## This field is similar to the `ident`
+  #
+  alias: $hostname
+
+  ## @param endpoints - list of strings - required
   endpoints:
     - http://localhost:8000			# replace the server address here
-  #histogramAggregates: ["max", "median", "avg", "count"]
-  #histogramPercentiles: ["0.95"]
-  #maxProcs: 4
+
+  ## @param histogramAggregates - list of strings - optional - default: ["max", "median", "avg", "count"]
+  ## Configure which aggregated value to compute.
+  ## Possible values are: min, max, median, avg, sum and count.
+  #
+  # histogramAggregates:
+  #   - max
+  #   - median
+  #   - avg
+  #   - count
+
+  ## @param histogramPercentiles - list of strings - optional - default: ["0.95"]
+  ## Configure which percentiles are computed by the Agent. It must be a list of float between 0 and 1.
+  ## Warning: percentiles must be specified as yaml strings
+  #
+  # histogramPercentiles:
+  #   - "0.95"
+
+  ## @param exporterPort - integer - optional - default: 8070
+  ## Port for the debug endpoints for the process Agent.
   #exporterPort: 8070
+
+  #############################
+  ## statsd Configuration ##
+  #############################
+
   statsd:
-    #enabled: true
-    #port: 8125
-    #packetBufferFlushTimeout: 100ms
-    #metricsStatsEnable: false
+    ## @param enabled - boolean - optional - default: true
+    ## Set this option to false to disable the Agent statsd server.
+    #
+    # enabled: true
+
+    ## @param port - integer - optional - default: 8125
+    ## Override the Agent statsd port.
+    #
+    # port: 8125
+
+    ## @param metricsStatsEnable - boolean - optional - default: false
+    ## Set this parameter to true to have statsd collects basic statistics (count/last seen)
+    #
+    # metricsStatsEnable: false

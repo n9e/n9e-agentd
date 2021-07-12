@@ -1,12 +1,12 @@
 package api
 
 const (
-	RoutePathSeries        = "/v1/n9e/series"
-	RoutePathCheckRuns     = "/api/v1/check_run"
-	RoutePathIntake        = "/intake/" // hostMetadata
-	RoutePathValidate      = "/api/v1/validate"
-	RoutePathEvents        = "/api/v2/events"
-	RoutePathServiceChecks = "/api/v2/service_checks"
+	RoutePathSeries        = "/v1/n9e/series"         // aggr.sender.{Gauge,Rate,count,MonotonicCount,Histogram,Historate}
+	RoutePathCheckRuns     = "/api/v1/check_run"      //
+	RoutePathIntake        = "/intake/"               // serializer.SendHostMetadata, ...
+	RoutePathValidate      = "/api/v1/validate"       //
+	RoutePathEvents        = "/api/v2/events"         // aggr.sender.Event()
+	RoutePathServiceChecks = "/api/v2/service_checks" // aggr.sender.ServiceCheck()
 	RoutePathSketchSeries  = "/api/beta/sketches"
 	RoutePathMetadata      = "/api/v2/metadata"
 	RoutePathCollector     = "/api/v1/collector"
