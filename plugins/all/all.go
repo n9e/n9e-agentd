@@ -2,6 +2,7 @@ package all
 
 import (
 	// plugin checks
+	_ "github.com/n9e/n9e-agentd/plugins/demo"
 	_ "github.com/n9e/n9e-agentd/plugins/log"
 	_ "github.com/n9e/n9e-agentd/plugins/mysql"
 	_ "github.com/n9e/n9e-agentd/plugins/port"
@@ -10,6 +11,7 @@ import (
 	_ "github.com/n9e/n9e-agentd/plugins/script"
 
 	// register core checks
+	_ "github.com/n9e/n9e-agentd/plugins/snmp"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/ksm"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/kubernetesapiserver"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/orchestrator"
@@ -20,7 +22,6 @@ import (
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/net"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/nvidia/jetson"
-	_ "github.com/n9e/n9e-agentd/plugins/snmp"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system/cpu"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system/disk"
