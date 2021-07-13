@@ -1,0 +1,363 @@
+## All options defined here are available to all instances.
+#
+initConfig:
+
+    ## @param globalCustomQueries - list of mappings - optional
+    ## See `customQueries` defined below.
+    ##
+    ## Global custom queries can be applied to all instances using the
+    ## `useGlobalCustomQueries` setting at the instance level.
+    #
+    # globalCustomQueries:
+    #   - metricPrefix: mysql
+    #     query: <QUERY>
+    #     columns: <COLUMNS>
+    #     tags: <TAGS>
+
+    ## @param service - string - optional
+    ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
+    ##
+    ## Additionally, this sets the default `service` for every log source.
+    #
+    # service: <SERVICE>
+
+## Every instance is scheduled independent of the others.
+#
+instances:
+
+    ## @param dsn - string - required
+    ## MySQL dsn to connect to.
+    ## [username[:password]@][protocol[(address)]]/[?tls=[true|false|skip-verify|custom]]
+    ## see https://github.com/go-sql-driver/mysql#dsn-data-source-name
+    ##  e.g.
+    ##    dsn: user:passwd@tcp(127.0.0.1:3306)/?tls=false
+    ##    dsn: user@tcp(127.0.0.1:3306)/?tls=false
+    ##    dsn: root:pw@unix(/tmp/mysql.sock)/?timeout=90s&collation=utf8mb4_unicode_ci
+    #
+  - dsn: root@tcp(127.0.0.1:3306)/?tls=false
+
+    ## @param tls - mapping - optional
+    ## Use this section to configure a TLS connection between the Agent and MySQL.
+    ##
+    ## The following fields are supported:
+    ##
+    ## key: Path to a key file.
+    ## cert: Path to a cert file.
+    ## ca: Path to a CA bundle file.
+    ## insecureSkipVerify: Use TLS but skip chain & host verification
+    #
+    # tls:
+    #   key: <KEY_FILE_PATH>
+    #   cert: <CERT_FILE_PATH>
+    #   ca: <CA_PATH_FILE>
+    #   insecureSkipVerify: <true|false>
+
+    ## @param useGlobalCustomQueries - string - optional - default: true
+    ## How `globalCustomQueries` should be used for this instance. There are 3 options:
+    ##
+    ## 1. true - `globalCustomQueries` override `customQueries`.
+    ## 2. false - `customQueries` override `globalCustomQueries`.
+    ## 3. extend - `globalCustomQueries` are used in addition to any `customQueries`.
+    #
+    # useGlobalCustomQueries: 'true'
+
+    ## @param customQueries - list of mappings - optional
+    ## Each query must have 2 fields, and can have a third optional field:
+    ##
+    ## 1. query - The SQL to execute. It can be a simple statement or a multi-line script.
+    ##            Use the pipe `|` if you require a multi-line script.
+    ## 2. columns - The list representing each column, ordered sequentially from left to right.
+    ##              The number of columns must equal the number of columns returned in the query.
+    ##              There are 2 required pieces of data:
+    ##                a. name - The suffix to append to `<INTEGRATION>.` to form
+    ##                          the full metric name. If `type` is `tag`, this column is
+    ##                          considered a tag and applied to every
+    ##                          metric collected by this particular query.
+    ##                b. type - The submission method (gauge, monotonicCount, etc.).
+    ##                          This can also be set to `tag` to tag each metric in the row
+    ##                          with the name and value of the item in this column. You can
+    ##                          use the `count` type to perform aggregation for queries that
+    ##                          return multiple rows with the same or no tags.
+    ##              Columns without a name are ignored. To skip a column, enter:
+    ##                - {}
+    ## 3. tags (optional) - A list of tags to apply to each metric.
+    #
+    # customQueries:
+    #   - query: SELECT foo, COUNT(*) FROM table.events GROUP BY foo
+    #     columns:
+    #     - name: foo
+    #       type: tag
+    #     - name: event.total
+    #       type: gauge
+    #     tags:
+    #     - test:mysql
+
+    ## @param maxCustomQueries - integer - optional - default: 20
+    ## Set the maximum number of custom queries to execute with this integration.
+    ##
+    ## WARNING: This only applies to the deprecated `queries` option.
+    #
+    # maxCustomQueries: 20
+
+    ## Enable options to collect extra metrics from your MySQL integration.
+    #
+    options:
+
+        ## @param replication - boolean - optional - default: false
+        ## Set to `true` to collect replication metrics.
+        #
+        # replication: false
+
+        ## @param replicationChannel - string - optional
+        ## If using multiple sources, set the channel name to monitor.
+        #
+        # replicationChannel: <REPLICATIONCHANNEL>
+
+        ## @param replicationNonBlockingStatus - boolean - optional - default: false
+        ## Set to `true` to grab slave count in a non-blocking manner (requires `performanceSchema`);
+        #
+        # replicationNonBlockingStatus: false
+
+        ## @param galeraCluster - boolean - optional - default: false
+        ## Set to `true` to collect Galera cluster metrics.
+        #
+        # galeraCluster: false
+
+        ## @param extraStatusMetrics - boolean - optional - default: false
+        ## Set to `true` to enable extra status metrics.
+        ##
+        ## See also the MySQL metrics listing: https://docs.datadoghq.com/integrations/mysql/#metrics
+        #
+        # extraStatusMetrics: false
+
+        ## @param extraInnodbMetrics - boolean - optional - default: false
+        ## Set to `true` to enable extra InnoDB metrics.
+        ##
+        ## See also the MySQL metrics listing: https://docs.datadoghq.com/integrations/mysql/#metrics
+        #
+        # extraInnodbMetrics: false
+
+        ## @param disableInnodbMetrics - boolean - optional - default: false
+        ## Set to `true` only if experiencing issues with older (unsupported) versions of MySQL
+        ## that do not run or have InnoDB engine support.
+        ##
+        ## If this flag is enabled, you will only receive a small subset of metrics.
+        ##
+        ## see also the MySQL metrics listing: https://docs.datadoghq.com/integrations/mysql/#metrics
+        #
+        # disableInnodbMetrics: false
+
+        ## @param schemaSizeMetrics - boolean - optional - default: false
+        ## Set to `true` to collect schema size metrics.
+        ##
+        ## Note that this runs a heavy query against your database to compute the relevant metrics
+        ## for all your existing schemas. Due to the nature of these calls, if you have a
+        ## high number of tables and schemas, this may have a negative impact on your database performance.
+        ##
+        ## See also the MySQL metrics listing: https://docs.datadoghq.com/integrations/mysql/#metrics
+        #
+        # schemaSizeMetrics: false
+
+        ## @param extraPerformanceMetrics - boolean - optional - default: false
+        ## These metrics are reported if `performanceSchema` is enabled in the MySQL instance
+        ## and if the version for that instance is >= 5.6.0.
+        ##
+        ## Note that this runs a heavy query against your database to compute the relevant metrics
+        ## for all your existing schemas. Due to the nature of these calls, if you have a
+        ## high number of tables and schemas, this may have a negative impact on your database performance.
+        ##
+        ## Metrics provided by the options:
+        ##   - mysql.info.schema.size (per schema)
+        ##   - mysql.performance.queryRunTime.avg (per schema)
+        ##   - mysql.performance.digest_95thPercentile.avgUs
+        ##
+        ## Note that some of these require the `user` defined for this instance
+        ## to have PROCESS and SELECT privileges. Take a look at the
+        ## MySQL integration tile in the Datadog Web UI for further instructions.
+        #
+        # extraPerformanceMetrics: false
+
+    ## @param deepDatabaseMonitoring - boolean - optional - default: false
+    ## Set to `true` to enable the ALPHA features for Deep Database Monitoring.
+    ##
+    ## If you would like to hear more about Deep Database Monitoring, please reach out to your customer
+    ## success manager or Datadog support.
+    #
+    # deepDatabaseMonitoring: false
+
+    ## @param statementMetricsLimits - mapping - optional - default: false
+    ## Defines the top and bottom limits on queries to track for each metric. These limits apply only to the
+    ## ALPHA features of Deep Database Monitoring. It is recommended to leave these settings at their default
+    ## values unless instructed otherwise. This API may change in the future.
+    ##
+    ## If you would like to hear more about Deep Database Monitoring, please reach out to your customer
+    ## success manager or Datadog support.
+    #
+    # statementMetricsLimits:
+    #   calls:
+    #   - 100
+    #   - 0
+    #   time:
+    #   - 100
+    #   - 0
+    #   <METRIC_COLUMN>:
+    #   - <TOP_K_LIMIT>
+    #   - <BOTTOM_K_LIMIT>
+
+    ## Configure collection of statement samples
+    #
+    statementSamples:
+
+        ## @param enabled - boolean - optional - default: false
+        ## Enables collection of statement samples. Requires `deepDatabaseMonitoring: true`.
+        #
+        # enabled: false
+
+        ## @param collectionsPerSecond - number - optional - default: 1
+        ## Sets the maximum statement sample collection rate. Each collection involves a single query to one
+        ## of the `performanceSchema.eventsStatements_*` tables, followed by at most one `EXPLAIN` query per
+        ## unique statement seen.
+        #
+        # collectionsPerSecond: 1
+
+        ## @param explainedStatementsPerHourPerQuery - integer - optional - default: 60
+        ## Sets the rate limit for how many execution plans will be collected per hour per normalized statement.
+        #
+        # explainedStatementsPerHourPerQuery: 60
+
+        ## @param samplesPerHourPerQuery - integer - optional - default: 15
+        ## Sets the rate limit for how many statement sample events will be ingested per hour per normalized
+        ## execution plan.
+        #
+        # samplesPerHourPerQuery: 15
+
+        ## @param explainedStatementsCacheMaxsize - integer - optional - default: 5000
+        ## Sets the max size of the cache used for the explainedStatementsPerHourPerQuery rate limit. This
+        ## should be increased for databases with a very large number of unique normalized queries which exceed the
+        ## cache's limit.
+        #
+        # explainedStatementsCacheMaxsize: 5000
+
+        ## @param seenSamplesCacheMaxsize - integer - optional - default: 10000
+        ## Sets the max size of the cache used for the samplesPerHourPerQuery rate limit. This should be
+        ## increased for databases with a very large number of unique normalized execution plans which exceed the
+        ## cache's limit.
+        #
+        # seenSamplesCacheMaxsize: 10000
+
+        ## @param eventsStatementsRowLimit - integer - optional - default: 5000
+        ## Sets the maximum number of rows to read out from a `performanceSchema.eventsStatements_*` table during
+        ## a single collection.
+        #
+        # eventsStatementsRowLimit: 5000
+
+        ## @param eventsStatementsTable - string - optional
+        ## Forces a specific events statements table. Must be one of eventsStatementsCurrent,
+        ## eventsStatementsHistory, eventsStatementsHistoryLong. If not set then the agent will choose
+        ## the best available table that is enabled and not empty.
+        #
+        # eventsStatementsTable: eventsStatementsHistoryLong
+
+        ## @param explainProcedure - string - optional - default: explainStatement
+        ## Overrides the default procedure used for collecting execution plans. The agent will use this
+        ## procedure in each schema where it exists: `{schema}.explainStatement({statement})`.
+        #
+        # explainProcedure: explainStatement
+
+        ## @param fullyQualifiedExplainProcedure - string - optional - default: datadog.explainStatement
+        ## Overrides the default fully qualified explain procedure used for collecting execution plans for
+        ## statements sent from connections that do not have a default schema configured.
+        #
+        # fullyQualifiedExplainProcedure: datadog.explainStatement
+
+        ## @param eventsStatementsEnableProcedure - string - optional - default: datadog.enableEventsStatementsConsumers
+        ## Overrides the default procedure used for enabling events statements consumers.
+        #
+        # eventsStatementsEnableProcedure: datadog.enableEventsStatementsConsumers
+
+        ## @param eventsStatementsTempTableName - string - optional - default: datadog.tempEvents
+        ## Overrides the default fully qualified name for the temp table the agent creates while collecting
+        ## samples.
+        #
+        # eventsStatementsTempTableName: datadog.tempEvents
+
+        ## @param collectionStrategyCacheMaxsize - integer - optional - default: 1000
+        ## Sets the max size of the cache used for caching collection strategies. This value should be increased
+        ## to be at least as many as the number of unique schemas that are being monitored.
+        #
+        # collectionStrategyCacheMaxsize: 1000
+
+        ## @param collectionStrategyCacheTtl - integer - optional - default: 300
+        ## Sets how long to cache collection strategies. This should only be decreased if the set of enabled
+        ## `eventsStatements_*` tables changes frequently enough to cause stale strategies to return empty
+        ## results for an extended period of time.
+        #
+        # collectionStrategyCacheTtl: 300
+
+    ## @param tags - list of strings - optional
+    ## A list of tags to attach to every metric and service check emitted by this instance.
+    ##
+    ## Learn more about tagging at https://docs.datadoghq.com/tagging
+    #
+    # tags:
+    #   - <KEY_1>:<VALUE_1>
+    #   - <KEY_2>:<VALUE_2>
+
+    ## @param service - string - optional
+    ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
+    ##
+    ## Overrides any `service` defined in the `initConfig` section.
+    #
+    # service: <SERVICE>
+
+    ## @param minCollectionInterval - number - optional - default: 15
+    ## This changes the collection interval of the check. For more information, see:
+    ## https://docs.datadoghq.com/developers/writeAgentCheck/#collection-interval
+    #
+    # minCollectionInterval: 15
+
+    ## @param emptyDefaultHostname - boolean - optional - default: false
+    ## This forces the check to send metrics with no hostname.
+    ##
+    ## This is useful for cluster-level checks.
+    #
+    # emptyDefaultHostname: false
+
+## Log Section
+##
+## type - required - Type of log input source (tcp / udp / file)
+## port / path / channelPath - required - Set port if type is tcp or udp.
+##                                         Set path if type is file.
+## source  - required - Attribute that defines which Integration sent the logs.
+## encoding - optional - For file specifies the file encoding, default is utf-8, other
+##                       possible values are utf-16-le and utf-16-be.
+## service - optional - The name of the service that generates the log.
+##                      Overrides any `service` defined in the `initConfig` section.
+## tags - optional - Add tags to the collected logs.
+##
+## Discover Datadog log collection: https://docs.datadoghq.com/logs/log_collection/
+#
+# logs:
+#   - type: file
+#     path: <GENERAL_LOG_FILE_PATH>
+#     source: mysql
+#     logProcessingRules:
+#     - type: multi_line
+#       name: new_log_start_with_date
+#       pattern: \d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])
+#     - type: multi_line
+#       name: new_logs_do_not_always_start_with_timestamp
+#       pattern: \t\t\s*\d+\s+|\d{6}\s+\d{,2}:\d{2}:\d{2}\t\s*\d+\s+
+#   - type: file
+#     path: <ERROR_LOG_FILE_PATH>
+#     source: mysql
+#   - type: file
+#     path: <SLOW_QUERY_LOG_FILE_PATH>
+#     source: mysql
+#     logProcessingRules:
+#     - type: multi_line
+#       name: new_slow_query_log_entry
+#       pattern: '# Time:'
+#     - type: multi_line
+#       name: mysqld_log_short_format_new_slow_query_log_entry
+#       pattern: '# Query_time:'
