@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 )
 
 var (

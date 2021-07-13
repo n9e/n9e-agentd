@@ -17,8 +17,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
@@ -204,7 +204,7 @@ func GetGoRoutinesDump() (string, error) {
 	}
 
 	pprofURL := fmt.Sprintf("http://%v:%s/debug/pprof/goroutine?debug=2",
-		ipcAddress, config.C.ExporterPort)
+		ipcAddress, config.C.Exporter.Port)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	client := http.Client{}

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
-	telemetry_utils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry/utils"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 )
 
 const (

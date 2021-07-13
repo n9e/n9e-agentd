@@ -1,6 +1,6 @@
 package telemetry
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+import "github.com/n9e/n9e-agentd/pkg/telemetry"
 
 // PruneType represents the `prune_type` tag for the pruned_entities metric
 type PruneType string

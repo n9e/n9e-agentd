@@ -10,8 +10,7 @@ import (
 	"time"
 
 	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"k8s.io/klog/v2"
 )
 
@@ -26,24 +25,19 @@ type server struct {
 }
 
 func (p *module) startExporter() error {
-	cf := p.config
-	if cf.ExporterPort <= 0 {
+	cf := p.config.Exporter
+	if cf.Port <= 0 {
 		return nil
 	}
 
 	mux := http.NewServeMux()
 
-	if cf.EnableDocs {
+	if cf.Docs {
 		mux.Handle("/docs/metrics", registrymetrics.Handler())
 	}
 
-	// TODO: remove or merge to telemetry
 	if cf.Metrics {
-		mux.Handle("/metrics", promhttp.Handler())
-	}
-
-	if cf.Telemetry.Enabled {
-		mux.Handle("/telemetry", telemetry.Handler())
+		mux.Handle("/metrics", telemetry.Handler())
 	}
 
 	if cf.Expvar {
@@ -59,7 +53,7 @@ func (p *module) startExporter() error {
 	}
 
 	server := &server{
-		address: fmt.Sprintf("127.0.0.1:%d", cf.ExporterPort),
+		address: fmt.Sprintf("127.0.0.1:%d", cf.Port),
 		handler: mux,
 	}
 

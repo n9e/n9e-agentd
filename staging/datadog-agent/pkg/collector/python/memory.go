@@ -15,7 +15,7 @@ import (
 	"unsafe"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"k8s.io/klog/v2"
 	_ "github.com/benesch/cgosymbolizer"
 	"github.com/cihub/seelog"

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
 	"k8s.io/klog/v2"
 )

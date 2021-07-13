@@ -18,7 +18,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"

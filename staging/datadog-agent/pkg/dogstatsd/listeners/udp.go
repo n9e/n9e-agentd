@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"k8s.io/klog/v2"
 
 	"github.com/n9e/n9e-agentd/pkg/config"

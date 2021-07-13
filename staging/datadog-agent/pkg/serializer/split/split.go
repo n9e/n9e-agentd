@@ -10,7 +10,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
 	"k8s.io/klog/v2"
 )

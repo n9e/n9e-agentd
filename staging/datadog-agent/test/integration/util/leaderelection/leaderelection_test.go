@@ -31,7 +31,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"

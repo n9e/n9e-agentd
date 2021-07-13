@@ -21,7 +21,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check/defaults"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	telemetry_utils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry/utils"
+	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 	"k8s.io/klog/v2"
 )
 

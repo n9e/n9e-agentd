@@ -9,7 +9,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd/listeners"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 )

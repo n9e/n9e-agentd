@@ -71,13 +71,12 @@ coreDump: true
 authTokenFile: # dir(configfile)/auth_token
 
 # startExporter
-exporterPort: 8070
-enableDocs: true        # /docs/{metrics}
-expvar: true            # /vars
-pprof: true             # /debug/pprof/*
-metrics: true           # /metrics
-telemetry:              # /telemetry
-  enabled: true
+expoter:
+  port: 8070
+  docs: true        # /docs/{metrics}
+  expvar: true      # /vars
+  pprof: true       # /debug/pprof/*
+  metrics: true     # /metrics
   checks:
   
 

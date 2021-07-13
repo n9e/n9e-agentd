@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
 	"k8s.io/klog/v2"
 )

@@ -63,7 +63,6 @@ type Config struct {
 	Ident                                string                   `yaml:"ident"`
 	Alias                                string                   `yaml:"alias"`
 	Lang                                 string                   `yaml:"lang"`
-	EnableDocs                           bool                     `yaml:"enableDocs"`
 	EnableN9eProvider                    bool                     `yaml:"enableN9eProvider"`
 	N9eSeriesFormat                      bool                     `yaml:"n9eSeriesFormat"`                      // the payload format for forwarder
 	WorkDir                              string                   `yaml:"-"`                                    // e.g. /etc/n9e-agentd/
@@ -83,10 +82,6 @@ type Config struct {
 	MaxProcs                             string                   `yaml:"maxProcs"`                             //
 	CoreDump                             bool                     `yaml:"coreDump"`                             // go_core_dump
 	HealthPort                           int                      `yaml:"healthPort"`                           //
-	Pprof                                bool                     `yaml:"pprof"`                                //
-	Expvar                               bool                     `yaml:"expvar"`                               //
-	ExporterPort                         int                      `yaml:"exporterPort"`                         // expvar_port
-	Metrics                              bool                     `yaml:"metrics"`                              //
 	SkipSSLValidation                    bool                     `yaml:"skipSSLValidation"`                    // skip_ssl_validation
 	ForceTLS12                           bool                     `yaml:"forceTLS12"`                           // force_tls_12
 	ECSMetadataTimeout                   time.Duration            `yaml:"ecsMetadataTimeout"`                   // ecs_metadata_timeout
@@ -246,7 +241,7 @@ type Config struct {
 	LogsConfig                           LogsConfig               `yaml:"logsConfig"`                           // logs_config
 	CloudFoundryGarden                   CloudFoundryGarden       `yaml:"cloudFoundryGarden"`                   // cloud_foundry_garden
 	ClusterChecks                        ClusterChecks            `yaml:"clusterChecks"`                        // cluster_checks
-	Telemetry                            Telemetry                `yaml:"telemetry"`                            // telemetry
+	Exporter                             Exporter                 `yaml:"exporter"`                             // telemetry
 	OrchestratorExplorer                 OrchestratorExplorer     `yaml:"orchestratorExplorer"`                 // orchestrator_explorer
 	Statsd                               Statsd                   `yaml:"statsd"`                               // statsd_*, dagstatsd_*
 	Apm                                  Apm                      `yaml:"apm"`                                  // apm_config.*
@@ -736,8 +731,12 @@ type Network struct {
 	EnableGatewayLookup        bool   `yaml:"EnableGatewayLookup"`        // network_config.enable_gateway_lookup
 }
 
-type Telemetry struct {
-	Enabled bool     `yaml:"enabled"` // telemetry.enabled
+type Exporter struct {
+	Port    int      `yaml:"port"`    // expvar_port
+	Docs    bool     `yaml:"docs"`    // /docs/*
+	Metrics bool     `yaml:"metrics"` // /metrics/
+	Expvar  bool     `yaml:"expvar"`  // /vars
+	Pprof   bool     `yaml:"pprof"`   // /debug/pprof
 	Checks  []string `yaml:"checks"`  // telemetry.checks
 }
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	telemetry_utils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry/utils"
+	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 	"k8s.io/klog/v2"
 )
 

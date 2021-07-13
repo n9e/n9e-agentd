@@ -7,7 +7,7 @@
 
 package metrics
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+import "github.com/n9e/n9e-agentd/pkg/telemetry"
 
 const (
 	SecretControllerName   = "secrets"

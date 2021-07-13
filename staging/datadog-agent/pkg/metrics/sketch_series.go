@@ -12,7 +12,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/quantile"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/stream"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
 )
 

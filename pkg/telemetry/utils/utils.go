@@ -13,7 +13,7 @@ func IsCheckEnabled(checkName string) bool {
 	}
 
 	// by default, we don't enable telemetry for every checks stats
-	for _, check := range config.C.Telemetry.Checks {
+	for _, check := range config.C.Exporter.Checks {
 		if check == "*" {
 			return true
 		} else if check == checkName {
@@ -25,5 +25,5 @@ func IsCheckEnabled(checkName string) bool {
 
 // IsEnabled returns whether or not telemetry is enabled
 func IsEnabled() bool {
-	return config.C.Telemetry.Enabled
+	return config.C.Exporter.Metrics
 }

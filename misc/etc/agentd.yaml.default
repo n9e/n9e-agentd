@@ -37,9 +37,10 @@ agent:
   # histogramPercentiles:
   #   - "0.95"
 
-  ## @param exporterPort - integer - optional - default: 8070
+  exporter:
+  ## @param port - integer - optional - default: 8070
   ## Port for the debug endpoints for the process Agent.
-  #exporterPort: 8070
+  # port: 8070
 
   #############################
   ## statsd Configuration ##

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	agentConfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 )
 
 // Mock Check implementation used for testing

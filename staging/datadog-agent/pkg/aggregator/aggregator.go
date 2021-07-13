@@ -19,7 +19,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
 	"github.com/n9e/n9e-agentd/pkg/version"

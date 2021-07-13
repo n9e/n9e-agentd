@@ -12,7 +12,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"k8s.io/klog/v2"
 )
 

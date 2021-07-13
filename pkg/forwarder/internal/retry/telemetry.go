@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 )
 
 type counterExpvar struct {

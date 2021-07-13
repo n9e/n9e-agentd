@@ -25,8 +25,8 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd/mapper"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
-	telemetry_utils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry/utils"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 )

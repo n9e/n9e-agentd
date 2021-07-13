@@ -19,7 +19,7 @@ import (
 	utilserror "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
 	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
 	"k8s.io/klog/v2"

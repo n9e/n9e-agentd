@@ -16,7 +16,7 @@ import (
 	agentpayload "github.com/n9e/agent-payload/gogen"
 	agentutil "github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 )
 

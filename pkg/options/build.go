@@ -28,8 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/spf13/cobra"
 	"github.com/yubo/golib/util"
 	"k8s.io/klog/v2"
@@ -92,6 +91,9 @@ func LogBuildInfo() {
 type buildReporter struct {
 	sync.Mutex
 
+	buildInfoGauge telemetry.Gauge
+	buildAgeGauge  telemetry.Gauge
+
 	buildTime time.Time
 	active    bool
 	closeCh   chan struct{}
@@ -125,27 +127,17 @@ func (b *buildReporter) Start() error {
 	return nil
 }
 
+func (b *buildReporter) _report() {
+	b.buildInfoGauge.Set(1.0, Revision, Branch, BuildDate, Version, goVersion)
+	b.buildAgeGauge.Set(float64(time.Since(b.buildTime)), Revision, Branch, BuildDate, Version, goVersion)
+}
+
 func (b *buildReporter) report() {
-	tags := map[string]string{
-		"revision":      Revision,
-		"branch":        Branch,
-		"build_date":    BuildDate,
-		"build_version": Version,
-		"go_version":    goVersion,
-	}
+	tags := []string{"revision", "branch", "build_date", "build_version", "go_version"}
+	b.buildInfoGauge = telemetry.NewGauge("agentd", "build_information", tags, "agentd build information")
+	b.buildAgeGauge = telemetry.NewGauge("agentd", "build_age", tags, "agentd build information")
 
-	buildInfoGauge := promauto.NewGauge(prometheus.GaugeOpts{
-		Name:        "build_information",
-		ConstLabels: tags,
-	})
-
-	buildAgeGauge := promauto.NewGauge(prometheus.GaugeOpts{
-		Name:        "build_age",
-		ConstLabels: tags,
-	})
-
-	buildInfoGauge.Set(1.0)
-	buildAgeGauge.Set(float64(time.Since(b.buildTime)))
+	b._report()
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer func() {
@@ -156,9 +148,7 @@ func (b *buildReporter) report() {
 	for {
 		select {
 		case <-ticker.C:
-			buildInfoGauge.Set(1.0)
-			buildAgeGauge.Set(float64(time.Since(b.buildTime)))
-
+			b._report()
 		case <-b.closeCh:
 			return
 		}
