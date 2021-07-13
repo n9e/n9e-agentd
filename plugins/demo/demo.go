@@ -10,6 +10,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
+	"github.com/yubo/golib/staging/util/clock"
 	"k8s.io/klog"
 	"sigs.k8s.io/yaml"
 )
@@ -61,6 +62,7 @@ func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (
 type Check struct {
 	core.CheckBase
 
+	clock clock.Clock
 	count int
 	cos   *cos
 }
@@ -74,7 +76,7 @@ func (c *Check) Run() error {
 	}
 
 	for i := 0; i < c.count; i++ {
-		sender.Gauge("demo", c.cos.value(i), "", []string{"n:" + strconv.Itoa(i)})
+		sender.Gauge("demo", c.cos.value(c.clock.Now(), i), "", []string{"n:" + strconv.Itoa(i)})
 	}
 
 	sender.Commit()
@@ -122,13 +124,14 @@ type cos struct {
 	offset float64
 }
 
-func (c *cos) value(i int) float64 {
-	return math.Cos(2 * math.Pi * (float64(time.Now().Unix()) + c.unit*float64(i) + c.offset) / c.period)
+func (c *cos) value(t time.Time, i int) float64 {
+	return math.Cos(2 * math.Pi * (float64(t.Unix()) + c.unit*float64(i) + c.offset) / c.period)
 }
 
 func checkFactory() check.Check {
 	return &Check{
 		CheckBase: core.NewCheckBase(checkName),
+		clock:     clock.RealClock{},
 	}
 }
 func init() {
