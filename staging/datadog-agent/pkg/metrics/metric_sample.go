@@ -40,7 +40,7 @@ var (
 	// pipeline improve memory allocation. We kept the old name to be
 	// backward compatible and because origin detection only affect
 	// dogstatsd metrics.
-	tlmUDPOriginDetectionError = telemetry.NewCounter("dogstatsd", "udp_origin_detection_error",
+	tlmUDPOriginDetectionError = telemetry.NewCounter("statsd", "udp_origin_detection_error",
 		nil, "Dogstatsd UDP origin detection error count")
 )
 

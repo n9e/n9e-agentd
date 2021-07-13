@@ -305,7 +305,7 @@ func expvarStats(stats map[string]interface{}) (map[string]interface{}, error) {
 	json.Unmarshal(aggregatorStatsJSON, &aggregatorStats) //nolint:errcheck
 	stats["aggregatorStats"] = aggregatorStats
 
-	dogstatsdStatsJSON := []byte(expvar.Get("dogstatsd").String())
+	dogstatsdStatsJSON := []byte(expvar.Get("statsd").String())
 	dogstatsdUdsStatsJSON := []byte(expvar.Get("dogstatsd-uds").String())
 	dogstatsdUDPStatsJSON := []byte(expvar.Get("dogstatsd-udp").String())
 	dogstatsdStats := make(map[string]interface{})

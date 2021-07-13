@@ -82,11 +82,10 @@ type Config struct {
 	PidfilePath                          string                   `yaml:"pidfilePath"`                          //
 	MaxProcs                             string                   `yaml:"maxProcs"`                             //
 	CoreDump                             bool                     `yaml:"coreDump"`                             // go_core_dump
-	ExporterPort                         int                      `yaml:"exporterPort"`                         //
 	HealthPort                           int                      `yaml:"healthPort"`                           //
 	Pprof                                bool                     `yaml:"pprof"`                                //
 	Expvar                               bool                     `yaml:"expvar"`                               //
-	ExpvarPort                           int                      `yaml:"expvarPort"`                           // expvar_port
+	ExporterPort                         int                      `yaml:"exporterPort"`                         // expvar_port
 	Metrics                              bool                     `yaml:"metrics"`                              //
 	SkipSSLValidation                    bool                     `yaml:"skipSSLValidation"`                    // skip_ssl_validation
 	ForceTLS12                           bool                     `yaml:"forceTLS12"`                           // force_tls_12

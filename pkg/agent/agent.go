@@ -3,9 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
@@ -15,7 +13,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
 	"github.com/n9e/n9e-agentd/pkg/i18n"
 	"github.com/n9e/n9e-agentd/pkg/options"
-	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
@@ -29,7 +26,6 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
 	ddutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
@@ -96,32 +92,17 @@ func (p *module) start(ops *proc.HookOps) error {
 		}
 	}
 
+	// i18n
+	i18n.SetDefaultPrinter(config.C.Lang, "zh")
+
 	// exporter
-	//if err := p.startExporter(); err != nil {
-	//	return err
-	//}
+	if err := p.startExporter(); err != nil {
+		return err
+	}
 	// outputs
 	// serializer
 	// aggreator
 	// inputs
-
-	// i18n
-	i18n.SetDefaultPrinter(config.C.Lang, "zh")
-
-	// Setup expvar server
-	var port = config.C.ExpvarPort
-	if config.C.EnableDocs {
-		http.Handle("/docs/metrics", registrymetrics.Handler())
-	}
-	if config.C.Telemetry.Enabled {
-		http.Handle("/metrics", telemetry.Handler())
-	}
-	go func() {
-		err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), http.DefaultServeMux)
-		if err != nil && err != http.ErrServerClosed {
-			klog.Errorf("Error creating expvar server on port %d: %s", port, err)
-		}
-	}()
 
 	// Setup healthcheck port
 	if cf.HealthPort > 0 {

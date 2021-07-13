@@ -28,9 +28,9 @@ func newListenerTelemetry(metricName string, name string) *listenerTelemetry {
 	packets := expvar.Int{}
 	bytes := expvar.Int{}
 
-	tlmPackets := telemetry.NewCounter("dogstatsd", metricName+"_packets",
+	tlmPackets := telemetry.NewCounter("statsd", metricName+"_packets",
 		[]string{"state"}, fmt.Sprintf("Dogstatsd %s packets count", name))
-	tlmPacketsBytes := telemetry.NewCounter("dogstatsd", metricName+"_packets_bytes",
+	tlmPacketsBytes := telemetry.NewCounter("statsd", metricName+"_packets_bytes",
 		nil, fmt.Sprintf("Dogstatsd %s packets bytes count", name))
 	expvars.Set("PacketReadingErrors", &packetReadingErrors)
 	expvars.Set("Packets", &packets)

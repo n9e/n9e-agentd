@@ -9,6 +9,8 @@ import (
 	"net/http/pprof"
 	"time"
 
+	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/klog/v2"
 )
@@ -31,9 +33,19 @@ func (p *module) startExporter() error {
 
 	mux := http.NewServeMux()
 
+	if cf.EnableDocs {
+		mux.Handle("/docs/metrics", registrymetrics.Handler())
+	}
+
+	// TODO: remove or merge to telemetry
 	if cf.Metrics {
 		mux.Handle("/metrics", promhttp.Handler())
 	}
+
+	if cf.Telemetry.Enabled {
+		mux.Handle("/telemetry", telemetry.Handler())
+	}
+
 	if cf.Expvar {
 		mux.Handle("/vars", expvar.Handler())
 	}
@@ -44,7 +56,6 @@ func (p *module) startExporter() error {
 		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-		//mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	}
 
 	server := &server{

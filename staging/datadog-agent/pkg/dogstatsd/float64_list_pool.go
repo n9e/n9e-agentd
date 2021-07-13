@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	tlmFloat64ListPoolGet = telemetry.NewCounter("dogstatsd", "float64_list_pool_get",
+	tlmFloat64ListPoolGet = telemetry.NewCounter("statsd", "float64_list_pool_get",
 		nil, "Count of get done in the float64_list  pool")
-	tlmFloat64ListPoolPut = telemetry.NewCounter("dogstatsd", "float64_list_pool_put",
+	tlmFloat64ListPoolPut = telemetry.NewCounter("statsd", "float64_list_pool_put",
 		nil, "Count of put done in the float64_list  pool")
-	tlmFloat64ListPool = telemetry.NewGauge("dogstatsd", "float64_list_pool",
+	tlmFloat64ListPool = telemetry.NewGauge("statsd", "float64_list_pool",
 		nil, "Usage of the float64_list pool in dogstatsd")
 )
 

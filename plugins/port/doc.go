@@ -9,9 +9,17 @@ var langStrings = map[string]map[string]string{
 	"zh": map[string]string{
 		"proc.port.listen": "进程监听端口",
 	},
+	"en": map[string]string{
+		"proc.port.listen": "Process listening port",
+	},
+}
+
+func registerMetric() {
+	m := metrics.GetMetricGroup("process")
+	m.Register("proc.port.listen")
 }
 
 func init() {
-	metrics.Register("proc.port.listen")
+	registerMetric()
 	i18n.SetLangStrings(langStrings)
 }

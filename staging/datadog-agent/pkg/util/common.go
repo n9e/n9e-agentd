@@ -204,7 +204,7 @@ func GetGoRoutinesDump() (string, error) {
 	}
 
 	pprofURL := fmt.Sprintf("http://%v:%s/debug/pprof/goroutine?debug=2",
-		ipcAddress, config.C.ExpvarPort)
+		ipcAddress, config.C.ExporterPort)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	client := http.Client{}

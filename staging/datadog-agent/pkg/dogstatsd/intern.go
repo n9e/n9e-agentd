@@ -11,7 +11,7 @@ var (
 	// Note that it's not ideal because there is many allocated string interner
 	// (one per worker) but it'll still give us an insight (and it's comparable
 	// as long as the amount of worker is stable).
-	tlmSIResets = telemetry.NewCounter("dogstatsd", "string_interner_resets",
+	tlmSIResets = telemetry.NewCounter("statsd", "string_interner_resets",
 		nil, "Amount of resets of the string interner used in dogstatsd")
 )
 

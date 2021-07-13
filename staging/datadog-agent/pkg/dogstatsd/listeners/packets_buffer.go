@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	tlmPacketsBufferFlushedTimer = telemetry.NewCounter("dogstatsd", "packets_buffer_flush_timer",
+	tlmPacketsBufferFlushedTimer = telemetry.NewCounter("statsd", "packets_buffer_flush_timer",
 		nil, "Count of packets buffer flush triggered by the timer")
-	tlmPacketsBufferFlushedFull = telemetry.NewCounter("dogstatsd", "packets_buffer_flush_full",
+	tlmPacketsBufferFlushedFull = telemetry.NewCounter("statsd", "packets_buffer_flush_full",
 		nil, "Count of packets buffer flush triggered because the buffer is full")
-	tlmPacketsChannelSize = telemetry.NewGauge("dogstatsd", "packets_channel_size",
+	tlmPacketsChannelSize = telemetry.NewGauge("statsd", "packets_channel_size",
 		nil, "Number of packets in the packets channel")
 )
 

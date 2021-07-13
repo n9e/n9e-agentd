@@ -13,7 +13,7 @@ const (
 	// ClusterAgent is the Cluster Agent flavor
 	ClusterAgent = "cluster_agent"
 	// Dogstatsd is the DogStatsD flavor
-	Dogstatsd = "dogstatsd"
+	Dogstatsd = "statsd"
 	// SecurityAgent is the Security Agent flavor
 	SecurityAgent = "security_agent"
 	// ServerlessAgent is an Agent running in a serverless environment

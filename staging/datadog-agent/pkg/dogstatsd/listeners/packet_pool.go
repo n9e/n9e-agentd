@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	tlmPacketPoolGet = telemetry.NewCounter("dogstatsd", "packet_pool_get",
+	tlmPacketPoolGet = telemetry.NewCounter("statsd", "packet_pool_get",
 		nil, "Count of get done in the packet pool")
-	tlmPacketPoolPut = telemetry.NewCounter("dogstatsd", "packet_pool_put",
+	tlmPacketPoolPut = telemetry.NewCounter("statsd", "packet_pool_put",
 		nil, "Count of put done in the packet pool")
-	tlmPacketPool = telemetry.NewGauge("dogstatsd", "packet_pool",
+	tlmPacketPool = telemetry.NewGauge("statsd", "packet_pool",
 		nil, "Usage of the packet pool in dogstatsd")
 )
 

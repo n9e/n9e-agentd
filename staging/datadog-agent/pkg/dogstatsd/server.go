@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	dogstatsdExpvars                  = expvar.NewMap("dogstatsd")
+	dogstatsdExpvars                  = expvar.NewMap("statsd")
 	dogstatsdServiceCheckParseErrors  = expvar.Int{}
 	dogstatsdServiceCheckPackets      = expvar.Int{}
 	dogstatsdEventParseErrors         = expvar.Int{}
@@ -42,7 +42,7 @@ var (
 	dogstatsdPacketsLastSec           = expvar.Int{}
 	dogstatsdUnterminatedMetricErrors = expvar.Int{}
 
-	tlmProcessed = telemetry.NewCounter("dogstatsd", "processed",
+	tlmProcessed = telemetry.NewCounter("statsd", "processed",
 		[]string{"message_type", "state"}, "Count of service checks/events/metrics processed by dogstatsd")
 	tlmProcessedErrorTags = map[string]string{"message_type": "metrics", "state": "error"}
 	tlmProcessedOkTags    = map[string]string{"message_type": "metrics", "state": "ok"}

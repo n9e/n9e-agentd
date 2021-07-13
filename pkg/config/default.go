@@ -68,11 +68,18 @@ enableDocs: true
 enableN9eProvider: true
 maxProcs: 4
 coreDump: true
-exporterPort: 8070
-pprof: true
-expvar: true
-metrics: true
 authTokenFile: # dir(configfile)/auth_token
+
+# startExporter
+exporterPort: 8070
+enableDocs: true        # /docs/{metrics}
+expvar: true            # /vars
+pprof: true             # /debug/pprof/*
+metrics: true           # /metrics
+telemetry:              # /telemetry
+  enabled: true
+  checks:
+  
 
 #cloudProviderMetadata: ["aws", "gcp", "azure", "alibaba"]
 confPath: "."
@@ -197,7 +204,7 @@ jmx:
   collectionTimeout: 60s
   reconnectionTimeout: 50s
 
-expvarPort: 5000
+
 profilingEnabled: false
 
 logsConfig:
