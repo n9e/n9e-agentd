@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/plugins/mysql/db"
+	"github.com/n9e/n9e-agentd/pkg/util/db"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
@@ -138,7 +138,9 @@ func (c *Check) init() error {
 	c._statement_samples = NewMySQLStatementSamples(c)
 
 	// check_initializations
-	c._query_manager.Compile_queries()
+	if err := c._query_manager.Compile_queries(); err != nil {
+		return err
+	}
 
 	c.initDone = true
 

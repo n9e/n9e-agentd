@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/n9e/n9e-agentd/pkg/util/expr"
 )
 
 var (
@@ -18,12 +20,12 @@ var (
 		"tag_list":         get_tag_list,
 		"match":            get_match,
 		"service_check":    get_service_check,
-		"time_elapsed":     get_time_elapsed,
+		//"time_elapsed":     get_time_elapsed,
 	}
 
 	EXTRA_TRANSFORMERS = mapinterface{
-		//"expression": get_expression,
-		//"percent":    get_percent,
+		"expression": get_expression,
+		"percent":    get_percent,
 	}
 )
 
@@ -39,8 +41,8 @@ func get_tag(transformers mapinterface, column_name, modifiers interface{}) (int
 	// to the string `true` or `false`. So for example if you named the column `alive` and the result was the
 	// number `0` the tag will be `alive:false`.
 	// """
-	return func(_ mapinterface, value, kwargs interface{}) (interface{}, error) {
-		return fmt.Sprintf("%v:%v", column_name, value), nil
+	return func(_ mapinterface, value, _ interface{}) (interface{}, error) {
+		return fmt.Sprintf("%v:%v", column_name, String(value)), nil
 	}, nil
 }
 
@@ -56,17 +58,10 @@ func get_tag_list(transformers mapinterface, column_name, modifiers interface{})
 	// submissions for that row will be tagged by `server_tag:us` and `server_tag:primary`.
 	// """
 
-	return func(_ mapinterface, value, kwargs interface{}) (interface{}, error) {
+	return func(_ mapinterface, value, _ interface{}) (interface{}, error) {
 		var ss []string
-		switch t := value.(type) {
-		case string:
-			for _, v := range strings.Split(t, ",") {
-				ss = append(ss, fmt.Sprintf("%v:%v", column_name, v))
-			}
-		case []byte:
-			for _, v := range strings.Split(string(t), ",") {
-				ss = append(ss, fmt.Sprintf("%v:%v", column_name, v))
-			}
+		for _, v := range strings.Split(String(value), ",") {
+			ss = append(ss, fmt.Sprintf("%v:%v", column_name, v))
 		}
 		return ss, nil
 	}, nil
@@ -329,165 +324,176 @@ func get_time_elapsed(transformers mapinterface, column_name, modifiers_ interfa
 
 //
 //
-//def get_expression(transformers, name, **modifiers):
-//    # type: (Dict[str, Callable], str, Any) -> Callable[[Any, Any, Any], Any]
-//    """
-//    This allows the evaluation of a limited subset of Python syntax and built-in functions.
-//
-//    ```yaml
-//    columns:
-//      - name: disk.total
-//        type: gauge
-//      - name: disk.used
-//        type: gauge
-//    extras:
-//      - name: disk.free
-//        expression: disk.total - disk.used
-//        submit_type: gauge
-//    ```
-//
-//    For brevity, if the `expression` attribute exists and `type` does not then it is assumed the type is
-//    `expression`. The `submit_type` can be any transformer and any extra options are passed down to it.
-//
-//    The result of every expression is stored, so in lieu of a `submit_type` the above example could also be written as:
-//
-//    ```yaml
-//    columns:
-//      - name: disk.total
-//        type: gauge
-//      - name: disk.used
-//        type: gauge
-//    extras:
-//      - name: free
-//        expression: disk.total - disk.used
-//      - name: disk.free
-//        type: gauge
-//        source: free
-//    ```
-//
-//    The order matters though, so for example the following will fail:
-//
-//    ```yaml
-//    columns:
-//      - name: disk.total
-//        type: gauge
-//      - name: disk.used
-//        type: gauge
-//    extras:
-//      - name: disk.free
-//        type: gauge
-//        source: free
-//      - name: free
-//        expression: disk.total - disk.used
-//    ```
-//
-//    since the source `free` does not yet exist.
-//    """
-//    available_sources = modifiers.pop('sources")
-//
-//    expression = modifiers.pop('expression', None)
-//    if expression is None:
-//        return fmt.Errorf("the `expression` parameter is required")
-//    elif not isinstance(expression, str):
-//        return fmt.Errorf("the `expression` parameter must be a string")
-//    elif not expression:
-//        return fmt.Errorf("the `expression` parameter must not be empty")
-//
-//    if not modifiers.pop('verbose', False):
-//        # Sort the sources in reverse order of length to prevent greedy matching
-//        available_sources = sorted(available_sources, key=lambda s: -len(s))
-//
-//        # Escape special characters, mostly for the possible dots in metric names
-//        available_sources = list(map(re.escape, available_sources))
-//
-//        # Finally, utilize the order by relying on the guarantees provided by the alternation operator
-//        available_sources = '|'.join(available_sources)
-//
-//        expression = re.sub(
-//            SOURCE_PATTERN.format(available_sources),
-//            # Replace by the particular source that matched
-//            lambda match_obj: 'SOURCES["{}"]'.format(match_obj.group(1)),
-//            expression,
-//        )
-//
-//    expression = compile(expression, filename=name, mode='eval")
-//
-//    del available_sources
-//
-//    if 'submit_type' in modifiers:
-//        if modifiers['submit_type'] not in transformers:
-//            return fmt.Errorf("unknown submit_type `{}`'.format(modifiers['submit_type']))
-//
-//        submit_method = transformers[modifiers.pop('submit_type')](transformers, name, **modifiers)
-//        submit_method = create_extra_transformer(submit_method)
-//
-//        def execute_expression(sources, **kwargs):
-//            result = eval(expression, ALLOWED_GLOBALS, {'SOURCES': sources})
-//            submit_method(sources, result, **kwargs)
-//            return result
-//
-//    else:
-//
-//        def execute_expression(sources, **kwargs):
-//            return eval(expression, ALLOWED_GLOBALS, {'SOURCES': sources})
-//
-//    return execute_expression
-//}
-//
-//
-//def get_percent(transformers, name, **modifiers):
-//    # type: (Dict[str, Callable], str, Any) -> Callable[[Any, Any, Any], None]
-//    """
-//    Send a percentage based on 2 sources as a `gauge`.
-//
-//    The required modifiers are `part` and `total`.
-//
-//    For example, if you have this configuration:
-//
-//    ```yaml
-//    columns:
-//      - name: disk.total
-//        type: gauge
-//      - name: disk.used
-//        type: gauge
-//    extras:
-//      - name: disk.utilized
-//        type: percent
-//        part: disk.used
-//        total: disk.total
-//    ```
-//
-//    then the extra metric `disk.utilized` would be sent as a `gauge` calculated as `disk.used / disk.total * 100`.
-//
-//    If the source of `total` is `0`, then the submitted value will always be sent as `0` too.
-//    """
-//    available_sources = modifiers.pop('sources")
-//
-//    part = modifiers.pop('part', None)
-//    if part is None:
-//        return fmt.Errorf("the `part` parameter is required")
-//    elif not isinstance(part, str):
-//        return fmt.Errorf("the `part` parameter must be a string")
-//    elif part not in available_sources:
-//        return fmt.Errorf("the `part` parameter `{}` is not an available source'.format(part))
-//
-//    total = modifiers.pop('total', None)
-//    if total is None:
-//        return fmt.Errorf("the `total` parameter is required")
-//    elif not isinstance(total, str):
-//        return fmt.Errorf("the `total` parameter must be a string")
-//    elif total not in available_sources:
-//        return fmt.Errorf("the `total` parameter `{}` is not an available source'.format(total))
-//
-//    del available_sources
-//    gauge = transformers['gauge'](transformers, name, **modifiers)
-//    gauge = create_extra_transformer(gauge)
-//
-//    def percent(sources, **kwargs):
-//        gauge(sources, compute_percent(sources[part], sources[total]), **kwargs)
-//
-//    return percent
-//
+func get_expression(transformers mapinterface, name, modifiers_ interface{}) (interface{}, error) {
+	//# type: (Dict[str, Callable], str, Any) -> Callable[[Any, Any, Any], Any]
+	//"""
+	//This allows the evaluation of a limited subset of Python syntax and built-in functions.
+
+	//```yaml
+	//columns:
+	//  - name: disk.total
+	//    type: gauge
+	//  - name: disk.used
+	//    type: gauge
+	//extras:
+	//  - name: disk.free
+	//    expression: disk.total - disk.used
+	//    submit_type: gauge
+	//```
+
+	//For brevity, if the `expression` attribute exists and `type` does not then it is assumed the type is
+	//`expression`. The `submit_type` can be any transformer and any extra options are passed down to it.
+
+	//The result of every expression is stored, so in lieu of a `submit_type` the above example could also be written as:
+
+	//```yaml
+	//columns:
+	//  - name: disk.total
+	//    type: gauge
+	//  - name: disk.used
+	//    type: gauge
+	//extras:
+	//  - name: free
+	//    expression: disk.total - disk.used
+	//  - name: disk.free
+	//    type: gauge
+	//    source: free
+	//```
+
+	//The order matters though, so for example the following will fail:
+
+	//```yaml
+	//columns:
+	//  - name: disk.total
+	//    type: gauge
+	//  - name: disk.used
+	//    type: gauge
+	//extras:
+	//  - name: disk.free
+	//    type: gauge
+	//    source: free
+	//  - name: free
+	//    expression: disk.total - disk.used
+	//```
+
+	//since the source `free` does not yet exist.
+	//"""
+	modifiers, err := _mapinterface(modifiers_)
+	if err != nil {
+		return nil, err
+	}
+
+	//available_sources, err := _mapinterface(modifiers.pop("sources"))
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	expression := String(modifiers.pop("expression"))
+	if expression == "" {
+		return nil, fmt.Errorf("the `expression` parameter is required")
+	}
+
+	notations, err := expr.NewNotations([]byte(expression))
+	if err != nil {
+		return nil, fmt.Errorf("parse expr %s err %s", expression, err)
+	}
+
+	if _, ok := modifiers["submit_type"]; !ok {
+		return func(sources mapinterface, kwargs, _ interface{}) (interface{}, error) {
+			return notations.Calc(sources.getFloat)
+		}, nil
+	}
+
+	submit_method, err := _transformer5(transformers,
+		String(modifiers["submit_type"]), transformers, name, modifiers)
+	if err != nil {
+		return nil, err
+	}
+	return func(sources mapinterface, kwargs, _ interface{}) (interface{}, error) {
+		result, err := notations.Calc(sources.getFloat)
+		if err != nil {
+			return nil, err
+		}
+		submit_method(sources, result, kwargs)
+		return result, nil
+	}, nil
+}
+
+func get_percent(transformers mapinterface, name, modifiers_ interface{}) (interface{}, error) {
+	//# type: (Dict[str, Callable], str, Any) -> Callable[[Any, Any, Any], None]
+	//"""
+	//Send a percentage based on 2 sources as a `gauge`.
+
+	//The required modifiers are `part` and `total`.
+
+	//For example, if you have this configuration:
+
+	//```yaml
+	//columns:
+	//  - name: disk.total
+	//    type: gauge
+	//  - name: disk.used
+	//    type: gauge
+	//extras:
+	//  - name: disk.utilized
+	//    type: percent
+	//    part: disk.used
+	//    total: disk.total
+	//```
+
+	//then the extra metric `disk.utilized` would be sent as a `gauge` calculated as `disk.used / disk.total * 100`.
+
+	//If the source of `total` is `0`, then the submitted value will always be sent as `0` too.
+	//"""
+	modifiers, err := _mapinterface(modifiers_)
+	if err != nil {
+		return nil, err
+	}
+
+	available_sources, err := _mapinterface(modifiers.pop("sources"))
+	if err != nil {
+		return nil, err
+	}
+
+	part := String(modifiers.pop("part"))
+	if part == "" {
+		return nil, fmt.Errorf("the `part` parameter is required")
+	}
+
+	if _, ok := available_sources[part]; !ok {
+		return nil, fmt.Errorf("the `part` parameter `%s` is not an available source", part)
+	}
+
+	total := String(modifiers.pop("total"))
+	if total == "" {
+		return nil, fmt.Errorf("the `total` parameter is required")
+	}
+	if _, ok := available_sources[total]; !ok {
+		return nil, fmt.Errorf("the `total` parameter `%s` is not an available source", total)
+	}
+
+	gauge, err := _transformer5(transformers, "gauge", transformers, name, modifiers)
+	if err != nil {
+		return nil, err
+	}
+	gauge, err = create_extra_transformer(gauge)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(sources mapinterface, kwargs, _ interface{}) (interface{}, error) {
+		gauge(sources, compute_percent(Float(sources[part]), Float(sources[total])), kwargs)
+		return nil, nil
+	}, nil
+}
+
+func compute_percent(part, total float64) float64 {
+	if total > 0 {
+		return part / total * 100
+	}
+
+	return 0
+}
 
 func _compile_service_check_statuses(modifiers mapinterface) (mapinterface, error) {
 	// # type: (Dict[str, Any]) -> Dict[str, ServiceCheckStatus]

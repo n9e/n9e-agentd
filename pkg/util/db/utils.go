@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"net"
 	"reflect"
@@ -53,12 +54,7 @@ func create_submission_transformer(submit_method interface{}) transformHandle {
 
 				kwargs.update(modifiers)
 
-				value, ok := call_args.(float64)
-				if !ok {
-					panic(fmt.Sprintf("metric_value must be a float64 %#v", call_args))
-				}
-
-				fn(metric_name, value, "", kwargs.tags())
+				fn(metric_name, Float(call_args), "", kwargs.tags())
 				return nil, nil
 			}, nil
 		}
@@ -69,10 +65,7 @@ func create_submission_transformer(submit_method interface{}) transformHandle {
 				return nil, err
 			}
 
-			check_name, ok := creation_args.(string)
-			if !ok {
-				panic(fmt.Sprintf("check_name must be a string %#v", creation_args))
-			}
+			check_name := String(creation_args)
 
 			return func(_ mapinterface, call_args, kwargs_ interface{}) (interface{}, error) {
 				kwargs, err := _mapinterface(kwargs_)
@@ -227,7 +220,7 @@ func Int(a interface{}) int64 {
 
 func Float(a interface{}) float64 {
 	switch v := a.(type) {
-	case *[]byte:
+	case *sql.RawBytes:
 		i, _ := strconv.ParseFloat(string(*v), 0)
 		return i
 	case *string:
@@ -247,14 +240,10 @@ func Float(a interface{}) float64 {
 
 func String(a interface{}) string {
 	switch v := a.(type) {
-	case *[]byte:
+	case *sql.RawBytes:
 		return string(*v)
-	case []byte:
-		return string(v)
 	case string:
 		return v
-	case *string:
-		return *v
 	default:
 		panic(fmt.Sprintf("unsupported type %s", reflect.TypeOf(a)))
 	}
@@ -274,9 +263,12 @@ func _result(in interface{}) (interface{}, error) {
 func _transformer(in interface{}) (transformHandle, error) {
 	t, ok := in.(transformHandle)
 	if !ok {
-		return nil, fmt.Errorf("typeof %s is not a transformer", reflect.TypeOf(in))
+		t, ok = in.(func(mapinterface, interface{}, interface{}) (interface{}, error))
 	}
 
+	if !ok {
+		return nil, fmt.Errorf("typeof %s is not a transformer", reflect.TypeOf(in))
+	}
 	return t, nil
 }
 

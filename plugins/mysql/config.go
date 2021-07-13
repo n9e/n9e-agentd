@@ -7,8 +7,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/util/db"
 	"github.com/n9e/n9e-agentd/pkg/util/tls"
-	"github.com/n9e/n9e-agentd/plugins/mysql/db"
 	"sigs.k8s.io/yaml"
 )
 
@@ -28,8 +28,8 @@ type InstanceConfig struct {
 	//Charset                string            `json:"user"`
 	//DefaultsFile           string            `json:"user"`
 	TLS                    tls.ClientConfig  `json:"tls"`
-	UseGlobalCustomQueries string            `json:"useGlobalCustomQueries"`
-	CustomQueries          []db.CustomQuery  `json:"customQuery"`
+	UseGlobalCustomQueries string            `json:"useGlobalCustomQueries" description:"extent,true,false"`
+	CustomQueries          []db.CustomQuery  `json:"customQueries"`
 	MaxCustomQueries       int               `json:"maxCustomQueries"`
 	Options                Options           `json:"options"`
 	DeepDatabaseMonitoring bool              `json:"deepDatabaseMonitoring"`

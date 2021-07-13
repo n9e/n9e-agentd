@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
 
 	"k8s.io/klog/v2"
 )
@@ -20,7 +19,7 @@ type Query struct {
 type columnItem struct {
 	column_name string
 	column_type string
-	transformer transformHandle // func (mapinterface, interface{}, mapinterface)
+	transformer transformHandle
 }
 
 type sourceItem struct {
@@ -30,7 +29,7 @@ type sourceItem struct {
 
 type extraItem struct {
 	extra_name  string
-	transformer transformHandle // func(mapinterface, []string, mapinterface{})
+	transformer transformHandle
 }
 
 func NewQuery(q *CustomQuery) *Query {
@@ -38,7 +37,6 @@ func NewQuery(q *CustomQuery) *Query {
 }
 
 func (p *Query) compile(column_transformers, extra_transformers mapinterface) error {
-
 	// Check for previous compilation
 	if p.name != "" {
 		return nil
@@ -84,7 +82,7 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 
 		column_type, ok := column["type"].(string)
 		if !ok {
-			return fmt.Errorf("field `type` for column %s  of %s is required", column_name, query_name)
+			return fmt.Errorf("field `type` for column %s of %s is required", column_name, query_name)
 		}
 
 		if column_type == "source" {
@@ -94,10 +92,10 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 			continue
 		}
 
-		column_transformer, ok := column_transformers[column_type].(transformHandle)
-		if !ok {
-			return fmt.Errorf("unknown type `%s` for column %s of %s",
-				column_type, column_name, p.name)
+		column_transformer, err := _transformer(column_transformers[column_type])
+		if err != nil {
+			return fmt.Errorf("unknown type `%s` for column %s of %s err %s",
+				column_type, column_name, p.name, err)
 		}
 
 		modifiers := make(mapinterface)
@@ -113,10 +111,10 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 			return err
 		}
 
-		switch t := transformer.(type) {
-		case error:
-
-		case transformHandle:
+		if t, err := _transformer(transformer); err != nil {
+			return fmt.Errorf("unknown type `%s` for column %s of %s err %s",
+				column_type, column_name, p.name, err)
+		} else {
 			if column_type == "tag" || column_type == "tag_list" {
 				column_data = append(column_data, &columnItem{
 					column_name: column_name,
@@ -129,8 +127,6 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 					transformer: t,
 				})
 			}
-		default:
-			return fmt.Errorf("unsupported type %s", reflect.TypeOf(transformer))
 		}
 	}
 
@@ -167,9 +163,12 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 			return fmt.Errorf("unknown type `%s` for extra %s of %s", extra_type, extra_name, query_name)
 		}
 
-		transformer_factory, ok := extra_transformers[extra_type].(transformHandle)
-		if !ok {
-			transformer_factory = submission_transformers[extra_type].(transformHandle)
+		transformer_factory, err := _transformer(extra_transformers[extra_type])
+		if err != nil {
+			transformer_factory, err = _transformer(submission_transformers[extra_type])
+		}
+		if err != nil {
+			return fmt.Errorf("unable get extra transformer[%s] %s", extra_type, err)
 		}
 
 		modifiers := make(mapinterface)
@@ -193,26 +192,25 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 		}
 
 		transformer_, err := transformer_factory(submission_transformers, extra_name, modifiers)
+
 		if err != nil {
 			return fmt.Errorf("error compiling type `%s` for extra %s of %s: %s", extra_type, extra_name, query_name, err)
 		}
 
-		transformer, err := _transformer(transformer_)
-		if err != nil {
+		if t, err := _transformer(transformer_); err != nil {
 			return err
-		}
-
-		if submission_transformers[extra_type] != nil {
-			transformer, err = create_extra_transformer(transformer, extra_source)
-			if err != nil {
-				return err
+		} else {
+			if submission_transformers[extra_type] != nil {
+				if t, err = create_extra_transformer(t, extra_source); err != nil {
+					return err
+				}
 			}
-		}
 
-		extra_data = append(extra_data, &extraItem{
-			extra_name:  extra_name,
-			transformer: transformer,
-		})
+			extra_data = append(extra_data, &extraItem{
+				extra_name:  extra_name,
+				transformer: t,
+			})
+		}
 	}
 
 	p.name = query_name

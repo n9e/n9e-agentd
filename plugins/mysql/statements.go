@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/plugins/mysql/db"
+	"github.com/n9e/n9e-agentd/pkg/util/db"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/obfuscate"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
 	"k8s.io/klog"

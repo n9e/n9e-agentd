@@ -16,7 +16,7 @@ import (
 
 var langStrings = map[string]map[string]string{
 	"zh": map[string]string{
-		"ntp.offset": "本地时钟与NTP参考时钟之间的时间差",
+		"system.ntp.offset":                               "本地时钟与NTP参考时钟之间的时间差",
 		"system.net.aws.ec2.bw_in_allowance_exceeded":     "由于入站聚合带宽超过了实例的入站聚合带宽而成的数据包数",
 		"system.net.aws.ec2.bw_out_allowance_exceeded":    "数据包的数量,因为外向聚合带宽超过了实例的最大值",
 		"system.net.aws.ec2.conntrack_allowance_exceeded": "数据包数,因为连接跟踪超出了实例的最大值,并且无法建立新连接",
@@ -112,7 +112,7 @@ var langStrings = map[string]map[string]string{
 		"system.net.udp.snd_buf_errors":                   "udp数据报丢失的速率因为发送缓冲区中没有空间（仅限Linux）",
 	},
 	"en": map[string]string{
-		"ntp.offset": "The time difference between the local clock and the NTP reference clock",
+		"system.ntp.offset":                               "The time difference between the local clock and the NTP reference clock",
 		"system.net.aws.ec2.bw_in_allowance_exceeded":     "The number of packets shaped because the inbound aggregate bandwidth exceeded the maximum for the instance",
 		"system.net.aws.ec2.bw_out_allowance_exceeded":    "The number of packets shaped because the outbound aggregate bandwidth exceeded the maximum for the instance",
 		"system.net.aws.ec2.conntrack_allowance_exceeded": "The number of packets shaped because connection tracking exceeded the maximum for the instance and new connections could not be established",
@@ -212,7 +212,7 @@ var langStrings = map[string]map[string]string{
 func registerMetric() {
 	m := metrics.GetMetricGroup("net")
 	// https://docs.datadoghq.com/integrations/network/
-	m.Register("ntp.offset", "gauge", "Shown as second")
+	m.Register("system.ntp.offset", "gauge", "Shown as second")
 	m.Register("system.net.aws.ec2.bw_in_allowance_exceeded", "gauge", "Shown as packet")
 	m.Register("system.net.aws.ec2.bw_out_allowance_exceeded", "gauge", "Shown as packet")
 	m.Register("system.net.aws.ec2.conntrack_allowance_exceeded", "gauge", "Shown as packet")

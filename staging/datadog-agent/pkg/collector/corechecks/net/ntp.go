@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/beevik/ntp"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
@@ -177,7 +177,7 @@ func (c *NTPCheck) Run() error {
 			serviceCheckStatus = metrics.ServiceCheckOK
 		}
 
-		sender.Gauge("ntp.offset", clockOffset, "", nil)
+		sender.Gauge("system.ntp.offset", clockOffset, "", nil)
 		ntpExpVar.Set(clockOffset)
 		tlmNtpOffset.Set(clockOffset)
 	}

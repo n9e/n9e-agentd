@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/plugins/mysql/db"
+	"github.com/n9e/n9e-agentd/pkg/util/db"
 )
 
 var (

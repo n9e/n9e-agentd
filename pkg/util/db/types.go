@@ -1,6 +1,13 @@
 package db
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+import (
+	"database/sql"
+	"fmt"
+	"reflect"
+	"strconv"
+
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+)
 
 type transformHandle func(transformers mapinterface, name, modifiers interface{}) (interface{}, error)
 
@@ -61,4 +68,23 @@ func (p mapinterface) pop(k string, def ...interface{}) interface{} {
 	}
 
 	return nil
+}
+
+func (p mapinterface) getFloat(k string) (float64, error) {
+	switch v := p[k].(type) {
+	case float64:
+		return v, nil
+	case *sql.RawBytes:
+		i, _ := strconv.ParseFloat(string(*v), 0)
+		return i, nil
+	case int64:
+		return float64(v), nil
+	case string:
+		i, _ := strconv.ParseFloat(v, 0)
+		return i, nil
+	case nil:
+		return 0, fmt.Errorf("unable get %s", k)
+	default:
+		return 0, fmt.Errorf("unable convert float64 from %s", reflect.TypeOf(p[k]))
+	}
 }
