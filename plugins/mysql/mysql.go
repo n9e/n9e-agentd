@@ -63,6 +63,12 @@ func (c *Check) Run() (err error) {
 		return err
 	}
 
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("%s", e)
+		}
+	}()
+
 	if err := c.init(); err != nil {
 		return err
 	}

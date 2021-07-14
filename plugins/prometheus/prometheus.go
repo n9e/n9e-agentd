@@ -12,7 +12,6 @@ import (
 
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/util/tls"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
@@ -44,10 +43,12 @@ type InstanceConfig struct {
 	SslCert                 string            `json:"sslCert"`                 // ssl_cert
 	SslPrivateKey           string            `json:"sslPrivateKey"`           // ssl_private_key
 	SslCaCert               string            `json:"sslCaCert"`               // ssl_ca_cert
-	PrometheusTimeout       time.Duration     `json:"prometheusTimeout"`       // prometheus_timeout
+	PrometheusTimeout       int               `json:"prometheusTimeout"`       // prometheus_timeout
 	MaxReturnedMetrics      int               `json:"maxReturnedMetrics"`      // max_returned_metrics
-	tls.ClientConfig        `json:"-"`
-	InitConfig              `json:"-"`
+
+	timeout          time.Duration
+	tls.ClientConfig `json:"-"`
+	InitConfig       `json:"-"`
 }
 
 type promConfig struct {
@@ -55,44 +56,50 @@ type promConfig struct {
 	InitConfig
 }
 
-func (p promConfig) String() string {
-	return util.Prettify(p)
+func (p *promConfig) Validate() error {
+	p.timeout = time.Second * time.Duration(p.PrometheusTimeout)
+	return nil
 }
 
 func defaultInstanceConfig() InstanceConfig {
 	return InstanceConfig{
 		SendHistogramsBuckets: true,
 		SendMonotonicCounter:  true,
-		PrometheusTimeout:     10 * time.Second,
+		PrometheusTimeout:     10,
 		MaxReturnedMetrics:    2000,
 	}
 }
 
-func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (promConfig, error) {
+func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (*promConfig, error) {
 	instance := defaultInstanceConfig()
 	initConfig := InitConfig{}
 
 	err := yaml.Unmarshal(rawInitConfig, &initConfig)
 	if err != nil {
-		return promConfig{}, err
+		return nil, err
 	}
 
 	err = yaml.Unmarshal(rawInstance, &instance)
 	if err != nil {
-		return promConfig{}, err
+		return nil, err
 	}
 
-	return promConfig{
+	c := &promConfig{
 		InitConfig:     initConfig,
 		InstanceConfig: instance,
-	}, nil
+	}
 
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // Check doesn't need additional fields
 type Check struct {
 	core.CheckBase
-	config promConfig
+	*promConfig
 	client *http.Client
 }
 
@@ -103,9 +110,7 @@ func (c *Check) Run() error {
 		return err
 	}
 
-	cf := c.config
-
-	req, err := http.NewRequest("GET", cf.PrometheusUrl, nil)
+	req, err := http.NewRequest("GET", c.PrometheusUrl, nil)
 	if err != nil {
 		return err
 	}
@@ -113,12 +118,12 @@ func (c *Check) Run() error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error making HTTP request to %s: %s", cf.PrometheusUrl, err)
+		return fmt.Errorf("error making HTTP request to %s: %s", c.PrometheusUrl, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s returned HTTP status %s", cf.PrometheusUrl, resp.Status)
+		return fmt.Errorf("%s returned HTTP status %s", c.PrometheusUrl, resp.Status)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -128,7 +133,7 @@ func (c *Check) Run() error {
 
 	mfs, err := readBody(body, resp.Header)
 	if err != nil {
-		return fmt.Errorf("error reading metrics for %s: %s", cf.PrometheusUrl, err)
+		return fmt.Errorf("error reading metrics for %s: %s", c.PrometheusUrl, err)
 	}
 
 	collectMetrics(sender, mfs)
@@ -187,7 +192,7 @@ func readBody(buf []byte, header http.Header) (map[string]*dto.MetricFamily, err
 }
 
 func (c *Check) createHTTPClient() (*http.Client, error) {
-	tlsCfg, err := c.config.ClientConfig.TLSConfig()
+	tlsCfg, err := c.ClientConfig.TLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +202,7 @@ func (c *Check) createHTTPClient() (*http.Client, error) {
 			TLSClientConfig:   tlsCfg,
 			DisableKeepAlives: true,
 		},
-		Timeout: c.config.PrometheusTimeout,
+		Timeout: c.timeout,
 	}
 
 	return client, nil
@@ -218,7 +223,7 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 		return fmt.Errorf("build config failed: %s", err)
 	}
 
-	c.config = config
+	c.promConfig = config
 
 	if c.client, err = c.createHTTPClient(); err != nil {
 		return nil

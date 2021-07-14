@@ -9,9 +9,9 @@ import (
 	_ "github.com/n9e/n9e-agentd/plugins/process"
 	_ "github.com/n9e/n9e-agentd/plugins/prometheus"
 	_ "github.com/n9e/n9e-agentd/plugins/script"
+	_ "github.com/n9e/n9e-agentd/plugins/snmp"
 
 	// register core checks
-	_ "github.com/n9e/n9e-agentd/plugins/snmp"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/ksm"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/kubernetesapiserver"
 	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster/orchestrator"

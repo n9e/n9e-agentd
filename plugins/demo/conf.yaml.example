@@ -14,7 +14,7 @@ instances:
     ## @param count - int - optional - default: 8
     ## The Count of the series
     #
-    # count: 8
+    count: 8
     
     ## @param offset - int - optional - default: 0
     ## Offset time, in seconds

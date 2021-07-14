@@ -115,6 +115,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
 	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/prometheus v2.3.2+incompatible
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da
 	github.com/shirou/gopsutil v3.21.2+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4

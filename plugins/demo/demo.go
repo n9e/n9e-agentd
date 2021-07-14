@@ -11,16 +11,13 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/yubo/golib/staging/util/clock"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
 
 // y = cos(2*pi*x/3600)
 
 const checkName = "demo"
-
-type InitConfig struct {
-}
 
 type InstanceConfig struct {
 	Period int `json:"period"`
@@ -29,34 +26,7 @@ type InstanceConfig struct {
 }
 
 type checkConfig struct {
-	InstanceConfig
-	InitConfig
-}
-
-func defaultInstanceConfig() InstanceConfig {
-	return InstanceConfig{
-		Period: 3600,
-		Count:  8,
-	}
-}
-
-func buildConfig(rawInstance integration.Data, rawInitConfig integration.Data) (*checkConfig, error) {
-	//initConfig := InitConfig{}
-	instance := defaultInstanceConfig()
-
-	//err := yaml.Unmarshal(rawInitConfig, &initConfig)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	if err := yaml.Unmarshal(rawInstance, &instance); err != nil {
-		return nil, err
-	}
-
-	return &checkConfig{
-		//InitConfig:     initConfig,
-		InstanceConfig: instance,
-	}, nil
+	*InstanceConfig
 }
 
 type Check struct {
@@ -89,7 +59,11 @@ func (c *Check) Cancel() {
 }
 
 // Configure the Prom check
-func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integration.Data, source string) (err error) {
+func (c *Check) Configure(
+	rawInstance integration.Data,
+	rawInitConfig integration.Data,
+	source string) (err error) {
+
 	// Must be called before c.CommonConfigure
 	c.BuildID(rawInstance, rawInitConfig)
 
@@ -97,9 +71,17 @@ func (c *Check) Configure(rawInstance integration.Data, rawInitConfig integratio
 		return fmt.Errorf("common configure failed: %s", err)
 	}
 
-	config, err := buildConfig(rawInstance, rawInitConfig)
-	if err != nil {
-		return fmt.Errorf("build config failed: %s", err)
+	instance := &InstanceConfig{
+		Period: 3600,
+		Count:  8,
+	}
+
+	if err := yaml.Unmarshal(rawInstance, instance); err != nil {
+		return err
+	}
+
+	config := &checkConfig{
+		InstanceConfig: instance,
 	}
 
 	c.count = config.InstanceConfig.Count
@@ -134,6 +116,7 @@ func checkFactory() check.Check {
 		clock:     clock.RealClock{},
 	}
 }
+
 func init() {
 	core.RegisterCheck(checkName, checkFactory)
 }
