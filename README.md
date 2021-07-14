@@ -4,18 +4,11 @@ This is a monitor agent for N9E
 
 ## Build from source
 
-```
-make
-```
-
-Cross compiling
 ```shell
-$ go mod vendor
-$ make pkgs
+$ make pkg
 
 $ ls build/
-agentd*        linux-amd64/  n9e-agentd-5.0.0-rc3.darwin.amd64.tar.gz  n9e-agentd-5.0.0-rc3.windows.amd64.tar.gz
-darwin-amd64/  mocker*       n9e-agentd-5.0.0-rc3.linux.amd64.tar.gz   windows-amd64/
+linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc3.linux.amd64.tar.gz
 ```
 
 
