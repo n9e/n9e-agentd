@@ -252,6 +252,7 @@ type Config struct {
 	EnablePayloads                       EnablePayloads           `yaml:"enablePayloads"`                       // enable_payloads.*
 	SystemProbe                          SystemProbe              `yaml:"systemProbe"`                          // system_probe_config.*
 	//N9e                                  N9e                      `yaml:"n9e"`
+	MetricTransformFile string `yaml:"metricTransformFile"`
 }
 
 func (p Config) String() string {
@@ -290,6 +291,7 @@ func (p *Config) Validate() error {
 
 	if err := p.ValidatePath(); err != nil {
 		return err
+
 	}
 
 	return nil
@@ -394,6 +396,11 @@ func (p *Config) Prepare(configFile string) error {
 			klog.Warningf("Python version has been forced to %s", DefaultPython)
 		}
 		p.PythonVersion = DefaultPython
+	}
+
+	// transformer
+	if err := defaultTransformer.SetMetricFromFile(p.MetricTransformFile); err != nil {
+		return err
 	}
 
 	return nil

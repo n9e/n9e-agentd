@@ -20,10 +20,9 @@ import (
 	agentpayload "github.com/n9e/agent-payload/gogen"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/ckey"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
 )
 
 var (
@@ -89,7 +88,7 @@ func (series Series) Marshal() ([]byte, error) {
 	for _, serie := range series {
 		payload.Samples = append(payload.Samples,
 			&agentpayload.MetricsPayload_Sample{
-				Metric:         util.SanitizeMetric(serie.Name),
+				Metric:         config.TransformMetric(serie.Name),
 				Type:           serie.MType.String(),
 				Host:           serie.Host,
 				Points:         marshalPoints(serie.Points),
@@ -113,8 +112,8 @@ func (series Series) N9eMarshal() ([]byte, error) {
 				&agentpayload.N9EMetricsPayload_Sample{
 					Ident:          config.C.Ident,
 					Alias:          config.C.Alias,
-					Metric:         util.SanitizeMetric(serie.Name),
-					Tags:           util.SanitizeMapTags(serie.Tags),
+					Metric:         config.TransformMetric(serie.Name),
+					Tags:           config.TransformMapTags(serie.Tags),
 					Time:           int64(point.Ts),
 					Value:          point.Value,
 					Type:           serie.MType.String(), // extra, no used

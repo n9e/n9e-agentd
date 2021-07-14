@@ -50,6 +50,6 @@ func (c *Check) collectCtxSwitches(sender aggregator.Sender) error {
 	if err != nil {
 		return err
 	}
-	sender.MonotonicCount("system.cpu.switches", float64(ctxSwitches), "", nil)
+	sender.MonotonicCount("system.cpu.context_switches", float64(ctxSwitches), "", nil)
 	return nil
 }

@@ -19,9 +19,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 
 	agentpayload "github.com/n9e/agent-payload/gogen"
-	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
 	utiljson "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/json"
 )
 
@@ -101,12 +101,12 @@ func (sc ServiceChecks) Marshal() ([]byte, error) {
 	for _, c := range sc {
 		payload.ServiceChecks = append(payload.ServiceChecks,
 			&agentpayload.ServiceChecksPayload_ServiceCheck{
-				Name:    util.SanitizeMetric(c.CheckName),
+				Name:    config.TransformMetric(c.CheckName),
 				Host:    c.Host,
 				Ts:      c.Ts,
 				Status:  int32(c.Status),
 				Message: c.Message,
-				Tags:    util.SanitizeTags(c.Tags),
+				Tags:    config.TransformTags(c.Tags),
 			})
 	}
 

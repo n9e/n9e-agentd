@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
@@ -72,10 +73,12 @@ func (c *Check) Run() error {
 		sender.Gauge("system.cpu.user", user*toPercent, "", nil)
 		sender.Gauge("system.cpu.system", system*toPercent, "", nil)
 		sender.Gauge("system.cpu.iowait", iowait*toPercent, "", nil)
-		//sender.Gauge("system.cpu.idle", idle*toPercent, "", nil)
-		sender.Gauge("system.cpu.util", 100-(idle*toPercent), "", nil)
-		sender.Gauge("system.cpu.steal", stolen*toPercent, "", nil)
+		sender.Gauge("system.cpu.idle", idle*toPercent, "", nil)
+		sender.Gauge("system.cpu.stolen", stolen*toPercent, "", nil)
 		sender.Gauge("system.cpu.guest", guest*toPercent, "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.cpu.util", 100-(idle*toPercent), "", nil)
+		}
 	}
 
 	sender.Gauge("system.cpu.num_cores", c.nbCPU, "", nil)

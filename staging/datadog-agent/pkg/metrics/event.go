@@ -14,9 +14,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	agentpayload "github.com/n9e/agent-payload/gogen"
-	agentutil "github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 )
 
@@ -122,7 +122,7 @@ func (events Events) Marshal() ([]byte, error) {
 				Ts:             e.Ts,
 				Priority:       string(e.Priority),
 				Host:           e.Host,
-				Tags:           agentutil.SanitizeTags(e.Tags),
+				Tags:           config.TransformTags(e.Tags),
 				AlertType:      string(e.AlertType),
 				AggregationKey: e.AggregationKey,
 				SourceTypeName: e.SourceTypeName,

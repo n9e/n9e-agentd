@@ -16,14 +16,13 @@ import (
 
 var langStrings = map[string]map[string]string{
 	"zh": map[string]string{
-		"system.cpu.switches": "cpu上下文交换次数",
-		"system.cpu.guest":    "CPU运行虚拟处理器的时间百分比。仅适用于虚拟机监控程序",
-		//"system.cpu.idle":                         "CPU处于空闲状态的时间百分比",
-		"system.cpu.util":                         "CPU处于工作状态的时间百分比",
+		"system.cpu.context_switches":             "cpu上下文交换次数",
+		"system.cpu.guest":                        "CPU运行虚拟处理器的时间百分比。仅适用于虚拟机监控程序",
+		"system.cpu.idle":                         "CPU处于空闲状态的时间百分比",
 		"system.cpu.interrupt":                    "处理器在处理中断上花费的时间百分比",
 		"system.cpu.iowait":                       "CPU等待IO操作完成所花费的时间百分比",
 		"system.cpu.num_cores":                    "CPU核心数",
-		"system.cpu.steal":                        "虚拟CPU等待虚拟机监控程序为另一个虚拟CPU提供服务所用的时间百分比。仅适用于虚拟机",
+		"system.cpu.stolen":                       "虚拟CPU等待虚拟机监控程序为另一个虚拟CPU提供服务所用的时间百分比。仅适用于虚拟机",
 		"system.cpu.system":                       "CPU运行内核的时间百分比",
 		"system.cpu.user":                         "CPU用于运行用户空间进程的时间百分比",
 		"system.cpu.used":                         "CPU使用率",
@@ -98,9 +97,9 @@ var langStrings = map[string]map[string]string{
 	// https://www.kernel.org/doc/Documentation/filesystems/proc.txt
 	// https://www.opsdash.com/blog/cpu-usage-linux.html
 	"en": map[string]string{
-		"system.cpu.switches": "Count of the number of context switches",
-		"system.cpu.guest":    "The percent of time the CPU spent running the virtual processor. Only applies to hypervisors",
-		//"system.cpu.idle":                         "Percent of time the CPU spent in an idle state",
+		"system.cpu.context_switches":             "Count of the number of context switches",
+		"system.cpu.guest":                        "The percent of time the CPU spent running the virtual processor. Only applies to hypervisors",
+		"system.cpu.idle":                         "Percent of time the CPU spent in an idle state",
 		"system.cpu.util":                         "Percent of time the CPU spent in use state",
 		"system.cpu.interrupt":                    "The percentage of time that the processor is spending on handling Interrupts",
 		"system.cpu.iowait":                       "The percent of time the CPU spent waiting for IO operations to complete",
@@ -183,9 +182,9 @@ func registerMetric() {
 	m := metrics.GetMetricGroup("system")
 	// https://docs.datadoghq.com/integrations/system/
 	// https://docs.datadoghq.com/integrations/disk/
-	m.Register("system.cpu.switches", "count")
+	m.Register("system.cpu.context_switches", "count")
 	m.Register("system.cpu.guest", "gauge", "Shown as percent")
-	//m.Register("system.cpu.idle", "gauge", "Shown as percent")
+	m.Register("system.cpu.idle", "gauge", "Shown as percent")
 	m.Register("system.cpu.util", "gauge", "Shown as percent")
 	m.Register("system.cpu.interrupt", "gauge", "Shown as percent")
 	m.Register("system.cpu.iowait", "gauge", "Shown as percent")

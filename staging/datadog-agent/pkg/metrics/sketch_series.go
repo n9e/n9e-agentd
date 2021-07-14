@@ -7,12 +7,11 @@ import (
 
 	agentpayload "github.com/n9e/agent-payload/gogen"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/ckey"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/quantile"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/stream"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
 )
 
@@ -141,9 +140,9 @@ func (sl SketchSeriesList) MarshalSplitCompress(bufferContext *marshaler.BufferC
 		}
 
 		sketch := agentpayload.SketchPayload_Sketch{
-			Metric:      util.SanitizeMetric(ss.Name),
+			Metric:      config.TransformMetric(ss.Name),
 			Host:        ss.Host,
-			Tags:        util.SanitizeTags(ss.Tags),
+			Tags:        config.TransformTags(ss.Tags),
 			Dogsketches: dsl[:len(ss.Points)],
 		}
 
@@ -260,9 +259,9 @@ func (sl SketchSeriesList) Marshal() ([]byte, error) {
 		}
 
 		pb.Sketches = append(pb.Sketches, agentpayload.SketchPayload_Sketch{
-			Metric:      util.SanitizeMetric(ss.Name),
+			Metric:      config.TransformMetric(ss.Name),
 			Host:        ss.Host,
-			Tags:        util.SanitizeTags(ss.Tags),
+			Tags:        config.TransformTags(ss.Tags),
 			Dogsketches: dsl,
 		})
 	}

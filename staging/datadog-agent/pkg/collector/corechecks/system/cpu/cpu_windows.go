@@ -99,11 +99,11 @@ func (c *Check) Run() error {
 		sender.Gauge("system.cpu.user", user*toPercent, "", nil)
 		sender.Gauge("system.cpu.system", system*toPercent, "", nil)
 		sender.Gauge("system.cpu.iowait", iowait*toPercent, "", nil)
-		sender.Gauge("system.cpu.util", (100 - idle*toPercent), "", nil)
-		sender.Gauge("system.cpu.steal", stolen*toPercent, "", nil)
+		sender.Gauge("system.cpu.idle", idle*toPercent, "", nil)
+		sender.Gauge("system.cpu.stolen", stolen*toPercent, "", nil)
 		sender.Gauge("system.cpu.guest", guest*toPercent, "", nil)
 		if config.C.VerboseReport {
-			sender.Gauge("system.cpu.used", 100-(idle*toPercent), "", nil)
+			sender.Gauge("system.cpu.util", 100-(idle*toPercent), "", nil)
 		}
 	}
 	vals, err := c.counter.GetAllValues()
