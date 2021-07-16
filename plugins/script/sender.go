@@ -2,6 +2,7 @@ package script
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -13,9 +14,9 @@ import (
 // from github.com/didi/nightingale/src/common/dataobj
 type MetricValue struct {
 	Metric string            `json:"metric"` //
-	Tags   map[string]string `json:"tags"`   //
 	Value  interface{}       `json:"value"`  //
 	Type   string            `json:"type"`   // GAUGE | COUNTER | SUBTRACT | DERIVE
+	Tags   map[string]string `json:"tags"`   //
 }
 
 func send(sender aggregator.Sender, data []byte) error {
@@ -60,6 +61,7 @@ func Float(a interface{}) float64 {
 		i, _ := strconv.ParseFloat(v, 0)
 		return i
 	default:
+		fmt.Printf("unsupported metric value type %s\n", reflect.TypeOf(a))
 		klog.V(5).Infof("unsupported metric value type %s", reflect.TypeOf(a))
 		return 0
 	}

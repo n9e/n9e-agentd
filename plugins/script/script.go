@@ -163,48 +163,52 @@ func (c *Check) Run() error {
 }
 
 func (c *Check) collect(sender aggregator.Sender) error {
-	cf := c.config
-
 	for _, file := range c.getFiles() {
-		klog.V(4).Infof("file %s", file)
-
-		ctx, cancel := context.WithTimeout(context.Background(), cf.timeout)
-		cmd := exec.CommandContext(ctx, file, cf.params...)
-		cancel()
-
-		stdout := bytes.NewBuffer([]byte{})
-		stderr := bytes.NewBuffer([]byte{})
-
-		cmd.Stdin = bytes.NewReader([]byte(cf.stdin))
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-
-		cmd.Env = cf.env
-
-		err := cmd.Run()
-		if err != nil {
-			klog.Warningf("%s run err %s", file, err)
-			if err := stderr.String(); err != "" {
-				klog.Warningf("stderr: %s", err)
-			}
-			continue
-		}
-
-		out := stdout.Bytes()
-		if len(out) == 0 {
-			klog.Infof("stdout of %s is blank", file)
-			continue
-		}
-		klog.V(6).Infof("%s stdout: %s", file, string(out))
-
-		if err := send(sender, out); err != nil {
-			klog.Warningf("send of %s err %s", file, err)
-			continue
-		}
+		c._collect(sender, file)
 	}
 
 	sender.Commit()
 	return nil
+}
+
+func (c *Check) _collect(sender aggregator.Sender, file string) {
+	cf := c.config
+	klog.V(4).Infof("file %s", file)
+
+	ctx, cancel := context.WithTimeout(context.Background(), cf.timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, file, cf.params...)
+
+	stdout := bytes.NewBuffer([]byte{})
+	stderr := bytes.NewBuffer([]byte{})
+
+	cmd.Stdin = bytes.NewReader([]byte(cf.stdin))
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	cmd.Env = cf.env
+
+	err := cmd.Run()
+	if err != nil {
+		klog.Warningf("%s run err %s", cmd.String(), err)
+		if err := stderr.String(); err != "" {
+			klog.Warningf("stderr: %s", err)
+		}
+		return
+	}
+
+	out := stdout.Bytes()
+	if len(out) == 0 {
+		klog.Infof("stdout of %s is blank", file)
+		return
+	}
+	klog.V(6).Infof("%s stdout: %s", file, string(out))
+
+	if err := send(sender, out); err != nil {
+		klog.Warningf("send of %s err %s", file, err)
+		return
+	}
 }
 
 func (c *Check) getFiles() []string {

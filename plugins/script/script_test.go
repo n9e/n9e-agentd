@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/mocksender"
+	"github.com/n9e/n9e-agentd/pkg/util/testsender"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -74,10 +74,10 @@ func TestGetFiles(t *testing.T) {
 
 const sampleTextFormat = `
 echo '[
-{"metric":"test1", "value":1, "counterType":"GUAGE", "tags":"a=1"},
-{"metric":"test2", "value":2, "counterType":"COUNTER", "tags":"a=2"},
-{"metric":"test3", "value":3, "counterType":"MONOTONIC_COUNT", "tags":"a=3"},
-{"metric":"test4", "value":4, "tags":"a=4"}
+{"metric":"test1", "value":1, "type":"GUAGE", "tags":{"a":"1"}},
+{"metric":"test2", "value":2, "type":"COUNTER", "tags":{"a":"2"}},
+{"metric":"test3", "value":3, "type":"MONOTONIC_COUNT", "tags":{"a":"3"}},
+{"metric":"test4", "value":4, "tags":{"a":"4"}}
 ]'`
 
 func TestCollect(t *testing.T) {
@@ -98,7 +98,7 @@ params: "%s"
 `, filepath.Join(dir, "test.sh"))), nil, "test")
 	assert.Nil(t, err)
 
-	sender := mocksender.NewMockSender(check.ID())
+	sender := testsender.NewTestSender(check.ID(), t)
 
 	sender.On("Gauge", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 	sender.On("Rate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
