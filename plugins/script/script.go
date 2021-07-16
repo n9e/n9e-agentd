@@ -168,8 +168,9 @@ func (c *Check) collect(sender aggregator.Sender) error {
 	for _, file := range c.getFiles() {
 		klog.V(4).Infof("file %s", file)
 
-		ctx, _ := context.WithTimeout(context.Background(), cf.timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), cf.timeout)
 		cmd := exec.CommandContext(ctx, file, cf.params...)
+		cancel()
 
 		stdout := bytes.NewBuffer([]byte{})
 		stderr := bytes.NewBuffer([]byte{})
