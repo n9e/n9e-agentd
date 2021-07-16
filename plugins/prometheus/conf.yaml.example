@@ -110,14 +110,6 @@ instances:
     #
     # sendHistogramsBuckets: true
 
-    ## @param sendDistributionBuckets - boolean - optional - default: false
-    ## Set `sendDistributionBuckets` to `true` to send histograms as Datadog distribution metrics.
-    ##
-    ## Learn more about distribution metrics: https://docs.datadoghq.com/developers/metrics/distributions/
-    #
-    # sendDistributionBuckets: false
-
-
     ## @param sendMonotonicCounter - boolean - optional - default: true
     ## To send counters as monotonic counter
     ##
@@ -162,26 +154,26 @@ instances:
     #   <KEY_2>:
     #   - '*'
 
-    ## @param tls_cert - string - optional
+    ## @param tlsCert - string - optional
     ## The path to a single file in PEM format containing a certificate as well as any
     ## number of CA certificates needed to establish the certificate's authenticity for
     ## use when connecting to services. It may also contain an unencrypted private key to use.
     #
-    # tls_cert: <CERT_PATH>
+    # tlsCert: <CERT_PATH>
 
-    ## @param tls_private_key - string - optional
-    ## The unencrypted private key to use for `tls_cert` when connecting to services. This is
-    ## required if `tls_cert` is set and it does not already contain a private key.
+    ## @param tlsPrivateKey - string - optional
+    ## The unencrypted private key to use for `tlsCert` when connecting to services. This is
+    ## required if `tlsCert` is set and it does not already contain a private key.
     #
-    # tls_private_key: <PRIVATE_KEY_PATH>
+    # tlsPrivateKey: <PRIVATE_KEY_PATH>
 
-    ## @param tls_ca_cert - string - optional
+    ## @param tlsCaCert - string - optional
     ## The path to a file of concatenated CA certificates in PEM format or a directory
     ## containing several CA certificates in PEM format. If a directory, the directory
     ## must have been processed using the c_rehash utility supplied with OpenSSL. See:
     ## https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html
     #
-    # tls_ca_cert: <CA_CERT_PATH>
+    # tlsCaCert: <CA_CERT_PATH>
 
     ## @param headers - mapping - optional
     ## The headers parameter allows you to send specific headers with every request.
@@ -197,14 +189,14 @@ instances:
     ## @param timeout - number - optional - default: 10
     ## The timeout for accessing services.
     ##
-    ## This overrides the `timeout` setting in `init_config`.
+    ## This overrides the `timeout` setting in `initConfig`.
     #
     # timeout: 10
 
-    ## @param max_returned_metrics - integer - optional - default: 2000
+    ## @param maxReturnedMetrics - integer - optional - default: 2000
     ## The check limits itself to 2000 metrics by default, increase this limit if needed.
     #
-    # max_returned_metrics: 2000
+    # maxReturnedMetrics: 2000
 
     ## @param tags - list of strings - optional
     ## A list of tags to attach to every metric and service check emitted by this instance.
@@ -218,19 +210,19 @@ instances:
     ## @param service - string - optional
     ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
     ##
-    ## Overrides any `service` defined in the `init_config` section.
+    ## Overrides any `service` defined in the `initConfig` section.
     #
     # service: <SERVICE>
 
-    ## @param min_collection_interval - number - optional - default: 15
+    ## @param minCollectionInterval - number - optional - default: 15
     ## This changes the collection interval of the check. For more information, see:
-    ## https://docs.datadoghq.com/developers/write_agent_check/#collection-interval
+    ## https://docs.datadoghq.com/developers/writeAgentCheck/#collection-interval
     #
-    # min_collection_interval: 15
+    # minCollectionInterval: 15
 
-    ## @param empty_default_hostname - boolean - optional - default: false
+    ## @param emptyDefaultHostname - boolean - optional - default: false
     ## This forces the check to send metrics with no hostname.
     ##
     ## This is useful for cluster-level checks.
     #
-    # empty_default_hostname: false
+    # emptyDefaultHostname: false
