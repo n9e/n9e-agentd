@@ -48,9 +48,11 @@ type sample struct {
 
 #### samples
 ```
+# service check
 _sc|agent.up|0
 _sc|agent.up|0|d:21|h:localhost|h:localhost2|d:22
 _sc|agent.up|0|d:21|h:localhost|#tag1:test,tag2,dd.internal.entity_id:testID|m:this is fine
+# event
 _e{10,9}:test title|test text
 _e{10,24}:test title|test\\line1\\nline2\\nline3
 _e{10,24}:test|title|test\\line1\\nline2\\nline3

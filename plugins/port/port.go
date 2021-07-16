@@ -147,13 +147,18 @@ func (c *Check) check() bool {
 				continue
 			}
 			l, err := net.ListenUDP("udp", udpAddr)
-			if err != nil && strings.Contains(err.Error(), "address already in use") {
-				if i > 0 {
-					cf.addrs[0], cf.addrs[i] = cf.addrs[i], cf.addrs[0]
+			if err != nil {
+				if strings.Contains(err.Error(), "address already in use") {
+					if i > 0 {
+						cf.addrs[0], cf.addrs[i] = cf.addrs[i], cf.addrs[0]
+					}
+					return true
 				}
-				return true
+				klog.Infof("unknow error type %s", err)
 			}
-			l.Close()
+			if l != nil {
+				l.Close()
+			}
 		}
 		return false
 	}
