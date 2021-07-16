@@ -117,10 +117,10 @@ func (c *Check) collectDiskMetrics(sender aggregator.Sender) error {
 
 func (c *Check) sendPartitionMetrics(sender aggregator.Sender, usage *disk.UsageStat, tags []string) {
 	// Disk metrics
-	// For legacy reasons,  the standard unit it kB
-	sender.Gauge(fmt.Sprintf(diskMetric, "total"), float64(usage.Total)/1024, "", tags)
-	sender.Gauge(fmt.Sprintf(diskMetric, "used"), float64(usage.Used)/1024, "", tags)
-	sender.Gauge(fmt.Sprintf(diskMetric, "free"), float64(usage.Free)/1024, "", tags)
+	// For legacy reasons,  the standard unit it Byte
+	sender.Gauge(fmt.Sprintf(diskMetric, "total"), float64(usage.Total), "", tags)
+	sender.Gauge(fmt.Sprintf(diskMetric, "used"), float64(usage.Used), "", tags)
+	sender.Gauge(fmt.Sprintf(diskMetric, "free"), float64(usage.Free), "", tags)
 	// FIXME(8.x): use percent, a lot more logical than in_use
 	//sender.Gauge(fmt.Sprintf(diskMetric, "in_use"), usage.UsedPercent/100, "", tags)
 	// 1 -> 100%

@@ -15,11 +15,10 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/pdhutil"
-
 	"golang.org/x/sys/windows"
 )
 
@@ -79,9 +78,9 @@ func (c *IOCheck) Configure(data integration.Data, initConfig integration.Data, 
 	}
 
 	c.counternames = map[string]string{
-		"Disk Write Bytes/sec":      "system.io.wkb_s",
+		"Disk Write Bytes/sec":      "system.io.wb_s",
 		"Disk Writes/sec":           "system.io.w_s",
-		"Disk Read Bytes/sec":       "system.io.rkb_s",
+		"Disk Read Bytes/sec":       "system.io.rb_s",
 		"Disk Reads/sec":            "system.io.r_s",
 		"Current Disk Queue Length": "system.io.avg_q_sz",
 		"Avg. Disk sec/Read":        "system.io.r_await",
@@ -130,9 +129,9 @@ func (c *IOCheck) Run() error {
 				tags = append(tags, "device_name:"+inst)
 			}
 
-			if cname == "Disk Write Bytes/sec" || cname == "Disk Read Bytes/sec" {
-				val /= 1024
-			}
+			//if cname == "Disk Write Bytes/sec" || cname == "Disk Read Bytes/sec" {
+			//	val /= 1024
+			//}
 			if cname == "Avg. Disk sec/Read" || cname == "Avg. Disk sec/Write" {
 				// r_await/w_await are in milliseconds, but the performance counter
 				// is (obviously) in seconds.  Normalize:

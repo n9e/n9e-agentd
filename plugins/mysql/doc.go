@@ -210,8 +210,8 @@ var langStrings = map[string]map[string]string{
 		"mysql.replication.replicas_connected":            "连接到复制源的副本数",
 		"mysql.replication.seconds_behind_master":         "master 和 slave 之间的延迟（以秒为单位）",
 		"mysql.replication.seconds_behind_source":         "源和副本之间的延迟（以秒为单位）",
-		"mysql.replication.slave_running":                 "已弃用",
-		"mysql.replication.slaves_connected":              "已弃用",
+		"mysql.replication.slave_running":                 "显示此服务器是否是正在运行的复制从属/主服务器",
+		"mysql.replication.slaves_connected":              "连接到复制主机的从属设备数",
 	},
 	"en": map[string]string{
 		"mysql.binlog.cache_disk_use":                     "The number of transactions that used the temporary binary log cache but that exceeded the value of binlog_cache_size and used a temporary file to store statements from the transaction",
@@ -417,8 +417,8 @@ var langStrings = map[string]map[string]string{
 		"mysql.replication.replicas_connected":            "Number of replicas connected to a replication source",
 		"mysql.replication.seconds_behind_master":         "The lag in seconds between the master and the slave",
 		"mysql.replication.seconds_behind_source":         "The lag in seconds between the source and the replica",
-		"mysql.replication.slave_running":                 "Deprecated. Use service check mysql.replication.replica_running instead. A boolean showing if this server is a replication slave / master that is running",
-		"mysql.replication.slaves_connected":              "Deprecated. Use mysql.replication.replicas_connected instead. Number of slaves connected to a replication master",
+		"mysql.replication.slave_running":                 "A boolean showing if this server is a replication slave / master that is running",
+		"mysql.replication.slaves_connected":              "Number of slaves connected to a replication master",
 	},
 }
 

@@ -46,13 +46,13 @@ var langStrings = map[string]map[string]string{
 		"system.io.await":                         "向设备发出 I/O 请求的平均时间。这包括队列中的请求所花费的时间和为它们提供服务所花费的时间（仅限 Linux）",
 		"system.io.r_await":                       "向设备发出读取请求的平均时间。这包括队列中请求所花费的时间和为它们提供服务所花费的时间（仅限 Linux）",
 		"system.io.r_s":                           "每秒向设备发出的读取请求数",
-		"system.io.rkb_s":                         "每秒从设备读取的千字节数",
+		"system.io.rb_s":                          "每秒从设备读取的千字节数",
 		"system.io.rrqm_s":                        "每秒合并到设备队列的读取请求数（仅限 Linux）",
 		"system.io.svctm":                         "向设备发出请求的平均服务时间（仅限 Linux）",
 		"system.io.util":                          "向设备发出 I/O 请求的 CPU 时间百分比（仅限 Linux）",
 		"system.io.w_await":                       "向设备发出写入请求的平均时间。这包括队列中请求所花费的时间和为它们提供服务所花费的时间（仅限 Linux）",
 		"system.io.w_s":                           "每秒向设备发出的写请求数",
-		"system.io.wkb_s":                         "每秒写入设备的千字节数",
+		"system.io.wb_s":                          "每秒写入设备的千字节数",
 		"system.io.wrqm_s":                        "每秒合并到设备中的写入请求数（仅限 Linux）",
 		"system.mem.buffered":                     "用于文件缓冲区的物理 RAM 量",
 		"system.mem.cached":                       "用作缓存内存的物理 RAM 量",
@@ -122,13 +122,13 @@ var langStrings = map[string]map[string]string{
 		"system.io.await":                         "The average time for I/O requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them (Linux only)",
 		"system.io.r_await":                       "The average time for read requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them (Linux only)",
 		"system.io.r_s":                           "The number of read requests issued to the device per second",
-		"system.io.rkb_s":                         "The number of kibibytes read from the device per second",
+		"system.io.rb_s":                          "The number of bytes read from the device per second",
 		"system.io.rrqm_s":                        "The number of read requests merged per second that were queued to the device (Linux only)",
 		"system.io.svctm":                         "The average service time for requests issued to the device (Linux only)",
 		"system.io.util":                          "The percent of CPU time during which I/O requests were issued to the device (Linux only)",
 		"system.io.w_await":                       "The average time for write requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them (Linux only)",
 		"system.io.w_s":                           "The number of write requests issued to the device per second",
-		"system.io.wkb_s":                         "The number of kibibytes written to the device per second",
+		"system.io.wb_s":                          "The number of bytes written to the device per second",
 		"system.io.wrqm_s":                        "The number of write requests merged per second that were queued to the device (Linux only)",
 		"system.load.1":                           "The average system load over one minute. (Linux only)",
 		"system.load.15":                          "The average system load over fifteen minutes. (Linux only)",
@@ -206,13 +206,13 @@ func registerMetric() {
 	m.Register("system.io.await", "gauge", "Shown as millisecond")
 	m.Register("system.io.r_await", "gauge", "Shown as millisecond")
 	m.Register("system.io.r_s", "gauge", "Shown as request")
-	m.Register("system.io.rkb_s", "gauge", "Shown as kibibyte")
+	m.Register("system.io.rb_s", "gauge", "Shown as byte")
 	m.Register("system.io.rrqm_s", "gauge", "Shown as request")
 	m.Register("system.io.svctm", "gauge", "Shown as millisecond")
 	m.Register("system.io.util", "gauge", "Shown as percent")
 	m.Register("system.io.w_await", "gauge", "Shown as millisecond")
 	m.Register("system.io.w_s", "gauge", "Shown as request")
-	m.Register("system.io.wkb_s", "gauge", "Shown as kibibyte")
+	m.Register("system.io.wb_s", "gauge", "Shown as byte")
 	m.Register("system.io.wrqm_s", "gauge", "Shown as request")
 	m.Register("system.load.1", "gauge")
 	m.Register("system.load.15", "gauge")
@@ -251,12 +251,12 @@ func registerMetric() {
 	m.Register("system.swap.total", "gauge", "Shown as megabyte")
 	m.Register("system.swap.used", "gauge", "Shown as megabyte")
 	m.Register("system.uptime", "gauge", "Shown as second")
-	m.Register("system.disk.free", "gauge", "Shown as kibibyte")
+	m.Register("system.disk.free", "gauge", "Shown as byte")
 	m.Register("system.disk.in_use", "gauge", "Shown as percent")
 	m.Register("system.disk.read_time", "count", "Shown as millisecond")
 	m.Register("system.disk.read_time_pct", "gauge", "Shown as percent")
-	m.Register("system.disk.total", "gauge", "Shown as kibibyte")
-	m.Register("system.disk.used", "gauge", "Shown as kibibyte")
+	m.Register("system.disk.total", "gauge", "Shown as byte")
+	m.Register("system.disk.used", "gauge", "Shown as byte")
 	m.Register("system.disk.write_time", "count", "Shown as millisecond")
 	m.Register("system.disk.write_time_pct", "gauge", "Shown as percent")
 	m.Register("system.fs.inodes.free", "gauge", "Shown as inode")

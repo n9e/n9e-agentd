@@ -18,8 +18,8 @@ import (
 
 const (
 	// SectorSize is exported in github.com/shirou/gopsutil/disk (but not working!)
-	SectorSize       = 512
-	kB               = (1 << 10)
+	SectorSize = 512
+	//kB               = (1 << 10)
 	iostatsCheckName = "io"
 )
 

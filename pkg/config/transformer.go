@@ -66,6 +66,30 @@ func TransformTags(tags []string) []string             { return util.SanitizeTag
 
 var (
 	transformMetricMap = map[string]string{
-		"demo": "demo777",
+		"ntp_offset":                              "system_ntp_offset",
+		"system_cpu_context_switches":             "system_cpu_switches",
+		"system_cpu_stolen":                       "system_cpu_steal",
+		"system_disk_in_use":                      "disk_bytes_used_percent",
+		"system_disk_read_time_pct":               "system_disk_read_time_percent",
+		"system_disk_write_time_pct":              "system_disk_write_time_percent",
+		"system_fs_file_handles_allocated":        "system_files_allocated",
+		"system_fs_file_handles_allocated_unused": "system_files_left",
+		"system_fs_file_handles_max":              "system_files_max",
+		"system_fs_file_handles_in_use":           "system_files_used_percent",
+		"system_fs_file_handles_used":             "system_files_used",
+		"system_fs_inodes_free":                   "system_disk_inodes_free",
+		"system_fs_inodes_in_use":                 "system_disk_inodes_used_percent",
+		"system_fs_inodes_total":                  "system_disk_inodes_total",
+		"system_fs_inodes_used":                   "system_disk_inodes_used",
+		"system_io_avg_q_sz":                      "system_io_avgqu_sz",
+		"system_io_avg_rq_sz":                     "system_io_avgrq_sz",
+		"system_io_r_s":                           "system_io_read_request",
+		"system_io_rb_s":                          "system_io_read_bytes",
+		"system_io_w_s":                           "system_io_write_request",
+		"system_io_wb_s":                          "system_io_write_bytes",
+		"system_mem_pct_usable":                   "system_mem_free_percent",
+		"system_mem_pct_used":                     "system_mem_used_percent",
+		"system_mem_usable":                       "system_mem_free",
+		"system_swap_pct_free":                    "system_mem_free_percent",
 	}
 )
