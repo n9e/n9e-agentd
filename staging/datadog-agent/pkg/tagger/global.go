@@ -27,8 +27,8 @@ var initOnce sync.Once
 // this can still be overridden when calling get_tags in python checks.
 var ChecksCardinality collectors.TagCardinality
 
-// DogstatsdCardinality defines the cardinality of tags we should send for metrics from
-// dogstatsd.
+// statsdCardinality defines the cardinality of tags we should send for metrics from
+// statsd.
 var DogstatsdCardinality collectors.TagCardinality
 
 // Init must be called once config is available, call it in your cmd
@@ -45,7 +45,7 @@ func Init() {
 		}
 		DogstatsdCardinality, err = collectors.StringToTagCardinality(dsdCard)
 		if err != nil {
-			klog.Warningf("failed to parse dogstatsd tag cardinality, defaulting to low. Error: %s", err)
+			klog.Warningf("failed to parse statsd tag cardinality, defaulting to low. Error: %s", err)
 			DogstatsdCardinality = collectors.LowCardinality
 		}
 

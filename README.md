@@ -2,6 +2,8 @@
 
 This is a monitor agent for N9E
 
+[Download](https://github.com/n9e/n9e-agentd/releases)
+
 ## Build from source
 
 ```shell
@@ -10,7 +12,6 @@ $ make pkg
 $ ls build/
 linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc3.linux.amd64.tar.gz
 ```
-
 
 ## Install & Running
 
