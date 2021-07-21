@@ -63,24 +63,28 @@ var (
 	}}
 )
 
-func (p *module) start(ops *proc.HookOps) error {
-	ctx, configer := ops.ContextAndConfiger()
+func (p *module) start(ctx context.Context) error {
+	configer := proc.ConfigerFrom(ctx)
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
-	// ugly hack, FIXME
-	if _, err := os.Stat(configer.ConfigFilePath()); err != nil {
-		// path/to/whatever exists
-		klog.Warningf("--config %s error %s", configer.ConfigFilePath(), err)
+	if config.Configfile != "" {
+		klog.Warningf("--config has been Deprecated, use -f instead of it")
+		if _, err := os.Stat(config.Configfile); err != nil {
+			// path/to/whatever exists
+			klog.Warningf("openfile %s error %s", config.Configfile, err)
+		}
 	}
 
 	cf := config.NewDefaultConfig()
-	if err := configer.ReadYaml(p.name, cf); err != nil {
+	if err := configer.Read(moduleName, cf); err != nil {
 		return err
 	}
 
-	if err := cf.Prepare(configer.ConfigFilePath()); err != nil {
-		return err
+	if config.TestConfig {
+		klog.Infof("config\n %s", configer)
+		os.Exit(0)
 	}
+
 	p.config = cf
 	config.C = cf
 
@@ -97,7 +101,7 @@ func (p *module) start(ops *proc.HookOps) error {
 
 	// exporter
 	if err := p.startExporter(); err != nil {
-		return err
+		klog.Errorf("exporter start err %s, ignore", err)
 	}
 	// outputs
 	// serializer
@@ -222,7 +226,7 @@ func (p *module) start(ops *proc.HookOps) error {
 	return nil
 }
 
-func (p *module) stop(ops *proc.HookOps) error {
+func (p *module) stop(ctx context.Context) error {
 	health, err := health.GetReadyNonBlocking()
 	if err != nil {
 		klog.Warningf("Agent health unknown: %s", err)
@@ -268,4 +272,6 @@ func completionHandler(transaction *transaction.HTTPTransaction, statusCode int,
 
 func init() {
 	proc.RegisterHooks(hookOps)
+
+	config.AddFlags()
 }

@@ -21,11 +21,12 @@ import (
 // Config contains configuration for SNMP trap listeners.
 // YAML field tags provided for test marshalling purposes.
 type Config struct {
-	Enabled          bool          `yaml:"enabled"`          // snmp_traps_enabled
-	Port             uint16        `yaml:"port"`             // snmp_traps_config.port
-	CommunityStrings []string      `yaml:"communityStrings"` // snmp_traps_config.community_strings
-	BindHost         string        `yaml:"bindHost"`         // snmp_traps_config.bind_host
-	StopTimeout      time.Duration `yaml:"stopTimeout"`      // snmp_traps_config.stop_timeout
+	Enabled          bool          `json:"enabled"`                                                                                             // snmp_traps_enabled
+	Port             uint16        `json:"port" default:"162"`                                                                                  // snmp_traps_config.port
+	CommunityStrings []string      `json:"communityStrings"`                                                                                    // snmp_traps_config.community_strings
+	BindHost         string        `json:"bindHost" default:"localhost"`                                                                        // snmp_traps_config.bind_host
+	StopTimeout      time.Duration `json:"-"`                                                                                                   // snmp_traps_config.stop_timeout
+	StopTimeout_     int           `json:"stopTimeout" flag:"snmptraps-stop-tiemout" default:"5" description:"snmp traps stop timeout(Second)"` // snmp_traps_config.stop_timeout
 }
 
 // ReadConfig builds and returns configuration from Agent configuration.
@@ -33,6 +34,8 @@ func (c *Config) Validate(bindhost string) error {
 	if !c.Enabled {
 		return nil
 	}
+
+	c.StopTimeout = time.Second * time.Duration(c.StopTimeout_)
 
 	// Validate required fields.
 	if c.CommunityStrings == nil || len(c.CommunityStrings) == 0 {

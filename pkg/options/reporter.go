@@ -35,11 +35,10 @@ type reporter struct {
 	cancel context.CancelFunc
 }
 
-func (p *reporter) start(ops *proc.HookOps) error {
+func (p *reporter) start(ctx context.Context) error {
 	if p.cancel != nil {
 		p.cancel()
 	}
-	ctx := ops.Context()
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
 	reporter := &buildReporter{}
@@ -56,7 +55,7 @@ func (p *reporter) start(ops *proc.HookOps) error {
 	return nil
 }
 
-func (p *reporter) stop(ops *proc.HookOps) error {
+func (p *reporter) stop(ctx context.Context) error {
 	klog.Info("stop")
 	p.cancel()
 	return nil

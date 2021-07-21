@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
@@ -26,7 +27,6 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/pkg/version"
 	"k8s.io/klog/v2"
 
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
@@ -267,7 +267,8 @@ func getCommonStatus() (map[string]interface{}, error) {
 		stats["metadata"] = host.GetPayloadFromCache(hostnameData)
 	}
 
-	stats["conf_file"] = config.C.ConfigFilePath
+	// TODO: add -f
+	stats["conf_file"] = config.Configfile
 	stats["pid"] = os.Getpid()
 	stats["go_version"] = runtime.Version()
 	stats["agent_start_nano"] = config.StartTime.UnixNano()
