@@ -7,11 +7,11 @@ set +e
 
 before_remove() {
 	:
-	${BEFORE_REMOVE_SCRIPT}
+${BEFORE_REMOVE_SCRIPT}
 }
 
 if [ "$1" -eq 0 ]; then
-	before_remove
+before_remove
 fi
 
 # clear error termination state

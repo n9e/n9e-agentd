@@ -14,13 +14,13 @@ install_default_file() {
 
 after_install() {
 	:
-	${AFTER_INSTALL_SCRIPT}
+${AFTER_INSTALL_SCRIPT}
 }
 
 
 after_upgrade() {
 	:
-	${AFTER_UPGRADE_SCRIPT}
+${AFTER_UPGRADE_SCRIPT}
 }
 
 if [ "$1" -eq 1 ]; then

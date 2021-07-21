@@ -262,3 +262,10 @@ instances:
     ## - python: will use legacy python SNMP integration
     #
     # loader: core
+
+    ## @param minCollectionInterval - number - optional - default: 15
+    ## This changes the collection interval of the check. For more information, see:
+    ## https://docs.datadoghq.com/developers/writeAgentCheck/#collection-interval
+    #
+    # minCollectionInterval: 15
+

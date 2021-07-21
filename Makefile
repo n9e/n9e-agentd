@@ -28,7 +28,7 @@ build/$(RPM_FILE): build/_$(APP_NAME)/Makefile $(TARGETS)
 
 pkgs: $(TARGETS)
 	APP_NAME=n9e-agentd make rpm
-	docker run --rm \
+	sudo docker run --rm \
 		-v $(PWD):/src \
 		--name golang-cross-builder \
 		--hostname golang-cross-builder \
@@ -49,3 +49,7 @@ clean:
 
 release:
 	VERSION=$(VERSION) RELEASE=$(RELEASE) ./scripts/release.sh
+
+.PHONY: tools
+tools:
+	go get -u github.com/tcnksm/ghr

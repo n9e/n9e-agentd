@@ -10,14 +10,14 @@ This is a monitor agent for N9E
 $ make pkg
 
 $ ls build/
-linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc3.linux.amd64.tar.gz
+linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc5.linux.amd64.tar.gz
 ```
 
 ## Install & Running
 
 Install
 ```
-tar xzvf n9e-agentd-X.X.X.linux.amd64.tar.gz
+tar xzvf n9e-agentd-x.x.x.linux.amd64.tar.gz
 mkdir -p /opt/n9e
 mv ./linux-amd64 /opt/n9e/agentd
 cp /opt/n9e/agentd/etc/agentd.yaml.default /opt/n9e/agentd/etc/agentd.yaml
@@ -43,4 +43,11 @@ Use with systemd
 cp -a misc/systemd/n9e-agentd.service /usr/lib/systemd/system/
 systemctl enable n9e-agentd
 systemctl start n9e-agentd
+```
+
+## Use with rpm
+
+```
+sudo rpm -Uvh n9e-agentd-x.x.x.Linux.x86_64.rpm
+sudo systemctl status n9e-agentd
 ```

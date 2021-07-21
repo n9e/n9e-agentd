@@ -2,11 +2,12 @@ install_default_file ${PREFIX}/etc/agentd.yaml ${PREFIX}/etc/agentd.yaml.default
 
 chown -R ${APP_USER}.${APP_GROUP} ${PREFIX}
 systemctl preset ${APP_NAME}.service >/dev/null 2>&1
+systemctl start ${APP_NAME}.service >/dev/null 2>&1
+systemctl enable ${APP_NAME}.service >/dev/null 2>&1
 
-echo "You can activate ${APP_NAME} with:"
-echo "> systemctl start ${APP_NAME}.service"
-echo "> systemctl enable ${APP_NAME}.service"
-echo
-echo "Then check the status with:"
-echo "> systemctl status ${APP_NAME}.service"
-
+#echo "You can activate ${APP_NAME} with:"
+#echo "> systemctl start ${APP_NAME}.service"
+#echo "> systemctl enable ${APP_NAME}.service"
+#echo
+#echo "Then check the status with:"
+#echo "> systemctl status ${APP_NAME}.service"
