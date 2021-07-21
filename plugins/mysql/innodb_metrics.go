@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func NewInnoDBMetrics(c *Check) *InnoDBMetrics {
