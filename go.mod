@@ -54,15 +54,12 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/go-libaudit v0.4.0
-	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/fatih/color v1.9.0
 	github.com/fatih/structtag v1.2.0
 	github.com/florianl/go-conntrack v0.1.1-0.20191002182014-06743d3a59db
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/freddierice/go-losetup v0.0.0-20170407175016-fc9adea44124
-	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-ole/go-ole v1.2.5
-	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gobwas/glob v0.2.3
@@ -88,7 +85,7 @@ require (
 	github.com/iceber/iouring-go v0.0.0-20201110085921-73520a520aac
 	github.com/iovisor/gobpf v0.0.0
 	github.com/itchyny/gojq v0.10.2
-	github.com/json-iterator/go v1.1.10
+	github.com/json-iterator/go v1.1.11
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/klauspost/compress v1.11.12 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
@@ -136,7 +133,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	github.com/vito/go-sse v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
-	github.com/yubo/golib v0.0.0-20210628082550-7c78ec86671c
+	github.com/yubo/golib v0.0.0-20210721045300-a4de815531cb
 	github.com/zorkian/go-datadog-api v2.28.0+incompatible // indirect
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 	go.uber.org/automaxprocs v1.2.0
@@ -161,12 +158,12 @@ require (
 	gopkg.in/zorkian/go-datadog-api.v2 v2.29.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.6
+	k8s.io/apimachinery v0.21.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.9.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/cri-api v0.0.0
 	k8s.io/klog v1.0.1-0.20200310124935-4ad0115ba9e4 // indirect; Min version that includes fix for Windows Nano
-	k8s.io/klog/v2 v2.4.0
+	k8s.io/klog/v2 v2.9.0
 	k8s.io/kube-state-metrics v1.8.1-0.20200108124505-369470d6ead8
 	k8s.io/kubernetes v1.18.2
 	k8s.io/metrics v0.18.3
@@ -213,4 +210,10 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b
 	k8s.io/metrics => k8s.io/metrics v0.18.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
+
+
+
+	github.com/yubo/golib  => /home/odin/steveyubo/gopath/src/github.com/yubo/golib
+	github.com/yubo/apiserver  => /home/odin/steveyubo/gopath/src/github.com/yubo/apiserver
+
 )

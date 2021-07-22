@@ -15,32 +15,36 @@ import (
 
 // ListenerConfig holds global configuration for SNMP discovery
 type ListenerConfig struct {
-	Workers           int      `mapstructure:"workers" yaml:"workers"`
-	DiscoveryInterval int      `mapstructure:"discovery_interval" yaml:"discoveryInterval"`
-	AllowedFailures   int      `mapstructure:"allowed_failures"`
-	Configs           []Config `mapstructure:"configs"`
+	Workers           int      `json:"workers"`
+	DiscoveryInterval int      `json:"discoveryInterval"`
+	AllowedFailures   int      `json:"allowedFailures"`
+	Configs           []Config `json:"configs"`
+}
+
+func (p *ListenerConfig) Validate() error {
+	return nil
 }
 
 // Config holds configuration for a particular subnet
 type Config struct {
-	Network            string          `mapstructure:"network"`
-	Port               uint16          `mapstructure:"port"`
-	Version            string          `mapstructure:"version"`
-	Timeout            int             `mapstructure:"timeout"`
-	Retries            int             `mapstructure:"retries"`
-	OidBatchSize       int             `mapstructure:"oid_batch_size"`
-	Community          string          `mapstructure:"community"`
-	User               string          `mapstructure:"user"`
-	AuthKey            string          `mapstructure:"authentication_key"`
-	AuthProtocol       string          `mapstructure:"authentication_protocol"`
-	PrivKey            string          `mapstructure:"privacy_key"`
-	PrivProtocol       string          `mapstructure:"privacy_protocol"`
-	ContextEngineID    string          `mapstructure:"context_engine_id"`
-	ContextName        string          `mapstructure:"context_name"`
-	IgnoredIPAddresses map[string]bool `mapstructure:"ignored_ip_addresses"`
-	ADIdentifier       string          `mapstructure:"ad_identifier"`
-	Loader             string          `mapstructure:"loader"`
-	Tags               []string        `mapstructure:"tags"`
+	Network            string          `json:"network"`
+	Port               uint16          `json:"port"`
+	Version            string          `json:"version"`
+	Timeout            int             `json:"timeout"`
+	Retries            int             `json:"retries"`
+	OidBatchSize       int             `json:"oidBatchSize"`
+	Community          string          `json:"community"`
+	User               string          `json:"user"`
+	AuthKey            string          `json:"authenticationKey"`
+	AuthProtocol       string          `json:"authenticationProtocol"`
+	PrivKey            string          `json:"privacyKey"`
+	PrivProtocol       string          `json:"privacyProtocol"`
+	ContextEngineID    string          `json:"contextEngineId"`
+	ContextName        string          `json:"contextName"`
+	IgnoredIPAddresses map[string]bool `json:"ignoredIpAddresses"`
+	ADIdentifier       string          `json:"adIdentifier"`
+	Loader             string          `json:"loader"`
+	Tags               []string        `json:"tags"`
 }
 
 // Digest returns an hash value representing the data stored in this configuration, minus the network address

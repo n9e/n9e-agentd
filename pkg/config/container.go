@@ -48,6 +48,10 @@ type Container struct {
 	ExcludePauseContainer bool     `yaml:"excludeParseContainer"` // exclude_pause_container
 }
 
+func (p *Container) Validate() error {
+	return nil
+}
+
 func (cf *Config) detectContainerFeatures(features FeatureMap) {
 	cf.detectKubernetes(features)
 	cf.detectDocker(features)
