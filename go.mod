@@ -60,6 +60,7 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/freddierice/go-losetup v0.0.0-20170407175016-fc9adea44124
 	github.com/go-ole/go-ole v1.2.5
+	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gobwas/glob v0.2.3
@@ -133,7 +134,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	github.com/vito/go-sse v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
-	github.com/yubo/golib v0.0.0-20210721045300-a4de815531cb
+	github.com/yubo/golib v0.0.0-20210722163742-0aedfc541c7f
 	github.com/zorkian/go-datadog-api v2.28.0+incompatible // indirect
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 	go.uber.org/automaxprocs v1.2.0
@@ -210,10 +211,4 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b
 	k8s.io/metrics => k8s.io/metrics v0.18.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
-
-
-
-	github.com/yubo/golib  => /home/odin/steveyubo/gopath/src/github.com/yubo/golib
-	github.com/yubo/apiserver  => /home/odin/steveyubo/gopath/src/github.com/yubo/apiserver
-
 )
