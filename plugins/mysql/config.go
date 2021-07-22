@@ -13,7 +13,7 @@ import (
 )
 
 type InitConfig struct {
-	GlobalCustomQueries []db.CustomQuery `json:"globalCustomQueries"`
+	GlobalCustomQueries []db.CustomQuery `json:"global_custom_queries"`
 	Service             string           `json:"service"`
 }
 
@@ -28,13 +28,13 @@ type InstanceConfig struct {
 	//Charset                string            `json:"user"`
 	//DefaultsFile           string            `json:"user"`
 	TLS                    tls.ClientConfig  `json:"tls"`
-	UseGlobalCustomQueries string            `json:"useGlobalCustomQueries" description:"extent,true,false"`
-	CustomQueries          []db.CustomQuery  `json:"customQueries"`
-	MaxCustomQueries       int               `json:"maxCustomQueries"`
+	UseGlobalCustomQueries string            `json:"use_global_custom_queries" description:"extent,true,false"`
+	CustomQueries          []db.CustomQuery  `json:"custom_queries"`
+	MaxCustomQueries       int               `json:"max_custom_queries"`
 	Options                Options           `json:"options"`
-	DeepDatabaseMonitoring bool              `json:"deepDatabaseMonitoring"`
-	StatementMetricsLimits map[string][2]int `json:"statementMetricsLimits"`
-	StatementSamples       StatementSamples  `json:"statementSamples"`
+	DeepDatabaseMonitoring bool              `json:"deep_database_monitoring"`
+	StatementMetricsLimits map[string][2]int `json:"statement_metrics_limits"`
+	StatementSamples       StatementSamples  `json:"statement_samples"`
 
 	InitConfig `json:"-"`
 	server     string
@@ -43,32 +43,32 @@ type InstanceConfig struct {
 
 type StatementSamples struct {
 	Enabled                            bool   `json:"enabled"`
-	RunSync                            bool   `json:"runSync"`
-	CollectionsPerSecond               int    `json:"collectionsPerSecond"`
-	SamplesPerHourPerQuery             int    `json:"samplesPerHourPerQuery"`
-	ExplainedStatementsCacheMaxsize    int    `json:"explainedStatementsCacheMaxsize"`
-	ExplainedStatementsPerHourPerQuery int    `json:"explainedStatementsPerHourPerQuery"`
-	SeenSamplesCacheMaxsize            int    `json:"seenSamplesCacheMaxsize"`
-	EventsStatementsRowLimit           int    `json:"eventsStatementsRowLimit"`
-	EventsStatementsTable              string `json:"eventsStatementsTable"`
-	ExplainProcedure                   string `json:"explainProcedure"`
-	FullyQualifiedExplainProcedure     string `json:"fullyQualifiedExplainProcedure"`
-	EventsStatementsEnableProcedure    string `json:"eventsStatementsEnableProcedure"`
-	EventsStatementsTempTableName      string `json:"eventsStatementsTempTableName"`
-	CollectionStrategyCacheMaxsize     int    `json:"collectionStrategyCacheMaxsize"`
-	CollectionStrategyCacheTtl         int    `json:"collectionStrategyCacheTtl"`
+	RunSync                            bool   `json:"run_sync"`
+	CollectionsPerSecond               int    `json:"collections_per_second"`
+	SamplesPerHourPerQuery             int    `json:"samples_per_hour_per_query"`
+	ExplainedStatementsCacheMaxsize    int    `json:"explained_statements_cache_maxsize"`
+	ExplainedStatementsPerHourPerQuery int    `json:"explained_statements_per_hour_per_query"`
+	SeenSamplesCacheMaxsize            int    `json:"seen_samples_cache_maxsize"`
+	EventsStatementsRowLimit           int    `json:"events_statements_row_limit"`
+	EventsStatementsTable              string `json:"events_statements_table"`
+	ExplainProcedure                   string `json:"explain_procedure"`
+	FullyQualifiedExplainProcedure     string `json:"fully_qualified_explain_procedure"`
+	EventsStatementsEnableProcedure    string `json:"events_statements_enable_procedure"`
+	EventsStatementsTempTableName      string `json:"events_statements_temp_table_name"`
+	CollectionStrategyCacheMaxsize     int    `json:"collection_strategy_cache_maxsize"`
+	CollectionStrategyCacheTtl         int    `json:"collection_strategy_cache_ttl"`
 }
 
 type Options struct {
 	Replication                  bool   `json:"replication"`
-	ReplicationChannel           string `json:"replicationChannel"`
-	ReplicationNonBlockingStatus bool   `json:"replicationNonBlockingStatus"`
-	GaleraCluster                bool   `json:"galeraCluster"`
-	ExtraStatusMetrics           bool   `json:"extraStatusMetrics"`
-	ExtraInnodbMetrics           bool   `json:"extraInnodbMetrics"`
-	DisableInnodbMetrics         bool   `json:"disableInnodbMetrics"`
-	SchemaSizeMetrics            bool   `json:"schemaSizeMetrics"`
-	ExtraPerformanceMetrics      bool   `json:"extraPerformanceMetrics"`
+	ReplicationChannel           string `json:"replication_channel"`
+	ReplicationNonBlockingStatus bool   `json:"replication_non_blocking_status"`
+	GaleraCluster                bool   `json:"galera_cluster"`
+	ExtraStatusMetrics           bool   `json:"extra_status_metrics"`
+	ExtraInnodbMetrics           bool   `json:"extra_innodb_metrics"`
+	DisableInnodbMetrics         bool   `json:"disable_innodb_metrics"`
+	SchemaSizeMetrics            bool   `json:"schema_size_metrics"`
+	ExtraPerformanceMetrics      bool   `json:"extra_performance_metrics"`
 }
 
 type Config struct {

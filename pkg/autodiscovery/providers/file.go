@@ -23,14 +23,14 @@ import (
 )
 
 type configFormat struct {
-	ADIdentifiers           []string             `yaml:"adIdentifiers"`
-	ClusterCheck            bool                 `yaml:"clusterCheck"`
-	InitConfig              interface{}          `yaml:"initConfig"`
-	MetricConfig            interface{}          `yaml:"jmxMetrics"`
+	ADIdentifiers           []string             `yaml:"ad_identifiers"`
+	ClusterCheck            bool                 `yaml:"cluster_check"`
+	InitConfig              interface{}          `yaml:"init_config"`
+	MetricConfig            interface{}          `yaml:"jmx_metrics"`
 	LogsConfig              interface{}          `yaml:"logs"`
 	Instances               []integration.RawMap `yaml:"instances"`
-	DockerImages            []string             `yaml:"dockerImages"`            // Only imported for deprecation warning
-	IgnoreAutodiscoveryTags bool                 `yaml:"ignoreAutodiscoveryTags"` // Use to ignore tags coming from autodiscovery
+	DockerImages            []string             `yaml:"docker_images"`             // Only imported for deprecation warning
+	IgnoreAutodiscoveryTags bool                 `yaml:"ignore_autodiscovery_tags"` // Use to ignore tags coming from autodiscovery
 }
 
 type configPkg struct {

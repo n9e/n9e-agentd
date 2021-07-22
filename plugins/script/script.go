@@ -32,7 +32,7 @@ type InitConfig struct {
 }
 
 type InstanceConfig struct {
-	FilePath string            `json:"filePath"`
+	FilePath string            `json:"file_path"`
 	Root     string            `json:"root"`
 	Params   string            `json:"params"`
 	Env      map[string]string `json:"env"`

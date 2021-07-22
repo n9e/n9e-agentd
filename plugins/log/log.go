@@ -37,14 +37,14 @@ var (
 )
 
 type InstanceConfig struct {
-	MetricName   string            `json:"metricName"`  //
-	FilePath     string            `json:"filePath"`    //
-	Pattern      string            `json:"pattern"`     //
-	TagsPattern  map[string]string `json:"tagsPattern"` //
-	Func         string            `json:"func"`        // count(c), histogram(h)
-	Encoding     string            `json:"encoding"`    //
-	ExcludePaths []string          `json:"excludePath"` //
-	TailingMode  string            `json:"tailingMode"` //
+	MetricName   string            `json:"metric_name"`  //
+	FilePath     string            `json:"file_path"`    //
+	Pattern      string            `json:"pattern"`      //
+	TagsPattern  map[string]string `json:"tags_pattern"` //
+	Func         string            `json:"func"`         // count(c), histogram(h)
+	Encoding     string            `json:"encoding"`     //
+	ExcludePaths []string          `json:"exclude_path"` //
+	TailingMode  string            `json:"tailing_mode"` //
 }
 
 type checkConfig struct {

@@ -2,7 +2,7 @@
 ## To make modifications to the check configuration, please copy this file
 ## to `network.yaml` and make your changes on that file.
 #
-initConfig:
+init_config:
 
     ## @param service - string - optional
     ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
@@ -15,73 +15,73 @@ initConfig:
 #
 instances:
 
-    ## @param collectConnectionState - boolean - required
+    ## @param collect_connection_state - boolean - required
     ## Set to true to collect connection states for your interfaces
     ## Note: this will require either the command `ss` from system package `iproute2` or
     ## the command `netstat` from the system package `net-tools` to be installed
     #
-  - collectConnectionState: false
+  - collect_connection_state: false
 
-    ## @param collectConnectionQueues - boolean - optional - default: false
+    ## @param collect_connection_queues - boolean - optional - default: false
     ## Set to true to enable connection queues collection
     ## Note: connection queues collections require both
-    ## `collectConnectionState` and `collectConnectionQueues` to be true
+    ## `collect_connection_state` and `collect_connection_queues` to be true
     ## because it also requires the command `ss` from system package `iproute2` or
     ## the command `netstat` from the system package `net-tools` to be installed
     #
-    # collectConnectionQueues: false
+    # collect_connection_queues: false
 
-    ## @param excludedInterfaces - list of strings - optional
+    ## @param excluded_interfaces - list of strings - optional
     ## List of interface to exclude from the check.
     #
-    # excludedInterfaces:
+    # excluded_interfaces:
     #   - lo
     #   - lo0
 
-    ## @param excludedInterfaceRe - string - optional
+    ## @param excluded_interface_re - string - optional
     ## Completely ignore any network interface matching the given regex.
     #
-    # excludedInterfaceRe: <NETWORK_INTERFACE_NAME>.*
+    # excluded_interface_re: <NETWORK_INTERFACE_NAME>.*
 
-    ## @param combineConnectionStates - boolean - optional - default: true
+    ## @param combine_connection_states - boolean - optional - default: true
     ## Set to false to not combine connection states.
     ## By default we combine states like fin_wait_1 and fin_wait_2
     ## together into one state: 'closing' disable this option to get more granular data.
     #
-    # combineConnectionStates: true
+    # combine_connection_states: true
 
-    ## @param collectRateMetrics - boolean - optional - default: true
+    ## @param collect_rate_metrics - boolean - optional - default: true
     ## By default, most metrics are submitted as rates.
     ## However, some metrics like tcp/udp retransmissions and errors are
     ## better handled as counts.
-    ## Choose to disable rate metrics by setting collectRateMetrics to false.
+    ## Choose to disable rate metrics by setting collect_rate_metrics to false.
     #
-    # collectRateMetrics: true
+    # collect_rate_metrics: true
 
-    ## @param collectCountMetrics - boolean - optional - default: false
+    ## @param collect_count_metrics - boolean - optional - default: false
     ## By default, most metrics are submitted as rates.
     ## However, some metrics like tcp/udp retransmissions and errors are
     ## better handled as counts.
-    ## Choose to enable count metrics by setting collectCountMetrics to true.
+    ## Choose to enable count metrics by setting collect_count_metrics to true.
     ## Count metrics have '.count' added to the metric name.
     #
-    # collectCountMetrics: false
+    # collect_count_metrics: false
 
-    ## @param conntrackPath - string - optional
+    ## @param conntrack_path - string - optional
     ## Linux only.
     ## The location of the conntrack executable in order to get the stats from conntrack -S.
     ## It will be run with sudo by default, so an entry needs to be added to the sudoers file.
     ## By default, these metrics will not be sent.
     #
-    # conntrackPath: /usr/sbin/conntrack
+    # conntrack_path: /usr/sbin/conntrack
 
-    ## @param useSudoConntrack - boolean - optional - default: true
+    ## @param use_sudo_conntrack - boolean - optional - default: true
     ## Set to False to disable sudo when running `conntrack -S`
     ## (`sudo` isn't normally available in containers)
     #
-    # useSudoConntrack: true
+    # use_sudo_conntrack: true
 
-    ## @param whitelistConntrackMetrics - list of strings - optional - default: ['max', 'count']
+    ## @param whitelist_conntrack_metrics - list of strings - optional - default: ['max', 'count']
     ## Linux only.
     ## Names of the conntrack metrics to whitelist for monitoring. The metric value is in the file
     ## /${proc}/sys/net/netfilter/nf_conntrack_${metric_name}.
@@ -89,11 +89,11 @@ instances:
     ## Regex expressions for the project names are supported.
     ## Blacklist takes precedence over whitelist in case of overlap.
     #
-    # whitelistConntrackMetrics:
+    # whitelist_conntrack_metrics:
     #   - <METRIC_NAME>
     #   - <METRIC_PREFIX>.*
 
-    ## @param blacklistConntrackMetrics - list of strings - optional - default: []
+    ## @param blacklist_conntrack_metrics - list of strings - optional - default: []
     ## Linux only.
     ## Names of the conntrack metrics to blacklist for monitoring. The metric value is in the file
     ## /${proc}/sys/net/netfilter/nf_conntrack_${metric_name}.
@@ -101,11 +101,11 @@ instances:
     ## Regex expressions for the project names are supported.
     ## Blacklist takes precedence over whitelist in case of overlap.
     #
-    # blacklistConntrackMetrics:
+    # blacklist_conntrack_metrics:
     #   - <METRIC_NAME>
     #   - <METRIC_PREFIX>.*
 
-    ## @param collectAwsEnaMetrics - boolean - optional - default: false
+    ## @param collect_aws_ena_metrics - boolean - optional - default: false
     ## Turn on collection of the AWS Elastic Network Adapter (ENA) statistics for network interfaces.
     ##
     ## This will only work on ENA-enabled instances, see:
@@ -115,7 +115,7 @@ instances:
     ## network interfaces. To get host-level ENA metrics from a container, it needs to be executed
     ## with `CAP_NET_ADMIN` capability and use the `host` network mode.
     #
-    # collectAwsEnaMetrics: false
+    # collect_aws_ena_metrics: false
 
     ## @param tags - list of strings - optional
     ## A list of tags to attach to every metric and service check emitted by this instance.
@@ -133,15 +133,15 @@ instances:
     #
     # service: <SERVICE>
 
-    ## @param minCollectionInterval - number - optional - default: 15
+    ## @param min_collection_interval - number - optional - default: 15
     ## This changes the collection interval of the check. For more information, see:
     ## https://docs.datadoghq.com/developers/write_agent_check/#collection-interval
     #
-    # minCollectionInterval: 15
+    # min_collection_interval: 15
 
-    ## @param emptyDefaultHostname - boolean - optional - default: false
+    ## @param empty_default_hostname - boolean - optional - default: false
     ## This forces the check to send metrics with no hostname.
     ##
     ## This is useful for cluster-level checks.
     #
-    # emptyDefaultHostname: false
+    # empty_default_hostname: false

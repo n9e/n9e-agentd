@@ -27,24 +27,24 @@ type InitConfig struct {
 }
 
 type InstanceConfig struct {
-	PrometheusUrl           string            `json:"prometheusUrl"`           // prometheus_url
-	Namespace               string            `json:"namespace"`               // namespace
-	Metrics                 []string          `json:"metrics"`                 // metrics
-	PrometheusMetricsPrefix string            `json:"prometheusMetricsPrefix"` // prometheus_metrics_prefix
-	HealthServiceCheck      bool              `json:"healthServiceCheck"`      // health_service_check
-	LabelToHostname         string            `json:"labelToHostname"`         // label_to_hostname
-	LabelJoins              interface{}       `json:"labelJoins"`              // label_joins
-	LabelsMapper            map[string]string `json:"labelsMapper"`            // labels_mapper
-	TypeOverrides           map[string]string `json:"typeOverrides"`           // type_overrides
-	Tags                    []string          `json:"tags"`                    // tags
-	SendHistogramsBuckets   bool              `json:"sendHistogramsBuckets"`   // send_histograms_buckets
-	SendMonotonicCounter    bool              `json:"sendMonotonicCounter"`    // send_monotonic_counter
-	ExcludeLabels           []string          `json:"excludeLabels"`           // exclude_labels
-	SslCert                 string            `json:"sslCert"`                 // ssl_cert
-	SslPrivateKey           string            `json:"sslPrivateKey"`           // ssl_private_key
-	SslCaCert               string            `json:"sslCaCert"`               // ssl_ca_cert
-	PrometheusTimeout       int               `json:"prometheusTimeout"`       // prometheus_timeout
-	MaxReturnedMetrics      int               `json:"maxReturnedMetrics"`      // max_returned_metrics
+	PrometheusUrl           string            `json:"prometheus_url"`            // prometheus_url
+	Namespace               string            `json:"namespace"`                 // namespace
+	Metrics                 []string          `json:"metrics"`                   // metrics
+	PrometheusMetricsPrefix string            `json:"prometheus_metrics_prefix"` // prometheus_metrics_prefix
+	HealthServiceCheck      bool              `json:"health_service_check"`      // health_service_check
+	LabelToHostname         string            `json:"label_to_hostname"`         // label_to_hostname
+	LabelJoins              interface{}       `json:"label_joins"`               // label_joins
+	LabelsMapper            map[string]string `json:"labels_mapper"`             // labels_mapper
+	TypeOverrides           map[string]string `json:"type_overrides"`            // type_overrides
+	Tags                    []string          `json:"tags"`                      // tags
+	SendHistogramsBuckets   bool              `json:"send_histograms_buckets"`   // send_histograms_buckets
+	SendMonotonicCounter    bool              `json:"send_monotonic_counter"`    // send_monotonic_counter
+	ExcludeLabels           []string          `json:"exclude_labels"`            // exclude_labels
+	SslCert                 string            `json:"ssl_cert"`                  // ssl_cert
+	SslPrivateKey           string            `json:"ssl_private_key"`           // ssl_private_key
+	SslCaCert               string            `json:"ssl_ca_cert"`               // ssl_ca_cert
+	PrometheusTimeout       int               `json:"prometheus_timeout"`        // prometheus_timeout
+	MaxReturnedMetrics      int               `json:"max_returned_metrics"`      // max_returned_metrics
 
 	timeout          time.Duration
 	tls.ClientConfig `json:"-"`

@@ -41,6 +41,7 @@ for str in ${lists}; do
 	cp -a ../misc/etc ${dir}/
 	cp -a ../misc/conf.d ${dir}/
 	cp -a ../misc/scripts.d ${dir}/
+	cp -a ../misc/licenses ${dir}/
 	cp -a ../misc/systemd ${dir}/misc/
 	tar czvf n9e-agentd-${VERSION}-${RELEASE}.${os}.${arch}.tar.gz ${dir}
 done

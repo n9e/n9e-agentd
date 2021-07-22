@@ -22,10 +22,10 @@ type InitConfig struct {
 }
 
 type InstanceConfig struct {
-	Protocol   string        `json:"protocol" description:"udp or tcp"`
-	Port       int           `json:"port"`
-	addrs      []string      `json:"-"`
-	timeout    time.Duration `json:"-"`
+	Protocol   string `json:"protocol" description:"udp or tcp"`
+	Port       int    `json:"port"`
+	addrs      []string
+	timeout    time.Duration
 	InitConfig `json:"-"`
 }
 

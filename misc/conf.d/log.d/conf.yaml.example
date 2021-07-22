@@ -1,4 +1,4 @@
-initConfig:
+init_config:
 
 instances:
 
@@ -6,12 +6,12 @@ instances:
     #
   - #name: log.count
 
-    ## @param filePath - string - required
+    ## @param file_path - string - required
     #
-    #filePath: /var/log/nginx/access.log
+    #file_path: /var/log/nginx/access.log
 
-    # #param tagsPattern -  map[string]string - optional
-    # tagsPattern:
+    # #param tags_pattern -  map[string]string - optional
+    # tags_pattern:
     #   code: HTTP\/1.1"\s([0-9]{3})
     #   service: \s\/api\/(.*?)\/
 
@@ -21,13 +21,6 @@ instances:
     # #param func -  string - required - enum: count, histogram
     # func: count
 
-    ## @param emptyDefaultHostname - boolean - optional - default: false
-    ## This forces the check to send metrics with no hostname.
-    ##
-    ## This is useful for cluster-level checks.
-    #
-    # emptyDefaultHostname: false
-
     ## @param tags - list of strings - optional
     ## A list of tags to attach to every metric and service check emitted by this instance.
     ##
@@ -36,11 +29,3 @@ instances:
     # tags:
     #   - <KEY_1>:<VALUE_1>
     #   - <KEY_2>:<VALUE_2>
-
-    ## @param service - string - optional
-    ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
-    ##
-    ## Overrides any `service` defined in the `initConfig` section.
-    #
-    # service: <SERVICE>
-

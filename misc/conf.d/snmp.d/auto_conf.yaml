@@ -1,12 +1,12 @@
-adIdentifiers:
+ad_identifiers:
   - snmp
-initConfig:
+init_config:
 instances:
   -
     ## @param ip_address - string - optional
     ## The IP address of the device to monitor.
     #
-    ipAddress: "%%host%%"
+    ip_address: "%%host%%"
 
     ## @param port - integer - optional - default: 161
     ## Default SNMP port.
@@ -17,7 +17,7 @@ instances:
     ## If you are using SNMP v1 set snmp_version to 1 (required)
     ## If you are using SNMP v3 set snmp_version to 3 (required)
     #
-    snmpVersion: "%%extra_version%%"
+    snmp_version: "%%extra_version%%"
 
     ## @param timeout - integer - optional - default: 5
     ## Amount of second before timing out.
@@ -32,7 +32,7 @@ instances:
     ## @param community_string - string - optional
     ## Only useful for SNMP v1 & v2.
     #
-    communityString: "%%extra_community%%"
+    community_string: "%%extra_community%%"
 
     ## @param user - string - optional
     ## USERNAME to connect to your SNMP devices.
@@ -63,16 +63,23 @@ instances:
     #
     privProtocol: "%%extra_priv_protocol%%"
 
-    ## @param contextEngineId - string - optional
+    ## @param context_engine_id - string - optional
     ## ID of your context engine; typically unneeded.
     ## (optional SNMP v3-only parameter)
     #
-    contextEngineId: "%%extra_context_engine_id%%"
+    context_engine_id: "%%extra_context_engine_id%%"
 
     ## @param context_name - string - optional
     ## Name of your context (optional SNMP v3-only parameter).
     #
-    contextName: "%%extra_context_name%%"
+    context_name: "%%extra_context_name%%"
+
+    ## @param loader - string - optional
+    ## Check loader to use. Available loaders for snmp:
+    ## - core: will use corecheck SNMP integration
+    ## - python: will use python SNMP integration
+    #
+    loader: "%%extra_loader%%"
 
     ## @param tags - list of key:value element - optional
     ## List of tags to attach to every metric, event and service check emitted by this integration.
@@ -83,3 +90,10 @@ instances:
       # The autodiscovery subnet the device is part of.
       # Used by Agent autodiscovery to pass subnet name.
       - "autodiscovery_subnet:%%extra_autodiscovery_subnet%%"
+
+    ## @param extra_tags - string - optional
+    ## Comma separated tags to attach to every metric, event and service check emitted by this integration.
+    ## Example:
+    ##  extra_tags: "tag1:val1,tag2:val2"
+    #
+    extra_tags: "%%extra_tags%%"

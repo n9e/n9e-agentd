@@ -42,6 +42,7 @@ install(CODE "FILE(MAKE_DIRECTORY
 )")
 
 install(DIRECTORY misc/etc USE_SOURCE_PERMISSIONS DESTINATION .)
+install(DIRECTORY misc/licenses USE_SOURCE_PERMISSIONS DESTINATION .)
 install(DIRECTORY misc/conf.d USE_SOURCE_PERMISSIONS DESTINATION .)
 install(DIRECTORY misc/scripts.d USE_SOURCE_PERMISSIONS DESTINATION .)
 install(FILES misc/systemd/n9e-agentd.service DESTINATION /usr/lib/systemd/system)

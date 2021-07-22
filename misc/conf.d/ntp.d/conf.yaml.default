@@ -2,15 +2,15 @@
 ## To make modifications to the check configuration, copy this file
 ## to `ntp.yaml` and make your changes on that file.
 
-initConfig:
+init_config:
 
 instances:
 
   -
-    ## @param offsetThreshold - integer - optional - default: 60
+    ## @param offset_threshold - integer - optional - default: 60
     ## Offset threshold above which a CRITICAL service check is sent.
     #
-    # offsetThreshold: 60
+    # offset_threshold: 60
 
     ## @param host - string - optional - default: ntp host of cloud provider if detected, else <X>.datadog.pool.ntp.org
     ## NTP host to connect to, default is the private NTP server of the Cloud Provider if one is detected, otherwise
@@ -38,4 +38,4 @@ instances:
     # Use the ntp servers defined in the host.    
     # For Unix system, the servers defined in /etc/ntp.conf and etc/xntp.conf are used.
     # For Windows system, the servers defined in registry key HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Parameters\NtpServer are used.
-    # useLocalDefinedServers: false
+    # use_local_defined_servers: false

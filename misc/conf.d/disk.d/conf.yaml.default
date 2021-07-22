@@ -1,6 +1,6 @@
 ## All options defined here are available to all instances.
 #
-initConfig:
+init_config:
 
     ## @param file_system_global_exclude - list of strings - optional
     ## Instruct the check to always add these patterns to `file_system_exclude`.
@@ -39,11 +39,11 @@ initConfig:
 #
 instances:
 
-    ## @param useMount - boolean - required
+    ## @param use_mount - boolean - required
     ## If enabled, metrics are tagged using mount points (for example `device:/`) instead of volumes
     ## (for example `device:/dev/disk1s5`).
     #
-  - useMount: false
+  - use_mount: false
 
     ## @param all_partitions - boolean - optional - default: false
     ## Instruct the check to collect from partitions even without device names.
@@ -63,35 +63,35 @@ instances:
     ## @param service - string - optional
     ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
     ##
-    ## Overrides any `service` defined in the `initConfig` section.
+    ## Overrides any `service` defined in the `init_config` section.
     #
     # service: <SERVICE>
 
-    ## @param minCollectionInterval - number - optional - default: 15
+    ## @param min_collection_interval - number - optional - default: 15
     ## This changes the collection interval of the check. For more information, see:
     ## https://docs.datadoghq.com/developers/write_agent_check/#collection-interval
     #
-    # minCollectionInterval: 15
+    # min_collection_interval: 15
 
-    ## @param emptyDefaultHostname - boolean - optional - default: false
+    ## @param empty_default_hostname - boolean - optional - default: false
     ## This forces the check to send metrics with no hostname.
     ##
     ## This is useful for cluster-level checks.
     #
-    # emptyDefaultHostname: false
+    # empty_default_hostname: false
 
-    ## @param fileSystemInclude - list of strings - optional
+    ## @param file_system_include - list of strings - optional
     ## Instruct the check to only collect from matching file systems.
     ##
     ## Character casing is ignored. For convenience, the regular expressions
     ## start matching from the beginning and therefore to match anywhere you
     ## must prepend `.*`. For exact matches append `$`.
     #
-    # fileSystemInclude:
+    # file_system_include:
     #   - ext[34]$
     #   - ntfs$
 
-    ## @param fileSystemExclude - list of strings - optional
+    ## @param file_system_exclude - list of strings - optional
     ## Instruct the check to not collect from matching file systems.
     ##
     ## Character casing is ignored. For convenience, the regular expressions
@@ -99,121 +99,121 @@ instances:
     ## must prepend `.*`. For exact matches append `$`.
     ##
     ## Devices from pseudo or memory-based file systems can be excluded by disabling the
-    ## `includeAllDevices` option.
+    ## `include_all_devices` option.
     ##
-    ## When conflicts arise, this will override `fileSystemInclude`.
+    ## When conflicts arise, this will override `file_system_include`.
     #
-    # fileSystemExclude:
+    # file_system_exclude:
     #   - tmpfs$
     #   - rootfs$
     #   - autofs$
 
-    ## @param deviceInclude - list of strings - optional
+    ## @param device_include - list of strings - optional
     ## Instruct the check to only collect from matching devices.
     ##
     ## Character casing is ignored on Windows. For convenience, the regular
     ## expressions start matching from the beginning and therefore to match
     ## anywhere you must prepend `.*`. For exact matches append `$`.
     #
-    # deviceInclude:
+    # device_include:
     #   - /dev/sda[1-3]
     #   - 'C:'
 
-    ## @param deviceExclude - list of strings - optional
+    ## @param device_exclude - list of strings - optional
     ## Instruct the check to not collect from matching devices.
     ##
     ## Character casing is ignored on Windows. For convenience, the regular
     ## expressions start matching from the beginning and therefore to match
     ## anywhere you must prepend `.*`. For exact matches append `$`.
     ##
-    ## When conflicts arise, this will override `deviceInclude`.
+    ## When conflicts arise, this will override `device_include`.
     #
-    # deviceExclude:
+    # device_exclude:
     #   - /dev/sde
     #   - '[FJ]:'
 
-    ## @param mountPointInclude - list of strings - optional
+    ## @param mount_point_include - list of strings - optional
     ## Instruct the check to only collect from matching mount points.
     ##
     ## Character casing is ignored on Windows. For convenience, the regular
     ## expressions start matching from the beginning and therefore to match
     ## anywhere you must prepend `.*`. For exact matches append `$`.
     #
-    # mountPointInclude:
+    # mount_point_include:
     #   - /dev/sda[1-3]
     #   - 'C:'
 
-    ## @param mountPointExclude - list of strings - optional
+    ## @param mount_point_exclude - list of strings - optional
     ## Instruct the check to not collect from matching mount points.
     ##
     ## Character casing is ignored on Windows. For convenience, the regular
     ## expressions start matching from the beginning and therefore to match
     ## anywhere you must prepend `.*`. For exact matches append `$`.
     #
-    # mountPointExclude:
+    # mount_point_exclude:
     #   - /proc/sys/fs/binfmt_misc
     #   - /dev/sde
     #   - '[FJ]:'
 
-    ## @param includeAllDevices - boolean - optional - default: true
+    ## @param include_all_devices - boolean - optional - default: true
     ## Instruct the check to collect from all devices, including non-physical devices.
     ## Set this to false to exclude pseudo, memory, duplicate or inaccessible file systems.
     ##
     ## For more fine-grained control, use the inclusion and exclusion options.
     #
-    # includeAllDevices: true
+    # include_all_devices: true
 
-    ## @param serviceCheckRw - boolean - optional - default: false
+    ## @param service_check_rw - boolean - optional - default: false
     ## Instruct the check to notify based on partition state.
     ##
     ## read-write -> OK
     ## read-only  -> CRITICAL
     ## other      -> UNKNOWN
     #
-    # serviceCheckRw: false
+    # service_check_rw: false
 
-    ## @param tagByFilesystem - boolean - optional - default: false
+    ## @param tag_by_filesystem - boolean - optional - default: false
     ## Instruct the check to tag all disks with their file system e.g. filesystem:ntfs.
     #
-    # tagByFilesystem: false
+    # tag_by_filesystem: false
 
-    ## @param tagByLabel - boolean - optional - default: true
+    ## @param tag_by_label - boolean - optional - default: true
     ## Instruct the check to tag all the metrics with disk label if there is one.
     ## Works on Linux only.
     #
-    # tagByLabel: true
+    # tag_by_label: true
 
-    ## @param blkidCacheFile - string - optional
+    ## @param blkid_cache_file - string - optional
     ## Instruct the check to read the labels from the blkid cache file instead of `blkid` executable.
-    ## This parameter is used only if `tagByLabel` is true.
+    ## This parameter is used only if `tag_by_label` is true.
     ## Works on Linux only.
     #
-    # blkidCacheFile: /run/blkid/blkid.tab
+    # blkid_cache_file: /run/blkid/blkid.tab
 
-    ## @param deviceTagRe - mapping - optional
+    ## @param device_tag_re - mapping - optional
     ## Instruct the check to apply additional tags to matching
-    ## devices (or mount points if `useMount` is true).
+    ## devices (or mount points if `use_mount` is true).
     ##
     ## Character casing is ignored on Windows. Multiple comma-separated
     ## tags are supported. You must properly quote the string if the
     ## pattern contains special characters e.g. colons.
     #
-    # deviceTagRe:
+    # device_tag_re:
     #   /san/.*: device_type:san
     #   /dev/sda3: role:db,disk_size:large
     #   'c:': volume:boot
 
-    ## @param minDiskSize - number - optional - default: 0
+    ## @param min_disk_size - number - optional - default: 0
     ## Exclude devices with a total disk size less than a minimum value (in MiB)
     #
-    # minDiskSize: 0
+    # min_disk_size: 0
 
     ## @param timeout - integer - optional - default: 5
     ## Timeout of the disk query in seconds
     #
     # timeout: 5
 
-    ## @param createMounts - list of mappings - optional
+    ## @param create_mounts - list of mappings - optional
     ## On Windows, instruct the check to create one or more network
     ## mounts, and have the check collect metrics for the mounted devices.
     ##
@@ -223,7 +223,7 @@ instances:
     ## based on the other parameters. If `type` is specified, then any type
     ## other than `nfs` will default to an SMB file share.
     #
-    # createMounts:
+    # create_mounts:
     #   - mountpoint: 's:'
     #     user: auser
     #     password: somepassword

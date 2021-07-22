@@ -18,29 +18,29 @@ var defaultTimeout = 2
 
 type snmpInitConfig struct {
 	Profiles      profileConfigMap `json:"profiles"`
-	GlobalMetrics []metricsConfig  `json:"globalMetrics"`
-	OidBatchSize  Number           `json:"oidBatchSize"`
+	GlobalMetrics []metricsConfig  `json:"global_metrics"`
+	OidBatchSize  Number           `json:"oid_batch_size"`
 }
 
 type snmpInstanceConfig struct {
-	IPAddress        string            `json:"ipAddress"`
+	IPAddress        string            `json:"ip_address"`
 	Port             Number            `json:"port"`
-	CommunityString  string            `json:"communityString"`
-	SnmpVersion      string            `json:"snmpVersion"`
+	CommunityString  string            `json:"community_string"`
+	SnmpVersion      string            `json:"snmp_version"`
 	Timeout          Number            `json:"timeout"`
 	Retries          Number            `json:"retries"`
-	OidBatchSize     Number            `json:"oidBatchSize"`
+	OidBatchSize     Number            `json:"oid_batch_size"`
 	User             string            `json:"user"`
 	AuthProtocol     string            `json:"authProtocol"`
 	AuthKey          string            `json:"authKey"`
 	PrivProtocol     string            `json:"privProtocol"`
 	PrivKey          string            `json:"privKey"`
-	ContextName      string            `json:"contextName"`
+	ContextName      string            `json:"context_name"`
 	Metrics          []metricsConfig   `json:"metrics"`
-	MetricTags       []metricTagConfig `json:"metricTags"`
+	MetricTags       []metricTagConfig `json:"metric_tags"`
 	Profile          string            `json:"profile"`
-	UseGlobalMetrics bool              `json:"useGlobalMetrics"`
-	ExtraTags        string            `json:"extraTags"` // comma separated tags
+	UseGlobalMetrics bool              `json:"use_global_metrics"`
+	ExtraTags        string            `json:"extra_tags"` // comma separated tags
 }
 
 type snmpConfig struct {

@@ -28,7 +28,7 @@ var (
 
 type ProcessFilter struct {
 	Target        string  `json:"target"`
-	CollectMethod string  `json:"collectMethod" description:"name or cmdline"`
+	CollectMethod string  `json:"collect_method" description:"name or cmdline"`
 	Pids          []int32 `json:"-"`
 }
 

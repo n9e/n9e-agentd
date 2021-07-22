@@ -18,7 +18,7 @@ import (
 //   - test:mysql
 type CustomQuery struct {
 	Name         string                   `json:"-"`
-	MetricPrefix string                   `json:"metricPrefix"`
+	MetricPrefix string                   `json:"metric_prefix"`
 	Query        string                   `json:"query"`
 	Columns      []map[string]interface{} `json:"columns"`
 	Extras       []map[string]interface{} `json:"extras"`

@@ -1,228 +1,117 @@
-## All options defined here are available to all instances.
-#
-initConfig:
+init_config:
 
-    ## @param proxy - mapping - optional
-    ## Set HTTP or HTTPS proxies for all instances. Use the `noProxy` list
-    ## to specify hosts that must bypass proxies.
-    ##
-    ## The SOCKS protocol is also supported like so:
-    ##
-    ##   socks5://user:pass@host:port
-    ##
-    ## Using the scheme `socks5` causes the DNS resolution to happen on the
-    ## client, rather than on the proxy server. This is in line with `curl`,
-    ## which uses the scheme to decide whether to do the DNS resolution on
-    ## the client or proxy. If you want to resolve the domains on the proxy
-    ## server, use `socks5h` as the scheme.
-    #
-    # proxy:
-    #   http: http://<PROXY_SERVER_FOR_HTTP>:<PORT>
-    #   https: https://<PROXY_SERVER_FOR_HTTPS>:<PORT>
-    #   noProxy:
-    #   - <HOSTNAME_1>
-    #   - <HOSTNAME_2>
-
-    ## @param skipProxy - boolean - optional - default: false
-    ## If set to `true`, this makes the check bypass any proxy
-    ## settings enabled and attempt to reach services directly.
-    #
-    # skipProxy: false
-
-    ## @param timeout - number - optional - default: 10
-    ## The timeout for connecting to services.
-    #
-    # timeout: 10
-
-    ## @param service - string - optional
-    ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
-    ##
-    ## Additionally, this sets the default `service` for every log source.
-    #
-    # service: <SERVICE>
-
-## Every instance is scheduled independent of the others.
-#
 instances:
 
-    ## @param prometheusUrl - string - required
+    ## @param prometheus_url - string - required
     ## The URL where your application metrics are exposed by Prometheus.
     #
-  - prometheusUrl: http://localhost:10055/metrics
+  - prometheus_url: http://localhost:10055/metrics
 
     ## @param namespace - string - required
     ## The namespace to be appended before all metrics namespace
     #
-    namespace: service
+    namespace: <SERVICE_NAME>
 
-    ## @param metrics - list of strings - required
-    ## List of metrics to be fetched from the prometheus endpoint, if there's a
-    ## value it'll be renamed. This list should contain at least one metric.
+    ## @param metrics - list of key:value elements - required
+    ## List of `<METRIC_TO_FETCH>: <NEW_METRIC_NAME>` for metrics to be fetched from the prometheus endpoint.
+    ## <NEW_METRIC_NAME> is optional. It transforms the name in Datadog if set.
+    ## This list should contain at least one metric
     #
     metrics:
-      - processor:cpu
-      - memory:mem
-      - io
+      - <METRIC_TO_FETCH>: <NEW_METRIC_NAME>
 
-    ## @param prometheusMetricsPrefix - string - optional
+    ## @param prometheus_metrics_prefix - string - optional
     ## Prefix for exposed Prometheus metrics.
     #
-    # prometheusMetricsPrefix: <PREFIX>_
+    # prometheus_metrics_prefix: <PREFIX>_
 
-    ## @param healthServiceCheck - boolean - optional - default: true
+    ## @param health_service_check - boolean - optional - default: true
     ## Send a service check reporting about the health of the prometheus endpoint
     ## It will be named <NAMESPACE>.prometheus.health
     #
-    # healthServiceCheck: true
+    # health_service_check: true
 
-    ## @param labelToHostname - string - optional
+    ## @param label_to_hostname - string - optional
     ## Override the hostname with the value of one label.
     #
-    # labelToHostname: <LABEL>
+    # label_to_hostname: <LABEL>
 
-    ## @param labelJoins - object - optional
+    ## @param label_joins - object - optional
     ## The label join allows to target a metric and retrieve it's label via a 1:1 mapping
     #
-    # labelJoins:
-    #   targetMetric:
-    #     labelToMatch: <MATCHED_LABEL>
-    #     labelsToGet:
-    #     - <EXTRA_LABEL_1>
-    #     - <EXTRA_LABEL_2>
+    # label_joins:
+    #   target_metric:
+    #     label_to_match: <MATCHED_LABEL>
+    #     labels_to_get:
+    #       - <LABEL_TO_GET>
 
-    ## @param labelsMapper - list of key:value element - optional
+    ## @param labels_mapper - list of key:value element - optional
     ## The label mapper allows you to rename some labels
     ## Format is <LABEL_TO_RENAME>: <NEW_LABEL_NAME>
     #
-    # labelsMapper:
+    # labels_mapper:
     #   flavor: origin
 
-    ## @param typeOverrides - list of key:value element - optional
+    ## @param type_overrides - list of key:value element - optional
     ## Type override allows you to override a type in the prometheus payload
     ## or type an untyped metrics (they're ignored by default)
     ## Supported <METRIC_TYPE> are `gauge`, `counter`, `histogram`, `summary`
     #
-    # typeOverrides:
+    # type_overrides:
     #   <METRIC_NAME>: <METRIC_TYPE>
 
-    ## @param sendHistogramsBuckets - boolean - optional - default: true
-    ## Set sendHistogramsBuckets to true to send the histograms bucket.
-    #
-    # sendHistogramsBuckets: true
-
-    ## @param sendMonotonicCounter - boolean - optional - default: true
-    ## To send counters as monotonic counter
+    ## @param tags - list of key:value element - optional
+    ## List of tags to attach to every metric, event and service check emitted by this integration.
     ##
-    ## see: https://github.com/DataDog/integrations-core/issues/1303
-    #
-    # sendMonotonicCounter: true
-
-    ## @param sendDistributionCountsAsMonotonic - boolean - optional - default: false
-    ## If set to true, sends histograms and summary counters as monotonic counters (instead of gauges).
-    #
-    # sendDistributionCountsAsMonotonic: false
-
-    ## @param sendDistributionSumsAsMonotonic - boolean - optional - default: false
-    ## If set to true, sends histograms and summary sums as monotonic counters (instead of gauges).
-    #
-    # sendDistributionSumsAsMonotonic: false
-
-    ## @param excludeLabels - list of strings - optional
-    ## A list of labels to be excluded
-    #
-    # excludeLabels:
-    #   - timestamp
-
-    ## @param ignoreMetrics - list of strings - optional
-    ## A list of metrics to ignore, use the "*" wildcard can be used to match multiple metric names.
-    #
-    # ignoreMetrics:
-    #   - <IGNORED_METRIC_NAME>
-    #   - <PREFIX_*>
-    #   - <*_SUFFIX>
-    #   - <PREFIX_*_SUFFIX>
-    #   - <*_SUBSTRING_*>
-
-    ## @param ignoreMetricsByLabels - mapping - optional
-    ## A mapping of labels where metrics with matching label key and values are ignored.
-    ## Use the "*" wildcard to match all label values.
-    #
-    # ignoreMetricsByLabels:
-    #   <KEY_1>:
-    #   - <LABEL_1>
-    #   - <LABEL_2>
-    #   <KEY_2>:
-    #   - '*'
-
-    ## @param tlsCert - string - optional
-    ## The path to a single file in PEM format containing a certificate as well as any
-    ## number of CA certificates needed to establish the certificate's authenticity for
-    ## use when connecting to services. It may also contain an unencrypted private key to use.
-    #
-    # tlsCert: <CERT_PATH>
-
-    ## @param tlsPrivateKey - string - optional
-    ## The unencrypted private key to use for `tlsCert` when connecting to services. This is
-    ## required if `tlsCert` is set and it does not already contain a private key.
-    #
-    # tlsPrivateKey: <PRIVATE_KEY_PATH>
-
-    ## @param tlsCaCert - string - optional
-    ## The path to a file of concatenated CA certificates in PEM format or a directory
-    ## containing several CA certificates in PEM format. If a directory, the directory
-    ## must have been processed using the c_rehash utility supplied with OpenSSL. See:
-    ## https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html
-    #
-    # tlsCaCert: <CA_CERT_PATH>
-
-    ## @param headers - mapping - optional
-    ## The headers parameter allows you to send specific headers with every request.
-    ## You can use it for explicitly specifying the host header or adding headers for
-    ## authorization purposes.
-    ##
-    ## This overrides any default headers.
-    #
-    # headers:
-    #   Host: <ALTERNATIVE_HOSTNAME>
-    #   X-Auth-Token: <AUTH_TOKEN>
-
-    ## @param timeout - number - optional - default: 10
-    ## The timeout for accessing services.
-    ##
-    ## This overrides the `timeout` setting in `initConfig`.
-    #
-    # timeout: 10
-
-    ## @param maxReturnedMetrics - integer - optional - default: 2000
-    ## The check limits itself to 2000 metrics by default, increase this limit if needed.
-    #
-    # maxReturnedMetrics: 2000
-
-    ## @param tags - list of strings - optional
-    ## A list of tags to attach to every metric and service check emitted by this instance.
-    ##
-    ## Learn more about tagging at https://docs.datadoghq.com/tagging
+    ## Learn more about tagging: https://docs.datadoghq.com/tagging/
     #
     # tags:
     #   - <KEY_1>:<VALUE_1>
     #   - <KEY_2>:<VALUE_2>
 
-    ## @param service - string - optional
-    ## Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
-    ##
-    ## Overrides any `service` defined in the `initConfig` section.
+    ## @param send_histograms_buckets - boolean - optional - default: true
+    ## Set send_histograms_buckets to true to send the histograms bucket.
     #
-    # service: <SERVICE>
+    # send_histograms_buckets: true
 
-    ## @param minCollectionInterval - number - optional - default: 15
-    ## This changes the collection interval of the check. For more information, see:
-    ## https://docs.datadoghq.com/developers/writeAgentCheck/#collection-interval
-    #
-    # minCollectionInterval: 15
-
-    ## @param emptyDefaultHostname - boolean - optional - default: false
-    ## This forces the check to send metrics with no hostname.
+    ## @param send_monotonic_counter - boolean - optional - default: true
+    ## To send counters as monotonic counter
     ##
-    ## This is useful for cluster-level checks.
+    ## see: https://github.com/DataDog/integrations-core/issues/1303
     #
-    # emptyDefaultHostname: false
+    # send_monotonic_counter: true
+
+    ## @param exclude_labels - list of string - optional
+    ## List of label to be excluded.
+    #
+    # exclude_labels:
+    #   - timestamp
+
+    ## @param ssl_cert - string - optional
+    ## If your prometheus endpoint is secured, here are the settings to configure it
+    ## Can either be only the path to the certificate and thus you should specify the private key
+    ## or it can be the path to a file containing both the certificate & the private key
+    #
+    # ssl_cert: "<CERT_PATH>"
+
+    ## @param ssl_private_key - string - optional
+    ## Needed if the certificate does not include the private key
+    ## WARNING: The private key to your local certificate must be unencrypted.
+    #
+    # ssl_private_key: "<KEY_PATH>"
+
+    ## @param ssl_ca_cert - string - optional
+    ## The path to the trusted CA used for generating custom certificates. Set this to false to disable SSL certificate
+    ## verification.
+    #
+    # ssl_ca_cert: "<CA_CERT_PATH>"
+
+    ## @param prometheus_timeout - integer - optional - default: 10
+    ## Set a timeout in second for the prometheus query.
+    #
+    # prometheus_timeout: 10
+
+    ## @param max_returned_metrics - integer - optional - default: 2000
+    ## The check limits itself to 2000 metrics by default, increase this limit if needed.
+    #
+    # max_returned_metrics: 2000

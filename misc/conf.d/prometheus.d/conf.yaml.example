@@ -1,11 +1,11 @@
-initConfig:
+init_config:
 
 instances:
 
-    ## @param prometheusUrl - string - required
+    ## @param prometheus_url - string - required
     ## The URL where your application metrics are exposed by Prometheus.
     #
-  - prometheusUrl: http://localhost:9100/metrics
+  - prometheus_url: http://localhost:10055/metrics
 
     ## @param namespace - string - required
     ## The namespace to be appended before all metrics namespace
@@ -20,44 +20,44 @@ instances:
     metrics:
       - <METRIC_TO_FETCH>: <NEW_METRIC_NAME>
 
-    ## @param prometheusMetricsPrefix - string - optional
+    ## @param prometheus_metrics_prefix - string - optional
     ## Prefix for exposed Prometheus metrics.
     #
-    # prometheusMetricsPrefix: <PREFIX>_
+    # prometheus_metrics_prefix: <PREFIX>_
 
-    ## @param healthServiceCheck - boolean - optional - default: true
+    ## @param health_service_check - boolean - optional - default: true
     ## Send a service check reporting about the health of the prometheus endpoint
     ## It will be named <NAMESPACE>.prometheus.health
     #
-    # healthServiceCheck: true
+    # health_service_check: true
 
-    ## @param labelToHostname - string - optional
+    ## @param label_to_hostname - string - optional
     ## Override the hostname with the value of one label.
     #
-    # labelToHostname: <LABEL>
+    # label_to_hostname: <LABEL>
 
-    ## @param labelJoins - object - optional
+    ## @param label_joins - object - optional
     ## The label join allows to target a metric and retrieve it's label via a 1:1 mapping
     #
-    # labelJoins:
-    #   targetMetric:
-    #     labelToMatch: <MATCHED_LABEL>
-    #     labelsToGet:
+    # label_joins:
+    #   target_metric:
+    #     label_to_match: <MATCHED_LABEL>
+    #     labels_to_get:
     #       - <LABEL_TO_GET>
 
-    ## @param labelsMapper - list of key:value element - optional
+    ## @param labels_mapper - list of key:value element - optional
     ## The label mapper allows you to rename some labels
     ## Format is <LABEL_TO_RENAME>: <NEW_LABEL_NAME>
     #
-    # labelsMapper:
+    # labels_mapper:
     #   flavor: origin
 
-    ## @param typeOverrides - list of key:value element - optional
+    ## @param type_overrides - list of key:value element - optional
     ## Type override allows you to override a type in the prometheus payload
     ## or type an untyped metrics (they're ignored by default)
     ## Supported <METRIC_TYPE> are `gauge`, `counter`, `histogram`, `summary`
     #
-    # typeOverrides:
+    # type_overrides:
     #   <METRIC_NAME>: <METRIC_TYPE>
 
     ## @param tags - list of key:value element - optional
@@ -69,49 +69,49 @@ instances:
     #   - <KEY_1>:<VALUE_1>
     #   - <KEY_2>:<VALUE_2>
 
-    ## @param sendHistogramsBuckets - boolean - optional - default: true
-    ## Set sendHistogramsBuckets to true to send the histograms bucket.
+    ## @param send_histograms_buckets - boolean - optional - default: true
+    ## Set send_histograms_buckets to true to send the histograms bucket.
     #
-    # sendHistogramsBuckets: true
+    # send_histograms_buckets: true
 
-    ## @param sendMonotonicCounter - boolean - optional - default: true
+    ## @param send_monotonic_counter - boolean - optional - default: true
     ## To send counters as monotonic counter
     ##
     ## see: https://github.com/DataDog/integrations-core/issues/1303
     #
-    # sendMonotonicCounter: true
+    # send_monotonic_counter: true
 
-    ## @param excludeLabels - list of string - optional
+    ## @param exclude_labels - list of string - optional
     ## List of label to be excluded.
     #
-    # excludeLabels:
+    # exclude_labels:
     #   - timestamp
 
-    ## @param sslCert - string - optional
+    ## @param ssl_cert - string - optional
     ## If your prometheus endpoint is secured, here are the settings to configure it
     ## Can either be only the path to the certificate and thus you should specify the private key
     ## or it can be the path to a file containing both the certificate & the private key
     #
-    # sslCert: "<CERT_PATH>"
+    # ssl_cert: "<CERT_PATH>"
 
-    ## @param sslPrivateKey - string - optional
+    ## @param ssl_private_key - string - optional
     ## Needed if the certificate does not include the private key
     ## WARNING: The private key to your local certificate must be unencrypted.
     #
-    # sslPrivateKey: "<KEY_PATH>"
+    # ssl_private_key: "<KEY_PATH>"
 
-    ## @param sslCaCert - string - optional
+    ## @param ssl_ca_cert - string - optional
     ## The path to the trusted CA used for generating custom certificates. Set this to false to disable SSL certificate
     ## verification.
     #
-    # sslCaCert: "<CA_CERT_PATH>"
+    # ssl_ca_cert: "<CA_CERT_PATH>"
 
-    ## @param prometheusTimeout - integer - optional - default: 10
+    ## @param prometheus_timeout - integer - optional - default: 10
     ## Set a timeout in second for the prometheus query.
     #
-    # prometheusTimeout: 10s
+    # prometheus_timeout: 10
 
-    ## @param maxReturnedMetrics - integer - optional - default: 2000
+    ## @param max_returned_metrics - integer - optional - default: 2000
     ## The check limits itself to 2000 metrics by default, increase this limit if needed.
     #
-    # maxReturnedMetrics: 2000
+    # max_returned_metrics: 2000
