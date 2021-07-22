@@ -20,21 +20,21 @@ agent:
   endpoints:
     - http://localhost:8000			# replace the server address here
 
-  ## @param histogramAggregates - list of strings - optional - default: ["max", "median", "avg", "count"]
+  ## @param histogram_aggregates - list of strings - optional - default: ["max", "median", "avg", "count"]
   ## Configure which aggregated value to compute.
   ## Possible values are: min, max, median, avg, sum and count.
   #
-  # histogramAggregates:
+  # histogram_aggregates:
   #   - max
   #   - median
   #   - avg
   #   - count
 
-  ## @param histogramPercentiles - list of strings - optional - default: ["0.95"]
+  ## @param histogram_percentiles - list of strings - optional - default: ["0.95"]
   ## Configure which percentiles are computed by the Agent. It must be a list of float between 0 and 1.
   ## Warning: percentiles must be specified as yaml strings
   #
-  # histogramPercentiles:
+  # histogram_percentiles:
   #   - "0.95"
 
   exporter:
@@ -57,7 +57,7 @@ agent:
     #
     # port: 8125
 
-    ## @param metricsStatsEnable - boolean - optional - default: false
+    ## @param metrics_stats_enable - boolean - optional - default: false
     ## Set this parameter to true to have statsd collects basic statistics (count/last seen)
     #
-    # metricsStatsEnable: false
+    # metrics_stats_enable: false

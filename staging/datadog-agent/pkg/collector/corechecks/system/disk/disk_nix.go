@@ -16,7 +16,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"k8s.io/klog/v2"
 )
 
 // for testing
@@ -65,7 +64,6 @@ func (c *Check) collectPartitionMetrics(sender aggregator.Sender) error {
 		// Get disk metrics here to be able to exclude on total usage
 		usage, err := diskUsage(partition.Mountpoint)
 		if err != nil {
-			klog.Warningf("Unable to get disk metrics of %s mount point: %s", partition.Mountpoint, err)
 			continue
 		}
 

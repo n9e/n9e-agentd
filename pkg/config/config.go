@@ -83,223 +83,223 @@ type Config struct {
 	Ident             string   `json:"ident" flag:"ident" default:"$ip" description:"Ident of this host"`
 	Alias             string   `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
 	Lang              string   `json:"lang" flag:"lang" default:"zh" description:"Default lang(zh, en)"`
-	EnableN9eProvider bool     `json:"enableN9eProvider" flag:"enable-n9e-provider" default:"true" description:"enable n9e server api as autodiscovery provider"`
-	N9eSeriesFormat   bool     `json:"n9eSeriesFormat" default:"true"`                                                                              // the payload format for forwarder
-	WorkDir           string   `json:"workDir" flag:"workdir,d" description:"workdir"`                                                              // e.g. /opt/n9e/agentd
+	EnableN9eProvider bool     `json:"enable_n9e_provider" flag:"enable-n9e-provider" default:"true" description:"enable n9e server api as autodiscovery provider"`
+	N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                            // the payload format for forwarder
+	WorkDir           string   `json:"work_dir" flag:"workdir,d" description:"workdir"`                                                             // e.g. /opt/n9e/agentd
 	Endpoints         []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000"  description:"endpoints addresses of n9e server"` // site, dd_url
 
-	MetadataProviders       []MetadataProviders      `json:"metadataProviders"`              // metadata_providers
-	Forwarder               Forwarder                `json:"forwarder,inline"`               // fowarder_*
-	PrometheusScrape        PrometheusScrape         `json:"prometheusScrape,inline"`        // prometheus_scrape
-	Autoconfig              Autoconfig               `json:"autoconfig,inline"`              //
-	Container               Container                `json:"container,inline"`               //
-	SnmpTraps               traps.Config             `json:"snmpTraps,inline"`               // snmp_traps_config
-	ClusterAgent            ClusterAgent             `json:"clusterAgent,inline"`            // cluster_agent
-	Network                 Network                  `json:"network,inline"`                 // network
-	SnmpListener            snmptypes.ListenerConfig `json:"snmpListener,inline"`            // snmp_listener
-	Cmd                     Cmd                      `json:"cmd,inline"`                     // cmd
-	LogsConfig              LogsConfig               `json:"logsConfig"`                     // logs_config
-	CloudFoundryGarden      CloudFoundryGarden       `json:"cloudFoundryGarden,inline"`      // cloud_foundry_garden
-	ClusterChecks           ClusterChecks            `json:"clusterChecks"`                  // cluster_checks
-	Exporter                Exporter                 `json:"exporter,inline"`                // telemetry
-	OrchestratorExplorer    OrchestratorExplorer     `json:"orchestratorExplorer,inline"`    // orchestrator_explorer
-	Statsd                  Statsd                   `json:"statsd"`                         // statsd_*, dagstatsd_*
-	Apm                     Apm                      `json:"apm,inline"`                     // apm_config.*
-	Jmx                     Jmx                      `json:"jmx"`                            // jmx_*
-	RuntimeSecurity         RuntimeSecurity          `json:"runtimeSecurity,inline"`         // runtime_security_config.*
-	AdminssionController    AdminssionController     `json:"adminssionController"`           // admission_controller.*
-	ExternalMetricsProvider ExternalMetricsProvider  `json:"externalMetricsProvider,inline"` // external_metrics_provider.*
-	EnablePayloads          EnablePayloads           `json:"enablePayloads,inline"`          // enable_payloads.*
-	SystemProbe             SystemProbe              `json:"systemProbe,inline,inline"`      // system_probe_config.*
-	Listeners               []Listeners              `json:"listeners,inline"`               // listeners
-	ConfigProviders         []ConfigurationProviders `json:"configProviders,inline"`         // config_providers
+	MetadataProviders       []MetadataProviders      `json:"metadata_providers"`               // metadata_providers
+	Forwarder               Forwarder                `json:"forwarder,inline"`                 // fowarder_*
+	PrometheusScrape        PrometheusScrape         `json:"prometheus_scrape,inline"`         // prometheus_scrape
+	Autoconfig              Autoconfig               `json:"autoconfig,inline"`                //
+	Container               Container                `json:"container,inline"`                 //
+	SnmpTraps               traps.Config             `json:"snmp_traps,inline"`                // snmp_traps_config
+	ClusterAgent            ClusterAgent             `json:"cluster_agent,inline"`             // cluster_agent
+	Network                 Network                  `json:"network,inline"`                   // network
+	SnmpListener            snmptypes.ListenerConfig `json:"snmp_listener,inline"`             // snmp_listener
+	Cmd                     Cmd                      `json:"cmd,inline"`                       // cmd
+	LogsConfig              LogsConfig               `json:"logs_config"`                      // logs_config
+	CloudFoundryGarden      CloudFoundryGarden       `json:"cloud_foundry_garden,inline"`      // cloud_foundry_garden
+	ClusterChecks           ClusterChecks            `json:"cluster_checks"`                   // cluster_checks
+	Exporter                Exporter                 `json:"exporter,inline"`                  // telemetry
+	OrchestratorExplorer    OrchestratorExplorer     `json:"orchestrator_explorer,inline"`     // orchestrator_explorer
+	Statsd                  Statsd                   `json:"statsd"`                           // statsd_*, dagstatsd_*
+	Apm                     Apm                      `json:"apm,inline"`                       // apm_config.*
+	Jmx                     Jmx                      `json:"jmx"`                              // jmx_*
+	RuntimeSecurity         RuntimeSecurity          `json:"runtime_security,inline"`          // runtime_security_config.*
+	AdminssionController    AdminssionController     `json:"adminssion_controller"`            // admission_controller.*
+	ExternalMetricsProvider ExternalMetricsProvider  `json:"external_metrics_provider,inline"` // external_metrics_provider.*
+	EnablePayloads          EnablePayloads           `json:"enable_payloads,inline"`           // enable_payloads.*
+	SystemProbe             SystemProbe              `json:"system_probe,inline"`              // system_probe_config.*
+	Listeners               []Listeners              `json:"listeners,inline"`                 // listeners
+	ConfigProviders         []ConfigurationProviders `json:"config_providers,inline"`          // config_providers
 
-	VerboseReport                    bool              `json:"verboseReport" default:"true"`                                                                                   // collects run in verbose mode, e.g. report both with cpu.used(sys+user), cpu.system & cpu.user
-	AuthTokenFilePath                string            `json:"authTokenFilePath"`                                                                                              // auth_token_file_path
-	ApiKey                           string            `json:"apiKey"`                                                                                                         // api_key
-	Hostname                         string            `json:"hostname" flag:"hostname" description:"custom host name"`                                                        //
-	HostnameFQDN                     bool              `json:"hostnameFQDN"`                                                                                                   // hostname_fqdn
-	HostnameForceConfigAsCanonical   bool              `json:"hostnameForceConfigAsCanonical"`                                                                                 // hostname_force_config_as_canonical
-	BindHost                         string            `json:"bindHost"`                                                                                                       // bind_host
-	IPCAddress                       string            `json:"ipcAddress" default:"localhost"`                                                                                 // ipc_address
-	CmdPort                          int               `json:"cmdPort" default:"5001"`                                                                                         // cmd_port
-	PidfilePath                      string            `json:"pidfilePath"`                                                                                                    //
-	MaxProcs                         string            `json:"maxProcs" default:"4"`                                                                                           //
-	CoreDump                         bool              `json:"coreDump" default:"true"`                                                                                        // go_core_dump
-	HealthPort                       int               `json:"healthPort" default:"0"`                                                                                         //
-	SkipSSLValidation                bool              `json:"skipSSLValidation"`                                                                                              // skip_ssl_validation
-	ForceTLS12                       bool              `json:"forceTLS12"`                                                                                                     // force_tls_12
-	ECSMetadataTimeout               time.Duration     `json:"-"`                                                                                                              // ecs_metadata_timeout
-	ECSMetadataTimeout_              int               `json:"ecsMetadataTimeout" flag:"ecs-metadata-timeout" default:"500" description:"ecs metadata timeout (Millisecond)"`  // ecs_metadata_timeout
-	MetadataEndpointsMaxHostnameSize int               `json:"metadataEndpointsMaxHostnameSize" default:"255"`                                                                 // metadata_endpoints_max_hostname_size
-	CloudProviderMetadata            []string          `json:"cloudProviderMetadata"`                                                                                          //cloud_provider_metadata
-	GCEMetadataTimeout               time.Duration     `json:"-"`                                                                                                              // gce_metadata_timeout
-	GCEMetadataTimeout_              int               `json:"gceMetadataTimeout" flag:"gce-metadata-timeout" default:"1000" description:"gce metadata timeout (Millisecond)"` // gce_metadata_timeout
-	ClusterName                      string            `json:"clusterName"`                                                                                                    // cluster_name
-	RunPath                          string            `json:"runPath"`                                                                                                        // run_path
-	CLCRunnerEnabled                 bool              `json:"clcRunnerEnabled"`                                                                                               //
-	CLCRunnerHost                    string            `json:"clcRunnerHost"`                                                                                                  // clc_runner_host
-	ExtraConfigProviders             []string          `json:"extraConfigProviders"`                                                                                           // extra_config_providers
-	CloudFoundry                     bool              `json:"cloudFoundry"`                                                                                                   // cloud_foundry
-	BoshID                           string            `json:"boshID"`                                                                                                         // bosh_id
-	CfOSHostnameAliasing             bool              `json:"cfOSHostnameAliasing"`                                                                                           // cf_os_hostname_aliasing
-	CollectGCETags                   bool              `json:"collectGCETags" default:"true"`                                                                                  // collect_gce_tags
-	CollectEC2Tags                   bool              `json:"collectEC2Tags"`                                                                                                 // collect_ec2_tags
-	DisableClusterNameTagKey         bool              `json:"DisableClusterNameTagKey"`                                                                                       // disable_cluster_name_tag_key
-	Env                              string            `json:"env"`                                                                                                            // env
-	Tags                             []string          `json:"tags"`                                                                                                           // tags
-	TagValueSplitSeparator           map[string]string `json:"tagValueSplitSeparator"`                                                                                         // tag_value_split_separator
-	NoProxyNonexactMatch             bool              `json:"noProxyNonexactMatch"`                                                                                           // no_proxy_nonexact_match
-	EnableGohai                      bool              `json:"enableGohai" default:"true"`                                                                                     // enable_gohai
-	ChecksTagCardinality             string            `json:"checksTagCardinality" default:"low"`                                                                             // checks_tag_cardinality
-	HistogramAggregates              []string          `json:"histogramAggregates" default:"max median avg count"`                                                             // histogram_aggregates
-	HistogramPercentiles             []string          `json:"histogramPercentiles" default:"0.95"`                                                                            // histogram_percentiles
-	AcLoadTimeout                    time.Duration     `json:"-"`                                                                                                              // ac_load_timeout
-	AcLoadTimeout_                   int               `json:"acLoadTimeout" flag:"ac-load-timeout" default:"30000" description:"ac load timeout(Millisecond)"`                // ac_load_timeout
-	AdConfigPollInterval             time.Duration     `json:"-"`                                                                                                              // ad_config_poll_interval
-	AdConfigPollInterval_            int               `json:"adConfigPollInterval" flag:"ac-config-poll-interval" default:"10" description:"ac config poll interval(Second)"` // ad_config_poll_interval
-	AggregatorBufferSize             int               `json:"aggregatorBufferSize" default:"100"`                                                                             // aggregator_buffer_size
-	IotHost                          bool              `json:"iotHost"`                                                                                                        // iot_host
-	HerokuDyno                       bool              `json:"herokuDyno"`                                                                                                     // heroku_dyno
-	BasicTelemetryAddContainerTags   bool              `json:"basicTelemetryAddContainerTags"`                                                                                 // basic_telemetry_add_container_tags
-	LogPayloads                      bool              `json:"logPayloads"`                                                                                                    // log_payloads
-	AggregatorStopTimeout            time.Duration     `json:"-"`                                                                                                              // aggregator_stop_timeout
-	AggregatorStopTimeout_           int               `json:"aggregatorStopTimeout" flag:"aggregator-stop-timeout" default:"2" description:"aggregator stop timeout(Second)"` // aggregator_stop_timeout
-	AutoconfTemplateDir              string            `json:"autoconfTemplateDir"`                                                                                            // autoconf_template_dir
-	AutoconfTemplateUrlTimeout       bool              `json:"autoconfTemplateUrlTimeout"`                                                                                     // autoconf_template_url_timeout
-	CheckRunners                     int               `json:"checkRunners" default:"4"`                                                                                       // check_runners
-	LoggingFrequency                 int64             `json:"loggingFrequency" default:"500"`                                                                                 // logging_frequency
-	GUIPort                          bool              `json:"guiPort"`                                                                                                        // GUI_port
-	XAwsEc2MetadataTokenTtlSeconds   bool              `json:"xAwsEc2MetadataTokenTtlSeconds"`                                                                                 // X-aws-ec2-metadata-token-ttl-seconds
-	AcExclude                        bool              `json:"acExclude"`                                                                                                      // ac_exclude
-	AcInclude                        bool              `json:"acInclude"`                                                                                                      // ac_include
-	AdditionalChecksd                string            `json:"additionalChecksd"`                                                                                              // additional_checksd
-	AllowArbitraryTags               bool              `json:"allowArbitraryTags"`                                                                                             // allow_arbitrary_tags
-	AppKey                           bool              `json:"appKey"`                                                                                                         // app_key
-	CCoreDump                        bool              `json:"cCoreDump"`                                                                                                      // c_core_dump
-	CStacktraceCollection            bool              `json:"cStacktraceCollection"`                                                                                          // c_stacktrace_collection
+	VerboseReport                    bool              `json:"verbose_report" default:"true"`                                                                                     // collects run in verbose mode, e.g. report both with cpu.used(sys+user), cpu.system & cpu.user
+	AuthTokenFilePath                string            `json:"auth_token_file_path"`                                                                                              // auth_token_file_path
+	ApiKey                           string            `json:"api_key"`                                                                                                           // api_key
+	Hostname                         string            `json:"hostname" flag:"hostname" description:"custom host name"`                                                           //
+	HostnameFQDN                     bool              `json:"hostname_fqdn"`                                                                                                     // hostname_fqdn
+	HostnameForceConfigAsCanonical   bool              `json:"hostname_force_config_as_canonical"`                                                                                // hostname_force_config_as_canonical
+	BindHost                         string            `json:"bind_host"`                                                                                                         // bind_host
+	IPCAddress                       string            `json:"ipc_address" default:"localhost"`                                                                                   // ipc_address
+	CmdPort                          int               `json:"cmd_port" default:"5001"`                                                                                           // cmd_port
+	PidfilePath                      string            `json:"pidfile_path"`                                                                                                      //
+	MaxProcs                         string            `json:"max_procs" default:"4"`                                                                                             //
+	CoreDump                         bool              `json:"core_dump" default:"true"`                                                                                          // go_core_dump
+	HealthPort                       int               `json:"health_port" default:"0"`                                                                                           //
+	SkipSSLValidation                bool              `json:"skip_ssl_validation"`                                                                                               // skip_ssl_validation
+	ForceTLS12                       bool              `json:"force_tls_12"`                                                                                                      // force_tls_12
+	ECSMetadataTimeout               time.Duration     `json:"-"`                                                                                                                 // ecs_metadata_timeout
+	ECSMetadataTimeout_              int               `json:"ecs_metadata_timeout" flag:"ecs-metadata-timeout" default:"500" description:"ecs metadata timeout (Millisecond)"`   // ecs_metadata_timeout
+	MetadataEndpointsMaxHostnameSize int               `json:"metadata_endpoints_max_hostname_size" default:"255"`                                                                // metadata_endpoints_max_hostname_size
+	CloudProviderMetadata            []string          `json:"cloud_provider_metadata"`                                                                                           //cloud_provider_metadata
+	GCEMetadataTimeout               time.Duration     `json:"-"`                                                                                                                 // gce_metadata_timeout
+	GCEMetadataTimeout_              int               `json:"gce_metadata_timeout" flag:"gce-metadata-timeout" default:"1000" description:"gce metadata timeout (Millisecond)"`  // gce_metadata_timeout
+	ClusterName                      string            `json:"cluster_name"`                                                                                                      // cluster_name
+	RunPath                          string            `json:"run_path"`                                                                                                          // run_path
+	CLCRunnerEnabled                 bool              `json:"clc_runner_enabled"`                                                                                                //
+	CLCRunnerHost                    string            `json:"clc_runner_host"`                                                                                                   // clc_runner_host
+	ExtraConfigProviders             []string          `json:"extra_config_providers"`                                                                                            // extra_config_providers
+	CloudFoundry                     bool              `json:"cloud_foundry"`                                                                                                     // cloud_foundry
+	BoshID                           string            `json:"bosh_i_d"`                                                                                                          // bosh_id
+	CfOSHostnameAliasing             bool              `json:"cf_os_hostname_aliasing"`                                                                                           // cf_os_hostname_aliasing
+	CollectGCETags                   bool              `json:"collect_gce_tags" default:"true"`                                                                                   // collect_gce_tags
+	CollectEC2Tags                   bool              `json:"collect_ec2_tags"`                                                                                                  // collect_ec2_tags
+	DisableClusterNameTagKey         bool              `json:"disable_cluster_name_tag_key"`                                                                                      // disable_cluster_name_tag_key
+	Env                              string            `json:"env"`                                                                                                               // env
+	Tags                             []string          `json:"tags"`                                                                                                              // tags
+	TagValueSplitSeparator           map[string]string `json:"tag_value_split_separator"`                                                                                         // tag_value_split_separator
+	NoProxyNonexactMatch             bool              `json:"no_proxy_nonexact_match"`                                                                                           // no_proxy_nonexact_match
+	EnableGohai                      bool              `json:"enable_gohai" default:"true"`                                                                                       // enable_gohai
+	ChecksTagCardinality             string            `json:"checks_tag_cardinality" default:"low"`                                                                              // checks_tag_cardinality
+	HistogramAggregates              []string          `json:"histogram_aggregates" default:"max median avg count"`                                                               // histogram_aggregates
+	HistogramPercentiles             []string          `json:"histogram_percentiles" default:"0.95"`                                                                              // histogram_percentiles
+	AcLoadTimeout                    time.Duration     `json:"-"`                                                                                                                 // ac_load_timeout
+	AcLoadTimeout_                   int               `json:"ac_load_timeout" flag:"ac-load-timeout" default:"30000" description:"ac load timeout(Millisecond)"`                 // ac_load_timeout
+	AdConfigPollInterval             time.Duration     `json:"-"`                                                                                                                 // ad_config_poll_interval
+	AdConfigPollInterval_            int               `json:"ad_config_poll_interval" flag:"ac-config-poll-interval" default:"10" description:"ac config poll interval(Second)"` // ad_config_poll_interval
+	AggregatorBufferSize             int               `json:"aggregator_buffer_size" default:"100"`                                                                              // aggregator_buffer_size
+	IotHost                          bool              `json:"iot_host"`                                                                                                          // iot_host
+	HerokuDyno                       bool              `json:"heroku_dyno"`                                                                                                       // heroku_dyno
+	BasicTelemetryAddContainerTags   bool              `json:"basic_telemetry_add_container_tags"`                                                                                // basic_telemetry_add_container_tags
+	LogPayloads                      bool              `json:"log_payloads"`                                                                                                      // log_payloads
+	AggregatorStopTimeout            time.Duration     `json:"-"`                                                                                                                 // aggregator_stop_timeout
+	AggregatorStopTimeout_           int               `json:"aggregator_stop_timeout" flag:"aggregator-stop-timeout" default:"2" description:"aggregator stop timeout(Second)"`  // aggregator_stop_timeout
+	AutoconfTemplateDir              string            `json:"autoconf_template_dir"`                                                                                             // autoconf_template_dir
+	AutoconfTemplateUrlTimeout       bool              `json:"autoconf_template_url_timeout"`                                                                                     // autoconf_template_url_timeout
+	CheckRunners                     int               `json:"check_runners" default:"4"`                                                                                         // check_runners
+	LoggingFrequency                 int64             `json:"logging_frequency" default:"500"`                                                                                   // logging_frequency
+	GUIPort                          bool              `json:"gui_port"`                                                                                                          // GUI_port
+	XAwsEc2MetadataTokenTtlSeconds   bool              `json:"x_aws_ec2_metadata_token_ttl_seconds"`                                                                              // X-aws-ec2-metadata-token-ttl-seconds
+	AcExclude                        bool              `json:"ac_exclude"`                                                                                                        // ac_exclude
+	AcInclude                        bool              `json:"ac_include"`                                                                                                        // ac_include
+	AdditionalChecksd                string            `json:"additional_checksd"`                                                                                                // additional_checksd
+	AllowArbitraryTags               bool              `json:"allow_arbitrary_tags"`                                                                                              // allow_arbitrary_tags
+	AppKey                           bool              `json:"app_key"`                                                                                                           // app_key
+	CCoreDump                        bool              `json:"c_core_dump"`                                                                                                       // c_core_dump
+	CStacktraceCollection            bool              `json:"c_stacktrace_collection"`                                                                                           // c_stacktrace_collection
 	CacheSyncTimeout                 time.Duration     `json:"-"`
-	CacheSyncTimeout_                int               `json:"cacheSyncTimeout" flag:"cache-sync-timeout" default:"2" description:"cache sync timeout(Second)"`                               // cache_sync_timeout
-	ClcRunnerId                      string            `json:"clcRunnerId"`                                                                                                                   // clc_runner_id
-	CmdHost                          string            `json:"cmdHost" default:"localhost"`                                                                                                   // cmd_host
-	CollectKubernetesEvents          bool              `json:"collectKubernetesEvents"`                                                                                                       // collect_kubernetes_events
-	ComplianceConfigDir              string            `json:"complianceConfigDir" default:"/opt/n9e/agentd/compliance.d"`                                                                    // compliance_config.dir
-	ComplianceConfigEnabled          bool              `json:"complianceConfigEnabled"`                                                                                                       // compliance_config.enabled
-	ConfdPath                        string            `json:"confdPath"`                                                                                                                     // confd_path
-	ContainerCgroupPrefix            string            `json:"containerCgroupPrefix"`                                                                                                         // container_cgroup_prefix
-	ContainerCgroupRoot              string            `json:"containerCgroupRoot"`                                                                                                           // container_cgroup_root
-	ContainerProcRoot                string            `json:"containerProcRoot"`                                                                                                             // container_proc_root
-	ContainerdNamespace              string            `json:"containerdNamespace" default:"k8s.io"`                                                                                          // containerd_namespace
-	CriConnectionTimeout             time.Duration     `json:"-"`                                                                                                                             // cri_connection_timeout
-	CriConnectionTimeout_            int               `json:"criConnectionTimeout" flag:"cri-connection-timeout" default:"1" description:"cri connection timeout(Second)"`                   // cri_connection_timeout
-	CriQueryTimeout                  time.Duration     `json:"-"`                                                                                                                             // cri_query_timeout
-	CriQueryTimeout_                 int               `json:"criQueryTimeout" flag:"cri-query-timeout" default:"5" description:"cri query timeout(Second)"`                                  // cri_query_timeout
-	CriSocketPath                    bool              `json:"criSocketPath"`                                                                                                                 // cri_socket_path
-	DatadogCluster                   bool              `json:"datadogCluster"`                                                                                                                // datadog-cluster
-	DisableFileLogging               bool              `json:"disableFileLogging"`                                                                                                            // disable_file_logging
-	DockerLabelsAsTags               bool              `json:"dockerLabelsAsTags"`                                                                                                            // docker_labels_as_tags
-	DockerQueryTimeout               time.Duration     `json:"-"`                                                                                                                             // docker_query_timeout
-	DockerQueryTimeout_              int               `json:"dockerQueryTimeout" flag:"docker-query-timeout" default:"5" description:"docker query timeout(Second)"`                         // docker_query_timeout
-	EC2PreferImdsv2                  bool              `json:"ec2PreferImdsv2"`                                                                                                               // ec2_prefer_imdsv2
-	EC2MetadataTimeout               time.Duration     `json:"-"`                                                                                                                             // ec2_metadata_timeout
-	EC2MetadataTimeout_              int               `json:"ec2MetadataTimeout" falg:"ec2-metadata-timeout" default:"300" description:"ec2 metadata timeout(Millisecond)"`                  // ec2_metadata_timeout
-	EC2MetadataTokenLifetime         time.Duration     `json:"-"`                                                                                                                             // ec2_metadata_token_lifetime
-	EC2MetadataTokenLifetime_        int               `json:"ec2MetadataTokenLifetime" falg:"ec2-metadata-token-lifetime" default:"21600" description:"ec2 metadata token lifetime(Second)"` // ec2_metadata_token_lifetime
-	EC2UseWindowsPrefixDetection     bool              `json:"ec2UseWindowsPrefixDetection"`                                                                                                  // ec2_use_windows_prefix_detection
-	EcsAgentContainerName            string            `json:"ecsAgentContainerName" default:"ecs-agent"`                                                                                     // ecs_agent_container_name
-	EcsAgentUrl                      bool              `json:"ecsAgentUrl"`                                                                                                                   // ecs_agent_url
-	EcsCollectResourceTagsEc2        bool              `json:"ecsCollectResourceTagsEc2"`                                                                                                     // ecs_collect_resource_tags_ec2
-	EKSFargate                       bool              `json:"eksFargate"`                                                                                                                    // eks_fargate
-	EnableMetadataCollection         bool              `json:"enableMetadataCollection" default:"true"`                                                                                       // enable_metadata_collection
+	CacheSyncTimeout_                int               `json:"cache_sync_timeout" flag:"cache-sync-timeout" default:"2" description:"cache sync timeout(Second)"`                                // cache_sync_timeout
+	ClcRunnerId                      string            `json:"clc_runner_id"`                                                                                                                    // clc_runner_id
+	CmdHost                          string            `json:"cmd_host" default:"localhost"`                                                                                                     // cmd_host
+	CollectKubernetesEvents          bool              `json:"collect_kubernetes_events"`                                                                                                        // collect_kubernetes_events
+	ComplianceConfigDir              string            `json:"compliance_config_dir" default:"/opt/n9e/agentd/compliance.d"`                                                                     // compliance_config.dir
+	ComplianceConfigEnabled          bool              `json:"compliance_config_enabled"`                                                                                                        // compliance_config.enabled
+	ConfdPath                        string            `json:"confd_path"`                                                                                                                       // confd_path
+	ContainerCgroupPrefix            string            `json:"container_cgroup_prefix"`                                                                                                          // container_cgroup_prefix
+	ContainerCgroupRoot              string            `json:"container_cgroup_root"`                                                                                                            // container_cgroup_root
+	ContainerProcRoot                string            `json:"container_proc_root"`                                                                                                              // container_proc_root
+	ContainerdNamespace              string            `json:"containerd_namespace" default:"k8s.io"`                                                                                            // containerd_namespace
+	CriConnectionTimeout             time.Duration     `json:"-"`                                                                                                                                // cri_connection_timeout
+	CriConnectionTimeout_            int               `json:"cri_connection_timeout" flag:"cri-connection-timeout" default:"1" description:"cri connection timeout(Second)"`                    // cri_connection_timeout
+	CriQueryTimeout                  time.Duration     `json:"-"`                                                                                                                                // cri_query_timeout
+	CriQueryTimeout_                 int               `json:"cri_query_timeout" flag:"cri-query-timeout" default:"5" description:"cri query timeout(Second)"`                                   // cri_query_timeout
+	CriSocketPath                    bool              `json:"cri_socket_path"`                                                                                                                  // cri_socket_path
+	DatadogCluster                   bool              `json:"datadog_cluster"`                                                                                                                  // datadog-cluster
+	DisableFileLogging               bool              `json:"disable_file_logging"`                                                                                                             // disable_file_logging
+	DockerLabelsAsTags               bool              `json:"docker_labels_as_tags"`                                                                                                            // docker_labels_as_tags
+	DockerQueryTimeout               time.Duration     `json:"-"`                                                                                                                                // docker_query_timeout
+	DockerQueryTimeout_              int               `json:"docker_query_timeout" flag:"docker-query-timeout" default:"5" description:"docker query timeout(Second)"`                          // docker_query_timeout
+	EC2PreferImdsv2                  bool              `json:"ec2_prefer_imdsv2"`                                                                                                                // ec2_prefer_imdsv2
+	EC2MetadataTimeout               time.Duration     `json:"-"`                                                                                                                                // ec2_metadata_timeout
+	EC2MetadataTimeout_              int               `json:"ec2_metadata_timeout" falg:"ec2-metadata-timeout" default:"300" description:"ec2 metadata timeout(Millisecond)"`                   // ec2_metadata_timeout
+	EC2MetadataTokenLifetime         time.Duration     `json:"-"`                                                                                                                                // ec2_metadata_token_lifetime
+	EC2MetadataTokenLifetime_        int               `json:"ec2_metadata_token_lifetime" falg:"ec2-metadata-token-lifetime" default:"21600" description:"ec2 metadata token lifetime(Second)"` // ec2_metadata_token_lifetime
+	EC2UseWindowsPrefixDetection     bool              `json:"ec2_use_windows_prefix_detection"`                                                                                                 // ec2_use_windows_prefix_detection
+	EcsAgentContainerName            string            `json:"ecs_agent_container_name" default:"ecs-agent"`                                                                                     // ecs_agent_container_name
+	EcsAgentUrl                      bool              `json:"ecs_agent_url"`                                                                                                                    // ecs_agent_url
+	EcsCollectResourceTagsEc2        bool              `json:"ecs_collect_resource_tags_ec2"`                                                                                                    // ecs_collect_resource_tags_ec2
+	EKSFargate                       bool              `json:"eks_fargate"`                                                                                                                      // eks_fargate
+	EnableMetadataCollection         bool              `json:"enable_metadata_collection" default:"true"`                                                                                        // enable_metadata_collection
 
-	ExcludeGCETags []string `json:"excludeGCETags" default:"kube-env,kubelet-config,containerd-configure-sh,startup-script,shutdown-script,configure-sh,sshKeys,ssh-keys,user-data,cli-cert,ipsec-cert,ssl-cert,google-container-manifest,boshSettings,windows-startup-script-ps1,common-psm1,k8s-node-setup-psm1,serial-port-logging-enable,enable-oslogin,disable-address-manager,disable-legacy-endpoints,windows-keys,kubeconfig"` // exclude_gce_tags
+	ExcludeGCETags []string `json:"exclude_gce_tags" default:"kube-env,kubelet-config,containerd-configure-sh,startup-script,shutdown-script,configure-sh,sshKeys,ssh-keys,user-data,cli-cert,ipsec-cert,ssl-cert,google-container-manifest,boshSettings,windows-startup-script-ps1,common-psm1,k8s-node-setup-psm1,serial-port-logging-enable,enable-oslogin,disable-address-manager,disable-legacy-endpoints,windows-keys,kubeconfig"` // exclude_gce_tags
 
-	ExcludePauseContainer                bool              `json:"excludePauseContainer"`                         // exclude_pause_container
-	ExternalMetricsAggregator            string            `json:"externalMetricsAggregator" default:"avg"`       // external_metrics.aggregator
-	ExtraListeners                       []string          `json:"extraListeners"`                                // extra_listeners
-	ForceTls12                           bool              `json:"forceTls12"`                                    // force_tls_12
-	FullSketches                         bool              `json:"fullSketches"`                                  // full-sketches
-	GceSendProjectIdTag                  bool              `json:"gceSendProjectIdTag"`                           // gce_send_project_id_tag
-	GoCoreDump                           bool              `json:"goCoreDump"`                                    // go_core_dump
-	HpaConfigmapName                     string            `json:"hpaConfigmapName" default:"n9e-custom-metrics"` // hpa_configmap_name
+	ExcludePauseContainer                bool              `json:"exclude_pause_container"`                         // exclude_pause_container
+	ExternalMetricsAggregator            string            `json:"external_metrics_aggregator" default:"avg"`       // external_metrics.aggregator
+	ExtraListeners                       []string          `json:"extra_listeners"`                                 // extra_listeners
+	ForceTls12                           bool              `json:"force_tls_12"`                                    // force_tls_12
+	FullSketches                         bool              `json:"full_sketches"`                                   // full-sketches
+	GceSendProjectIdTag                  bool              `json:"gce_send_project_id_tag"`                         // gce_send_project_id_tag
+	GoCoreDump                           bool              `json:"go_core_dump"`                                    // go_core_dump
+	HpaConfigmapName                     string            `json:"hpa_configmap_name" default:"n9e-custom-metrics"` // hpa_configmap_name
 	HpaWatcherGcPeriod                   time.Duration     `json:"-"`
-	HpaWatcherGcPeriod_                  int               `json:"hpaWatcherGcPeriod" flag:"hpa-watcher-gc-period" default:"300" description:"hpaWatcherGcPeriod(Second)"` // hpa_watcher_gc_period
-	IgnoreAutoconf                       []string          `json:"ignoreAutoconf"`                                                                                         // ignore_autoconf
-	InventoriesEnabled                   bool              `json:"inventoriesEnabled" default:"true"`                                                                      // inventories_enabled
+	HpaWatcherGcPeriod_                  int               `json:"hpa_watcher_gc_period" flag:"hpa-watcher-gc-period" default:"300" description:"hpa_watcher_gcPeriod(Second)"` // hpa_watcher_gc_period
+	IgnoreAutoconf                       []string          `json:"ignore_autoconf"`                                                                                             // ignore_autoconf
+	InventoriesEnabled                   bool              `json:"inventories_enabled" default:"true"`                                                                          // inventories_enabled
 	InventoriesMaxInterval               time.Duration     `json:"-"`
-	InventoriesMaxInterval_              int               `json:"inventoriesMaxInterval" flag:"inventories-max-interval" default:"600" description:"inventoriesMaxInterval(Second)"` // inventories_max_interval
+	InventoriesMaxInterval_              int               `json:"inventories_max_interval" flag:"inventories-max-interval" default:"600" description:"inventoriesMaxInterval(Second)"` // inventories_max_interval
 	InventoriesMinInterval               time.Duration     `json:"-"`
-	InventoriesMinInterval_              int               `json:"inventoriesMinInterval" flag:"inventories-min-interval" default:"300" description:"inventoriesMinInterval(Second)"` // inventories_min_interval
-	KubeResourcesNamespace               bool              `json:"kubeResourcesNamespace"`                                                                                            // kube_resources_namespace
-	KubeletAuthTokenPath                 string            `json:"kubeletAuthTokenPath"`                                                                                              // kubelet_auth_token_path
+	InventoriesMinInterval_              int               `json:"inventories_min_interval" flag:"inventories-min-interval" default:"300" description:"inventoriesMinInterval(Second)"` // inventories_min_interval
+	KubeResourcesNamespace               bool              `json:"kube_resources_namespace"`                                                                                            // kube_resources_namespace
+	KubeletAuthTokenPath                 string            `json:"kubelet_auth_token_path"`                                                                                             // kubelet_auth_token_path
 	KubeletCachePodsDuration             time.Duration     `json:"-"`
-	KubeletCachePodsDuration_            int               `json:"kubeletCachePodsDuration" flag:"kubelet-cache-pods-duration" default:"5" description:"kubeletCachePodsDuration(Second)"` // kubelet_cache_pods_duration
-	KubeletClientCa                      string            `json:"kubeletClientCa"`                                                                                                        // kubelet_client_ca
-	KubeletClientCrt                     string            `json:"kubeletClientCrt"`                                                                                                       // kubelet_client_crt
-	KubeletClientKey                     string            `json:"kubeletClientKey"`                                                                                                       // kubelet_client_key
+	KubeletCachePodsDuration_            int               `json:"kubelet_cache_pods_duration" flag:"kubelet-cache-pods-duration" default:"5" description:"kubeletCachePodsDuration(Second)"` // kubelet_cache_pods_duration
+	KubeletClientCa                      string            `json:"kubelet_client_ca"`                                                                                                         // kubelet_client_ca
+	KubeletClientCrt                     string            `json:"kubelet_client_crt"`                                                                                                        // kubelet_client_crt
+	KubeletClientKey                     string            `json:"kubelet_client_key"`                                                                                                        // kubelet_client_key
 	KubeletListenerPollingInterval       time.Duration     `json:"-"`
-	KubeletListenerPollingInterval_      int               `json:"kubeletListenerPollingInterval" flag:"kubelet-listener-polling-interval" default:"5" description:"kubeletListenerPollingInterval(Second)"` // kubelet_listener_polling_interval
-	KubeletTlsVerify                     bool              `json:"kubeletTlsVerify" default:"true"`                                                                                                          // kubelet_tls_verify
+	KubeletListenerPollingInterval_      int               `json:"kubelet_listener_polling_interval" flag:"kubelet-listener-polling-interval" default:"5" description:"kubeletListenerPollingInterval(Second)"` // kubelet_listener_polling_interval
+	KubeletTlsVerify                     bool              `json:"kubelet_tls_verify" default:"true"`                                                                                                           // kubelet_tls_verify
 	KubeletWaitOnMissingContainer        time.Duration     `json:"-"`
-	KubeletWaitOnMissingContainer_       int               `json:"kubeletWaitOnMissingContainer" flag:"kubelet-wait-on-missing-container" description:"kubeletWaitOnMissingContainer(Second)"` // kubelet_wait_on_missing_container
+	KubeletWaitOnMissingContainer_       int               `json:"kubelet_wait_on_missing_container" flag:"kubelet-wait-on-missing-container" description:"kubeletWaitOnMissingContainer(Second)"` // kubelet_wait_on_missing_container
 	KubernetesApiserverClientTimeout     time.Duration     `json:"-"`
-	KubernetesApiserverClientTimeout_    int               `json:"kubernetesApiserverClientTimeout" flag:"kubernetes-apiserver-client-timeout" default:"10" description:"kubernetesApiserverClientTimeout(Seconde)"` // kubernetes_apiserver_client_timeout
-	KubernetesApiserverUseProtobuf       bool              `json:"kubernetesApiserverUseProtobuf"`                                                                                                                   // kubernetes_apiserver_use_protobuf
-	KubernetesCollectMetadataTags        bool              `json:"kubernetesCollectMetadataTags" default:"true"`                                                                                                     // kubernetes_collect_metadata_tags
-	KubernetesCollectServiceTags         bool              `json:"kubernetesCollectServiceTags"`                                                                                                                     // kubernetes_collect_service_tags
-	KubernetesHttpKubeletPort            int               `json:"kubernetesHttpKubeletPort" default:"10255"`                                                                                                        // kubernetes_http_kubelet_port
-	KubernetesHttpsKubeletPort           int               `json:"kubernetesHttpsKubeletPort" default:"10250"`                                                                                                       // kubernetes_https_kubelet_port
+	KubernetesApiserverClientTimeout_    int               `json:"kubernetes_apiserver_client_timeout" flag:"kubernetes-apiserver-client-timeout" default:"10" description:"kubernetes_apiserverClientTimeout(Seconde)"` // kubernetes_apiserver_client_timeout
+	KubernetesApiserverUseProtobuf       bool              `json:"kubernetes_apiserver_use_protobuf"`                                                                                                                    // kubernetes_apiserver_use_protobuf
+	KubernetesCollectMetadataTags        bool              `json:"kubernetes_collect_metadata_tags" default:"true"`                                                                                                      // kubernetes_collect_metadata_tags
+	KubernetesCollectServiceTags         bool              `json:"kubernetes_collect_service_tags"`                                                                                                                      // kubernetes_collect_service_tags
+	KubernetesHttpKubeletPort            int               `json:"kubernetes_http_kubelet_port" default:"10255"`                                                                                                         // kubernetes_http_kubelet_port
+	KubernetesHttpsKubeletPort           int               `json:"kubernetes_https_kubelet_port" default:"10250"`                                                                                                        // kubernetes_https_kubelet_port
 	KubernetesInformersResyncPeriod      time.Duration     `json:"-"`
-	KubernetesInformersResyncPeriod_     int               `json:"kubernetesInformersResyncPeriod" flag:"kubernetes-informers-resync-period" default:"300" description:"kubernetesInformersResyncPeriod(Second)"` // kubernetes_informers_resync_period
-	KubernetesKubeconfigPath             bool              `json:"kubernetesKubeconfigPath"`                                                                                                                      // kubernetes_kubeconfig_path
-	KubernetesKubeletHost                string            `json:"kubernetesKubeletHost"`                                                                                                                         // kubernetes_kubelet_host
-	KubernetesKubeletNodename            string            `json:"kubernetesKubeletNodename"`                                                                                                                     // kubernetes_kubelet_nodename
-	KubernetesMapServicesOnIp            bool              `json:"kubernetesMapServicesOnIp"`                                                                                                                     // kubernetes_map_services_on_ip
+	KubernetesInformersResyncPeriod_     int               `json:"kubernetes_informers_resync_period" flag:"kubernetes-informers-resync-period" default:"300" description:"kubernetesInformersResyncPeriod(Second)"` // kubernetes_informers_resync_period
+	KubernetesKubeconfigPath             bool              `json:"kubernetes_kubeconfig_path"`                                                                                                                       // kubernetes_kubeconfig_path
+	KubernetesKubeletHost                string            `json:"kubernetes_kubelet_host"`                                                                                                                          // kubernetes_kubelet_host
+	KubernetesKubeletNodename            string            `json:"kubernetes_kubelet_nodename"`                                                                                                                      // kubernetes_kubelet_nodename
+	KubernetesMapServicesOnIp            bool              `json:"kubernetes_map_services_on_ip"`                                                                                                                    // kubernetes_map_services_on_ip
 	KubernetesMetadataTagUpdateFreq      time.Duration     `json:"-"`
-	KubernetesMetadataTagUpdateFreq_     int               `json:"kubernetesMetadataTagUpdateFreq" flag:"kubernetes-metadata-tag-update-freq" default:"60" description:"kubernetesMetadataTagUpdateFreq(Second)"` // kubernetes_metadata_tag_update_freq
-	KubernetesNamespaceLabelsAsTags      bool              `json:"kubernetesNamespaceLabelsAsTags"`                                                                                                               // kubernetes_namespace_labels_as_tags
-	KubernetesNodeLabelsAsTags           bool              `json:"kubernetesNodeLabelsAsTags"`                                                                                                                    // kubernetes_node_labels_as_tags
-	KubernetesPodAnnotationsAsTags       map[string]string `json:"kubernetesPodAnnotationsAsTags"`                                                                                                                // kubernetes_pod_annotations_as_tags
+	KubernetesMetadataTagUpdateFreq_     int               `json:"kubernetes_metadata_tag_update_freq" flag:"kubernetes-metadata-tag-update-freq" default:"60" description:"kubernetesMetadataTagUpdateFreq(Second)"` // kubernetes_metadata_tag_update_freq
+	KubernetesNamespaceLabelsAsTags      bool              `json:"kubernetes_namespace_labels_as_tags"`                                                                                                               // kubernetes_namespace_labels_as_tags
+	KubernetesNodeLabelsAsTags           bool              `json:"kubernetes_node_labels_as_tags"`                                                                                                                    // kubernetes_node_labels_as_tags
+	KubernetesPodAnnotationsAsTags       map[string]string `json:"kubernetes_pod_annotations_as_tags"`                                                                                                                // kubernetes_pod_annotations_as_tags
 	KubernetesPodExpirationDuration      time.Duration     `json:"-"`
-	KubernetesPodExpirationDuration_     int               `json:"kubernetesPodExpirationDuration" flag:"kubernetes-pod-expiration-duration" default:"900" description:"kubernetesPodExpirationDuration(Second)"` // kubernetes_pod_expiration_duration
-	KubernetesPodLabelsAsTags            map[string]string `json:"kubernetesPodLabelsAsTags"`                                                                                                                     // kubernetes_pod_labels_as_tags
-	KubernetesServiceTagUpdateFreq       map[string]string `json:"kubernetesServiceTagUpdateFreq"`                                                                                                                // kubernetes_service_tag_update_freq
-	LeaderElection                       bool              `json:"leaderElection"`                                                                                                                                // leader_election
+	KubernetesPodExpirationDuration_     int               `json:"kubernetes_pod_expiration_duration" flag:"kubernetes-pod-expiration-duration" default:"900" description:"kubernetes_podExpirationDuration(Second)"` // kubernetes_pod_expiration_duration
+	KubernetesPodLabelsAsTags            map[string]string `json:"kubernetes_pod_labels_as_tags"`                                                                                                                     // kubernetes_pod_labels_as_tags
+	KubernetesServiceTagUpdateFreq       map[string]string `json:"kubernetes_service_tag_update_freq"`                                                                                                                // kubernetes_service_tag_update_freq
+	LeaderElection                       bool              `json:"leader_election"`                                                                                                                                   // leader_election
 	LeaderLeaseDuration                  time.Duration     `json:"-"`
-	LeaderLeaseDuration_                 int               `json:"leaderLeaseDuration" flag:"leader-lease-duration" default:"60" description:"leader lease duration(second)"` // leader_lease_duration
-	LogEnabled                           bool              `json:"logEnabled"`                                                                                                // log_enabled
-	LogFile                              string            `json:"logFile"`                                                                                                   // log_file
-	LogFormatJson                        bool              `json:"logFormatJson"`                                                                                             // log_format_json
-	LogFormatRfc3339                     bool              `json:"logFormatRfc3339"`                                                                                          // log_format_rfc3339
-	LogLevel                             string            `json:"logLevel"`                                                                                                  // log_level
-	LogToConsole                         bool              `json:"logToConsole"`                                                                                              // log_to_console
-	MemtrackEnabled                      bool              `json:"memtrackEnabled"`                                                                                           // memtrack_enabled
-	MetricsPort                          int               `json:"metricsPort" default:"5000"`                                                                                // metrics_port
-	ProcRoot                             string            `json:"procRoot" default:"/proc"`                                                                                  // proc_root
-	ProcessAgentConfigHostIps            bool              `json:"processAgentConfigHostIps"`                                                                                 // process_agent_config.host_ips
-	ProcessConfigEnabled                 bool              `json:"processConfigEnabled"`                                                                                      // process_config.enabled
-	ProcfsPath                           string            `json:"procfsPath"`                                                                                                // procfs_path
-	ProfilingEnabled                     bool              `json:"profilingEnabled"`                                                                                          // profiling.enabled
-	ProfilingProfileDdUrl                bool              `json:"profilingProfileDdUrl"`                                                                                     // profiling.profile_dd_url
-	PrometheusScrapeEnabled              bool              `json:"prometheusScrapeEnabled"`                                                                                   // prometheus_scrape.enabled
-	PrometheusScrapeServiceEndpoints     bool              `json:"prometheusScrapeServiceEndpoints"`                                                                          // prometheus_scrape.service_endpoints
-	ProxyHttps                           bool              `json:"proxyHttps"`                                                                                                // proxy.https
-	ProxyNoProxy                         bool              `json:"proxyNoProxy"`                                                                                              // proxy.no_proxy
+	LeaderLeaseDuration_                 int               `json:"leader_lease_duration" flag:"leader-lease-duration" default:"60" description:"leader lease duration(second)"` // leader_lease_duration
+	LogEnabled                           bool              `json:"log_enabled"`                                                                                                 // log_enabled
+	LogFile                              string            `json:"log_file"`                                                                                                    // log_file
+	LogFormatJson                        bool              `json:"log_format_json"`                                                                                             // log_format_json
+	LogFormatRfc3339                     bool              `json:"log_format_rfc3339"`                                                                                          // log_format_rfc3339
+	LogLevel                             string            `json:"log_level"`                                                                                                   // log_level
+	LogToConsole                         bool              `json:"log_to_console"`                                                                                              // log_to_console
+	MemtrackEnabled                      bool              `json:"memtrack_enabled"`                                                                                            // memtrack_enabled
+	MetricsPort                          int               `json:"metrics_port" default:"5000"`                                                                                 // metrics_port
+	ProcRoot                             string            `json:"proc_root" default:"/proc"`                                                                                   // proc_root
+	ProcessAgentConfigHostIps            bool              `json:"process_agent_config_host_ips"`                                                                               // process_agent_config.host_ips
+	ProcessConfigEnabled                 bool              `json:"process_config_enabled"`                                                                                      // process_config.enabled
+	ProcfsPath                           string            `json:"procfs_path"`                                                                                                 // procfs_path
+	ProfilingEnabled                     bool              `json:"profiling_enabled"`                                                                                           // profiling.enabled
+	ProfilingProfileDdUrl                bool              `json:"profiling_profile_dd_url"`                                                                                    // profiling.profile_dd_url
+	PrometheusScrapeEnabled              bool              `json:"prometheus_scrape_enabled"`                                                                                   // prometheus_scrape.enabled
+	PrometheusScrapeServiceEndpoints     bool              `json:"prometheus_scrape_service_endpoints"`                                                                         // prometheus_scrape.service_endpoints
+	ProxyHttps                           bool              `json:"proxy_https"`                                                                                                 // proxy.https
+	ProxyNoProxy                         bool              `json:"proxy_no_proxy"`                                                                                              // proxy.no_proxy
 	Python3LinterTimeout                 time.Duration     `json:"-"`
-	Python3LinterTimeout_                int               `json:"python3LinterTimeout" flag:"python3-linter-timeout" default:"120" description:"python3LinterTimeout(Second)"` // python3_linter_timeout
-	PythonVersion                        string            `json:"pythonVersion"`                                                                                               // python_version
-	SerializerMaxPayloadSize             int               `json:"serializerMaxPayloadSize" default:"2621440" description:"2.5mb"`                                              // serializer_max_payload_size
-	SerializerMaxUncompressedPayloadSize int               `json:"serializerMaxUncompressedPayloadSize" default:"4194304" description:"4mb"`                                    // serializer_max_uncompressed_payload_size
+	Python3LinterTimeout_                int               `json:"python3_linter_timeout" flag:"python3-linter-timeout" default:"120" description:"python3LinterTimeout(Second)"` // python3_linter_timeout
+	PythonVersion                        string            `json:"python_version"`                                                                                                // python_version
+	SerializerMaxPayloadSize             int               `json:"serializer_max_payload_size" default:"2621440" description:"2.5mb"`                                             // serializer_max_payload_size
+	SerializerMaxUncompressedPayloadSize int               `json:"serializer_max_uncompressed_payload_size" default:"4194304" description:"4mb"`                                  // serializer_max_uncompressed_payload_size
 	ServerTimeout                        time.Duration     `json:"-"`
-	ServerTimeout_                       int               `json:"serverTimeout" flag:"server-timeout" default:"15" description:"serverTimeout(Second)"` // server_timeout
-	SkipSslValidation                    bool              `json:"skipSslValidation"`                                                                    // skip_ssl_validation
-	SyslogRfc                            bool              `json:"syslogRfc"`                                                                            // syslog_rfc
-	TelemetryEnabled                     bool              `json:"telemetryEnabled" default:"true"`                                                      // telemetry.enabled
-	TracemallocDebug                     bool              `json:"tracemallocDebug"`                                                                     // tracemalloc_debug
-	WindowsUsePythonpath                 bool              `json:"windowsUsePythonpath"`                                                                 // windows_use_pythonpath
-	Yaml                                 bool              `json:"yaml"`                                                                                 // yaml
+	ServerTimeout_                       int               `json:"server_timeout" flag:"server-timeout" default:"15" description:"server_timeout(Second)"` // server_timeout
+	SkipSslValidation                    bool              `json:"skip_ssl_validation"`                                                                    // skip_ssl_validation
+	SyslogRfc                            bool              `json:"syslog_rfc"`                                                                             // syslog_rfc
+	TelemetryEnabled                     bool              `json:"telemetry_enabled" default:"true"`                                                       // telemetry.enabled
+	TracemallocDebug                     bool              `json:"tracemalloc_debug"`                                                                      // tracemalloc_debug
+	WindowsUsePythonpath                 bool              `json:"windows_use_pythonpath"`                                                                 // windows_use_pythonpath
+	Yaml                                 bool              `json:"yaml"`                                                                                   // yaml
+	MetricTransformFile                  string            `json:"metric_transform_file"`
 	//N9e                                  N9e                      `json:"n9e"`
-	MetricTransformFile string `json:"metricTransformFile"`
 }
 
 func (p Config) String() string {

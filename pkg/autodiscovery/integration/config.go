@@ -40,32 +40,32 @@ const (
 // When a new field is added to this struct, please evaluate whether it should be computed in the config Digest
 // and update the field's documentation and the Digest method accordingly
 type Config struct {
-	Name                    string       `yaml:"checkName" json:"checkName,omitempty"`                             // the name of the check (include in digest: true)
-	Instances               []Data       `yaml:"instances" json:"instances,omitempty"`                             // the list of instances in Yaml (include in digest: true)
-	InitConfig              Data         `yaml:"initConfig" json:"initConfig,omitempty"`                           // the initConfig in Yaml (include in digest: true)
-	MetricConfig            Data         `yaml:"metricConfig" json:"metricConfig,omitempty"`                       // the metric config in Yaml (jmx check only) (include in digest: false)
-	LogsConfig              Data         `yaml:"logs" json:"logs,omitempty"`                                       // the logs config in Yaml (logs-agent only) (include in digest: true)
-	ADIdentifiers           []string     `yaml:"adIdentifiers" json:"adIdentifiers,omitempty"`                     // the list of AutoDiscovery identifiers (optional) (include in digest: true)
-	Provider                string       `yaml:"provider" json:"provider,omitempty"`                               // the provider that issued the config (include in digest: false)
-	Entity                  string       `yaml:"-" json:"-"`                                                       // the entity ID (optional) (include in digest: true)
-	TaggerEntity            string       `yaml:"-" json:"-"`                                                       // the tagger entity ID (optional) (include in digest: false)
-	ClusterCheck            bool         `yaml:"clusterCheck" json:"clusterCheck,omitempty"`                       // cluster-check configuration flag (include in digest: false)
-	NodeName                string       `yaml:"nodeName" json:"nodeName,omitempty"`                               // node name in case of an endpoint check backed by a pod (include in digest: true)
-	CreationTime            CreationTime `yaml:"-" json:"-"`                                                       // creation time of service (include in digest: false)
-	Source                  string       `yaml:"source" json:"source,omitempty"`                                   // the source of the configuration (include in digest: false)
-	IgnoreAutodiscoveryTags bool         `yaml:"ignoreAutodiscoveryTags" json:"ignoreAutodiscoveryTags,omitempty"` // used to ignore tags coming from autodiscovery (include in digest: true)
-	MetricsExcluded         bool         `yaml:"-" json:"-"`                                                       // whether metrics collection is disabled (set by container listeners only) (include in digest: false)
-	LogsExcluded            bool         `yaml:"-" json:"-"`                                                       // whether logs collection is disabled (set by container listeners only) (include in digest: false)
+	Name                    string       `yaml:"check_name" json:"check_name,omitempty"`                               // the name of the check (include in digest: true)
+	Instances               []Data       `yaml:"instances" json:"instances,omitempty"`                                 // the list of instances in Yaml (include in digest: true)
+	InitConfig              Data         `yaml:"init_config" json:"init_config,omitempty"`                             // the initConfig in Yaml (include in digest: true)
+	MetricConfig            Data         `yaml:"metric_config" json:"metric_config,omitempty"`                         // the metric config in Yaml (jmx check only) (include in digest: false)
+	LogsConfig              Data         `yaml:"logs" json:"logs,omitempty"`                                           // the logs config in Yaml (logs-agent only) (include in digest: true)
+	ADIdentifiers           []string     `yaml:"ad_identifiers" json:"ad_identifiers,omitempty"`                       // the list of AutoDiscovery identifiers (optional) (include in digest: true)
+	Provider                string       `yaml:"provider" json:"provider,omitempty"`                                   // the provider that issued the config (include in digest: false)
+	Entity                  string       `yaml:"-" json:"-"`                                                           // the entity ID (optional) (include in digest: true)
+	TaggerEntity            string       `yaml:"-" json:"-"`                                                           // the tagger entity ID (optional) (include in digest: false)
+	ClusterCheck            bool         `yaml:"cluster_check" json:"cluster_check,omitempty"`                         // cluster-check configuration flag (include in digest: false)
+	NodeName                string       `yaml:"node_name" json:"node_name,omitempty"`                                 // node name in case of an endpoint check backed by a pod (include in digest: true)
+	CreationTime            CreationTime `yaml:"-" json:"-"`                                                           // creation time of service (include in digest: false)
+	Source                  string       `yaml:"source" json:"source,omitempty"`                                       // the source of the configuration (include in digest: false)
+	IgnoreAutodiscoveryTags bool         `yaml:"ignore_autodiscovery_tags" json:"ignore_autodiscovery_tags,omitempty"` // used to ignore tags coming from autodiscovery (include in digest: true)
+	MetricsExcluded         bool         `yaml:"-" json:"-"`                                                           // whether metrics collection is disabled (set by container listeners only) (include in digest: false)
+	LogsExcluded            bool         `yaml:"-" json:"-"`                                                           // whether logs collection is disabled (set by container listeners only) (include in digest: false)
 }
 
 // CommonInstanceConfig holds the reserved fields for the yaml instance data
 type CommonInstanceConfig struct {
-	MinCollectionInterval int      `yaml:"minCollectionInterval" json:"minCollectionInterval,omitempty"` // This changes the collection interval of the check - default: 15
-	EmptyDefaultHostname  bool     `yaml:"emptyDefaultHostname" json:"emptyDefaultHostname,omitempty"`   // This forces the check to send metrics with no hostname. This is useful for cluster-level checks.
-	Tags                  []string `yaml:"tags" json:"tags,omitempty"`                                   // A list of tags to attach to every metric and service check emitted by this instance, <key_1>:<value_1>
-	Service               string   `yaml:"service" json:"service,omitempty"`                             // Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
-	Name                  string   `yaml:"name" json:"name,omitempty"`                                   //
-	Namespace             string   `yaml:"namespace" json:"namespace,omitempty"`                         //
+	MinCollectionInterval int      `yaml:"min_collection_interval" json:"min_collection_interval,omitempty"` // This changes the collection interval of the check - default: 15
+	EmptyDefaultHostname  bool     `yaml:"empty_default_hostname" json:"empty_default_hostname,omitempty"`   // This forces the check to send metrics with no hostname. This is useful for cluster-level checks.
+	Tags                  []string `yaml:"tags" json:"tags,omitempty"`                                       // A list of tags to attach to every metric and service check emitted by this instance, <key_1>:<value_1>
+	Service               string   `yaml:"service" json:"service,omitempty"`                                 // Attach the tag `service:<SERVICE>` to every metric, event, and service check emitted by this integration.
+	Name                  string   `yaml:"name" json:"name,omitempty"`                                       //
+	Namespace             string   `yaml:"namespace" json:"namespace,omitempty"`                             //
 }
 
 // CommonGlobalConfig holds the reserved fields for the yaml init_config data

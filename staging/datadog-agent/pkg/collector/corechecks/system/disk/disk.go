@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
@@ -78,72 +78,55 @@ func (c *Check) excludeDisk(mountpoint, device, fstype string) bool {
 	return false
 }
 
+type diskInstanceConfig struct {
+	UseMount             bool              `json:"use_mount"`
+	ExcludedFilesystems  []string          `json:"excluded_filesystems"`
+	ExcludedDisks        []string          `json:"excluded_disks"`
+	ExcludedDiskRe       string            `json:"excluded_disk_re"`
+	TagByFilesystem      bool              `json:"tag_by_filesystem"`
+	ExcludedMountpointRe string            `json:"excluded_mountpoint_re"`
+	AllPartitions        bool              `json:"all_partitions"`
+	DeviceTagRe          map[string]string `json:"device_tag_re"`
+}
+
 func (c *Check) instanceConfigure(data integration.Data) error {
-	conf := make(map[interface{}]interface{})
+	conf := diskInstanceConfig{}
 	c.cfg = &diskConfig{}
-	err := yaml.Unmarshal([]byte(data), &conf)
+	err := yaml.Unmarshal(data, &conf)
 	if err != nil {
 		return err
 	}
 
-	useMount, found := conf["use_mount"]
-	if useMount, ok := useMount.(bool); found && ok {
-		c.cfg.useMount = useMount
-	}
-
-	excludedFilesystems, found := conf["excluded_filesystems"]
-	if excludedFilesystems, ok := excludedFilesystems.([]string); found && ok {
-		c.cfg.excludedFilesystems = excludedFilesystems
-	}
-
+	c.cfg.useMount = conf.UseMount
 	// Force exclusion of CDROM (iso9660) from disk check
-	c.cfg.excludedFilesystems = append(c.cfg.excludedFilesystems, "iso9660")
-
-	excludedDisks, found := conf["excluded_disks"]
-	if excludedDisks, ok := excludedDisks.([]string); found && ok {
-		c.cfg.excludedDisks = excludedDisks
-	}
-
-	excludedDiskRe, found := conf["excluded_disk_re"]
-	if excludedDiskRe, ok := excludedDiskRe.(string); found && ok {
-		c.cfg.excludedDiskRe, err = regexp.Compile(excludedDiskRe)
+	c.cfg.excludedFilesystems = append(conf.ExcludedFilesystems, "iso9660")
+	c.cfg.excludedDisks = conf.ExcludedDisks
+	if conf.ExcludedDiskRe != "" {
+		c.cfg.excludedDiskRe, err = regexp.Compile(conf.ExcludedDiskRe)
 		if err != nil {
 			return err
 		}
 	}
 
-	tagByFilesystem, found := conf["tag_by_filesystem"]
-	if tagByFilesystem, ok := tagByFilesystem.(bool); found && ok {
-		c.cfg.tagByFilesystem = tagByFilesystem
-	}
+	c.cfg.tagByFilesystem = conf.TagByFilesystem
 
-	excludedMountpointRe, found := conf["excluded_mountpoint_re"]
-	if excludedMountpointRe, ok := excludedMountpointRe.(string); found && ok {
-		c.cfg.excludedMountpointRe, err = regexp.Compile(excludedMountpointRe)
+	if conf.ExcludedMountpointRe != "" {
+
+		c.cfg.excludedMountpointRe, err = regexp.Compile(conf.ExcludedMountpointRe)
 		if err != nil {
 			return err
 		}
 	}
 
-	allPartitions, found := conf["all_partitions"]
-	if allPartitions, ok := allPartitions.(bool); found && ok {
-		c.cfg.allPartitions = allPartitions
-	}
+	c.cfg.allPartitions = conf.AllPartitions
 
-	deviceTagRe, found := conf["device_tag_re"]
-	if deviceTagRe, ok := deviceTagRe.(map[interface{}]interface{}); found && ok {
-		c.cfg.deviceTagRe = make(map[*regexp.Regexp][]string)
-		for reString, tags := range deviceTagRe {
-			if reString, ok := reString.(string); ok {
-				if tags, ok := tags.(string); ok {
-					re, err := regexp.Compile(reString)
-					if err != nil {
-						return err
-					}
-					c.cfg.deviceTagRe[re] = strings.Split(tags, ",")
-				}
-			}
+	c.cfg.deviceTagRe = make(map[*regexp.Regexp][]string)
+	for reString, tags := range conf.DeviceTagRe {
+		re, err := regexp.Compile(reString)
+		if err != nil {
+			return err
 		}
+		c.cfg.deviceTagRe[re] = strings.Split(tags, ",")
 	}
 
 	return nil

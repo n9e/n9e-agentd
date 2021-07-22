@@ -43,7 +43,24 @@ instances:
     ## If enabled, metrics are tagged using mount points (for example `device:/`) instead of volumes
     ## (for example `device:/dev/disk1s5`).
     #
-  - use_mount: false
+  - use_mount: true
+
+    excluded_filesystems:
+      - tmpfs
+      - rootfs
+      - autofs
+      - overlay
+      - shm
+
+    # excluded_disks:
+    #   - /dev/sda2
+    # tag_by_filesystem: true
+    # excluded_disk_re:
+    # excluded_mountpoint_re:
+    # 
+    # device_exclude_re:
+    # device_blacklist_re:
+    # lowercase_device_tag:
 
     ## @param all_partitions - boolean - optional - default: false
     ## Instruct the check to collect from partitions even without device names.
