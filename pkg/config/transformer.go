@@ -69,7 +69,7 @@ var (
 		"ntp_offset":                              "system_ntp_offset",
 		"system_cpu_context_switches":             "system_cpu_switches",
 		"system_cpu_stolen":                       "system_cpu_steal",
-		"system_disk_in_use":                      "disk_bytes_used_percent",
+		"system_disk_in_use":                      "system_disk_used_percent",
 		"system_disk_read_time_pct":               "system_disk_read_time_percent",
 		"system_disk_write_time_pct":              "system_disk_write_time_percent",
 		"system_fs_file_handles_allocated":        "system_files_allocated",
