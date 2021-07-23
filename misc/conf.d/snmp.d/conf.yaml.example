@@ -152,7 +152,7 @@ instances:
     ## @param timeout - integer - optional - default: 5
     ## Amount of second before timing out.
     #
-    # timeout: 5
+    timeout: 30
 
     ## @param retries - integer - optional - default: 5
     ## Amount of retries before failure.
@@ -303,3 +303,9 @@ instances:
     ## - python: will use legacy python SNMP integration
     #
     # loader: core
+
+    ## @param min_collection_interval - number - optional - default: 15
+    ## This changes the collection interval of the check. For more information, see:
+    ## https://docs.datadoghq.com/developers/write_agent_check/#collection-interval
+    #
+    min_collection_interval: 300
