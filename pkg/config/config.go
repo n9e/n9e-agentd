@@ -67,11 +67,11 @@ var (
 func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
 	proc.RegisterFlags("agent.forwarder", "forwarder", &Forwarder{})
-	proc.RegisterFlags("agent.logsConfig", "logs", &LogsConfig{})
-	proc.RegisterFlags("agent.clusterChecks", "cluster checks", &ClusterChecks{})
+	proc.RegisterFlags("agent.logs_config", "logs", &LogsConfig{})
+	proc.RegisterFlags("agent.cluster_checks", "cluster checks", &ClusterChecks{})
 	proc.RegisterFlags("agent.statsd", "statsd", &Statsd{})
 	proc.RegisterFlags("agent.jmx", "jmx", &Jmx{})
-	proc.RegisterFlags("agent.adminssionController", "adminssion controller", &AdminssionController{})
+	proc.RegisterFlags("agent.adminssion_controller", "adminssion controller", &AdminssionController{})
 
 	fs := proc.NamedFlagSets().FlagSet("global")
 	fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
@@ -902,7 +902,7 @@ type LogsConfig struct {
 	AuditorTTL                  time.Duration               `json:"-"`
 	AuditorTTL_                 int                         `json:"auditor_ttl" flag:"logs-auditor-ttl" description:"auditorTTL(Second)"` // logs_config.auditor_ttl
 	RunPath                     string                      `json:"run_path"`                                                             // logs_config.run_path
-	OpenFilesLimit              int                         `json:"open_files_limit" default:"100"`                                       // logs_config.open_files_limit
+	OpenFilesLimit              int                         `json:"open_files_limit" flag:"logs-open-files-limit" default:"100"`          // logs_config.open_files_limit
 	K8SContainerUseFile         bool                        `json:"k8s_container_use_file"`                                               // logs_config.k8s_container_use_file
 	DockerContainerUseFile      bool                        `json:"docker_container_use_file"`                                            // logs_config.docker_container_use_file
 	DockerContainerForceUseFile bool                        `json:"docker_container_force_use_file"`                                      // logs_config.docker_container_force_use_file
