@@ -543,38 +543,38 @@ func getOutboundIP() string {
 //}
 
 type SystemProbe struct {
-	Enabled                      bool                `json:"enabled"`                      // system_probe_config.enabled & system_probe
-	SysprobeSocket               string              `json:"sysprobeSocket"`               // system_probe_config.sysprobe_socket
-	BPFDebug                     bool                `json:"bpfDebug"`                     // system_probe_config.bpf_debug
-	BPFDir                       string              `json:"bpfDir"`                       // system_probe_config.bpf_dir
-	ExcludedLinuxVersions        []string            `json:"excludedLinuxVersions"`        // system_probe_config.excluded_linux_versions
-	EnableTracepoints            bool                `json:"enableTracepoints"`            // system_probe_config.enable_tracepoints
-	EnableRuntimeCompiler        bool                `json:"enableRuntimeCompiler"`        // system_probe_config.enable_runtime_compiler
-	RuntimeCompilerOutputDir     string              `json:"runtimeCompilerOutputDir"`     // system_probe_config.runtime_compiler_output_dir
-	KernelHeaderDirs             []string            `json:"kernelHeaderDirs"`             // system_probe_config.kernel_header_dirs
-	DisableTcp                   bool                `json:"disableTcp"`                   // system_probe_config.disable_tcp
-	DisableUdp                   bool                `json:"disableUdp"`                   // system_probe_config.disable_udp
-	DisableIpv6                  bool                `json:"disableIpv6"`                  // system_probe_config.disable_ipv6
-	OffsetGuessThreshold         int64               `json:"offsetGuessThreshold"`         // system_probe_config.offset_guess_threshold
-	SourceExcludes               map[string][]string `json:"sourceExcludes"`               // system_probe_config.source_excludes
-	DestExcludes                 map[string][]string `json:"destExcludes"`                 // system_probe_config.dest_excludes
-	MaxTrackedConnections        int                 `json:"maxTrackedConnections"`        // system_probe_config.max_tracked_connections
-	MaxClosedConnectionsBuffered int                 `json:"maxClosedConnectionsBuffered"` // system_probe_config.max_closed_connections_buffered
-	ClosedChannelSize            int                 `json:"closedChannelSize"`            // system_probe_config.closed_channel_size
-	MaxConnectionStateBuffered   int                 `json:"maxConnectionStateBuffered"`   // system_probe_config.max_connection_state_buffered
-	DisableDnsInspection         bool                `json:"disableDnsInspection"`         // system_probe_config.disable_dns_inspection
-	CollectDnsStats              bool                `json:"collectDnsStats"`              // system_probe_config.collect_dns_stats
-	CollectLocalDns              bool                `json:"collectLocalDns"`              // system_probe_config.collect_local_dns
-	CollectDnsDomains            bool                `json:"collectDnsDomains"`            // system_probe_config.collect_dns_domains
-	MaxDnsStats                  int                 `json:"maxDnsStats"`                  // system_probe_config.max_dns_stats
+	Enabled                      bool                `json:"enabled"`                         // system_probe_config.enabled & system_probe
+	SysprobeSocket               string              `json:"sysprobe_socket"`                 // system_probe_config.sysprobe_socket
+	BPFDebug                     bool                `json:"bpf_debug"`                       // system_probe_config.bpf_debug
+	BPFDir                       string              `json:"bpf_dir"`                         // system_probe_config.bpf_dir
+	ExcludedLinuxVersions        []string            `json:"excluded_linux_versions"`         // system_probe_config.excluded_linux_versions
+	EnableTracepoints            bool                `json:"enable_tracepoints"`              // system_probe_config.enable_tracepoints
+	EnableRuntimeCompiler        bool                `json:"enable_runtime_compiler"`         // system_probe_config.enable_runtime_compiler
+	RuntimeCompilerOutputDir     string              `json:"runtime_compiler_output_dir"`     // system_probe_config.runtime_compiler_output_dir
+	KernelHeaderDirs             []string            `json:"kernel_header_dirs"`              // system_probe_config.kernel_header_dirs
+	DisableTcp                   bool                `json:"disable_tcp"`                     // system_probe_config.disable_tcp
+	DisableUdp                   bool                `json:"disable_udp"`                     // system_probe_config.disable_udp
+	DisableIpv6                  bool                `json:"disable_ipv6"`                    // system_probe_config.disable_ipv6
+	OffsetGuessThreshold         int64               `json:"offset_guess_threshold"`          // system_probe_config.offset_guess_threshold
+	SourceExcludes               map[string][]string `json:"source_excludes"`                 // system_probe_config.source_excludes
+	DestExcludes                 map[string][]string `json:"dest_excludes"`                   // system_probe_config.dest_excludes
+	MaxTrackedConnections        int                 `json:"max_tracked_connections"`         // system_probe_config.max_tracked_connections
+	MaxClosedConnectionsBuffered int                 `json:"max_closed_connections_buffered"` // system_probe_config.max_closed_connections_buffered
+	ClosedChannelSize            int                 `json:"closed_channel_size"`             // system_probe_config.closed_channel_size
+	MaxConnectionStateBuffered   int                 `json:"max_connection_state_buffered"`   // system_probe_config.max_connection_state_buffered
+	DisableDnsInspection         bool                `json:"disable_dns_inspection"`          // system_probe_config.disable_dns_inspection
+	CollectDnsStats              bool                `json:"collect_dns_stats"`               // system_probe_config.collect_dns_stats
+	CollectLocalDns              bool                `json:"collect_local_dns"`               // system_probe_config.collect_local_dns
+	CollectDnsDomains            bool                `json:"collect_dns_domains"`             // system_probe_config.collect_dns_domains
+	MaxDnsStats                  int                 `json:"max_dns_stats"`                   // system_probe_config.max_dns_stats
 	DnsTimeout                   time.Duration       `json:"-"`
-	DnsTimeout_                  int                 `json:"dnsTimeout" flag:"system-probe-dns-timeout" default:"15" description:"dnsTimeout(Second)"` // system_probe_config.dns_timeout_in_s
-	EnableConntrack              bool                `json:"enableConntrack"`                                                                          // system_probe_config.enable_conntrack
-	ConntrackMaxStateSize        int                 `json:"conntrackMaxStateSize"`                                                                    // system_probe_config.conntrack_max_state_size
-	ConntrackRateLimit           int                 `json:"conntrackRateLimit"`                                                                       // system_probe_config.conntrack_rate_limit
-	EnableConntrackAllNamespaces bool                `json:"enableConntrackAllNamespaces"`                                                             // system_probe_config.enable_conntrack_all_namespaces
-	WindowsEnableMonotonicCount  bool                `json:"windowsEnableMonotonicCount"`                                                              // system_probe_config.windows.enable_monotonic_count
-	WindowsDriverBufferSize      int                 `json:"windowsDriverBufferSize"`                                                                  // system_probe_config.windows.driver_buffer_size
+	DnsTimeout_                  int                 `json:"dns_timeout" flag:"system-probe-dns-timeout" default:"15" description:"dnsTimeout(Second)"` // system_probe_config.dns_timeout_in_s
+	EnableConntrack              bool                `json:"enable_conntrack"`                                                                          // system_probe_config.enable_conntrack
+	ConntrackMaxStateSize        int                 `json:"conntrack_max_state_size"`                                                                  // system_probe_config.conntrack_max_state_size
+	ConntrackRateLimit           int                 `json:"conntrack_rate_limit"`                                                                      // system_probe_config.conntrack_rate_limit
+	EnableConntrackAllNamespaces bool                `json:"enable_conntrack_all_namespaces"`                                                           // system_probe_config.enable_conntrack_all_namespaces
+	WindowsEnableMonotonicCount  bool                `json:"windows_enable_monotonic_count"`                                                            // system_probe_config.windows.enable_monotonic_count
+	WindowsDriverBufferSize      int                 `json:"windows_driver_buffer_size"`                                                                // system_probe_config.windows.driver_buffer_size
 }
 
 func (p *SystemProbe) Validate() error {
@@ -583,14 +583,14 @@ func (p *SystemProbe) Validate() error {
 }
 
 type EnablePayloads struct {
-	Series              bool `json:"series" default:"true"`               // enable_payloads.series
-	Events              bool `json:"events" default:"false"`              // enable_payloads.events
-	ServiceChecks       bool `json:"serviceChecks" default:"false"`       // enable_payloads.service_checks
-	Sketches            bool `json:"sketches" default:"false"`            // enable_payloads.sketches
-	JsonToV1Intake      bool `json:"jsonToV1Intake" default:"false"`      // enable_payloads.json_to_v1_intake
-	Metadata            bool `json:"metadata" default:"false"`            //
-	HostMetadata        bool `json:"hostMetadata" default:"false"`        //
-	AgentchecksMetadata bool `json:"agentchecksMetadata" default:"false"` //
+	Series              bool `json:"series" default:"true"`                // enable_payloads.series
+	Events              bool `json:"events" default:"false"`               // enable_payloads.events
+	ServiceChecks       bool `json:"service_checks" default:"false"`       // enable_payloads.service_checks
+	Sketches            bool `json:"sketches" default:"false"`             // enable_payloads.sketches
+	JsonToV1Intake      bool `json:"json_to_v1_intake" default:"false"`    // enable_payloads.json_to_v1_intake
+	Metadata            bool `json:"metadata" default:"false"`             //
+	HostMetadata        bool `json:"host_metadata" default:"false"`        //
+	AgentchecksMetadata bool `json:"agentchecks_metadata" default:"false"` //
 }
 
 func (p *EnablePayloads) Validate() error {
@@ -598,17 +598,17 @@ func (p *EnablePayloads) Validate() error {
 }
 
 type ExternalMetricsProvider struct {
-	ApiKey                bool          `json:"apiKey"`                   // external_metrics_provider.api_key
-	AppKey                bool          `json:"appKey"`                   // external_metrics_provider.app_key
-	BucketSize            int           `json:"bucketSize" default:"300"` // external_metrics_provider.bucket_size
-	Enabled               bool          `json:"enabled"`                  // external_metrics_provider.enabled
+	ApiKey                bool          `json:"api_key"`                   // external_metrics_provider.api_key
+	AppKey                bool          `json:"app_key"`                   // external_metrics_provider.app_key
+	BucketSize            int           `json:"bucket_size" default:"300"` // external_metrics_provider.bucket_size
+	Enabled               bool          `json:"enabled"`                   // external_metrics_provider.enabled
 	LocalCopyRefreshRate  time.Duration `json:"-"`
-	LocalCopyRefreshRate_ int           `json:"localCopyRefreshRate" flag:"external-metrics-provider-local-copy-refresh-rate" default:"30" description:"localCopyRefreshRate(Second)"` // external_metrics_provider.local_copy_refresh_rate
-	MaxAge                int           `json:"maxAge" default:"20"`                                                                                                                   // external_metrics_provider.max_age
-	RefreshPeriod         int           `json:"refreshPeriod" default:"30"`                                                                                                            // external_metrics_provider.refresh_period
-	Rollup                int           `json:"rollup" default:"30"`                                                                                                                   // external_metrics_provider.rollup
-	UseDatadogmetricCrd   bool          `json:"useDatadogmetricCrd"`                                                                                                                   // external_metrics_provider.use_datadogmetric_crd
-	WpaController         bool          `json:"wpaController"`                                                                                                                         // external_metrics_provider.wpa_controller
+	LocalCopyRefreshRate_ int           `json:"local_copy_refresh_rate" flag:"external-metrics-provider-local-copy-refresh-rate" default:"30" description:"localCopyRefreshRate(Second)"` // external_metrics_provider.local_copy_refresh_rate
+	MaxAge                int           `json:"max_age" default:"20"`                                                                                                                     // external_metrics_provider.max_age
+	RefreshPeriod         int           `json:"refresh_period" default:"30"`                                                                                                              // external_metrics_provider.refresh_period
+	Rollup                int           `json:"rollup" default:"30"`                                                                                                                      // external_metrics_provider.rollup
+	UseDatadogmetricCrd   bool          `json:"use_datadogmetric_crd"`                                                                                                                    // external_metrics_provider.use_datadogmetric_crd
+	WpaController         bool          `json:"wpa_controller"`                                                                                                                           // external_metrics_provider.wpa_controller
 }
 
 func (p *ExternalMetricsProvider) Validate() error {
@@ -619,20 +619,20 @@ func (p *ExternalMetricsProvider) Validate() error {
 type AdminssionController struct {
 	Enabled                         bool          `json:"enabled"` // admission_controller.enabled
 	CertificateExpirationThreshold  time.Duration `json:"-"`
-	CertificateExpirationThreshold_ int           `json:"certificateExpirationThreshold" flag:"admission-controller-certificate-expiration-threshold" default:"30" description:"certificateExpirationThreshold(Day)"` // admission_controller.certificate.expiration_threshold
-	CertificateSecretName           string        `json:"certificateSecretName" default:"webhook-certificate"`                                                                                                        // admission_controller.certificate.secret_name
+	CertificateExpirationThreshold_ int           `json:"certificate_expiration_threshold" flag:"admission-controller-certificate-expiration-threshold" default:"30" description:"certificateExpirationThreshold(Day)"` // admission_controller.certificate.expiration_threshold
+	CertificateSecretName           string        `json:"certificate_secret_name" default:"webhook-certificate"`                                                                                                        // admission_controller.certificate.secret_name
 	CertificateValidityBound        time.Duration `json:"-"`
-	CertificateValidityBound_       int           `json:"certificateValidityBound" flag:"admission-controller-certificate-validity-bound" default:"365" description:"certificateValidityBound(Day)"` // admission_controller.certificate.validity_bound
-	InjectConfigEnabled             bool          `json:"injectConfigEnabled" default:"true"`                                                                                                        // admission_controller.inject_config.enabled
-	InjectConfigEndpoint            string        `json:"injectConfigEndpoint" default:"/injectconfig"`                                                                                              // admission_controller.inject_config.endpoint
-	InjectTagsEnabled               bool          `json:"injectTagsEnabled" default:"true"`                                                                                                          // admission_controller.inject_tags.enabled
-	InjectTagsEndpoint              string        `json:"injectTagsEndpoint" default:"/injecttags"`                                                                                                  // admission_controller.inject_tags.endpoint
-	MutateUnlabelled                bool          `json:"mutateUnlabelled"`                                                                                                                          // admission_controller.mutate_unlabelled
-	PodOwnersCacheValidity          int           `json:"podOwnersCacheValidity" default:"10" description:"Minute"`                                                                                  // admission_controller.pod_owners_cache_validity
-	ServiceName                     string        `json:"serviceName" default:"admission-controller"`                                                                                                // admission_controller.service_name
+	CertificateValidityBound_       int           `json:"certificate_validity_bound" flag:"admission-controller-certificate-validity-bound" default:"365" description:"certificateValidityBound(Day)"` // admission_controller.certificate.validity_bound
+	InjectConfigEnabled             bool          `json:"inject_config_enabled" default:"true"`                                                                                                        // admission_controller.inject_config.enabled
+	InjectConfigEndpoint            string        `json:"inject_config_endpoint" default:"/injectconfig"`                                                                                              // admission_controller.inject_config.endpoint
+	InjectTagsEnabled               bool          `json:"inject_tags_enabled" default:"true"`                                                                                                          // admission_controller.inject_tags.enabled
+	InjectTagsEndpoint              string        `json:"inject_tags_endpoint" default:"/injecttags"`                                                                                                  // admission_controller.inject_tags.endpoint
+	MutateUnlabelled                bool          `json:"mutate_unlabelled"`                                                                                                                           // admission_controller.mutate_unlabelled
+	PodOwnersCacheValidity          int           `json:"pod_owners_cache_validity" default:"10" description:"Minute"`                                                                                 // admission_controller.pod_owners_cache_validity
+	ServiceName                     string        `json:"service_name" default:"admission-controller"`                                                                                                 // admission_controller.service_name
 	TimeoutSeconds                  time.Duration `json:"-"`
-	TimeoutSeconds_                 int           `json:"timeoutSeconds" flag:"adminssion-controller-timeout" default:"30" description:"timeoutSeconds(Second)"` // admission_controller.timeout_seconds
-	WebhookName                     string        `json:"webhookName" default:"n9e-webhook"`                                                                     // admission_controller.webhook_name
+	TimeoutSeconds_                 int           `json:"timeout_seconds" flag:"adminssion-controller-timeout" default:"30" description:"timeoutSeconds(Second)"` // admission_controller.timeout_seconds
+	WebhookName                     string        `json:"webhook_name" default:"n9e-webhook"`                                                                     // admission_controller.webhook_name
 
 }
 
@@ -644,25 +644,25 @@ func (p *AdminssionController) Validate() error {
 }
 
 type RuntimeSecurity struct {
-	Socket                             string `json:"socket"`                             // runtime_security_config.socket
-	AgentMonitoringEvents              bool   `json:"agentMonitoringEvents"`              // runtime_security_config.agent_monitoring_events
-	CookieCacheSize                    bool   `json:"cookieCacheSize"`                    // runtime_security_config.cookie_cache_size
-	CustomSensitiveWords               bool   `json:"customSensitiveWords"`               // runtime_security_config.custom_sensitive_words
-	EnableApprovers                    bool   `json:"enableApprovers"`                    // runtime_security_config.enable_approvers
-	EnableDiscarders                   bool   `json:"enableDiscarders"`                   // runtime_security_config.enable_discarders
-	EnableKernelFilters                bool   `json:"enableKernelFilters"`                // runtime_security_config.enable_kernel_filters
-	Enabled                            bool   `json:"enabled"`                            // runtime_security_config.enabled
-	EventServerBurst                   bool   `json:"eventServerBurst"`                   // runtime_security_config.event_server.burst
-	EventServerRate                    bool   `json:"eventServerRate"`                    // runtime_security_config.event_server.rate
-	EventsStatsPollingInterval         bool   `json:"eventsStatsPollingInterval"`         // runtime_security_config.events_stats.polling_interval
-	FimEnabled                         bool   `json:"fimEnabled"`                         // runtime_security_config.fim_enabled
-	FlushDiscarderWindow               bool   `json:"flushDiscarderWindow"`               // runtime_security_config.flush_discarder_window
-	LoadControllerControlPeriod        bool   `json:"loadControllerControlPeriod"`        // runtime_security_config.load_controller.control_period
-	LoadControllerDiscarderTimeout     bool   `json:"loadControllerDiscarderTimeout"`     // runtime_security_config.load_controller.discarder_timeout
-	LoadControllerEventsCountThreshold bool   `json:"loadControllerEventsCountThreshold"` // runtime_security_config.load_controller.events_count_threshold
-	PidCacheSize                       bool   `json:"pidCacheSize"`                       // runtime_security_config.pid_cache_size
-	PoliciesDir                        bool   `json:"policiesDir"`                        // runtime_security_config.policies.dir
-	SyscallMonitorEnabled              bool   `json:"syscallMonitorEnabled"`              // runtime_security_config.syscall_monitor.enabled
+	Socket                             string `json:"socket"`                                 // runtime_security_config.socket
+	AgentMonitoringEvents              bool   `json:"agent_monitoring_events"`                // runtime_security_config.agent_monitoring_events
+	CookieCacheSize                    bool   `json:"cookie_cache_size"`                      // runtime_security_config.cookie_cache_size
+	CustomSensitiveWords               bool   `json:"custom_sensitive_words"`                 // runtime_security_config.custom_sensitive_words
+	EnableApprovers                    bool   `json:"enable_approvers"`                       // runtime_security_config.enable_approvers
+	EnableDiscarders                   bool   `json:"enable_discarders"`                      // runtime_security_config.enable_discarders
+	EnableKernelFilters                bool   `json:"enable_kernel_filters"`                  // runtime_security_config.enable_kernel_filters
+	Enabled                            bool   `json:"enabled"`                                // runtime_security_config.enabled
+	EventServerBurst                   bool   `json:"event_server_burst"`                     // runtime_security_config.event_server.burst
+	EventServerRate                    bool   `json:"event_server_rate"`                      // runtime_security_config.event_server.rate
+	EventsStatsPollingInterval         bool   `json:"events_stats_polling_interval"`          // runtime_security_config.events_stats.polling_interval
+	FimEnabled                         bool   `json:"fim_enabled"`                            // runtime_security_config.fim_enabled
+	FlushDiscarderWindow               bool   `json:"flush_discarder_window"`                 // runtime_security_config.flush_discarder_window
+	LoadControllerControlPeriod        bool   `json:"load_controller_control_period"`         // runtime_security_config.load_controller.control_period
+	LoadControllerDiscarderTimeout     bool   `json:"load_controller_discarder_timeout"`      // runtime_security_config.load_controller.discarder_timeout
+	LoadControllerEventsCountThreshold bool   `json:"load_controller_events_count_threshold"` // runtime_security_config.load_controller.events_count_threshold
+	PidCacheSize                       bool   `json:"pid_cache_size"`                         // runtime_security_config.pid_cache_size
+	PoliciesDir                        bool   `json:"policies_dir"`                           // runtime_security_config.policies.dir
+	SyscallMonitorEnabled              bool   `json:"syscall_monitor_enabled"`                // runtime_security_config.syscall_monitor.enabled
 }
 
 func (p *RuntimeSecurity) Validate() error {
@@ -670,20 +670,20 @@ func (p *RuntimeSecurity) Validate() error {
 }
 
 type Jmx struct {
-	CheckPeriod                int           `json:"checkPeriod"` // jmx_check_period
+	CheckPeriod                int           `json:"check_period"` // jmx_check_period
 	CollectionTimeout          time.Duration `json:"-"`
-	CollectionTimeout_         int           `json:"collectionTimeout" flag:"jmx-collection-timeout" default:"60" description:"collectionTimeout"` // jmx_collection_timeout
-	CustomJars                 []string      `json:"customJars"`                                                                                   // jmx_custom_jars
-	LogFile                    bool          `json:"logFile"`                                                                                      // jmx_log_file
-	MaxRestarts                int           `json:"maxRestarts" default:"3"`                                                                      // jmx_max_restarts
-	ReconnectionThreadPoolSize int           `json:"reconnectionThreadPoolSize" default:"3"`                                                       // jmx_reconnection_thread_pool_size
+	CollectionTimeout_         int           `json:"collection_timeout" flag:"jmx-collection-timeout" default:"60" description:"collectionTimeout"` // jmx_collection_timeout
+	CustomJars                 []string      `json:"custom_jars"`                                                                                   // jmx_custom_jars
+	LogFile                    bool          `json:"log_file"`                                                                                      // jmx_log_file
+	MaxRestarts                int           `json:"max_restarts" default:"3"`                                                                      // jmx_max_restarts
+	ReconnectionThreadPoolSize int           `json:"reconnection_thread_pool_size" default:"3"`                                                     // jmx_reconnection_thread_pool_size
 	ReconnectionTimeout        time.Duration `json:"-"`
-	ReconnectionTimeout_       int           `json:"reconnectionTimeout" flag:"jmx-reconnection-timeout" default:"50" description:"reconnectionTimeout(Second)"` // jmx_reconnection_timeout
+	ReconnectionTimeout_       int           `json:"reconnection_timeout" flag:"jmx-reconnection-timeout" default:"50" description:"reconnectionTimeout(Second)"` // jmx_reconnection_timeout
 	RestartInterval            time.Duration `json:"-"`
-	RestartInterval_           int           `json:"restartInterval" flag:"jmx-restart-interval" default:"5" description:"restartInterval(Second)"` // jmx_restart_interval
-	ThreadPoolSize             int           `json:"threadPoolSize" default:"3"`                                                                    // jmx_thread_pool_size
-	UseCgroupMemoryLimit       bool          `json:"useCgroupMemoryLimit"`                                                                          // jmx_use_cgroup_memory_limit
-	UseContainerSupport        bool          `json:"useContainerSupport"`                                                                           // jmx_use_container_support
+	RestartInterval_           int           `json:"restart_interval" flag:"jmx-restart-interval" default:"5" description:"restartInterval(Second)"` // jmx_restart_interval
+	ThreadPoolSize             int           `json:"thread_pool_size" default:"3"`                                                                   // jmx_thread_pool_size
+	UseCgroupMemoryLimit       bool          `json:"use_cgroup_memory_limit"`                                                                        // jmx_use_cgroup_memory_limit
+	UseContainerSupport        bool          `json:"use_container_support"`                                                                          // jmx_use_container_support
 }
 
 func (p *Jmx) Validate() error {
@@ -694,39 +694,39 @@ func (p *Jmx) Validate() error {
 }
 
 type Apm struct {
-	AdditionalEndpoints           bool `json:"additionalEndpoints"`           // apm_config.additional_endpoints
-	AnalyzedRateByService         bool `json:"analyzedRateByService"`         // apm_config.analyzed_rate_by_service
-	AnalyzedSpans                 bool `json:"analyzedSpans"`                 // apm_config.analyzed_spans
-	ApiKey                        bool `json:"apiKey"`                        // apm_config.api_key
-	ApmDdUrl                      bool `json:"apmDdUrl"`                      // apm_config.apm_dd_url
-	ApmNonLocalTraffic            bool `json:"apmNonLocalTraffic"`            // apm_config.apm_non_local_traffic
-	ConnectionLimit               bool `json:"connectionLimit"`               // apm_config.connection_limit
-	ConnectionResetInterval       bool `json:"connectionResetInterval"`       // apm_config.connection_reset_interval
-	DdAgentBin                    bool `json:"ddAgentBin"`                    // apm_config.dd_agent_bin
-	Enabled                       bool `json:"enabled"`                       // apm_config.enabled
-	Env                           bool `json:"env"`                           // apm_config.env
-	ExtraSampleRate               bool `json:"extraSampleRate"`               // apm_config.extra_sample_rate
-	FilterTagsReject              bool `json:"filterTagsReject"`              // apm_config.filter_tags.reject
-	FilterTagsRequire             bool `json:"filterTagsRequire"`             // apm_config.filter_tags.require
-	IgnoreResources               bool `json:"ignoreResources"`               // apm_config.ignore_resources
-	LogFile                       bool `json:"logFile"`                       // apm_config.log_file
-	LogLevel                      bool `json:"logLevel"`                      // apm_config.log_level
-	LogThrottling                 bool `json:"logThrottling"`                 // apm_config.log_throttling
-	MaxCpuPercent                 bool `json:"maxCpuPercent"`                 // apm_config.max_cpu_percent
-	MaxEventsPerSecond            bool `json:"maxEventsPerSecond"`            // apm_config.max_events_per_second
-	MaxMemory                     bool `json:"maxMemory"`                     // apm_config.max_memory
-	MaxTracesPerSecond            bool `json:"maxTracesPerSecond"`            // apm_config.max_traces_per_second
-	Obfuscation                   bool `json:"obfuscation"`                   // apm_config.obfuscation
-	ProfilingAdditionalEndpoints  bool `json:"profilingAdditionalEndpoints"`  // apm_config.profiling_additional_endpoints
-	ProfilingDdUrl                bool `json:"profilingDdUrl"`                // apm_config.profiling_dd_url
-	ReceiverPort                  bool `json:"receiverPort"`                  // apm_config.receiver_port
-	ReceiverSocket                bool `json:"receiverSocket"`                // apm_config.receiver_socket
-	ReceiverTimeout               bool `json:"receiverTimeout"`               // apm_config.receiver_timeout
-	RemoteTagger                  bool `json:"remoteTagger"`                  // apm_config.remote_tagger
-	SyncFlushing                  bool `json:"syncFlushing"`                  // apm_config.sync_flushing
-	WindowsPipeBufferSize         bool `json:"windowsPipeBufferSize"`         // apm_config.windows_pipe_buffer_size
-	WindowsPipeName               bool `json:"windowsPipeName"`               // apm_config.windows_pipe_name
-	WindowsPipeSecurityDescriptor bool `json:"windowsPipeSecurityDescriptor"` // apm_config.windows_pipe_security_descriptor
+	AdditionalEndpoints           bool `json:"additional_endpoints"`             // apm_config.additional_endpoints
+	AnalyzedRateByService         bool `json:"analyzed_rate_by_service"`         // apm_config.analyzed_rate_by_service
+	AnalyzedSpans                 bool `json:"analyzed_spans"`                   // apm_config.analyzed_spans
+	ApiKey                        bool `json:"api_key"`                          // apm_config.api_key
+	ApmDdUrl                      bool `json:"apm_dd_url"`                       // apm_config.apm_dd_url
+	ApmNonLocalTraffic            bool `json:"apm_non_local_traffic"`            // apm_config.apm_non_local_traffic
+	ConnectionLimit               bool `json:"connection_limit"`                 // apm_config.connection_limit
+	ConnectionResetInterval       bool `json:"connection_reset_interval"`        // apm_config.connection_reset_interval
+	DdAgentBin                    bool `json:"dd_agent_bin"`                     // apm_config.dd_agent_bin
+	Enabled                       bool `json:"enabled"`                          // apm_config.enabled
+	Env                           bool `json:"env"`                              // apm_config.env
+	ExtraSampleRate               bool `json:"extra_sample_rate"`                // apm_config.extra_sample_rate
+	FilterTagsReject              bool `json:"filter_tags_reject"`               // apm_config.filter_tags.reject
+	FilterTagsRequire             bool `json:"filter_tags_require"`              // apm_config.filter_tags.require
+	IgnoreResources               bool `json:"ignore_resources"`                 // apm_config.ignore_resources
+	LogFile                       bool `json:"log_file"`                         // apm_config.log_file
+	LogLevel                      bool `json:"log_level"`                        // apm_config.log_level
+	LogThrottling                 bool `json:"log_throttling"`                   // apm_config.log_throttling
+	MaxCpuPercent                 bool `json:"max_cpu_percent"`                  // apm_config.max_cpu_percent
+	MaxEventsPerSecond            bool `json:"max_events_per_second"`            // apm_config.max_events_per_second
+	MaxMemory                     bool `json:"max_memory"`                       // apm_config.max_memory
+	MaxTracesPerSecond            bool `json:"max_traces_per_second"`            // apm_config.max_traces_per_second
+	Obfuscation                   bool `json:"obfuscation"`                      // apm_config.obfuscation
+	ProfilingAdditionalEndpoints  bool `json:"profiling_additional_endpoints"`   // apm_config.profiling_additional_endpoints
+	ProfilingDdUrl                bool `json:"profiling_dd_url"`                 // apm_config.profiling_dd_url
+	ReceiverPort                  bool `json:"receiver_port"`                    // apm_config.receiver_port
+	ReceiverSocket                bool `json:"receiver_socket"`                  // apm_config.receiver_socket
+	ReceiverTimeout               bool `json:"receiver_timeout"`                 // apm_config.receiver_timeout
+	RemoteTagger                  bool `json:"remote_tagger"`                    // apm_config.remote_tagger
+	SyncFlushing                  bool `json:"sync_flushing"`                    // apm_config.sync_flushing
+	WindowsPipeBufferSize         bool `json:"windows_pipe_buffer_size"`         // apm_config.windows_pipe_buffer_size
+	WindowsPipeName               bool `json:"windows_pipe_name"`                // apm_config.windows_pipe_name
+	WindowsPipeSecurityDescriptor bool `json:"windows_pipe_security_descriptor"` // apm_config.windows_pipe_security_descriptor
 }
 
 func (p *Apm) Validate() error {
@@ -738,36 +738,36 @@ type Statsd struct {
 	Host                              string           `json:"host"`                   //
 	Port                              int              `json:"port" default:"8125"`    // dogstatsd_port
 	Socket                            string           `json:"socket"`                 // dogstatsd_socket
-	PipeName                          string           `json:"pipeName"`               // dogstatsd_pipe_name
+	PipeName                          string           `json:"pipe_name"`              // dogstatsd_pipe_name
 	ContextExpirySeconds              time.Duration    `json:"-"`
-	ContextExpirySeconds_             int              `json:"contextExpirySeconds" flag:"statsd-context-expiry-seconds" default:"300" description:"contextExpirySeconds(Second)"` // dogstatsd_context_expiry_seconds
+	ContextExpirySeconds_             int              `json:"context_expiry_seconds" flag:"statsd-context-expiry-seconds" default:"300" description:"contextExpirySeconds(Second)"` // dogstatsd_context_expiry_seconds
 	ExpirySeconds                     time.Duration    `json:"-"`
-	ExpirySeconds_                    int              `json:"expirySeconds" flag:"statsd-expiry-seconds" default:"300" description:"expirySeconds(Second)"` // dogstatsd_expiry_seconds
-	StatsEnable                       bool             `json:"statsEnable" default:"true"`                                                                   // dogstatsd_stats_enable
-	StatsBuffer                       int              `json:"statsBuffer" default:"10"`                                                                     // dogstatsd_stats_buffer
-	MetricsStatsEnable                bool             `json:"metricsStatsEnable" default:"false"`                                                           // dogstatsd_metrics_stats_enable - for debug
-	BufferSize                        int              `json:"bufferSize" default:"8192"`                                                                    // dogstatsd_buffer_size
-	MetricNamespace                   string           `json:"metricNamespace"`                                                                              // statsd_metric_namespace
-	MetricNamespaceBlacklist          []string         `json:"metricNamespaceBlacklist"`                                                                     // statsd_metric_namespace_blacklist
-	Tags                              []string         `json:"tags"`                                                                                         // dogstatsd_tags
-	EntityIdPrecedence                bool             `json:"entityIdPrecedence"`                                                                           // dogstatsd_entity_id_precedence
-	EolRequired                       []string         `json:"eolRequired"`                                                                                  // dogstatsd_eol_required
-	DisableVerboseLogs                bool             `json:"disableVerboseLogs"`                                                                           // dogstatsd_disable_verbose_logs
-	ForwardHost                       string           `json:"forwardHost"`                                                                                  // statsd_forward_host
-	ForwardPort                       int              `json:"forwardPort"`                                                                                  // statsd_forward_port
-	QueueSize                         int              `json:"queueSize" default:"1024"`                                                                     // dogstatsd_queue_size
-	MapperCacheSize                   int              `json:"mapperCacheSize" default:"1000"`                                                               // dogstatsd_mapper_cache_size
-	MapperProfiles                    []MappingProfile `json:"mapperProfiles"`                                                                               // dogstatsd_mapper_profiles
-	StringInternerSize                int              `json:"stringInternerSize" default:"4096"`                                                            // dogstatsd_string_interner_size
-	SocketRcvbuf                      int              `json:"socektRcvbuf"`                                                                                 // dogstatsd_so_rcvbuf
-	PacketBufferSize                  int              `json:"packetBufferSize" default:"32"`                                                                // dogstatsd_packet_buffer_size
+	ExpirySeconds_                    int              `json:"expiry_seconds" flag:"statsd-expiry-seconds" default:"300" description:"expirySeconds(Second)"` // dogstatsd_expiry_seconds
+	StatsEnable                       bool             `json:"stats_enable" default:"true"`                                                                   // dogstatsd_stats_enable
+	StatsBuffer                       int              `json:"stats_buffer" default:"10"`                                                                     // dogstatsd_stats_buffer
+	MetricsStatsEnable                bool             `json:"metrics_stats_enable" default:"false"`                                                          // dogstatsd_metrics_stats_enable - for debug
+	BufferSize                        int              `json:"buffer_size" default:"8192"`                                                                    // dogstatsd_buffer_size
+	MetricNamespace                   string           `json:"metric_namespace"`                                                                              // statsd_metric_namespace
+	MetricNamespaceBlacklist          []string         `json:"metric_namespace_blacklist"`                                                                    // statsd_metric_namespace_blacklist
+	Tags                              []string         `json:"tags"`                                                                                          // dogstatsd_tags
+	EntityIdPrecedence                bool             `json:"entity_id_precedence"`                                                                          // dogstatsd_entity_id_precedence
+	EolRequired                       []string         `json:"eol_required"`                                                                                  // dogstatsd_eol_required
+	DisableVerboseLogs                bool             `json:"disable_verbose_logs"`                                                                          // dogstatsd_disable_verbose_logs
+	ForwardHost                       string           `json:"forward_host"`                                                                                  // statsd_forward_host
+	ForwardPort                       int              `json:"forward_port"`                                                                                  // statsd_forward_port
+	QueueSize                         int              `json:"queue_size" default:"1024"`                                                                     // dogstatsd_queue_size
+	MapperCacheSize                   int              `json:"mapper_cache_size" default:"1000"`                                                              // dogstatsd_mapper_cache_size
+	MapperProfiles                    []MappingProfile `json:"mapper_profiles"`                                                                               // dogstatsd_mapper_profiles
+	StringInternerSize                int              `json:"string_interner_size" default:"4096"`                                                           // dogstatsd_string_interner_size
+	SocketRcvbuf                      int              `json:"socekt_rcvbuf"`                                                                                 // dogstatsd_so_rcvbuf
+	PacketBufferSize                  int              `json:"packet_buffer_size" default:"32"`                                                               // dogstatsd_packet_buffer_size
 	PacketBufferFlushTimeout          time.Duration    `json:"-"`
-	PacketBufferFlushTimeout_         int              `json:"packetBufferFlushTimeout" flag:"statsd-packet-buffer-flush-timeout" default:"100" description:"packetBufferFlushTimeout(Millisecond)"` // dogstatsd_packet_buffer_flush_timeout
-	TagCardinality                    string           `json:"tagCardinality" default:"low"`                                                                                                         // dogstatsd_tag_cardinality
-	NonLocalTraffic                   bool             `json:"nonLocalTraffic"`                                                                                                                      // dogstatsd_non_local_traffic
-	OriginDetection                   bool             `json:"OriginDetection"`                                                                                                                      // dogstatsd_origin_detection
-	HistogramCopyToDistribution       bool             `json:"histogramCopyToDistribution"`                                                                                                          // histogram_copy_to_distribution
-	HistogramCopyToDistributionPrefix string           `json:"histogramCopyToDistributionPrefix"`                                                                                                    // histogram_copy_to_distribution_prefix
+	PacketBufferFlushTimeout_         int              `json:"packet_buffer_flush_timeout" flag:"statsd-packet-buffer-flush-timeout" default:"100" description:"packetBufferFlushTimeout(Millisecond)"` // dogstatsd_packet_buffer_flush_timeout
+	TagCardinality                    string           `json:"tag_cardinality" default:"low"`                                                                                                           // dogstatsd_tag_cardinality
+	NonLocalTraffic                   bool             `json:"non_local_traffic"`                                                                                                                       // dogstatsd_non_local_traffic
+	OriginDetection                   bool             `json:"OriginDetection"`                                                                                                                         // dogstatsd_origin_detection
+	HistogramCopyToDistribution       bool             `json:"histogram_copy_to_distribution"`                                                                                                          // histogram_copy_to_distribution
+	HistogramCopyToDistributionPrefix string           `json:"histogram_copy_to_distribution_prefix"`                                                                                                   // histogram_copy_to_distribution_prefix
 }
 
 func (p *Statsd) Validate() error {
@@ -779,32 +779,32 @@ func (p *Statsd) Validate() error {
 
 type AdditionalEndpoint struct {
 	Endpoints []string `json:"endpoints"`
-	ApiKeys   []string `json:"apiKeys"`
+	ApiKeys   []string `json:"api_keys"`
 }
 
 type Forwarder struct {
-	AdditionalEndpoints       []AdditionalEndpoint `json:"additionalEndpoints"` // additional_endpoints
+	AdditionalEndpoints       []AdditionalEndpoint `json:"additional_endpoints"` // additional_endpoints
 	ApikeyValidationInterval  time.Duration        `json:"-"`
-	ApikeyValidationInterval_ int                  `json:"apikeyValidationInterval" flag:"forwarder-apikey-validation-interval" default:"3600" description:"apikeyValidationInterval(Second)"` // forwarder_apikey_validation_interval
-	BackoffBase               float64              `json:"backoffBase" default:"2"`                                                                                                            // forwarder_backoff_base
-	BackoffFactor             float64              `json:"backoffFactor" default:"2"`                                                                                                          // forwarder_backoff_factor
-	BackoffMax                float64              `json:"backoffMax" default:"64"`                                                                                                            // forwarder_backoff_max
+	ApikeyValidationInterval_ int                  `json:"apikey_validation_interval" flag:"forwarder-apikey-validation-interval" default:"3600" description:"apikeyValidationInterval(Second)"` // forwarder_apikey_validation_interval
+	BackoffBase               float64              `json:"backoff_base" default:"2"`                                                                                                             // forwarder_backoff_base
+	BackoffFactor             float64              `json:"backoff_factor" default:"2"`                                                                                                           // forwarder_backoff_factor
+	BackoffMax                float64              `json:"backoff_max" default:"64"`                                                                                                             // forwarder_backoff_max
 	ConnectionResetInterval   time.Duration        `json:"-"`
-	ConnectionResetInterval_  int                  `json:"connectionResetInterval" flag:"forwarder-connection-reset-interval" description:"connectionResetInterval(Second)"` // forwarder_connection_reset_interval
-	FlushToDiskMemRatio       float64              `json:"flushToDiskMemRatio" default:"0.5"`                                                                                // forwarder_flush_to_disk_mem_ratio
-	NumWorkers                int                  `json:"numWorkers" default:"1"`                                                                                           // forwarder_num_workers
-	OutdatedFileInDays        int                  `json:"outdatedFileInDays" default:"10"`                                                                                  // forwarder_outdated_file_in_days
-	RecoveryInterval          int                  `json:"recoveryInterval" default:"2"`                                                                                     // forwarder_recovery_interval
-	RecoveryReset             bool                 `json:"recoveryReset"`                                                                                                    // forwarder_recovery_reset
+	ConnectionResetInterval_  int                  `json:"connection_reset_interval" flag:"forwarder-connection-reset-interval" description:"connectionResetInterval(Second)"` // forwarder_connection_reset_interval
+	FlushToDiskMemRatio       float64              `json:"flush_to_disk_mem_ratio" default:"0.5"`                                                                              // forwarder_flush_to_disk_mem_ratio
+	NumWorkers                int                  `json:"num_workers" default:"1"`                                                                                            // forwarder_num_workers
+	OutdatedFileInDays        int                  `json:"outdated_file_in_days" default:"10"`                                                                                 // forwarder_outdated_file_in_days
+	RecoveryInterval          int                  `json:"recovery_interval" default:"2"`                                                                                      // forwarder_recovery_interval
+	RecoveryReset             bool                 `json:"recovery_reset"`                                                                                                     // forwarder_recovery_reset
 	StopTimeout               time.Duration        `json:"-"`
-	StopTimeout_              int                  `json:"stopTimeout" flag:"forwarder-stop-timeout" default:"2" description:"stopTimeout(Second)"` // forwarder_stop_timeout
-	StorageMaxDiskRatio       float64              `json:"storageMaxDiskRatio" default:"0.95"`                                                      // forwarder_storage_max_disk_ratio
-	StorageMaxSizeInBytes     int64                `json:"storageMaxSizeInBytes"`                                                                   // forwarder_storage_max_size_in_bytes
-	StoragePath               string               `json:"storagePath"`                                                                             // forwarder_storage_path
+	StopTimeout_              int                  `json:"stop_timeout" flag:"forwarder-stop-timeout" default:"2" description:"stopTimeout(Second)"` // forwarder_stop_timeout
+	StorageMaxDiskRatio       float64              `json:"storage_max_disk_ratio" default:"0.95"`                                                    // forwarder_storage_max_disk_ratio
+	StorageMaxSizeInBytes     int64                `json:"storage_max_size_in_bytes"`                                                                // forwarder_storage_max_size_in_bytes
+	StoragePath               string               `json:"storage_path"`                                                                             // forwarder_storage_path
 	Timeout                   time.Duration        `json:"-"`
 	Timeout_                  int                  `json:"timeout" flag:"forwarder-timeout" default:"20" description:"timeout(Second)"` // forwarder_timeout
-	RetryQueuePayloadsMaxSize int                  `json:"retryQueuePayloadsMaxSize" default:"15728640" description:"15m"`              // forwarder_retry_queue_payloads_max_size
-	//RetryQueueMaxSize         int           `json:"retryQueueMaxSize"`         // forwarder_retry_queue_max_size
+	RetryQueuePayloadsMaxSize int                  `json:"retry_queue_payloads_max_size" default:"15728640" description:"15m"`          // forwarder_retry_queue_payloads_max_size
+	//RetryQueueMaxSize         int           `json:"retry_queue_max_size"`         // forwarder_retry_queue_max_size
 
 }
 
@@ -848,8 +848,8 @@ type Check struct {
 }
 
 type CloudFoundryGarden struct {
-	ListenNetwork string `json:"listenNetwork" default:"unix"`                              // cloud_foundry_garden.listen_network
-	ListenAddress string `json:"listenAddress" default:"/var/vcap/data/garden/garden.sock"` // cloud_foundry_garden.listen_address
+	ListenNetwork string `json:"listen_network" default:"unix"`                              // cloud_foundry_garden.listen_network
+	ListenAddress string `json:"listen_address" default:"/var/vcap/data/garden/garden.sock"` // cloud_foundry_garden.listen_address
 }
 
 // ProcessingRule defines an exclusion or a masking rule to
@@ -857,7 +857,7 @@ type CloudFoundryGarden struct {
 type ProcessingRule struct {
 	Type               string
 	Name               string
-	ReplacePlaceholder string `json:"replacePlaceholder"`
+	ReplacePlaceholder string `json:"replace_placeholder"`
 	Pattern            string
 	// TODO: should be moved out
 	Regex       *regexp.Regexp
@@ -869,48 +869,48 @@ func (p *ProcessingRule) Validate() error {
 }
 
 type LogsConfig struct {
-	Enabled                     bool                        `json:"enabled"`             // logs_enabled
-	AdditionalEndpoints         []logstypes.Endpoint        `json:"additionalEndpoints"` // logs_config.additional_endpoints
-	ContainerCollectAll         bool                        `json:"containerCollectAll"` // logs_config.container_collect_all
-	ProcessingRules             []*logstypes.ProcessingRule `json:"processingRules"`     // logs_config.processing_rules
-	APIKey                      string                      `json:"apiKey"`              // logs_config.api_key
-	DevModeNoSSL                bool                        `json:"devModeNoSSL"`        // logs_config.dev_mode_no_ssl
+	Enabled                     bool                        `json:"enabled"`               // logs_enabled
+	AdditionalEndpoints         []logstypes.Endpoint        `json:"additional_endpoints"`  // logs_config.additional_endpoints
+	ContainerCollectAll         bool                        `json:"container_collect_all"` // logs_config.container_collect_all
+	ProcessingRules             []*logstypes.ProcessingRule `json:"processing_rules"`      // logs_config.processing_rules
+	APIKey                      string                      `json:"api_key"`               // logs_config.api_key
+	DevModeNoSSL                bool                        `json:"dev_mode_no_ssl"`       // logs_config.dev_mode_no_ssl
 	ExpectedTagsDuration        time.Duration               `json:"-"`
-	ExpectedTagsDuration_       int                         `json:"expectedTagsDuration" flag:"logs-expected-tags-duration" description:"expectedTagsDuration(Second)"` // logs_config.expected_tags_duration
-	Socks5ProxyAddress          string                      `json:"socks5ProxyAddress"`                                                                                 // logs_config.socks5_proxy_address
-	UseTCP                      bool                        `json:"useTCP"`                                                                                             // logs_config.use_tcp
-	UseHTTP                     bool                        `json:"useHTTP"`                                                                                            // logs_config.use_http
-	DevModeUseProto             bool                        `json:"devModeUseProto" default:"true"`                                                                     // logs_config.dev_mode_use_proto
+	ExpectedTagsDuration_       int                         `json:"expected_tags_duration" flag:"logs-expected-tags-duration" description:"expectedTagsDuration(Second)"` // logs_config.expected_tags_duration
+	Socks5ProxyAddress          string                      `json:"socks5_proxy_address"`                                                                                 // logs_config.socks5_proxy_address
+	UseTCP                      bool                        `json:"use_tcp"`                                                                                              // logs_config.use_tcp
+	UseHTTP                     bool                        `json:"use_http"`                                                                                             // logs_config.use_http
+	DevModeUseProto             bool                        `json:"dev_mode_use_proto" default:"true"`                                                                    // logs_config.dev_mode_use_proto
 	ConnectionResetInterval     time.Duration               `json:"-"`
-	ConnectionResetInterval_    int                         `json:"connectionResetInterval" flag:"logs-connection-reset-interval" default:"" description:"connectionResetInterval(Second)"` // logs_config.connection_reset_interval
-	LogsUrl                     string                      `json:"logsUrl"`                                                                                                                // logs_config.logs_dd_url, dd_url
-	UsePort443                  bool                        `json:"usePort443"`                                                                                                             // logs_config.use_port_443
-	UseSSL                      bool                        `json:"useSSL"`                                                                                                                 // !logs_config.logs_no_ssl
-	Url443                      string                      `json:"url443"`                                                                                                                 // logs_config.dd_url_443
-	UseCompression              bool                        `json:"useCompression" default:"true"`                                                                                          // logs_config.use_compression
-	CompressionLevel            int                         `json:"compressionLevel" default:"6"`                                                                                           // logs_config.compression_level
-	URL                         string                      `json:"url" default:"localhost:8080"`                                                                                           // logs_config.dd_url (e.g. localhost:8080)
+	ConnectionResetInterval_    int                         `json:"connection_reset_interval" flag:"logs-connection-reset-interval" default:"" description:"connectionResetInterval(Second)"` // logs_config.connection_reset_interval
+	LogsUrl                     string                      `json:"logs_url"`                                                                                                                 // logs_config.logs_dd_url, dd_url
+	UsePort443                  bool                        `json:"use_port443"`                                                                                                              // logs_config.use_port_443
+	UseSSL                      bool                        `json:"use_ssl"`                                                                                                                  // !logs_config.logs_no_ssl
+	Url443                      string                      `json:"url_443"`                                                                                                                  // logs_config.dd_url_443
+	UseCompression              bool                        `json:"use_compression" default:"true"`                                                                                           // logs_config.use_compression
+	CompressionLevel            int                         `json:"compression_level" default:"6"`                                                                                            // logs_config.compression_level
+	URL                         string                      `json:"url" default:"localhost:8080"`                                                                                             // logs_config.dd_url (e.g. localhost:8080)
 	BatchWait                   time.Duration               `json:"-"`
-	BatchWait_                  int                         `json:"batchWait" flag:"logs-batch-wait" default:"5" description:"batchWait(Second)"` // logs_config.batch_wait
-	BatchMaxConcurrentSend      int                         `json:"batchMaxConcurrentSend"`                                                       // logs_config.batch_max_concurrent_send
+	BatchWait_                  int                         `json:"batch_wait" flag:"logs-batch-wait" default:"5" description:"batchWait(Second)"` // logs_config.batch_wait
+	BatchMaxConcurrentSend      int                         `json:"batch_max_concurrent_send"`                                                     // logs_config.batch_max_concurrent_send
 	TaggerWarmupDuration        time.Duration               `json:"-"`
-	TaggerWarmupDuration_       int                         `json:"taggerWarmupDuration" flag:"logs-tagger-warmup-duration" description:"taggerWarmupDuration(Second)"` // logs_config.tagger_warmup_duration
+	TaggerWarmupDuration_       int                         `json:"tagger_warmup_duration" flag:"logs-tagger-warmup-duration" description:"taggerWarmupDuration(Second)"` // logs_config.tagger_warmup_duration
 	AggregationTimeout          time.Duration               `json:"-"`
-	AggregationTimeout_         int                         `json:"aggregationTimeout" flag:"logs-aggregation-timeout" default:"1000" description:"aggregationTimeout(Millisecond)"` // logs_config.aggregation_timeout
+	AggregationTimeout_         int                         `json:"aggregation_timeout" flag:"logs-aggregation-timeout" default:"1000" description:"aggregationTimeout(Millisecond)"` // logs_config.aggregation_timeout
 	CloseTimeout                time.Duration               `json:"-"`
-	CloseTimeout_               int                         `json:"closeTimeout" flag:"logs-close-timeout" default:"60" description:"closeTimeout(Second)"` // logs_config.close_timeout
+	CloseTimeout_               int                         `json:"close_timeout" flag:"logs-close-timeout" default:"60" description:"closeTimeout(Second)"` // logs_config.close_timeout
 	AuditorTTL                  time.Duration               `json:"-"`
-	AuditorTTL_                 int                         `json:"auditorTTL" flag:"logs-auditor-ttl" description:"auditorTTL(Second)"` // logs_config.auditor_ttl
-	RunPath                     string                      `json:"runPath"`                                                             // logs_config.run_path
-	OpenFilesLimit              int                         `json:"openFilesLimit" default:"100"`                                        // logs_config.open_files_limit
-	K8SContainerUseFile         bool                        `json:"k8SContainerUseFile"`                                                 // logs_config.k8s_container_use_file
-	DockerContainerUseFile      bool                        `json:"dockerContainerUseFile"`                                              // logs_config.docker_container_use_file
-	DockerContainerForceUseFile bool                        `json:"dockerContainerForceUseFile"`                                         // logs_config.docker_container_force_use_file
+	AuditorTTL_                 int                         `json:"auditor_ttl" flag:"logs-auditor-ttl" description:"auditorTTL(Second)"` // logs_config.auditor_ttl
+	RunPath                     string                      `json:"run_path"`                                                             // logs_config.run_path
+	OpenFilesLimit              int                         `json:"open_files_limit" default:"100"`                                       // logs_config.open_files_limit
+	K8SContainerUseFile         bool                        `json:"k8s_container_use_file"`                                               // logs_config.k8s_container_use_file
+	DockerContainerUseFile      bool                        `json:"docker_container_use_file"`                                            // logs_config.docker_container_use_file
+	DockerContainerForceUseFile bool                        `json:"docker_container_force_use_file"`                                      // logs_config.docker_container_force_use_file
 	DockerClientReadTimeout     time.Duration               `json:"-"`
-	DockerClientReadTimeout_    int                         `json:"dockerClientReadTimeout" flag:"logs-docker-client-read-timeout" default:"30" description:"dockerClientReadTimeout(Second)"` // logs_config.docker_client_read_timeout
-	FrameSize                   int                         `json:"frameSize" default:"9000"`                                                                                                  // logs_config.frame_size
+	DockerClientReadTimeout_    int                         `json:"docker_client_read_timeout" flag:"logs-docker-client-read-timeout" default:"30" description:"dockerClientReadTimeout(Second)"` // logs_config.docker_client_read_timeout
+	FrameSize                   int                         `json:"frame_size" default:"9000"`                                                                                                    // logs_config.frame_size
 	StopGracePeriod             time.Duration               `json:"-"`
-	StopGracePeriod_            int                         `json:"stopGracePeriod" flag:"logs-stop-grace-period" default:"30" description:"stopGracePeriod(Second)"` // logs_config.stop_grace_period
+	StopGracePeriod_            int                         `json:"stop_grace_period" flag:"logs-stop-grace-period" default:"30" description:"stopGracePeriod(Second)"` // logs_config.stop_grace_period
 }
 
 func (p *LogsConfig) Validate() error {
@@ -944,10 +944,10 @@ func (p *LogsConfig) Validate() error {
 }
 
 type Network struct {
-	ID                         string `json:"id"`                         // network.id
-	EnableHttpMonitoring       bool   `json:"enableHttpMonitoring"`       // network_config.enable_http_monitoring
-	IgnoreConntrackInitFailure bool   `json:"ignoreConntrackInitFailure"` // network_config.ignore_conntrack_init_failure
-	EnableGatewayLookup        bool   `json:"enableGatewayLookup"`        // network_config.enable_gateway_lookup
+	ID                         string `json:"id"`                            // network.id
+	EnableHttpMonitoring       bool   `json:"enable_http_monitoring"`        // network_config.enable_http_monitoring
+	IgnoreConntrackInitFailure bool   `json:"ignore_conntrack_init_failure"` // network_config.ignore_conntrack_init_failure
+	EnableGatewayLookup        bool   `json:"enable_gateway_lookup"`         // network_config.enable_gateway_lookup
 }
 
 func (p *Network) Validate() error {
@@ -968,15 +968,15 @@ func (p *Exporter) Validate() error {
 }
 
 type ClusterChecks struct {
-	ClcRunnersPort             int           `json:"clcRunnersPort" default:"5005"`         // cluster_checks.clc_runners_port
-	AdvancedDispatchingEnabled bool          `json:"advancedDispatchingEnabled"`            // cluster_checks.advanced_dispatching_enabled
-	ClusterTagName             string        `json:"clusterTagName" default:"cluisterName"` // cluster_checks.cluster_tag_name
-	Enabled                    bool          `json:"enabled"`                               // cluster_checks.enabled
-	ExtraTags                  []string      `json:"extraTags"`                             // cluster_checks.extra_tags
+	ClcRunnersPort             int           `json:"clc_runners_port" default:"5005"`         // cluster_checks.clc_runners_port
+	AdvancedDispatchingEnabled bool          `json:"advanced_dispatching_enabled"`            // cluster_checks.advanced_dispatching_enabled
+	ClusterTagName             string        `json:"cluster_tag_name" default:"cluisterName"` // cluster_checks.cluster_tag_name
+	Enabled                    bool          `json:"enabled"`                                 // cluster_checks.enabled
+	ExtraTags                  []string      `json:"extra_tags"`                              // cluster_checks.extra_tags
 	NodeExpirationTimeout      time.Duration `json:"-"`
-	NodeExpirationTimeout_     int           `json:"nodeExpirationTimeout" flag:"clc-node-expiration-timeout" default:"30" description:"nodeExpirationTimeout(Second)"` // cluster_checks.node_expiration_timeout
+	NodeExpirationTimeout_     int           `json:"node_expiration_timeout" flag:"clc-node-expiration-timeout" default:"30" description:"nodeExpirationTimeout(Second)"` // cluster_checks.node_expiration_timeout
 	WarmupDuration             time.Duration `json:"-"`
-	WarmupDuration_            int           `json:"warmupDuration" flag:"clc-warmup-duration" default:"30" description:"warmupDuration(Second)"` // cluster_checks.warmup_duration
+	WarmupDuration_            int           `json:"warmup_duration" flag:"clc-warmup-duration" default:"30" description:"warmupDuration(Second)"` // cluster_checks.warmup_duration
 
 }
 
@@ -988,12 +988,12 @@ func (p *ClusterChecks) Validate() error {
 }
 
 type ClusterAgent struct {
-	Url                   string `json:"url"`                                               // cluster_agent.url
-	AuthToken             string `json:"authToken"`                                         // cluster_agent.auth_token
-	CmdPort               int    `json:"cmdPort" default:"5005"`                            // cluster_agent.cmd_port
-	Enabled               bool   `json:"enabled"`                                           // cluster_agent.enabled
-	KubernetesServiceName string `json:"kubernetesServiceName" default:"n9e-cluster-agent"` // cluster_agent.kubernetes_service_name
-	TaggingFallback       string `json:"taggingFallback"`                                   // cluster_agent.tagging_fallback
+	Url                   string `json:"url"`                                                 // cluster_agent.url
+	AuthToken             string `json:"auth_token"`                                          // cluster_agent.auth_token
+	CmdPort               int    `json:"cmd_port" default:"5005"`                             // cluster_agent.cmd_port
+	Enabled               bool   `json:"enabled"`                                             // cluster_agent.enabled
+	KubernetesServiceName string `json:"kubernetes_service_name" default:"n9e-cluster-agent"` // cluster_agent.kubernetes_service_name
+	TaggingFallback       string `json:"tagging_fallback"`                                    // cluster_agent.tagging_fallback
 }
 
 func (p *ClusterAgent) Validate() error {
@@ -1010,18 +1010,18 @@ type MappingProfile struct {
 // MetricMapping represent one mapping rule
 type MetricMapping struct {
 	Match     string            `json:"match" json:"match"`
-	MatchType string            `json:"matchType" json:"matchType"`
+	MatchType string            `json:"match_type" json:"match_type"`
 	Name      string            `json:"name" json:"name"`
 	Tags      map[string]string `json:"tags" json:"tags"`
 }
 
 type OrchestratorExplorer struct { // orchestrator_explorer
-	Url                       string   `json:"url"`                       // orchestrator_explorer.orchestrator_dd_url
-	AdditionalEndpoints       []string `json:"additionalEndpoints"`       // orchestrator_explorer.orchestrator_additional_endpoints
-	CustomSensitiveWords      []string `json:"customSensitiveWords"`      // orchestrator_explorer.custom_sensitive_words
-	ContainerScrubbingEnabled bool     `json:"containerScrubbingEnabled"` // orchestrator_explorer.container_scrubbing.enabled
-	Enabled                   bool     `json:"enabled" default:"true"`    // orchestrator_explorer.enabled
-	ExtraTags                 []string `json:"extraTags"`                 // orchestrator_explorer.extra_tags
+	Url                       string   `json:"url"`                         // orchestrator_explorer.orchestrator_dd_url
+	AdditionalEndpoints       []string `json:"additional_endpoints"`        // orchestrator_explorer.orchestrator_additional_endpoints
+	CustomSensitiveWords      []string `json:"custom_sensitive_words"`      // orchestrator_explorer.custom_sensitive_words
+	ContainerScrubbingEnabled bool     `json:"container_scrubbing_enabled"` // orchestrator_explorer.container_scrubbing.enabled
+	Enabled                   bool     `json:"enabled" default:"true"`      // orchestrator_explorer.enabled
+	ExtraTags                 []string `json:"extra_tags"`                  // orchestrator_explorer.extra_tags
 }
 
 func (p *OrchestratorExplorer) Validate() error {
@@ -1030,7 +1030,7 @@ func (p *OrchestratorExplorer) Validate() error {
 
 type Autoconfig struct {
 	Enabled         bool       `json:"enabled" default:"true"` // autoconfig_from_environment
-	ExcludeFeatures []string   `json:"excludeFeatures"`        // autoconfig_exclude_features
+	ExcludeFeatures []string   `json:"exclude_features"`       // autoconfig_exclude_features
 	features        FeatureMap `json:"-"`
 }
 
@@ -1039,9 +1039,9 @@ func (p *Autoconfig) Validate() error {
 }
 
 type PrometheusScrape struct {
-	Enabled          bool                     `json:"enabled"`          // prometheus_scrape.enabled
-	ServiceEndpoints bool                     `json:"serviceEndpoints"` // prometheus_scrape.service_endpoints
-	Checks           []*types.PrometheusCheck `json:"checks"`           // prometheus_scrape.checks
+	Enabled          bool                     `json:"enabled"`           // prometheus_scrape.enabled
+	ServiceEndpoints bool                     `json:"service_endpoints"` // prometheus_scrape.service_endpoints
+	Checks           []*types.PrometheusCheck `json:"checks"`            // prometheus_scrape.checks
 }
 
 func (p *PrometheusScrape) Validate() error {
@@ -1052,17 +1052,17 @@ func (p *PrometheusScrape) Validate() error {
 type ConfigurationProviders struct {
 	Name             string `json:"name"`
 	Polling          bool   `json:"polling"`
-	PollInterval     string `json:"pollInterval"`
-	TemplateURL      string `json:"templateUrl"`
-	TemplateDir      string `json:"templateDir"`
+	PollInterval     string `json:"poll_interval"`
+	TemplateURL      string `json:"template_url"`
+	TemplateDir      string `json:"template_dir"`
 	Username         string `json:"username"`
 	Password         string `json:"password"`
-	CAFile           string `json:"caFile"`
-	CAPath           string `json:"caPath"`
-	CertFile         string `json:"certFile"`
-	KeyFile          string `json:"keyFile"`
+	CAFile           string `json:"ca_file"`
+	CAPath           string `json:"ca_path"`
+	CertFile         string `json:"cert_file"`
+	KeyFile          string `json:"key_file"`
 	Token            string `json:"token"`
-	GraceTimeSeconds int    `json:"graceTimeSeconds"`
+	GraceTimeSeconds int    `json:"grace_time_seconds"`
 }
 
 // Listeners helps unmarshalling `listeners` config param
