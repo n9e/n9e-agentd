@@ -24,7 +24,7 @@ if ${pre} || [[ "$RELEASE" == "rc"* ]]; then
 	# pre-release
 	ghr -u n9e -r n9e-agentd -delete --prerelease \
 		-b "n9e-agentd v${VERSION}-${RELEASE} is a pre-release. It is to help gather feedback from n9e as well as give users a chance to test agentd in dev environments before v${VERSION} is officially released."\
-		pre-release ${dst_dir}
+		v${VERSION}-${RELEASE} ${dst_dir}
 else
 	# release
 	ghr -u n9e -r n9e-agentd -delete v${VERSION}-${RELEASE} ${dst_dir}

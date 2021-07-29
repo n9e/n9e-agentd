@@ -17,14 +17,12 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const noJMXErrorString = "jmx is not compiled in this agent"
+var noJMXErrorString = errors.New("jmx is not compiled in this agent")
 
-func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
-	klog.Error(noJMXErrorString)
-	http.Error(w, noJMXErrorString, 500)
+func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+	return nil, noJMXErrorString
 }
 
-func setJMXStatus(w http.ResponseWriter, r *http.Request) {
-	klog.Error(noJMXErrorString)
-	http.Error(w, noJMXErrorString, 500)
+func setJMXStatus(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+	return nil, noJMXErrorString
 }

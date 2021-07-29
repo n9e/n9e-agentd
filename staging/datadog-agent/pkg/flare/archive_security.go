@@ -15,6 +15,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
 	"k8s.io/klog/v2"
 )
 
@@ -125,7 +126,7 @@ func zipSecurityAgentStatusFile(tempDir, hostname string, runtimeStatus map[stri
 }
 
 func zipComplianceFiles(tempDir, hostname string, permsInfos permissionsInfos) error {
-	compDir := config.Datadog.GetString("compliance_config.dir")
+	compDir := config.C.ComplianceConfigDir
 
 	if permsInfos != nil {
 		addParentPerms(compDir, permsInfos)
@@ -152,7 +153,7 @@ func zipComplianceFiles(tempDir, hostname string, permsInfos permissionsInfos) e
 }
 
 func zipRuntimeFiles(tempDir, hostname string, permsInfos permissionsInfos) error {
-	runtimeDir := config.Datadog.GetString("runtime_security_config.policies.dir")
+	runtimeDir := config.C.RuntimeSecurity.PoliciesDir
 
 	if permsInfos != nil {
 		addParentPerms(runtimeDir, permsInfos)

@@ -1,0 +1,4 @@
+package snmp
+
+func test() {
+}

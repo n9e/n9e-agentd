@@ -5,7 +5,7 @@
 
 // +build !windows
 
-package apiserver
+package authentication
 
 import (
 	"io/ioutil"

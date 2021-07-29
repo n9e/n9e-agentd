@@ -24,14 +24,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
-	apiutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
+	auth "github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	apiutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/diagnose"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/secrets"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
 	"k8s.io/klog/v2"
 
 	"github.com/mholt/archiver/v3"
@@ -46,10 +47,8 @@ const (
 )
 
 var (
-	pprofURL = fmt.Sprintf("http://127.0.0.1:%s/debug/pprof/goroutine?debug=2",
-		config.Datadog.GetString("expvar_port"))
-	telemetryURL = fmt.Sprintf("http://127.0.0.1:%s/telemetry",
-		config.Datadog.GetString("expvar_port"))
+	pprofURL     = fmt.Sprintf("http://127.0.0.1:%s/debug/pprof/goroutine?debug=2", config.C.Exporter.Port)
+	telemetryURL = fmt.Sprintf("http://127.0.0.1:%s/telemetry", config.C.Exporter.Port)
 
 	// Match .yaml and .yml to ship configuration files in the flare.
 	cnfFileExtRx = regexp.MustCompile(`(?i)\.ya?ml`)
@@ -127,7 +126,7 @@ func CreatePerformanceProfile(prefix, debugURL string, cpusec int, target *Profi
 func CreateArchive(local bool, distPath, pyChecksPath string, logFilePaths []string, pdata ProfileData) (string, error) {
 	zipFilePath := getArchivePath()
 	confSearchPaths := SearchPaths{
-		"":        config.Datadog.GetString("confd_path"),
+		"":        config.C.ConfdPath,
 		"dist":    filepath.Join(distPath, "conf.d"),
 		"checksd": pyChecksPath,
 	}
@@ -185,8 +184,8 @@ func createArchive(confSearchPaths SearchPaths, local bool, zipFilePath string, 
 	}
 
 	// auth token permissions info (only if existing)
-	if _, err = os.Stat(security.GetAuthTokenFilepath()); err == nil && !os.IsNotExist(err) {
-		permsInfos.add(security.GetAuthTokenFilepath())
+	if _, err = os.Stat(auth.GetAuthTokenFilepath()); err == nil && !os.IsNotExist(err) {
+		permsInfos.add(auth.GetAuthTokenFilepath())
 	}
 
 	err = zipConfigFiles(tempDir, hostname, confSearchPaths, permsInfos)
@@ -199,7 +198,7 @@ func createArchive(confSearchPaths SearchPaths, local bool, zipFilePath string, 
 		klog.Errorf("Could not zip exp var: %s", err)
 	}
 
-	if config.Datadog.GetBool("system_probe_config.enabled") {
+	if config.C.SystemProbe.Enabled {
 		err = zipSystemProbeStats(tempDir, hostname)
 		if err != nil {
 			klog.Errorf("Could not zip system probe exp var stats: %s", err)
@@ -236,7 +235,7 @@ func createArchive(confSearchPaths SearchPaths, local bool, zipFilePath string, 
 		klog.Errorf("Could not zip health check: %s", err)
 	}
 
-	if config.Datadog.GetBool("telemetry.enabled") {
+	if config.C.TelemetryEnabled {
 		err = zipTelemetry(tempDir, hostname)
 		if err != nil {
 			klog.Errorf("Could not collect telemetry metrics: %s", err)
@@ -437,8 +436,8 @@ func zipExpVar(tempDir, hostname string) error {
 	}
 
 	apmPort := "8126"
-	if config.Datadog.IsSet("apm_config.receiver_port") {
-		apmPort = config.Datadog.GetString("apm_config.receiver_port")
+	if port := config.C.Apm.ReceiverPort; port != "" {
+		apmPort = port
 	}
 	f := filepath.Join(tempDir, hostname, "expvar", "trace-agent")
 	w, err := newRedactingWriter(f, os.ModePerm, true)
@@ -473,7 +472,7 @@ func zipExpVar(tempDir, hostname string) error {
 }
 
 func zipSystemProbeStats(tempDir, hostname string) error {
-	sysProbeStats := status.GetSystemProbeStats(config.Datadog.GetString("system_probe_config.sysprobe_socket"))
+	sysProbeStats := status.GetSystemProbeStats(config.C.SystemProbe.SysprobeSocket)
 	sysProbeFile := filepath.Join(tempDir, hostname, "expvar", "system-probe")
 	sysProbeWriter, err := newRedactingWriter(sysProbeFile, os.ModePerm, true)
 	if err != nil {
@@ -490,7 +489,7 @@ func zipSystemProbeStats(tempDir, hostname string) error {
 }
 
 func zipConfigFiles(tempDir, hostname string, confSearchPaths SearchPaths, permsInfos permissionsInfos) error {
-	c, err := yaml.Marshal(config.Datadog.AllSettings())
+	c, err := yaml.Marshal(config.C)
 	if err != nil {
 		return err
 	}
@@ -517,9 +516,9 @@ func zipConfigFiles(tempDir, hostname string, confSearchPaths SearchPaths, perms
 		return err
 	}
 
-	if config.Datadog.ConfigFileUsed() != "" {
+	if config.Configfile != "" {
 		// zip up the config file that was actually used, if one exists
-		filePath := config.Datadog.ConfigFileUsed()
+		filePath := config.Configfile
 		if err = createConfigFiles(filePath, tempDir, hostname, permsInfos); err != nil {
 			return err
 		}
@@ -586,7 +585,7 @@ func zipDiagnose(tempDir, hostname string) error {
 }
 
 func zipRegistryJSON(tempDir, hostname string) error {
-	originalPath := filepath.Join(config.Datadog.GetString("logs_config.run_path"), "registry.json")
+	originalPath := filepath.Join(config.C.LogsConfig.RunPath, "registry.json")
 	original, err := os.Open(originalPath)
 	if err != nil {
 		return err
@@ -610,7 +609,7 @@ func zipRegistryJSON(tempDir, hostname string) error {
 }
 
 func zipVersionHistory(tempDir, hostname string) error {
-	originalPath := filepath.Join(config.Datadog.GetString("run_path"), "version-history.json")
+	originalPath := filepath.Join(config.C.RunPath, "version-history.json")
 	original, err := os.Open(originalPath)
 	if err != nil {
 		return err
@@ -682,7 +681,7 @@ func zipTaggerList(tempDir, hostname string) error {
 	}
 
 	if taggerListURL == "" {
-		taggerListURL = fmt.Sprintf("https://%v:%v/agent/tagger-list", ipcAddress, config.Datadog.GetInt("cmd_port"))
+		taggerListURL = fmt.Sprintf("https://%v/agent/tagger-list", ipcAddress)
 	}
 
 	c := apiutil.GetClient(false) // FIX: get certificates right then make this true

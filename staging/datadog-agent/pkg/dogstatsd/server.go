@@ -19,14 +19,14 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/ckey"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd/listeners"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd/mapper"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	telemetry_utils "github.com/n9e/n9e-agentd/pkg/telemetry/utils"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 )

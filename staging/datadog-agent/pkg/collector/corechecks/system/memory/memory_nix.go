@@ -71,6 +71,9 @@ func (c *Check) Run() error {
 		sender.Gauge("system.swap.free", float64(s.Free)/mbSize, "", nil)
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
 		sender.Gauge("system.swap.pct_free", (100 - s.UsedPercent), "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.swap.pct_used", s.UsedPercent, "", nil)
+		}
 	} else {
 		klog.Errorf("memory.Check: could not retrieve swap memory stats: %s", errSwap)
 	}

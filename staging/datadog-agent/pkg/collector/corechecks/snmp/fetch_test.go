@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/gosnmp/gosnmp"
-
 	"github.com/stretchr/testify/assert"
 )
 

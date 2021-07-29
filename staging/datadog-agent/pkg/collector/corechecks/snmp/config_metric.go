@@ -8,31 +8,31 @@ import (
 )
 
 type symbolConfig struct {
-	OID          string `yaml:"OID"`
-	Name         string `yaml:"name"`
-	ExtractValue string `yaml:"extract_value"`
+	OID          string `json:"OID"`
+	Name         string `json:"name"`
+	ExtractValue string `json:"extract_value"`
 
 	extractValuePattern *regexp.Regexp
 }
 
 type metricTagConfig struct {
-	Tag string `yaml:"tag"`
+	Tag string `json:"tag"`
 
 	// Table config
-	Index  uint         `yaml:"index"`
-	Column symbolConfig `yaml:"column"`
+	Index  uint         `json:"index"`
+	Column symbolConfig `json:"column"`
 
 	// Symbol config
-	OID  string `yaml:"OID"`
-	Name string `yaml:"symbol"`
+	OID  string `json:"OID"`
+	Name string `json:"symbol"`
 
-	IndexTransform []metricIndexTransform `yaml:"index_transform"`
+	IndexTransform []metricIndexTransform `json:"index_transform"`
 
-	Mapping map[string]string `yaml:"mapping"`
+	Mapping map[string]string `json:"mapping"`
 
 	// Regex
-	Match string            `yaml:"match"`
-	Tags  map[string]string `yaml:"tags"`
+	Match string            `json:"match"`
+	Tags  map[string]string `json:"tags"`
 
 	symbolTag string
 	pattern   *regexp.Regexp
@@ -41,30 +41,30 @@ type metricTagConfig struct {
 type metricTagConfigList []metricTagConfig
 
 type metricIndexTransform struct {
-	Start uint `yaml:"start"`
-	End   uint `yaml:"end"`
+	Start uint `json:"start"`
+	End   uint `json:"end"`
 }
 
 type metricsConfigOption struct {
-	Placement    uint   `yaml:"placement"`
-	MetricSuffix string `yaml:"metric_suffix"`
+	Placement    uint   `json:"placement"`
+	MetricSuffix string `json:"metric_suffix"`
 }
 
 type metricsConfig struct {
 	// Symbol configs
-	Symbol symbolConfig `yaml:"symbol"`
+	Symbol symbolConfig `json:"symbol"`
 
 	// Legacy Symbol configs syntax
-	OID  string `yaml:"OID"`
-	Name string `yaml:"name"`
+	OID  string `json:"OID"`
+	Name string `json:"name"`
 
 	// Table configs
-	Symbols []symbolConfig `yaml:"symbols"`
+	Symbols []symbolConfig `json:"symbols"`
 
-	MetricTags metricTagConfigList `yaml:"metric_tags"`
+	MetricTags metricTagConfigList `json:"metric_tags"`
 
-	ForcedType string              `yaml:"forced_type"`
-	Options    metricsConfigOption `yaml:"options"`
+	ForcedType string              `json:"forced_type"`
+	Options    metricsConfigOption `json:"options"`
 }
 
 // getTags retrieve tags using the metric config and values

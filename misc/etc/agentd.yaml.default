@@ -11,6 +11,9 @@ agent:
   #
   ident: $ip
 
+  ## @param work_dir - string - optional
+  # workDir: /opt/n9e/agentd
+
   ## @param ident - string - required
   ## This field is similar to the `ident`
   #
@@ -20,21 +23,21 @@ agent:
   endpoints:
     - http://localhost:8000			# replace the server address here
 
-  ## @param histogram_aggregates - list of strings - optional - default: ["max", "median", "avg", "count"]
+  ## @param histogramAggregates - list of strings - optional - default: ["max", "median", "avg", "count"]
   ## Configure which aggregated value to compute.
   ## Possible values are: min, max, median, avg, sum and count.
   #
-  # histogram_aggregates:
+  # histogramAggregates:
   #   - max
   #   - median
   #   - avg
   #   - count
 
-  ## @param histogram_percentiles - list of strings - optional - default: ["0.95"]
+  ## @param histogramPercentiles - list of strings - optional - default: ["0.95"]
   ## Configure which percentiles are computed by the Agent. It must be a list of float between 0 and 1.
   ## Warning: percentiles must be specified as yaml strings
   #
-  # histogram_percentiles:
+  # histogramPercentiles:
   #   - "0.95"
 
   exporter:
@@ -50,14 +53,14 @@ agent:
     ## @param enabled - boolean - optional - default: true
     ## Set this option to false to disable the Agent statsd server.
     #
-    # enabled: true
+    # enabled: false
 
     ## @param port - integer - optional - default: 8125
     ## Override the Agent statsd port.
     #
     # port: 8125
 
-    ## @param metrics_stats_enable - boolean - optional - default: false
+    ## @param metricsStatsEnable - boolean - optional - default: false
     ## Set this parameter to true to have statsd collects basic statistics (count/last seen)
     #
-    # metrics_stats_enable: false
+    # metricsStatsEnable: false

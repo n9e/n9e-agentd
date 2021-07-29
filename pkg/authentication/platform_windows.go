@@ -3,16 +3,15 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
-package apiserver
+package authentication
 
 import (
-	"fmt"
 	"io/ioutil"
 	"syscall"
 
 	acl "github.com/hectane/go-acl"
-	"k8s.io/klog/v2"
 	"golang.org/x/sys/windows"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -31,18 +30,6 @@ func init() {
 			wellKnownSids[key] = sid
 		}
 	}
-}
-
-// lookupUsernameAndDomain obtains the username and domain for usid.
-func lookupUsernameAndDomain(usid *syscall.SID) (username, domain string, e error) {
-	username, domain, t, e := usid.LookupAccount("")
-	if e != nil {
-		return "", "", e
-	}
-	if t != syscall.SidTypeUser {
-		return "", "", fmt.Errorf("user: should be user account type, not %d", t)
-	}
-	return username, domain, nil
 }
 
 // writes auth token(s) to a file with the same permissions as datadog.yaml

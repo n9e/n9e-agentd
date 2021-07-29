@@ -1,6 +1,13 @@
 package config
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/yubo/apiserver/pkg/options"
+)
 
 // GetEnvDefault retrieves a value from the environment named by the key or return def if not set.
 func GetEnvDefault(key, def string) string {
@@ -58,4 +65,39 @@ func IsDir(path string) bool {
 		return false
 	}
 	return fi.IsDir()
+}
+
+var _ipcAddress string
+
+func GetIPCAddress() (string, error) {
+	if _ipcAddress != "" {
+		return _ipcAddress, nil
+	}
+
+	server, ok := options.ApiServerFrom(Context)
+	if !ok {
+		return "", fmt.Errorf("unable to get ipc address")
+	}
+	_ipcAddress = server.Address()
+	return _ipcAddress, nil
+}
+
+// FileUsedDir returns the absolute path to the folder containing the config
+// file used to populate the registry
+func FileUsedDir() string {
+	return filepath.Dir(ConfigFileUsed())
+}
+
+func ConfigFileUsed() string {
+	return Configfile
+}
+
+// SanitizeAPIKey strips newlines and other control characters from a given string.
+func SanitizeAPIKey(key string) string {
+	return strings.TrimSpace(key)
+}
+
+// GetDistPath returns the fully qualified path to the 'dist' directory
+func GetDistPath() string {
+	return C.DistPath
 }

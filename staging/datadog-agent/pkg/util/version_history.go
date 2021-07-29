@@ -11,9 +11,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
 	"github.com/n9e/n9e-agentd/pkg/version"
+	"k8s.io/klog/v2"
 )
 
 type versionHistoryEntry struct {
@@ -29,8 +28,8 @@ const maxVersionHistoryEntries = 60
 
 // LogVersionHistory loads version history file, append new entry if agent version is different than the last entry in the
 // JSON file, trim the file if too many entries then save the file.
-func LogVersionHistory() {
-	versionHistoryFilePath := filepath.Join(config.C.RunPath, "version-history.json")
+func LogVersionHistory(runPath string) {
+	versionHistoryFilePath := filepath.Join(runPath, "version-history.json")
 	logVersionHistoryToFile(versionHistoryFilePath, version.AgentVersion, time.Now().UTC())
 }
 

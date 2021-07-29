@@ -9,171 +9,84 @@
 package apiserver
 
 import (
-	"encoding/json"
-	"net"
+	"fmt"
 	"net/http"
+	"sort"
+	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/n9e/n9e-agentd/pkg/options"
-	/*
-		"gopkg.in/yaml.v2"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/flare"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/secrets"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
+	"github.com/yubo/apiserver/pkg/request"
+	"github.com/yubo/apiserver/pkg/rest"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
+)
 
-		"github.com/n9e/n9e-agentd/cmd/agentd/api/response"
-		"github.com/n9e/n9e-agentd/cmd/agentd/app/settings"
-		"github.com/n9e/n9e-agentd/cmd/agentd/common"
-		"github.com/n9e/n9e-agentd/cmd/agentd/gui"
-		"github.com/n9e/n9e-agentd/pkg/options"
-		"github.com/n9e/n9e-agentd/pkg/autodiscovery"
-		"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-		"github.com/n9e/n9e-agentd/pkg/config"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/flare"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/secrets"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-		"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-		"k8s.io/klog/v2"
-	*/)
-
-// SetupHandlers adds the specific handlers for /agent endpoints
-func (p *module) SetupHandlers(r *mux.Router) *mux.Router {
-	r.HandleFunc("/version", getVersion).Methods("GET")
-	r.HandleFunc("/hostname", p.getHostname).Methods("GET")
-	//r.HandleFunc("/flare", makeFlare).Methods("POST")
-	//r.HandleFunc("/status", getStatus).Methods("GET")
-	//r.HandleFunc("/stream-logs", streamLogs).Methods("POST")
-	//r.HandleFunc("/dogstatsd-stats", getDogstatsdStats).Methods("GET")
-	//r.HandleFunc("/status/formatted", getFormattedStatus).Methods("GET")
-	//r.HandleFunc("/status/health", getHealth).Methods("GET")
-	//r.HandleFunc("/{component}/status", componentStatusGetterHandler).Methods("GET")
-	//r.HandleFunc("/{component}/status", componentStatusHandler).Methods("POST")
-	//r.HandleFunc("/{component}/configs", componentConfigHandler).Methods("GET")
-	//r.HandleFunc("/gui/csrf-token", getCSRFToken).Methods("GET")
-	//r.HandleFunc("/config-check", getConfigCheck).Methods("GET")
-	//r.HandleFunc("/config", getFullRuntimeConfig).Methods("GET")
-	//r.HandleFunc("/config/list-runtime", getRuntimeConfigurableSettings).Methods("GET")
-	//r.HandleFunc("/config/{setting}", getRuntimeConfig).Methods("GET")
-	//r.HandleFunc("/config/{setting}", setRuntimeConfig).Methods("POST")
-	//r.HandleFunc("/tagger-list", getTaggerList).Methods("GET")
-	//r.HandleFunc("/secrets", secretInfo).Methods("GET")
-
-	return r
+func (p *module) installWs(c rest.GoRestfulContainer) {
+	rest.WsRouteBuild(&rest.WsOption{
+		Path:               "/api/v1",
+		GoRestfulContainer: c,
+		Routes: []rest.WsRoute{
+			{Method: "GET", SubPath: "/version", Handle: getVersion, Desc: "get version"},
+			{Method: "GET", SubPath: "/hostname", Handle: getHostname, Desc: "get hostname"},
+			{Method: "POST", SubPath: "/flare", Handle: makeFlare, Desc: "make flare"},
+			{Method: "GET", SubPath: "/status", Handle: getStatus, Desc: "get status"},
+			{Method: "POST", SubPath: "/stream-logs", Handle: streamLogs, Desc: "post stream logs"},
+			{Method: "GET", SubPath: "/statsd-stats", Handle: getDogstatsdStats, Desc: "get statsd stats"},
+			{Method: "GET", SubPath: "/status/formatted", Handle: getFormattedStatus, Desc: "get formatted status"},
+			{Method: "GET", SubPath: "/status/health", Handle: getHealth, Desc: "get health"},
+			{Method: "GET", SubPath: "/py/status", Handle: getPythonStatus, Desc: "get py status"},
+			{Method: "POST", SubPath: "/jmx/status", Handle: setJMXStatus, Desc: "set jmx status"},
+			{Method: "GET", SubPath: "/jmx/configs", Handle: getJMXConfigs, Desc: "get jmx configs"},
+			//{Method: "GET", SubPath: "/gui/csrf-token", Handle: nonHandle, Desc: "flare"},
+			{Method: "GET", SubPath: "/config-check", Handle: getConfigCheck, Desc: "get config check"},
+			{Method: "GET", SubPath: "/config", Handle: getFullRuntimeConfig, Desc: "get full runtime config"},
+			{Method: "GET", SubPath: "/config/list-runtime", Handle: getRuntimeConfigurableSettings, Desc: "get runtime configure able settings"},
+			{Method: "GET", SubPath: "/config/{setting}", Handle: getRuntimeConfig, Desc: "get runtime config"},
+			{Method: "POST", SubPath: "/config/{setting}", Handle: setRuntimeConfig, Desc: "set runtime config"},
+			{Method: "GET", SubPath: "/tagger-list", Handle: getTaggerList, Desc: "get tagger list"},
+			{Method: "GET", SubPath: "/secrets", Handle: secretInfo, Desc: "get secrets info"},
+		},
+	})
 }
 
-func getVersion(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	j, _ := json.Marshal(options.Version)
-	w.Write(j)
-}
-func (p *module) getHostname(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	j, _ := json.Marshal(p.hostname)
-	w.Write(j)
+func getVersion(w http.ResponseWriter, r *http.Request) (string, error) {
+	return options.Version, nil
 }
 
-/*
-func makeFlare(w http.ResponseWriter, r *http.Request) {
-	var profile flare.ProfileData
+func getHostname(w http.ResponseWriter, r *http.Request) (string, error) {
+	return config.C.Hostname, nil
+}
 
-	if r.Body != http.NoBody {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, klog.Errorf("Error while reading HTTP request body: %s", err).Error(), 500)
-			return
-		}
+func nonHandle(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
 
-		if err := json.Unmarshal(body, &profile); err != nil {
-			http.Error(w, klog.Errorf("Error while unmarshaling JSON from request body: %s", err).Error(), 500)
-			return
-		}
-	}
-
-	logFile := config.Datadog.GetString("log_file")
-	if logFile == "" {
-		logFile = common.DefaultLogFile
-	}
-	jmxLogFile := config.Datadog.GetString("jmx_log_file")
-	if jmxLogFile == "" {
-		jmxLogFile = common.DefaultJmxLogFile
-	}
+func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, profile flare.ProfileData) (string, error) {
 	klog.Infof("Making a flare")
-	filePath, err := flare.CreateArchive(false, common.GetDistPath(), common.PyChecksPath, []string{logFile, jmxLogFile}, profile)
-	if err != nil || filePath == "" {
-		if err != nil {
-			klog.Errorf("The flare failed to be created: %s", err)
-		} else {
-			klog.Warningf("The flare failed to be created")
-		}
-		http.Error(w, err.Error(), 500)
-	}
-	w.Write([]byte(filePath))
+	return flare.CreateArchive(false, config.C.DistPath, config.C.PyChecksPath, []string{}, profile)
 }
 
-func componentConfigHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	component := vars["component"]
-	switch component {
-	case "jmx":
-		getJMXConfigs(w, r)
-	default:
-		err := fmt.Errorf("bad url or resource does not exist")
-		klog.Errorf("%s", err.Error())
-		http.Error(w, err.Error(), 404)
-	}
-}
-
-func componentStatusGetterHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	component := vars["component"]
-	switch component {
-	case "py":
-		getPythonStatus(w, r)
-	default:
-		err := fmt.Errorf("bad url or resource does not exist")
-		klog.Errorf("%s", err.Error())
-		http.Error(w, err.Error(), 404)
-	}
-}
-
-func componentStatusHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	component := vars["component"]
-	switch component {
-	case "jmx":
-		setJMXStatus(w, r)
-	default:
-		err := fmt.Errorf("bad url or resource does not exist")
-		klog.Errorf("%s", err.Error())
-		http.Error(w, err.Error(), 404)
-	}
-}
-
-func getStatus(w http.ResponseWriter, r *http.Request) {
+func getStatus(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
 	klog.Info("Got a request for the status. Making status.")
-	s, err := status.GetStatus()
-	w.Header().Set("Content-Type", "application/json")
-	if err != nil {
-		klog.Errorf("Error getting status. Error: %v, Status: %v", err, s)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-
-	jsonStats, err := json.Marshal(s)
-	if err != nil {
-		klog.Errorf("Error marshalling status. Error: %v, Status: %v", err, s)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-
-	w.Write(jsonStats)
+	return status.GetStatus()
 }
 
-func streamLogs(w http.ResponseWriter, r *http.Request) {
+func streamLogs(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, filters *diagnostic.Filters) error {
 	klog.Info("Got a request for stream logs.")
 	w.Header().Set("Transfer-Encoding", "chunked")
 
@@ -181,41 +94,23 @@ func streamLogs(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		klog.Errorf("Expected a Flusher type, got: %v", w)
-		return
+		return fmt.Errorf("Expected a Flusher type, got: %v", w)
 	}
 
 	if logMessageReceiver == nil {
-		http.Error(w, "The logs agent is not running", 405)
 		flusher.Flush()
 		klog.Info("Logs agent is not running - can't stream logs")
-		return
+		return fmt.Errorf("The logs agent is not running")
 	}
 
 	if !logMessageReceiver.SetEnabled(true) {
-		http.Error(w, "Another client is already streaming logs.", 405)
 		flusher.Flush()
 		klog.Info("Logs are already streaming. Dropping connection.")
-		return
+		return fmt.Errorf("Another client is already streaming logs.")
 	}
 	defer logMessageReceiver.SetEnabled(false)
 
-	var filters diagnostic.Filters
-
-	if r.Body != http.NoBody {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, klog.Errorf("Error while reading HTTP request body: %s", err).Error(), 500)
-			return
-		}
-
-		if err := json.Unmarshal(body, &filters); err != nil {
-			http.Error(w, klog.Errorf("Error while unmarshaling JSON from request body: %s", err).Error(), 500)
-			return
-		}
-	}
-
-	conn := GetConnection(r)
+	conn, _ := request.ConnFrom(r.Context())
 
 	// Override the default server timeouts so the connection never times out
 	_ = conn.SetDeadline(time.Time{})
@@ -225,12 +120,12 @@ func streamLogs(w http.ResponseWriter, r *http.Request) {
 		// Handlers for detecting a closed connection (from either the server or client)
 		select {
 		case <-w.(http.CloseNotifier).CloseNotify():
-			return
+			return nil
 		case <-r.Context().Done():
-			return
+			return nil
 		default:
 		}
-		if line, ok := logMessageReceiver.Next(&filters); ok {
+		if line, ok := logMessageReceiver.Next(filters); ok {
 			fmt.Fprint(w, line)
 		} else {
 			// The buffer will flush on its own most of the time, but when we run out of logs flush so the client is up to date.
@@ -239,95 +134,68 @@ func streamLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getDogstatsdStats(w http.ResponseWriter, r *http.Request) {
+func getDogstatsdStats(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	klog.Info("Got a request for the statsd stats.")
 
-	if !config.Datadog.GetBool("use_dogstatsd") {
-		w.Header().Set("Content-Type", "application/json")
-		body, _ := json.Marshal(map[string]string{
-			"error":      "Dogstatsd not enabled in the Agent configuration",
-			"error_type": "no server",
-		})
-		w.WriteHeader(400)
-		w.Write(body)
-		return
+	if !config.C.Statsd.Enabled {
+		return nil, fmt.Errorf("statsd not enabled in the Agent configuration")
 	}
 
-	if !config.Datadog.GetBool("dogstatsd_metrics_stats_enable") {
-		w.Header().Set("Content-Type", "application/json")
-		body, _ := json.Marshal(map[string]string{
-			"error":      "Dogstatsd metrics stats not enabled in the Agent configuration",
-			"error_type": "not enabled",
-		})
-		w.WriteHeader(400)
-		w.Write(body)
-		return
+	if !config.C.Statsd.MetricsStatsEnable {
+		return nil, fmt.Errorf("tatsd metrics stats not enabled in the Agent configuration")
 	}
 
 	// Weird state that should not happen: dogstatsd is enabled
 	// but the server has not been successfully initialized.
 	// Return no data.
 	if common.DSD == nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{}`))
-		return
+		return []byte("{}"), nil
 	}
 
 	jsonStats, err := common.DSD.GetJSONDebugStats()
 	if err != nil {
-		klog.Errorf("Error getting marshalled tatsd stats: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
+		return nil, fmt.Errorf("Error getting marshalled tatsd stats: %s", err)
 	}
 
-	w.Write(jsonStats)
+	return jsonStats, nil
 }
 
-func getFormattedStatus(w http.ResponseWriter, r *http.Request) {
+func getFormattedStatus(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	klog.Info("Got a request for the formatted status. Making formatted status.")
 	s, err := status.GetAndFormatStatus()
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		klog.Errorf("Error getting status. Error: %v, Status: %v", err, s)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
+		return nil, fmt.Errorf("Error getting status. Error: %v, Status: %v", err, s)
 	}
 
-	w.Write(s)
+	return s, nil
 }
 
-func getHealth(w http.ResponseWriter, r *http.Request) {
+func getHealth(w http.ResponseWriter, r *http.Request) (*health.Status, error) {
 	h := health.GetReady()
 
 	if len(h.Unhealthy) > 0 {
 		klog.V(5).Infof("Healthcheck failed on: %v", h.Unhealthy)
 	}
 
-	jsonHealth, err := json.Marshal(h)
-	if err != nil {
-		klog.Errorf("Error marshalling status. Error: %v, Status: %v", err, h)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-
-	w.Write(jsonHealth)
+	return &h, nil
 }
 
-func getCSRFToken(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(gui.CsrfToken))
+type componentInput struct {
+	Component string `param:"path"`
 }
 
-func getConfigCheck(w http.ResponseWriter, r *http.Request) {
-	var response response.ConfigCheckResponse
+func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, jmxStatus *status.JMXStatus) {
+	status.SetJMXStatus(*jmxStatus)
+}
+
+//func getCSRFToken(w http.ResponseWriter, r *http.Request) {
+//	w.Write([]byte(gui.CsrfToken))
+//}
+
+func getConfigCheck(w http.ResponseWriter, r *http.Request) (*response.ConfigCheckResponse, error) {
 
 	if common.AC == nil {
-		klog.Errorf("Trying to use /config-check before the agent has been initialized.")
-		body, _ := json.Marshal(map[string]string{"error": "agent not initialized"})
-		http.Error(w, string(body), 503)
-		return
+		return nil, fmt.Errorf("Trying to use /config-check before the agent has been initialized.")
 	}
 
 	configs := common.AC.GetLoadedConfigs()
@@ -338,89 +206,30 @@ func getConfigCheck(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(configSlice, func(i, j int) bool {
 		return configSlice[i].Name < configSlice[j].Name
 	})
-	response.Configs = configSlice
-	response.ResolveWarnings = autodiscovery.GetResolveWarnings()
-	response.ConfigErrors = autodiscovery.GetConfigErrors()
-	response.Unresolved = common.AC.GetUnresolvedTemplates()
 
-	jsonConfig, err := json.Marshal(response)
-	if err != nil {
-		klog.Errorf("Unable to marshal config check response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-
-	w.Write(jsonConfig)
+	return &response.ConfigCheckResponse{
+		Configs:         configSlice,
+		ResolveWarnings: autodiscovery.GetResolveWarnings(),
+		ConfigErrors:    autodiscovery.GetConfigErrors(),
+		Unresolved:      common.AC.GetUnresolvedTemplates(),
+	}, nil
 }
 
-func getFullRuntimeConfig(w http.ResponseWriter, r *http.Request) {
-	runtimeConfig, err := yaml.Marshal(config.Datadog.AllSettings())
+func getFullRuntimeConfig(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+	runtimeConfig, err := yaml.Marshal(config.C)
 	if err != nil {
-		klog.Errorf("Unable to marshal runtime config response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
+		return nil, fmt.Errorf("Unable to marshal runtime config response: %s", err)
 	}
 
 	scrubbed, err := log.CredentialsCleanerBytes(runtimeConfig)
 	if err != nil {
-		klog.Errorf("Unable to scrub sensitive data from runtime config: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
+		return nil, fmt.Errorf("Unable to scrub sensitive data from runtime config: %s", err)
 	}
 
-	w.Write(scrubbed)
+	return scrubbed, nil
 }
 
-func getRuntimeConfig(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	setting := vars["setting"]
-	klog.Infof("Got a request to read a setting value: %s", setting)
-
-	val, err := settings.GetRuntimeSetting(setting)
-	if err != nil {
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		switch err.(type) {
-		case *settings.SettingNotFoundError:
-			http.Error(w, string(body), 400)
-		default:
-			http.Error(w, string(body), 500)
-		}
-		return
-	}
-	body, err := json.Marshal(map[string]interface{}{"value": val})
-	if err != nil {
-		klog.Errorf("Unable to marshal runtime setting value response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-	w.Write(body)
-}
-
-func setRuntimeConfig(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	setting := vars["setting"]
-	klog.Infof("Got a request to change a setting: %s", setting)
-	r.ParseForm() //nolint:errcheck
-	value := html.UnescapeString(r.Form.Get("value"))
-
-	if err := settings.SetRuntimeSetting(setting, value); err != nil {
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		switch err.(type) {
-		case *settings.SettingNotFoundError:
-			http.Error(w, string(body), 400)
-		default:
-			http.Error(w, string(body), 500)
-		}
-		return
-	}
-}
-
-func getRuntimeConfigurableSettings(w http.ResponseWriter, r *http.Request) {
-
+func getRuntimeConfigurableSettings(w http.ResponseWriter, r *http.Request) (map[string]settings.RuntimeSettingResponse, error) {
 	configurableSettings := make(map[string]settings.RuntimeSettingResponse)
 	for name, setting := range settings.RuntimeSettings() {
 		configurableSettings[name] = settings.RuntimeSettingResponse{
@@ -428,47 +237,33 @@ func getRuntimeConfigurableSettings(w http.ResponseWriter, r *http.Request) {
 			Hidden:      setting.Hidden(),
 		}
 	}
-	body, err := json.Marshal(configurableSettings)
-	if err != nil {
-		klog.Errorf("Unable to marshal runtime configurable settings list response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-	w.Write(body)
+	return configurableSettings, nil
 }
 
-func getTaggerList(w http.ResponseWriter, r *http.Request) {
+type SettingInput struct {
+	Setting string `param:"path"`
+	Value   string `param:"query"`
+}
+
+func getRuntimeConfig(w http.ResponseWriter, r *http.Request, in *SettingInput) (interface{}, error) {
+	klog.Infof("Got a request to read a setting value: %s", in.Setting)
+	return settings.GetRuntimeSetting(in.Setting)
+}
+
+func setRuntimeConfig(w http.ResponseWriter, r *http.Request, in *SettingInput) error {
+	klog.Infof("Got a request to change a setting: %s", in.Setting)
+
+	return settings.SetRuntimeSetting(in.Setting, in.Value)
+}
+
+func getTaggerList(w http.ResponseWriter, r *http.Request) (response.TaggerListResponse, error) {
 	// query at the highest cardinality between checks and dogstatsd cardinalities
 	cardinality := collectors.TagCardinality(max(int(tagger.ChecksCardinality), int(tagger.DogstatsdCardinality)))
-	response := tagger.List(cardinality)
-
-	jsonTags, err := json.Marshal(response)
-	if err != nil {
-		klog.Errorf("Unable to marshal tagger list response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-	w.Write(jsonTags)
+	return tagger.List(cardinality), nil
 }
 
-func secretInfo(w http.ResponseWriter, r *http.Request) {
-	info, err := secrets.GetDebugInfo()
-	if err != nil {
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-
-	jsonInfo, err := json.Marshal(info)
-	if err != nil {
-		klog.Errorf("Unable to marshal secrets info response: %s", err)
-		body, _ := json.Marshal(map[string]string{"error": err.Error()})
-		http.Error(w, string(body), 500)
-		return
-	}
-	w.Write(jsonInfo)
+func secretInfo(w http.ResponseWriter, r *http.Request) (*secrets.SecretInfo, error) {
+	return secrets.GetDebugInfo()
 }
 
 // max returns the maximum value between a and b.
@@ -477,10 +272,4 @@ func max(a, b int) int {
 		return a
 	}
 	return b
-}
-*/
-
-// GetConnection returns the connection for the request
-func GetConnection(r *http.Request) net.Conn {
-	return r.Context().Value(contextKeyConn).(net.Conn)
 }

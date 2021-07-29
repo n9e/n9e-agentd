@@ -16,12 +16,13 @@ import (
 
 	"github.com/mholt/archiver/v3"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
 	"k8s.io/klog/v2"
 )
 
@@ -29,7 +30,7 @@ import (
 func CreateDCAArchive(local bool, distPath, logFilePath string) (string, error) {
 	zipFilePath := getArchivePath()
 	confSearchPaths := SearchPaths{
-		"":     config.Datadog.GetString("confd_path"),
+		"":     config.C.ConfdPath,
 		"dist": filepath.Join(distPath, "conf.d"),
 	}
 	return createDCAArchive(zipFilePath, local, confSearchPaths, logFilePath)
@@ -107,7 +108,7 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 		klog.Errorf("Could not zip diagnose: %s", err)
 	}
 
-	if config.Datadog.GetBool("external_metrics_provider.enabled") {
+	if config.C.ExternalMetricsProvider.Enabled {
 		err = zipHPAStatus(tempDir, hostname)
 		if err != nil {
 			return "", err

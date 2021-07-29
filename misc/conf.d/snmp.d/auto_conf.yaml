@@ -39,29 +39,29 @@ instances:
     #
     user: "%%extra_user%%"
 
-    ## @param authKey - string - optional
+    ## @param auth_key - string - optional
     ## Authentication key to use with your Authentication type.
     #
-    authKey: "%%extra_auth_key%%"
+    auth_key: "%%extra_auth_key%%"
 
-    ## @param authProtocol - string - optional
+    ## @param auth_protocol - string - optional
     ## Authentication type to use when connecting to your SNMP devices.
     ## It can be one of: MD5, SHA, SHA224, SHA256, SHA384, SHA512.
     ## Default to MD5 when `authKey` is specified.
     #
-    authProtocol: "%%extra_auth_protocol%%"
+    auth_protocol: "%%extra_auth_protocol%%"
 
-    ## @param privKey - string - optional
+    ## @param priv_key - string - optional
     ## Privacy type key to use with your Privacy type.
     #
-    privKey: "%%extra_priv_key%%"
+    priv_key: "%%extra_priv_key%%"
 
-    ## @param privProtocol - string - optional
+    ## @param priv_protocol - string - optional
     ## Privacy type to use when connecting to your SNMP devices.
     ## It can be one of: DES, 3DES, AES, AES192, AES256, AES192C, AES256C.
     ## Default to DES when `privKey` is specified.
     #
-    privProtocol: "%%extra_priv_protocol%%"
+    priv_protocol: "%%extra_priv_protocol%%"
 
     ## @param context_engine_id - string - optional
     ## ID of your context engine; typically unneeded.
@@ -74,13 +74,6 @@ instances:
     #
     context_name: "%%extra_context_name%%"
 
-    ## @param loader - string - optional
-    ## Check loader to use. Available loaders for snmp:
-    ## - core: will use corecheck SNMP integration
-    ## - python: will use python SNMP integration
-    #
-    loader: "%%extra_loader%%"
-
     ## @param tags - list of key:value element - optional
     ## List of tags to attach to every metric, event and service check emitted by this integration.
     ##
@@ -91,9 +84,8 @@ instances:
       # Used by Agent autodiscovery to pass subnet name.
       - "autodiscovery_subnet:%%extra_autodiscovery_subnet%%"
 
-    ## @param extra_tags - string - optional
-    ## Comma separated tags to attach to every metric, event and service check emitted by this integration.
-    ## Example:
-    ##  extra_tags: "tag1:val1,tag2:val2"
+    ## @param min_collection_interval - number - optional - default: 15
+    ## This changes the collection interval of the check. For more information, see:
+    ## https://docs.datadoghq.com/developers/write_agent_check/#collection-interval
     #
-    extra_tags: "%%extra_tags%%"
+    min_collection_interval: 300

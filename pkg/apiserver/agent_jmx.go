@@ -13,19 +13,19 @@ package apiserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed/jmx"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 )
 
-func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
+func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	var ts int
 	queries := r.URL.Query()
 	if timestamps, ok := queries["timestamp"]; ok {
@@ -34,7 +34,7 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
 
 	if int64(ts) > jmx.GetScheduledConfigsModificationTimestamp() {
 		w.WriteHeader(http.StatusNoContent)
-		return
+		return nil, nil
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -47,9 +47,7 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
 		var rawInitConfig integration.RawMap
 		err := yaml.Unmarshal(config.InitConfig, &rawInitConfig)
 		if err != nil {
-			klog.Errorf("unable to parse JMX configuration: %s", err)
-			http.Error(w, err.Error(), 500)
-			return
+			return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
 		}
 
 		c := map[string]interface{}{}
@@ -59,9 +57,7 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
 			var rawInstanceConfig integration.JSONMap
 			err := yaml.Unmarshal(instance, &rawInstanceConfig)
 			if err != nil {
-				klog.Errorf("unable to parse JMX configuration: %s", err)
-				http.Error(w, err.Error(), 500)
-				return
+				return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
 			}
 			instances = append(instances, util.GetJSONSerializableMap(rawInstanceConfig).(integration.JSONMap))
 		}
@@ -75,22 +71,7 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) {
 	j["timestamp"] = time.Now().Unix()
 	jsonPayload, err := json.Marshal(util.GetJSONSerializableMap(j))
 	if err != nil {
-		klog.Errorf("unable to parse JMX configuration: %s", err)
-		http.Error(w, err.Error(), 500)
-		return
+		return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
 	}
-	w.Write(jsonPayload) //nolint:errcheck
-}
-
-func setJMXStatus(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-
-	var jmxStatus status.JMXStatus
-	err := decoder.Decode(&jmxStatus)
-	if err != nil {
-		klog.Errorf("unable to parse jmx status: %s", err)
-		http.Error(w, err.Error(), 500)
-	}
-
-	status.SetJMXStatus(jmxStatus)
+	return jsonPayload, nil
 }

@@ -9,22 +9,22 @@ import (
 	"sync"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 )
 
 type profileDefinitionMap map[string]profileDefinition
 
 type deviceMeta struct {
-	Vendor string `yaml:"vendor"`
+	Vendor string `json:"vendor"`
 }
 
 type profileDefinition struct {
-	Metrics      []metricsConfig   `yaml:"metrics"`
-	MetricTags   []metricTagConfig `yaml:"metric_tags"`
-	Extends      []string          `yaml:"extends"`
-	Device       deviceMeta        `yaml:"device"`
-	SysObjectIds StringArray       `yaml:"sysobjectid"`
+	Metrics      []metricsConfig   `json:"metrics"`
+	MetricTags   []metricTagConfig `json:"metric_tags"`
+	Extends      []string          `json:"extends"`
+	Device       deviceMeta        `json:"device"`
+	SysObjectIds StringArray       `json:"sysobjectid"`
 }
 
 var defaultProfilesMu = &sync.Mutex{}

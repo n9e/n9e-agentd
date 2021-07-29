@@ -57,10 +57,8 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/fatih/structtag v1.2.0
 	github.com/florianl/go-conntrack v0.1.1-0.20191002182014-06743d3a59db
-	github.com/fortytw2/leaktest v1.3.0
 	github.com/freddierice/go-losetup v0.0.0-20170407175016-fc9adea44124
 	github.com/go-ole/go-ole v1.2.5
-	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gobwas/glob v0.2.3
@@ -75,7 +73,7 @@ require (
 	github.com/google/pprof v0.0.0-20201117184057-ae444373da19
 	github.com/gorilla/mux v1.7.4
 	github.com/gosnmp/gosnmp v1.29.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.5
 	github.com/hashicorp/consul/api v1.4.0
 	github.com/hashicorp/go-multierror v1.1.0
@@ -112,7 +110,6 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
-	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da
 	github.com/shirou/gopsutil v3.21.2+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
@@ -121,6 +118,7 @@ require (
 	github.com/soniah/gosnmp v1.26.0
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.1.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
@@ -128,17 +126,17 @@ require (
 	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31 // indirect
 	github.com/twmb/murmur3 v1.1.3
-	github.com/uber-go/tally v3.3.17+incompatible
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20201206203632-88079d98e65d
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	github.com/vito/go-sse v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
+	github.com/yubo/apiserver v0.0.0-20210427165240-9b55a37de313
 	github.com/yubo/golib v0.0.0-20210722163742-0aedfc541c7f
 	github.com/zorkian/go-datadog-api v2.28.0+incompatible // indirect
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 	go.uber.org/automaxprocs v1.2.0
-	golang.org/x/crypto v0.0.0-20210503195802-e9a32991a82e // indirect
+	golang.org/x/crypto v0.0.0-20210503195802-e9a32991a82e
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
 	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
@@ -162,10 +160,12 @@ require (
 	k8s.io/apimachinery v0.21.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.9.2
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/component-base v0.18.3
 	k8s.io/cri-api v0.0.0
 	k8s.io/klog v1.0.1-0.20200310124935-4ad0115ba9e4 // indirect; Min version that includes fix for Windows Nano
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kube-state-metrics v1.8.1-0.20200108124505-369470d6ead8
+	k8s.io/kubectl v0.18.2
 	k8s.io/kubernetes v1.18.2
 	k8s.io/metrics v0.18.3
 	sigs.k8s.io/yaml v1.2.0
@@ -211,4 +211,9 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b
 	k8s.io/metrics => k8s.io/metrics v0.18.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
+)
+
+replace (
+	github.com/yubo/apiserver => ../../yubo/apiserver
+	github.com/yubo/golib => ../../yubo/golib
 )

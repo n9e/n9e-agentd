@@ -14,5 +14,5 @@ dev: build/n9e-agentd
 		 --add-dir-header -v 10 -e build -e .git -e docs \
 		 -e plugins -e tmp -e vendor -e staging -f .go -d 1000
 
-pkg/data/resources.go: pkg/data/resources/*
+pkg/data/resources.go:
 	go-bindata --prefix pkg/data/resources -pkg data -o $@ pkg/data/resources/...

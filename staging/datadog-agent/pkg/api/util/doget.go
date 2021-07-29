@@ -8,9 +8,10 @@ package util
 import (
 	"crypto/tls"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
+
+	auth "github.com/n9e/n9e-agentd/pkg/authentication"
 )
 
 // GetClient is a convenience function returning an http client
@@ -35,7 +36,7 @@ func DoGet(c *http.Client, url string) (body []byte, e error) {
 		return body, e
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+GetAuthToken())
+	req.Header.Set("Authorization", "Bearer "+auth.GetAuthToken())
 
 	r, e := c.Do(req)
 	if e != nil {
@@ -53,57 +54,58 @@ func DoGet(c *http.Client, url string) (body []byte, e error) {
 
 }
 
-// DoPost is a wrapper around performing HTTP POST requests
-func DoPost(c *http.Client, url string, contentType string, body io.Reader) (resp []byte, e error) {
-	req, e := http.NewRequest("POST", url, body)
-	if e != nil {
-		return resp, e
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer "+GetAuthToken())
-
-	r, e := c.Do(req)
-	if e != nil {
-		return resp, e
-	}
-	resp, e = ioutil.ReadAll(r.Body)
-	r.Body.Close()
-	if e != nil {
-		return resp, e
-	}
-	if r.StatusCode >= 400 {
-		return resp, fmt.Errorf("%s", resp)
-	}
-	return resp, nil
-}
+//
+//// DoPost is a wrapper around performing HTTP POST requests
+//func DoPost(c *http.Client, url string, contentType string, body io.Reader) (resp []byte, e error) {
+//	req, e := http.NewRequest("POST", url, body)
+//	if e != nil {
+//		return resp, e
+//	}
+//	req.Header.Set("Content-Type", contentType)
+//	req.Header.Set("Authorization", "Bearer "+GetAuthToken())
+//
+//	r, e := c.Do(req)
+//	if e != nil {
+//		return resp, e
+//	}
+//	resp, e = ioutil.ReadAll(r.Body)
+//	r.Body.Close()
+//	if e != nil {
+//		return resp, e
+//	}
+//	if r.StatusCode >= 400 {
+//		return resp, fmt.Errorf("%s", resp)
+//	}
+//	return resp, nil
+//}
 
 // DoPostChunked is a wrapper around performing HTTP POST requests that stream chunked data
-func DoPostChunked(c *http.Client, url string, contentType string, body io.Reader, onChunk func([]byte)) error {
-	req, e := http.NewRequest("POST", url, body)
-	if e != nil {
-		return e
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer "+GetAuthToken())
-
-	r, e := c.Do(req)
-	if e != nil {
-		return e
-	}
-	defer r.Body.Close()
-
-	var m int
-	buf := make([]byte, 4096)
-	for {
-		m, e = r.Body.Read(buf)
-		if m < 0 || e != nil {
-			break
-		}
-		onChunk(buf[:m])
-	}
-
-	if r.StatusCode == 200 {
-		return nil
-	}
-	return e
-}
+//func DoPostChunked(c *http.Client, url string, contentType string, body io.Reader, onChunk func([]byte)) error {
+//	req, e := http.NewRequest("POST", url, body)
+//	if e != nil {
+//		return e
+//	}
+//	req.Header.Set("Content-Type", contentType)
+//	req.Header.Set("Authorization", "Bearer "+GetAuthToken())
+//
+//	r, e := c.Do(req)
+//	if e != nil {
+//		return e
+//	}
+//	defer r.Body.Close()
+//
+//	var m int
+//	buf := make([]byte, 4096)
+//	for {
+//		m, e = r.Body.Read(buf)
+//		if m < 0 || e != nil {
+//			break
+//		}
+//		onChunk(buf[:m])
+//	}
+//
+//	if r.StatusCode == 200 {
+//		return nil
+//	}
+//	return e
+//}

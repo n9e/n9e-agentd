@@ -2,7 +2,7 @@
 CWD=$(cd $(dirname $0)/; pwd)
 cd $CWD/..
 
-make
+make || exit 1
 
 cd build
 

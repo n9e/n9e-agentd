@@ -27,7 +27,7 @@ func (t *Tailer) setup(offset int64, whence int) error {
 	// adds metadata to enable users to filter logs by filename
 	t.tags = t.buildTailerTags()
 
-	klog.Info("Opening", t.file.Path, "for tailer key", t.file.GetScanKey())
+	klog.Infof("Opening %s for tailer key %s", t.file.Path, t.file.GetScanKey())
 	f, err := openFile(fullpath)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (t *Tailer) read() (int, error) {
 	if err != nil && err != io.EOF {
 		// an unexpected error occurred, stop the tailor
 		t.file.Source.Status.Error(err)
-		return 0, fmt.Errorf("Unexpected error occurred while reading file: ", err)
+		return 0, fmt.Errorf("Unexpected error occurred while reading file: %s", err)
 	}
 	if n == 0 {
 		return 0, nil

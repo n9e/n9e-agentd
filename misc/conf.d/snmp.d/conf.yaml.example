@@ -207,24 +207,24 @@ instances:
     ## It can be one of: MD5, SHA, SHA224, SHA256, SHA384, SHA512.
     ## Default to MD5 when `authKey` is specified.
     #
-    # authProtocol: <AUTHENTICATION_PROTOCOL>
+    # auth_protocol: <AUTHENTICATION_PROTOCOL>
 
     ## @param authKey - string - optional
     ## Authentication key to use with your Authentication type.
     #
-    # authKey: <AUTHENTICATION_TYPE_KEY>
+    # auth_key: <AUTHENTICATION_TYPE_KEY>
 
     ## @param privProtocol - string - optional
     ## Privacy type to use when connecting to your SNMP devices.
     ## It can be one of: DES, 3DES, AES, AES192, AES256, AES192C, AES256C.
     ## Default to DES when `privKey` is specified.
     #
-    # privProtocol: <PRIVACY_TYPE>
+    # priv_protocol: <PRIVACY_TYPE>
 
-    ## @param privKey - string - optional
+    ## @param priv_key - string - optional
     ## Privacy type key to use with your Privacy type.
     #
-    # privKey: <PRIVACY_TYPE_KEY>
+    # priv_key: <PRIVACY_TYPE_KEY>
 
     ## @param context_engine_id - string - optional
     ## ID of your context engine; typically unneeded.

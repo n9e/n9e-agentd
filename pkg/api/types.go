@@ -126,3 +126,10 @@ type ProcCollectFormat struct {
 		Comment       string `json:"comment"` // no used
 	} `json:"instances"`
 }
+
+// Status represents the current status of registered components
+// it is built and returned by GetStatus()
+type HealthStatus struct {
+	Healthy   []string
+	Unhealthy []string
+}

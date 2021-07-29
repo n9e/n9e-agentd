@@ -15,7 +15,7 @@ import (
 
 // QueryDCAMetrics gets the metrics payload exposed by the cluster agent
 func QueryDCAMetrics() ([]byte, error) {
-	r, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", config.Datadog.GetInt("metrics_port")))
+	r, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", config.C.MetricsPort))
 	if err != nil {
 		return nil, err
 	}

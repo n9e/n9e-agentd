@@ -5,10 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
-
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 )
 
 var defaultOidBatchSize = 60
@@ -31,10 +30,10 @@ type snmpInstanceConfig struct {
 	Retries          Number            `json:"retries"`
 	OidBatchSize     Number            `json:"oid_batch_size"`
 	User             string            `json:"user"`
-	AuthProtocol     string            `json:"authProtocol"`
-	AuthKey          string            `json:"authKey"`
-	PrivProtocol     string            `json:"privProtocol"`
-	PrivKey          string            `json:"privKey"`
+	AuthProtocol     string            `json:"auth_protocol"`
+	AuthKey          string            `json:"auth_key"`
+	PrivProtocol     string            `json:"priv_protocol"`
+	PrivKey          string            `json:"priv_key"`
 	ContextName      string            `json:"context_name"`
 	Metrics          []metricsConfig   `json:"metrics"`
 	MetricTags       []metricTagConfig `json:"metric_tags"`

@@ -10,6 +10,7 @@ import (
 	"github.com/yubo/golib/proc"
 
 	_ "github.com/n9e/n9e-agentd/pkg/agent"
+	_ "github.com/n9e/n9e-agentd/pkg/apiserver"
 	_ "github.com/n9e/n9e-agentd/plugins/all"
 )
 

@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
-	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 var datadogSupportURL = "/support/flare"
@@ -128,7 +128,7 @@ func analyzeResponse(r *http.Response, err error) (string, error) {
 		return response, err
 	}
 	if r.StatusCode == http.StatusForbidden {
-		apiKey := config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
+		apiKey := config.SanitizeAPIKey(config.C.ApiKey)
 		var errStr string
 
 		if len(apiKey) == 0 {
@@ -172,11 +172,11 @@ func mkHTTPClient() *http.Client {
 }
 
 func mkURL(caseID string) string {
-	baseURL, _ := config.AddAgentVersionToDomain(config.GetMainInfraEndpoint(), "flare")
+	baseURL, _ := config.AddAgentVersionToDomain(config.C.Endpoints[0], "flare")
 	var url = baseURL + datadogSupportURL
 	if caseID != "" {
 		url += "/" + caseID
 	}
-	url += "?api_key=" + config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
+	url += "?api_key=" + config.SanitizeAPIKey(config.C.ApiKey)
 	return url
 }

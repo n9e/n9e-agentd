@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/gosnmp/gosnmp"
-
 	"k8s.io/klog/v2"
 )
 

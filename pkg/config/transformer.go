@@ -65,6 +65,7 @@ func TransformMapTags(tags []string) map[string]string { return util.SanitizeMap
 func TransformTags(tags []string) []string             { return util.SanitizeTags(tags) }
 
 var (
+	// ugly hack
 	transformMetricMap = map[string]string{
 		"ntp_offset":                              "system_ntp_offset",
 		"system_cpu_context_switches":             "system_cpu_switches",
@@ -91,5 +92,13 @@ var (
 		"system_mem_pct_used":                     "system_mem_used_percent",
 		"system_mem_usable":                       "system_mem_free",
 		"system_swap_pct_free":                    "system_mem_free_percent",
+		"system_swap_pct_used":                    "system_mem_used_percent",
+		"system_disk_free":                        "system_disk_bytes_free",
+		"system_disk_used":                        "system_disk_bytes_used",
+		"system_disk_total":                       "system_disk_bytes_total",
+		"proc_cpu_total":                          "proc_cpu_util",
+		//"system_net_bytes_rcvd": "system_net_bits_rcvd",
+		//"system_net_bytes_sent": "system_net_bits_sent",
+		//"proc_net_bytes_rate": "proc_net_bits_rate",
 	}
 )

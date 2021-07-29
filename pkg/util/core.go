@@ -5,6 +5,7 @@ package util
 import (
 	"fmt"
 	"runtime/debug"
+	"syscall"
 
 	"golang.org/x/sys/unix"
 )
@@ -23,4 +24,8 @@ func SetupCoreDump() error {
 	}
 
 	return nil
+}
+
+func Stop() error {
+	return syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 }

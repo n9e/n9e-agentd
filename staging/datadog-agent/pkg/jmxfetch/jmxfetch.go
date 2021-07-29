@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	auth "github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	api "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"gopkg.in/yaml.v2"
@@ -259,8 +259,10 @@ func (j *JMXFetch) Start(manage bool) error {
 		jmxLogLevel = "INFO"
 	}
 
-	ipcHost := config.C.CmdHost
-	ipcPort := config.C.CmdPort
+	//ipcHost := config.C.CmdHost
+	//ipcPort := config.C.CmdPort
+	var ipcHost string
+	var ipcPort int
 	if j.IPCHost != "" {
 		ipcHost = j.IPCHost
 	}
@@ -294,7 +296,7 @@ func (j *JMXFetch) Start(manage bool) error {
 	// set environment + token
 	j.cmd.Env = append(
 		os.Environ(),
-		fmt.Sprintf("SESSION_TOKEN=%s", api.GetAuthToken()),
+		fmt.Sprintf("SESSION_TOKEN=%s", auth.GetAuthToken()),
 	)
 
 	// forward the standard output to the Agent logger

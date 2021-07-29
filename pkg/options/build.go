@@ -187,17 +187,21 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "show version, git commit",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Go Runtime version: %s\n", goVersion)
-			fmt.Printf("OS:                 %s\n", goOs)
-			fmt.Printf("Arch:               %s\n", goArch)
-			fmt.Printf("Build Version:      %s\n", Version)
-			fmt.Printf("Build Revision:     %s\n", Revision)
-			fmt.Printf("Build Branch:       %s\n", Branch)
-			fmt.Printf("Build User:         %s\n", Builder)
-			fmt.Printf("Build Date:         %s\n", BuildDate)
-			fmt.Printf("Build TimeUnix:     %s\n", BuildTimeUnix)
-			return nil
+			return VersionCmd(cmd, args)
 		},
 	}
 	return cmd
+}
+
+func VersionCmd(cmd *cobra.Command, args []string) error {
+	fmt.Printf("Go Runtime version: %s\n", goVersion)
+	fmt.Printf("OS:                 %s\n", goOs)
+	fmt.Printf("Arch:               %s\n", goArch)
+	fmt.Printf("Build Version:      %s\n", Version)
+	fmt.Printf("Build Revision:     %s\n", Revision)
+	fmt.Printf("Build Branch:       %s\n", Branch)
+	fmt.Printf("Build User:         %s\n", Builder)
+	fmt.Printf("Build Date:         %s\n", BuildDate)
+	fmt.Printf("Build TimeUnix:     %s\n", BuildTimeUnix)
+	return nil
 }
