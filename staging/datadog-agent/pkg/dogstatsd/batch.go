@@ -1,8 +1,8 @@
 package dogstatsd
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 )
 
 // batcher batches multiple metrics before submission

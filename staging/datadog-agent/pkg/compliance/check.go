@@ -6,7 +6,7 @@
 package compliance
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
 )
 

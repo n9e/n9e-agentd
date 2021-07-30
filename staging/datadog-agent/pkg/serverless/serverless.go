@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serverless/aws"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serverless/flush"
 	"k8s.io/klog/v2"

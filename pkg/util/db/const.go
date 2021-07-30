@@ -1,6 +1,6 @@
 package db
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+import "github.com/n9e/n9e-agentd/pkg/metrics"
 
 var (
 	SECOND      = 1

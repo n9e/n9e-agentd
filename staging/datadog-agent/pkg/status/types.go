@@ -8,7 +8,7 @@ package status
 import (
 	"encoding/json"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 )
 
 // CLCChecks is used to unmarshall the runner expvar payload for CLC Runner

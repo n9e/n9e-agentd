@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check/defaults"
+	"github.com/n9e/n9e-agentd/pkg/collector/check/defaults"
 )
 
 func NewDefaultConfig() *Config {

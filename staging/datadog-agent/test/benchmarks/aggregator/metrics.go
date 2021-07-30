@@ -14,8 +14,8 @@ import (
 	log "github.com/cihub/seelog"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 )
 
 type senderFunc func(string, float64, string, []string)

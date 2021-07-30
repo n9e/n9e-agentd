@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/ebpf/probe"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/ebpf/probe"
 )
 
 const (

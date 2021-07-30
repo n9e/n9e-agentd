@@ -19,8 +19,8 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
 

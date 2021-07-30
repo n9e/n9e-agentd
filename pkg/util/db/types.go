@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 )
 
 type transformHandle func(transformers mapinterface, name, modifiers interface{}) (interface{}, error)

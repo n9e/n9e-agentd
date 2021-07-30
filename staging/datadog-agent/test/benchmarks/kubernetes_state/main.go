@@ -18,8 +18,8 @@ import (
 	"k8s.io/kube-state-metrics/pkg/allowdenylist"
 	"k8s.io/kube-state-metrics/pkg/options"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/cluster"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/cluster"
 	kubestatemetrics "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/kubestatemetrics/builder"
 )
 

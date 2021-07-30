@@ -18,7 +18,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 
 	// we need some valid check in the catalog to run tests
-	_ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/system"
+	_ "github.com/n9e/n9e-agentd/pkg/collector/corechecks/system"
 )
 
 type dummyService struct {

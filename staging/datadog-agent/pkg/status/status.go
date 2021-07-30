@@ -20,7 +20,7 @@ import (
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/orchestrator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"

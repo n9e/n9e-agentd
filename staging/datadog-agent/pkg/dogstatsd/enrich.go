@@ -3,7 +3,7 @@ package dogstatsd
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
 )
 

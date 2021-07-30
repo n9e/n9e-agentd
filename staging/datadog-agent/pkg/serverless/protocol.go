@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"

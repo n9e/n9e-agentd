@@ -8,7 +8,7 @@ import (
 	"github.com/n9e/n9e-agentd/cmd/system-probe/api"
 	"github.com/n9e/n9e-agentd/cmd/system-probe/config"
 	"github.com/n9e/n9e-agentd/cmd/system-probe/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/ebpf/probe"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/ebpf/probe"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
 	"k8s.io/klog/v2"
 	"github.com/pkg/errors"

@@ -17,6 +17,8 @@ import (
 	logstypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
 	snmptypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/types"
+	traceconfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
+	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
 )
@@ -59,7 +61,8 @@ var (
 	TestConfig bool
 
 	// ungly hack, TODO: remove it
-	C = NewDefaultConfig()
+	C        = NewDefaultConfig()
+	Configer *configer.Configer
 	// StartTime is the agent startup time
 	StartTime = time.Now()
 
@@ -295,7 +298,7 @@ type Config struct {
 	ProxyNoProxy                         bool              `json:"proxyNoProxy"`                                                                                              // proxy.no_proxy
 	Python3LinterTimeout                 time.Duration     `json:"-"`
 	Python3LinterTimeout_                int               `json:"python3LinterTimeout" flag:"python3-linter-timeout" default:"120" description:"python3LinterTimeout(Second)"` // python3_linter_timeout
-	PythonVersion                        string            `json:"pythonVersion"`                                                                                               // python_version
+	PythonVersion                        string            `json:"pythonVersion" default:"3"`                                                                                   // python_version
 	SerializerMaxPayloadSize             int               `json:"serializerMaxPayloadSize" default:"2621440" description:"2.5mb"`                                              // serializer_max_payload_size
 	SerializerMaxUncompressedPayloadSize int               `json:"serializerMaxUncompressedPayloadSize" default:"4194304" description:"4mb"`                                    // serializer_max_uncompressed_payload_size
 	//ServerTimeout                        time.Duration     `json:"-"`
@@ -307,6 +310,11 @@ type Config struct {
 	Yaml                bool   `json:"yaml"`                            // yaml
 	MetricTransformFile string `json:"metricTransformFile"`
 	//N9e                                  N9e                      `json:"n9e"`
+	//
+
+	WinSkipComInit       bool `json:"winSkipComInit"`       // win_skip_com_init
+	DisablePy3Validation bool `json:"disablePy3Validation"` // disable_py3_validation
+
 }
 
 func (p Config) String() string {
@@ -699,39 +707,39 @@ func (p *Jmx) Validate() error {
 }
 
 type Apm struct {
-	AdditionalEndpoints           bool   `json:"additionalEndpoints"`           // apm_config.additional_endpoints
-	AnalyzedRateByService         bool   `json:"analyzedRateByService"`         // apm_config.analyzed_rate_by_service
-	AnalyzedSpans                 bool   `json:"analyzedSpans"`                 // apm_config.analyzed_spans
-	ApiKey                        bool   `json:"apiKey"`                        // apm_config.api_key
-	ApmDdUrl                      bool   `json:"apmDdUrl"`                      // apm_config.apm_dd_url
-	ApmNonLocalTraffic            bool   `json:"apmNonLocalTraffic"`            // apm_config.apm_non_local_traffic
-	ConnectionLimit               bool   `json:"connectionLimit"`               // apm_config.connection_limit
-	ConnectionResetInterval       bool   `json:"connectionResetInterval"`       // apm_config.connection_reset_interval
-	DdAgentBin                    bool   `json:"ddAgentBin"`                    // apm_config.dd_agent_bin
-	Enabled                       bool   `json:"enabled"`                       // apm_config.enabled
-	Env                           bool   `json:"env"`                           // apm_config.env
-	ExtraSampleRate               bool   `json:"extraSampleRate"`               // apm_config.extra_sample_rate
-	FilterTagsReject              bool   `json:"filterTagsReject"`              // apm_config.filter_tags.reject
-	FilterTagsRequire             bool   `json:"filterTagsRequire"`             // apm_config.filter_tags.require
-	IgnoreResources               bool   `json:"ignoreResources"`               // apm_config.ignore_resources
-	LogFile                       bool   `json:"logFile"`                       // apm_config.log_file
-	LogLevel                      bool   `json:"logLevel"`                      // apm_config.log_level
-	LogThrottling                 bool   `json:"logThrottling"`                 // apm_config.log_throttling
-	MaxCpuPercent                 bool   `json:"maxCpuPercent"`                 // apm_config.max_cpu_percent
-	MaxEventsPerSecond            bool   `json:"maxEventsPerSecond"`            // apm_config.max_events_per_second
-	MaxMemory                     bool   `json:"maxMemory"`                     // apm_config.max_memory
-	MaxTracesPerSecond            bool   `json:"maxTracesPerSecond"`            // apm_config.max_traces_per_second
-	Obfuscation                   bool   `json:"obfuscation"`                   // apm_config.obfuscation
-	ProfilingAdditionalEndpoints  bool   `json:"profilingAdditionalEndpoints"`  // apm_config.profiling_additional_endpoints
-	ProfilingDdUrl                bool   `json:"profilingDdUrl"`                // apm_config.profiling_dd_url
-	ReceiverPort                  string `json:"receiverPort"`                  // apm_config.receiver_port
-	ReceiverSocket                bool   `json:"receiverSocket"`                // apm_config.receiver_socket
-	ReceiverTimeout               bool   `json:"receiverTimeout"`               // apm_config.receiver_timeout
-	RemoteTagger                  bool   `json:"remoteTagger"`                  // apm_config.remote_tagger
-	SyncFlushing                  bool   `json:"syncFlushing"`                  // apm_config.sync_flushing
-	WindowsPipeBufferSize         bool   `json:"windowsPipeBufferSize"`         // apm_config.windows_pipe_buffer_size
-	WindowsPipeName               bool   `json:"windowsPipeName"`               // apm_config.windows_pipe_name
-	WindowsPipeSecurityDescriptor bool   `json:"windowsPipeSecurityDescriptor"` // apm_config.windows_pipe_security_descriptor
+	AdditionalEndpoints           bool                          `json:"additionalEndpoints"`           // apm_config.additional_endpoints
+	AnalyzedRateByService         bool                          `json:"analyzedRateByService"`         // apm_config.analyzed_rate_by_service
+	AnalyzedSpans                 bool                          `json:"analyzedSpans"`                 // apm_config.analyzed_spans
+	ApiKey                        bool                          `json:"apiKey"`                        // apm_config.api_key
+	ApmDdUrl                      bool                          `json:"apmDdUrl"`                      // apm_config.apm_dd_url
+	ApmNonLocalTraffic            bool                          `json:"apmNonLocalTraffic"`            // apm_config.apm_non_local_traffic
+	ConnectionLimit               bool                          `json:"connectionLimit"`               // apm_config.connection_limit
+	ConnectionResetInterval       bool                          `json:"connectionResetInterval"`       // apm_config.connection_reset_interval
+	DdAgentBin                    bool                          `json:"ddAgentBin"`                    // apm_config.dd_agent_bin
+	Enabled                       bool                          `json:"enabled"`                       // apm_config.enabled
+	Env                           bool                          `json:"env"`                           // apm_config.env
+	ExtraSampleRate               bool                          `json:"extraSampleRate"`               // apm_config.extra_sample_rate
+	FilterTagsReject              bool                          `json:"filterTagsReject"`              // apm_config.filter_tags.reject
+	FilterTagsRequire             bool                          `json:"filterTagsRequire"`             // apm_config.filter_tags.require
+	IgnoreResources               bool                          `json:"ignoreResources"`               // apm_config.ignore_resources
+	LogFile                       bool                          `json:"logFile"`                       // apm_config.log_file
+	LogLevel                      bool                          `json:"logLevel"`                      // apm_config.log_level
+	LogThrottling                 bool                          `json:"logThrottling"`                 // apm_config.log_throttling
+	MaxCpuPercent                 bool                          `json:"maxCpuPercent"`                 // apm_config.max_cpu_percent
+	MaxEventsPerSecond            bool                          `json:"maxEventsPerSecond"`            // apm_config.max_events_per_second
+	MaxMemory                     bool                          `json:"maxMemory"`                     // apm_config.max_memory
+	MaxTracesPerSecond            bool                          `json:"maxTracesPerSecond"`            // apm_config.max_traces_per_second
+	Obfuscation                   traceconfig.ObfuscationConfig `json:"obfuscation"`                   // apm_config.obfuscation
+	ProfilingAdditionalEndpoints  bool                          `json:"profilingAdditionalEndpoints"`  // apm_config.profiling_additional_endpoints
+	ProfilingDdUrl                bool                          `json:"profilingDdUrl"`                // apm_config.profiling_dd_url
+	ReceiverPort                  string                        `json:"receiverPort"`                  // apm_config.receiver_port
+	ReceiverSocket                bool                          `json:"receiverSocket"`                // apm_config.receiver_socket
+	ReceiverTimeout               bool                          `json:"receiverTimeout"`               // apm_config.receiver_timeout
+	RemoteTagger                  bool                          `json:"remoteTagger"`                  // apm_config.remote_tagger
+	SyncFlushing                  bool                          `json:"syncFlushing"`                  // apm_config.sync_flushing
+	WindowsPipeBufferSize         bool                          `json:"windowsPipeBufferSize"`         // apm_config.windows_pipe_buffer_size
+	WindowsPipeName               bool                          `json:"windowsPipeName"`               // apm_config.windows_pipe_name
+	WindowsPipeSecurityDescriptor bool                          `json:"windowsPipeSecurityDescriptor"` // apm_config.windows_pipe_security_descriptor
 }
 
 func (p *Apm) Validate() error {

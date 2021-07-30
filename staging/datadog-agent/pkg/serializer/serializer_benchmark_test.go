@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/split"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/stream"
 )

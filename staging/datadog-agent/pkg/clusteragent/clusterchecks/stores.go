@@ -13,7 +13,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
 	"k8s.io/klog/v2"
 )

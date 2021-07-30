@@ -14,9 +14,9 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/mocksender"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/containers/docker"
+	"github.com/n9e/n9e-agentd/pkg/aggregator/mocksender"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/containers/docker"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"

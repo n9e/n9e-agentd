@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

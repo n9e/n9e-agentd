@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/mocks"

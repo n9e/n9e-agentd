@@ -24,61 +24,61 @@ const apiEndpointPrefix = "https://trace.agent."
 // for various span types.
 type ObfuscationConfig struct {
 	// ES holds the obfuscation configuration for ElasticSearch bodies.
-	ES JSONObfuscationConfig `yaml:"elasticsearch"`
+	ES JSONObfuscationConfig `json:"elasticsearch"`
 
 	// Mongo holds the obfuscation configuration for MongoDB queries.
-	Mongo JSONObfuscationConfig `yaml:"mongodb"`
+	Mongo JSONObfuscationConfig `json:"mongodb"`
 
 	// SQLExecPlan holds the obfuscation configuration for SQL Exec Plans. This is strictly for safety related obfuscation,
 	// not normalization. Normalization of exec plans is configured in SQLExecPlanNormalize.
-	SQLExecPlan JSONObfuscationConfig `yaml:"sqlExecPlan"`
+	SQLExecPlan JSONObfuscationConfig `json:"sqlExecPlan"`
 
 	// SQLExecPlanNormalize holds the normalization configuration for SQL Exec Plans.
-	SQLExecPlanNormalize JSONObfuscationConfig `yaml:"sqlExecPlanNormalize"`
+	SQLExecPlanNormalize JSONObfuscationConfig `json:"sqlExecPlanNormalize"`
 
 	// HTTP holds the obfuscation settings for HTTP URLs.
-	HTTP HTTPObfuscationConfig `yaml:"http"`
+	HTTP HTTPObfuscationConfig `json:"http"`
 
 	// RemoveStackTraces specifies whether stack traces should be removed.
 	// More specifically "error.stack" tag values will be cleared.
-	RemoveStackTraces bool `yaml:"removeStackTraces"`
+	RemoveStackTraces bool `json:"removeStackTraces"`
 
 	// Redis holds the configuration for obfuscating the "redis.rawCommand" tag
 	// for spans of type "redis".
-	Redis Enablable `yaml:"redis"`
+	Redis Enablable `json:"redis"`
 
 	// Memcached holds the configuration for obfuscating the "memcached.command" tag
 	// for spans of type "memcached".
-	Memcached Enablable `yaml:"memcached"`
+	Memcached Enablable `json:"memcached"`
 }
 
 // HTTPObfuscationConfig holds the configuration settings for HTTP obfuscation.
 type HTTPObfuscationConfig struct {
 	// RemoveQueryStrings determines query strings to be removed from HTTP URLs.
-	RemoveQueryString bool `yaml:"removeQueryString" json:"removeQueryString"`
+	RemoveQueryString bool `json:"removeQueryString"`
 
 	// RemovePathDigits determines digits in path segments to be obfuscated.
-	RemovePathDigits bool `yaml:"removePathsWithDigits" json:"removePathDigits"`
+	RemovePathDigits bool `json:"removePathDigits"`
 }
 
 // Enablable can represent any option that has an "enabled" boolean sub-field.
 type Enablable struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `json:"enabled"`
 }
 
 // JSONObfuscationConfig holds the obfuscation configuration for sensitive
 // data found in JSON objects.
 type JSONObfuscationConfig struct {
 	// Enabled will specify whether obfuscation should be enabled.
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `json:"enabled"`
 
 	// KeepValues will specify a set of keys for which their values will
 	// not be obfuscated.
-	KeepValues []string `yaml:"keepValues"`
+	KeepValues []string `json:"keepValues"`
 
 	// ObfuscateSQLValues will specify a set of keys for which their values
 	// will be passed through SQL obfuscation
-	ObfuscateSQLValues []string `yaml:"obfuscateSqlValues"`
+	ObfuscateSQLValues []string `json:"obfuscateSqlValues"`
 }
 
 // ReplaceRule specifies a replace rule.
@@ -87,31 +87,31 @@ type ReplaceRule struct {
 	// some exceptions apply such as:
 	// • "resource.name" will target the resource
 	// • "*" will target all tags and the resource
-	Name string `yaml:"name"`
+	Name string `json:"name"`
 
 	// Pattern specifies the regexp pattern to be used when replacing. It must compile.
-	Pattern string `yaml:"pattern"`
+	Pattern string `json:"pattern"`
 
 	// Re holds the compiled Pattern and is only used internally.
-	Re *regexp.Regexp `yaml:"-"`
+	Re *regexp.Regexp `json:"-"`
 
 	// Repl specifies the replacement string to be used when Pattern matches.
-	Repl string `yaml:"repl"`
+	Repl string `json:"repl"`
 }
 
 // WriterConfig specifies configuration for an API writer.
 type WriterConfig struct {
 	// ConnectionLimit specifies the maximum number of concurrent outgoing
 	// connections allowed for the sender.
-	ConnectionLimit int `yaml:"connectionLimit"`
+	ConnectionLimit int `json:"connectionLimit"`
 
 	// QueueSize specifies the maximum number or payloads allowed to be queued
 	// in the sender.
-	QueueSize int `yaml:"queueSize"`
+	QueueSize int `json:"queueSize"`
 
 	// FlushPeriodSeconds specifies the frequency at which the writer's buffer
 	// will be flushed to the sender, in seconds. Fractions are permitted.
-	FlushPeriodSeconds float64 `yaml:"flushPeriodSeconds"`
+	FlushPeriodSeconds float64 `json:"flushPeriodSeconds"`
 }
 
 func (c *AgentConfig) applyDatadogConfig() error {

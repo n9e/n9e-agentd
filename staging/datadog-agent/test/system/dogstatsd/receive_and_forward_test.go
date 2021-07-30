@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/v5"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
 )
 

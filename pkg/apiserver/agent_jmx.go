@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed/jmx"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/embed/jmx"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"github.com/yubo/apiserver/pkg/rest"

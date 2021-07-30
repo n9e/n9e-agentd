@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/collectors"
 	"k8s.io/klog/v2"
 )

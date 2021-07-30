@@ -15,9 +15,9 @@ package apiserver
 import (
 	"net/http"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/python"
+	"github.com/n9e/n9e-agentd/pkg/collector/python"
 )
 
-func getPythonStatus(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func getPythonStatus(w http.ResponseWriter, r *http.Request) ([]*python.PythonStats, error) {
 	return python.GetPythonInterpreterMemoryUsage()
 }

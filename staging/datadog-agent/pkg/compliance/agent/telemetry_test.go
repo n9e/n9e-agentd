@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/mocksender"
+	"github.com/n9e/n9e-agentd/pkg/aggregator/mocksender"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/collectors"
 

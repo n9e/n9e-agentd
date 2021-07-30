@@ -22,7 +22,7 @@ import (
 	log "github.com/cihub/seelog"
 	datadog "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"

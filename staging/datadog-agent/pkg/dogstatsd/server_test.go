@@ -19,9 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator/ckey"
+	"github.com/n9e/n9e-agentd/pkg/aggregator/ckey"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 )
 
 // getAvailableUDPPort requests a random port number and makes sure it is available

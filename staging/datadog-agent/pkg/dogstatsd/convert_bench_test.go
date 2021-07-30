@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/n9e/n9e-agentd/pkg/metrics"
 )
 
 func buildRawSample(tagCount int, multipleValues bool) []byte {

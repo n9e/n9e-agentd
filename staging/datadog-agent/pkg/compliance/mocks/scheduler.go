@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	check "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	check "github.com/n9e/n9e-agentd/pkg/collector/check"
 	mock "github.com/stretchr/testify/mock"
 )
 

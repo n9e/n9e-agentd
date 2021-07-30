@@ -5,7 +5,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks"
 )
 
 func ValidateJSONConfig(checkName string, data []byte) error {

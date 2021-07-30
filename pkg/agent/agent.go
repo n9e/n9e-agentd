@@ -8,6 +8,7 @@ import (
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
+	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/embed/jmx"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/forwarder"
 	"github.com/n9e/n9e-agentd/pkg/forwarder/transaction"
@@ -15,9 +16,8 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/version"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/pkg/aggregator"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/healthprobe"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed/jmx"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata"
@@ -196,6 +196,7 @@ func (p *module) readConfig() error {
 
 	p.config = cf
 	config.C = cf
+	config.Configer = configer.GetConfiger("agent")
 	config.Context = p.ctx
 
 	return nil
