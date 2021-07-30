@@ -82,6 +82,10 @@ func (c *Check) Run() error {
 		collectProc(sender, proc, stat, []string{"target:" + c.filter.Target})
 	}
 
+	if len(c.filter.Pids) == 0 {
+		sender.Count("proc.num", 0, "", []string{"target:" + c.filter.Target})
+	}
+
 	sender.Commit()
 	return nil
 }
