@@ -37,6 +37,11 @@ for str in ${lists}; do
 		go build -ldflags "${GO_BUILD_LDFLAGS}" \
 		-mod vendor \
 		-o ${dir}/bin/${file} ../cmd/agentd
+	GO111MODULE=on CGO_ENABLED=1 GOOS=${os} GOARCH=${arch} \
+		CC=${cc} CXX=${cxx} \
+		go build -ldflags "${GO_BUILD_LDFLAGS}" \
+		-mod vendor \
+		-o ${dir}/bin/agentdctl ../cmd/agentdctl
 	cp -a ../README.md ${dir}/
 	cp -a ../misc/etc ${dir}/
 	cp -a ../misc/conf.d ${dir}/

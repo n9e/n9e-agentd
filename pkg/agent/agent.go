@@ -36,12 +36,11 @@ const (
 )
 
 type module struct {
-	config *config.Config
-	name   string
-	s      *serializer.Serializer
+	config     *config.Config
+	name       string
+	serializer *serializer.Serializer
 
 	hostname string
-	//confdPath string
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -83,16 +82,11 @@ func (p *module) start(ctx context.Context) error {
 		return err
 	}
 
-	// move to pkg/apiserver as a module
-	//if err := p.startApiserver(); err != nil {
-	//	return err
-	//}
-
 	if err := p.startForwarder(); err != nil {
 		return err
 	}
 
-	if err := p.startStatsd(); err != nil {
+	if err := p.startAggStatsd(); err != nil {
 		return err
 	}
 
@@ -148,7 +142,7 @@ func (p *module) stop(ctx context.Context) error {
 		common.MetadataScheduler.Stop()
 	}
 	traps.StopServer()
-	//api.StopServer()
+
 	jmx.StopJmxfetch()
 	aggregator.StopDefaultAggregator()
 	if common.Forwarder != nil {
@@ -275,31 +269,21 @@ func (p *module) startForwarder() error {
 	f.Start() //nolint:errcheck
 	klog.V(5).Infof("Forwarder started")
 
-	p.s = serializer.NewSerializer(f, nil)
+	p.serializer = serializer.NewSerializer(f, nil)
 	common.Forwarder = f
 
 	return nil
 }
 
-// start the cmd HTTP server
-//func (p *module) startApiserver() error {
-//	if runtime.GOOS != "android" {
-//		if err = api.StartServer(); err != nil {
-//			return klog.Errorf("Error while starting api server, exiting: %v", err)
-//		}
-//	}
-//
-//	return nil
-//}
+// start Agg and dogstatsd
+func (p *module) startAggStatsd() (err error) {
+	agg := aggregator.InitAggregator(p.serializer, p.hostname)
+	agg.AddAgentStartupTelemetry(version.AgentVersion)
 
-// start dogstatsd
-func (p *module) startStatsd() (err error) {
 	if !p.config.Statsd.Enabled {
 		return nil
 	}
 
-	agg := aggregator.InitAggregator(p.s, p.hostname)
-	agg.AddAgentStartupTelemetry(version.AgentVersion)
 	common.DSD, err = dogstatsd.NewServer(agg, nil)
 	if err != nil {
 		return fmt.Errorf("Could not start statsd: %s", err)
@@ -374,7 +358,7 @@ func (p *module) startAutoconfig() error {
 
 // setup the metadata collector
 func (p *module) setupMedatadaCollector() error {
-	common.MetadataScheduler = metadata.NewScheduler(p.s)
+	common.MetadataScheduler = metadata.NewScheduler(p.serializer)
 	if err := metadata.SetupMetadataCollection(common.MetadataScheduler, metadata.AllDefaultCollectors); err != nil {
 		return err
 	}

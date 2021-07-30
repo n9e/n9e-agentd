@@ -131,8 +131,8 @@ require (
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	github.com/vito/go-sse v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
-	github.com/yubo/apiserver v0.0.0-20210427165240-9b55a37de313
-	github.com/yubo/golib v0.0.0-20210722163742-0aedfc541c7f
+	github.com/yubo/apiserver v0.0.0-20210729120429-544a148d5f22
+	github.com/yubo/golib v0.0.0-20210729083123-4040286093c6
 	github.com/zorkian/go-datadog-api v2.28.0+incompatible // indirect
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 	go.uber.org/automaxprocs v1.2.0
@@ -172,6 +172,7 @@ require (
 )
 
 replace (
+	#github.com/yubo/apiserver => ../../yubo/apiserver
 	github.com/cihub/seelog => github.com/cihub/seelog v0.0.0-20151216151435-d2c6e5aa9fbf // v2.6
 	github.com/containerd/cgroups => github.com/containerd/cgroups v0.0.0-20200327175542-b44481373989
 	github.com/containerd/containerd => github.com/containerd/containerd v1.2.13
@@ -211,9 +212,4 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115753-cf0698c3a16b
 	k8s.io/metrics => k8s.io/metrics v0.18.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112829-06bb3c9d77c9
-)
-
-replace (
-	github.com/yubo/apiserver => ../../yubo/apiserver
-	github.com/yubo/golib => ../../yubo/golib
 )

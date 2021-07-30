@@ -20,7 +20,9 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks/embed/jmx"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/yubo/apiserver/pkg/rest"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 )
@@ -74,4 +76,8 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
 	}
 	return jsonPayload, nil
+}
+
+func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, jmxStatus *status.JMXStatus) {
+	status.SetJMXStatus(*jmxStatus)
 }

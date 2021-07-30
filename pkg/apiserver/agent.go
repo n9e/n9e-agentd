@@ -184,10 +184,6 @@ type componentInput struct {
 	Component string `param:"path"`
 }
 
-func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, jmxStatus *status.JMXStatus) {
-	status.SetJMXStatus(*jmxStatus)
-}
-
 //func getCSRFToken(w http.ResponseWriter, r *http.Request) {
 //	w.Write([]byte(gui.CsrfToken))
 //}

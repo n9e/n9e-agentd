@@ -1,14 +1,14 @@
 package apiserver
 
-// Config contains the config while running a generic api server.
-type Config struct {
+// apiserverConfig contains the config while running a generic api server.
+type apiserverConfig struct {
 	Enabled bool `json:"enabled" default:"false" flag:"apiserver-enable" description:"api server enable"`
 
 	ExternalHost string `json:"externalHost" flag:"external-hostname" description:"The hostname to use when generating externalized URLs for this master (e.g. Swagger API Docs or OpenID Discovery)."`
 
 	Address string/*net.IP*/ `json:"address" default:"127.0.0.1" flag:"apiserver-address" description:"The IP address on which to listen for the --bind-port port. The associated interface(s) must be reachable by the rest of the cluster, and by CLI/web clients. If blank or an unspecified address (127.0.0.1 or ::), all interfaces will be used."` // BindAddress
 
-	Port int `json:"port" default:"8080" flag:"apiserver-port" description:"The port on which to serve HTTPS with authentication and authorization. It cannot be switched off with 0."` // BindPort is ignored when Listener is set, will serve https even with 0.
+	Port int `json:"port" default:"8010" flag:"apiserver-port" description:"The port on which to serve HTTPS with authentication and authorization. It cannot be switched off with 0."` // BindPort is ignored when Listener is set, will serve https even with 0.
 
 	Network string `json:"bindNetwork" flag:"cors-allowed-origins" description:"List of allowed origins for CORS, comma separated.  An allowed origin can be a regular expression to support subdomain matching. If this list is empty CORS will not be enabled."` // BindNetwork is the type of network to bind to - defaults to "tcp", accepts "tcp", "tcp4", and "tcp6".
 
@@ -42,4 +42,9 @@ type Config struct {
 	EnableProfiling           bool `json:"enableProfiling" default:"false"`
 	EnableContentionProfiling bool `json:"enableContentionProfiling" default:"false"`
 	EnableMetrics             bool `json:"enableMetrics" default:"false"`
+}
+
+// authzConfig contains all build-in authorization options for API Server
+type authzConfig struct {
+	Modes []string `json:"modes" default:"Login" flag:"authorization-mode" description:"Ordered list of plug-ins to do authorization on secure port."`
 }

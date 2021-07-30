@@ -14,6 +14,7 @@ import (
 const (
 	moduleName = "authentication.tokenAuthFile"
 	modulePath = "authentication"
+	fakeToken  = "xxxxxx"
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 
 type config struct {
 	AuthTokenFile string `json:"authTokenFile" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	Fake          bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
 }
 
 func (p *config) Validate() error {
@@ -60,7 +62,7 @@ func (p *authModule) init(ctx context.Context) error {
 	}
 	klog.V(5).InfoS("authmodule init", "name", p.name, "file", cf.AuthTokenFile)
 
-	auth, err := NewAuthToken()
+	auth, err := p.newAuthToken()
 	if err != nil {
 		return err
 	}
@@ -72,17 +74,20 @@ type TokenAuthenticator struct {
 	tokens map[string]*user.DefaultInfo
 }
 
-func NewAuthToken() (*TokenAuthenticator, error) {
+func (p *authModule) newAuthToken() (*TokenAuthenticator, error) {
 	authToken, err := CreateOrFetchToken()
 	if err != nil {
 		return nil, err
 	}
 
-	return &TokenAuthenticator{
-		tokens: map[string]*user.DefaultInfo{
-			authToken: &user.DefaultInfo{Name: "system:agentd", UID: "0"},
-		},
-	}, nil
+	tokens := map[string]*user.DefaultInfo{}
+	tokens[authToken] = &user.DefaultInfo{Name: "system:agentd", UID: "0"}
+
+	if p.config.Fake {
+		tokens[fakeToken] = &user.DefaultInfo{Name: "system:fake", UID: "0"}
+	}
+
+	return &TokenAuthenticator{tokens: tokens}, nil
 }
 
 func (a *TokenAuthenticator) AuthenticateToken(ctx context.Context, value string) (*authenticator.Response, bool, error) {
@@ -90,7 +95,9 @@ func (a *TokenAuthenticator) AuthenticateToken(ctx context.Context, value string
 	if !ok {
 		return nil, false, nil
 	}
-	return &authenticator.Response{User: user}, true, nil
+	return &authenticator.Response{
+		User: user,
+	}, true, nil
 }
 
 func (a *TokenAuthenticator) Name() string {

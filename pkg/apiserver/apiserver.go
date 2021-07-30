@@ -6,12 +6,12 @@ import (
 
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/yubo/apiserver/pkg/apiserver"
+	"github.com/yubo/apiserver/pkg/authorization" // authz
 	apioptions "github.com/yubo/apiserver/pkg/options"
 	"github.com/yubo/golib/proc"
 
-	// authn
-	_ "github.com/yubo/apiserver/pkg/apiserver"
-	_ "github.com/yubo/apiserver/pkg/options"
+	_ "github.com/yubo/apiserver/pkg/authentication/register"      // authn
+	_ "github.com/yubo/apiserver/pkg/authorization/login/register" // authz.login
 )
 
 const (
@@ -64,6 +64,16 @@ func (p *module) stop(ctx context.Context) error {
 
 func init() {
 	proc.RegisterHooks(hookOps)
+
+	// httpserver
 	apiserver.RegisterHooks()
-	proc.RegisterFlags(moduleName, "apiserver", &Config{})
+
+	// authz
+	authorization.RegisterHooks()
+
+	// override apiserver config
+	proc.RegisterFlags("apiserver", "apiserver", &apiserverConfig{})
+
+	// override authorization config
+	proc.RegisterFlags("authorization", "authorization", &authzConfig{})
 }

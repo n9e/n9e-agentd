@@ -12,9 +12,8 @@
 package apiserver
 
 import (
+	"errors"
 	"net/http"
-
-	"k8s.io/klog/v2"
 )
 
 var noJMXErrorString = errors.New("jmx is not compiled in this agent")
