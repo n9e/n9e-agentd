@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
+	"github.com/DataDog/datadog-agent/pkg/util/common"
 )
 
 var (

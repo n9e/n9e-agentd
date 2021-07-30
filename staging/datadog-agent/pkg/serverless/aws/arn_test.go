@@ -1,5 +1,9 @@
 // +build !windows
 
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
 package aws
 
 import (
@@ -11,7 +15,6 @@ import (
 const (
 	exampleArn               = "arn:aws:lambda:us-east-1:123456789012:function:my-function:7"
 	exampleArnWithoutVersion = "arn:aws:lambda:us-east-1:123456789012:function:my-function"
-	exampleFunctionName      = "my-function"
 	exampleRequestID         = "123"
 )
 
@@ -21,9 +24,14 @@ func TestGetAndSetARN(t *testing.T) {
 
 	output := GetARN()
 	assert.Equal(t, exampleArnWithoutVersion, output)
+}
 
-	functionName := FunctionNameFromARN()
-	assert.Equal(t, exampleFunctionName, functionName)
+func TestGetAndSetColdstart(t *testing.T) {
+	t.Cleanup(resetState)
+	SetColdStart(true)
+
+	output := GetColdStart()
+	assert.Equal(t, true, output)
 }
 
 func TestGetAndSetRequestID(t *testing.T) {
@@ -58,4 +66,5 @@ func TestPersistAndRestoreCurrentState(t *testing.T) {
 func resetState() {
 	SetARN("")
 	SetRequestID("")
+	SetColdStart(false)
 }

@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/tag"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/tag"
 
 	"github.com/docker/docker/api/types"
 
@@ -239,7 +239,7 @@ func TestTailer_readForever(t *testing.T) {
 	}
 }
 
-func NewTestReader(data string, err, closeErr error) *testIOReadCloser {
+func NewTestReader(data string, err, closeErr error) *testIOReadCloser { //nolint:revive
 	entries := []testIOReaderEntry{
 		{
 			data: data,
@@ -287,7 +287,7 @@ func (tr *testIOReadCloser) Close() error {
 	return tr.closeErr
 }
 
-func NewTestDockerClient(reader io.ReadCloser, err error) *fakeDockerClient {
+func NewTestDockerClient(reader io.ReadCloser, err error) *fakeDockerClient { //nolint:revive
 	client := &fakeDockerClient{}
 	client.AddEntry(reader, err)
 	return client

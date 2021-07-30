@@ -17,9 +17,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 func init() {
@@ -198,13 +198,13 @@ func GetJSONSerializableMap(m interface{}) interface{} {
 
 // GetGoRoutinesDump returns the stack trace of every Go routine of a running Agent.
 func GetGoRoutinesDump() (string, error) {
-	ipcAddress, err := config.C.GetIPCAddress()
+	ipcAddress, err := config.GetIPCAddress()
 	if err != nil {
 		return "", err
 	}
 
 	pprofURL := fmt.Sprintf("http://%v:%s/debug/pprof/goroutine?debug=2",
-		ipcAddress, config.C.Exporter.Port)
+		ipcAddress, config.Datadog.GetString("expvar_port"))
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	client := http.Client{}

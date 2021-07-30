@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 	"golang.org/x/sys/unix"
 )
 
 // SetupCoreDump enables core dumps and sets the core dump size limit based on configuration
 func SetupCoreDump() error {
-	if config.C.CoreDump {
+	if config.Datadog.GetBool("go_core_dump") {
 		debug.SetTraceback("crash")
 
 		err := unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{

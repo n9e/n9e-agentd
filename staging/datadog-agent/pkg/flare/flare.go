@@ -6,6 +6,7 @@
 package flare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,17 +17,17 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/version"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	httputils "github.com/DataDog/datadog-agent/pkg/util/http"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 var datadogSupportURL = "/support/flare"
 var httpTimeout = time.Duration(60)
 
 type flareResponse struct {
-	CaseID int    `json:"caseId,omitempty"`
+	CaseID int    `json:"case_id,omitempty"`
 	Error  string `json:"error,omitempty"`
 }
 
@@ -115,7 +116,7 @@ func readAndPostFlareFile(archivePath, caseID, email, hostname string) (*http.Re
 
 // SendFlare will send a flare and grab the local hostname
 func SendFlare(archivePath string, caseID string, email string) (string, error) {
-	hostname, err := util.GetHostname()
+	hostname, err := util.GetHostname(context.TODO())
 	if err != nil {
 		hostname = "unknown"
 	}
@@ -128,7 +129,7 @@ func analyzeResponse(r *http.Response, err error) (string, error) {
 		return response, err
 	}
 	if r.StatusCode == http.StatusForbidden {
-		apiKey := config.SanitizeAPIKey(config.C.ApiKey)
+		apiKey := config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
 		var errStr string
 
 		if len(apiKey) == 0 {
@@ -172,11 +173,11 @@ func mkHTTPClient() *http.Client {
 }
 
 func mkURL(caseID string) string {
-	baseURL, _ := config.AddAgentVersionToDomain(config.C.Endpoints[0], "flare")
+	baseURL, _ := config.AddAgentVersionToDomain(config.GetMainInfraEndpoint(), "flare")
 	var url = baseURL + datadogSupportURL
 	if caseID != "" {
 		url += "/" + caseID
 	}
-	url += "?api_key=" + config.SanitizeAPIKey(config.C.ApiKey)
+	url += "?api_key=" + config.SanitizeAPIKey(config.Datadog.GetString("api_key"))
 	return url
 }

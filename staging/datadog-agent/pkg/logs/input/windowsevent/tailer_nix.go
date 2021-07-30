@@ -8,12 +8,12 @@
 package windowsevent
 
 import (
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Start does not do much
 func (t *Tailer) Start() {
-	klog.Warning("windows event log not supported on this system")
+	log.Warn("windows event log not supported on this system")
 	go t.tail()
 }
 

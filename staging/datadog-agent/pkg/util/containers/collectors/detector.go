@@ -9,8 +9,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 // ErrNothingYet is returned when no collector is currently detected.
@@ -86,7 +86,7 @@ func (d *Detector) GetPreferred() (Collector, string, error) {
 	// Pick preferred collector among detected ones
 	preferred := rankCollectors(d.detected, d.preferredName)
 	if preferred != d.preferredName {
-		klog.Infof("Using collector %s", preferred)
+		log.Infof("Using collector %s", preferred)
 		d.preferredName = preferred
 		d.preferredCollector = d.detected[preferred]
 	}
@@ -116,15 +116,15 @@ func retryCandidates(candidates map[string]Collector) (map[string]Collector, map
 	for name, c := range candidates {
 		err := c.Detect()
 		if retry.IsErrWillRetry(err) {
-			klog.V(5).Infof("Will retry collector %s later: %s", name, err)
+			log.Debugf("Will retry collector %s later: %s", name, err)
 			remaining[name] = c
 			continue
 		}
 		if err != nil {
-			klog.V(5).Infof("Collector %s failed to detect: %s", name, err)
+			log.Debugf("Collector %s failed to detect: %s", name, err)
 			continue
 		}
-		klog.Infof("Collector %s successfully detected", name)
+		log.Infof("Collector %s successfully detected", name)
 		detected[name] = c
 	}
 	return detected, remaining

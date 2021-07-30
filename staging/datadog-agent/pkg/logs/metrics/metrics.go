@@ -8,7 +8,7 @@ package metrics
 import (
 	"expvar"
 
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
 )
 
 var (

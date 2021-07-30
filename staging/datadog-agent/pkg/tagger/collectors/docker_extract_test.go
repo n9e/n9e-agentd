@@ -8,6 +8,7 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
 )
 
 func TestDockerRecordsFromInspect(t *testing.T) {
@@ -524,7 +525,7 @@ func TestDockerExtractImage(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprintf("case %d: %s", nb, tc.testName), func(t *testing.T) {
-			resolve := func(co types.ContainerJSON) (string, error) { return tc.resolveMap[co.Image], nil }
+			resolve := func(_ context.Context, co types.ContainerJSON) (string, error) { return tc.resolveMap[co.Image], nil }
 			tags := utils.NewTagList()
 			dockerExtractImage(tags, tc.co, resolve)
 			low, _, _, _ := tags.Compute()

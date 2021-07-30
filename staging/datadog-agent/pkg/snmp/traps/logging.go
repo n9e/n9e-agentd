@@ -6,8 +6,8 @@
 package traps
 
 import (
-	"k8s.io/klog/v2"
-	"github.com/soniah/gosnmp"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/gosnmp/gosnmp"
 )
 
 // trapLogger is a GoSNMP logger interface implementation.
@@ -17,8 +17,8 @@ type trapLogger struct {
 
 // NOTE: GoSNMP logs show the full content of decoded trap packets. Logging as DEBUG would be too noisy.
 func (logger *trapLogger) Print(v ...interface{}) {
-	klog.V(6).Info(v...)
+	log.Trace(v...)
 }
 func (logger *trapLogger) Printf(format string, v ...interface{}) {
-	klog.V(6).Infof(format, v...)
+	log.Tracef(format, v...)
 }

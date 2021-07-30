@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

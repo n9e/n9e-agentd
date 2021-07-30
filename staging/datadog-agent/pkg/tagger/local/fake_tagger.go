@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // FakeTagger implements the Tagger interface
@@ -98,6 +98,18 @@ func (f *FakeTagger) TagBuilder(entity string, cardinality collectors.TagCardina
 // Standard fake implementation
 func (f *FakeTagger) Standard(entity string) ([]string, error) {
 	return f.store.lookupStandard(entity)
+}
+
+// GetEntity returns faked entity corresponding to the specified id and an error
+func (f *FakeTagger) GetEntity(entityID string) (*types.Entity, error) {
+
+	tags, err := f.store.getEntityTags(entityID)
+	if err != nil {
+		return nil, err
+	}
+
+	entity := tags.toEntity()
+	return &entity, nil
 }
 
 // List fake implementation

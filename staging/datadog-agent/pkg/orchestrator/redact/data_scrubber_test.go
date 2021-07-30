@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func BenchmarkNoRegexMatching1(b *testing.B)        { benchmarkMatching(1, b) }

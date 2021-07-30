@@ -9,9 +9,9 @@ package common
 import (
 	"path"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	gopsutilhost "github.com/shirou/gopsutil/host"
 )
 
@@ -24,7 +24,7 @@ func getUUID() string {
 	info, err := gopsutilhost.Info()
 	if err != nil {
 		// don't cache and return zero value
-		klog.Errorf("failed to retrieve host info: %s", err)
+		log.Errorf("failed to retrieve host info: %s", err)
 		return ""
 	}
 	cache.Cache.Set(key, info.HostID, cache.NoExpiration)

@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/validation"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/validation"
 	"github.com/stretchr/testify/assert"
 )
 

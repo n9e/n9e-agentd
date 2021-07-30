@@ -6,7 +6,7 @@
 package checks
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
 )
 
 var (
@@ -15,8 +15,5 @@ var (
 
 	globalVars = eval.VarMap{}
 
-	globalInstance = &eval.Instance{
-		Vars:      globalVars,
-		Functions: globalFunctions,
-	}
+	globalInstance = eval.NewInstance(globalVars, globalFunctions)
 )

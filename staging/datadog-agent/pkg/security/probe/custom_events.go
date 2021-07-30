@@ -13,10 +13,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 	"github.com/hashicorp/go-multierror"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
 )
 
 const (
@@ -104,11 +104,11 @@ func newRule(ruleDef *rules.RuleDefinition) *rules.Rule {
 type EventLostRead struct {
 	Timestamp time.Time `json:"date"`
 	Name      string    `json:"map"`
-	Lost      int64     `json:"lost"`
+	Lost      float64   `json:"lost"`
 }
 
 // NewEventLostReadEvent returns the rule and a populated custom event for a lost_events_read event
-func NewEventLostReadEvent(mapName string, lost int64) (*rules.Rule, *CustomEvent) {
+func NewEventLostReadEvent(mapName string, lost float64) (*rules.Rule, *CustomEvent) {
 	return newRule(&rules.RuleDefinition{
 			ID: LostEventsRuleID,
 		}), newCustomEvent(model.CustomLostReadEventType, EventLostRead{
@@ -123,7 +123,7 @@ func NewEventLostReadEvent(mapName string, lost int64) (*rules.Rule, *CustomEven
 type EventLostWrite struct {
 	Timestamp time.Time         `json:"date"`
 	Name      string            `json:"map"`
-	Lost      map[string]uint64 `json:"perEvent"`
+	Lost      map[string]uint64 `json:"per_event"`
 }
 
 // NewEventLostWriteEvent returns the rule and a populated custom event for a lost_events_write event
@@ -192,8 +192,8 @@ type RuleLoaded struct {
 // easyjson:json
 type PolicyLoaded struct {
 	Version      string
-	RulesLoaded  []*RuleLoaded  `json:"rulesLoaded"`
-	RulesIgnored []*RuleIgnored `json:"rulesIgnored,omitempty"`
+	RulesLoaded  []*RuleLoaded  `json:"rules_loaded"`
+	RulesIgnored []*RuleIgnored `json:"rules_ignored,omitempty"`
 }
 
 // RulesetLoadedEvent is used to report that a new ruleset was loaded
@@ -201,8 +201,8 @@ type PolicyLoaded struct {
 type RulesetLoadedEvent struct {
 	Timestamp       time.Time        `json:"date"`
 	PoliciesLoaded  []*PolicyLoaded  `json:"policies"`
-	PoliciesIgnored *PoliciesIgnored `json:"policiesIgnored,omitempty"`
-	MacrosLoaded    []rules.MacroID  `json:"macrosLoaded"`
+	PoliciesIgnored *PoliciesIgnored `json:"policies_ignored,omitempty"`
+	MacrosLoaded    []rules.MacroID  `json:"macros_loaded"`
 }
 
 // NewRuleSetLoadedEvent returns the rule and a populated custom event for a new_rules_loaded event
@@ -222,7 +222,6 @@ func NewRuleSetLoadedEvent(rs *rules.RuleSet, err *multierror.Error) (*rules.Rul
 		}
 		policy.RulesLoaded = append(policy.RulesLoaded, &RuleLoaded{
 			ID:         rule.ID,
-			Version:    rule.Definition.Version,
 			Expression: rule.Definition.Expression,
 		})
 	}
@@ -239,7 +238,6 @@ func NewRuleSetLoadedEvent(rs *rules.RuleSet, err *multierror.Error) (*rules.Rul
 				}
 				policy.RulesIgnored = append(policy.RulesIgnored, &RuleIgnored{
 					ID:         rerr.Definition.ID,
-					Version:    rerr.Definition.Version,
 					Expression: rerr.Definition.Expression,
 					Reason:     rerr.Err.Error(),
 				})
@@ -266,17 +264,15 @@ func NewRuleSetLoadedEvent(rs *rules.RuleSet, err *multierror.Error) (*rules.Rul
 // easyjson:json
 type NoisyProcessEvent struct {
 	Timestamp      time.Time                 `json:"date"`
-	Event          string                    `json:"eventType"`
-	Count          uint64                    `json:"pidCount"`
+	Count          uint64                    `json:"pid_count"`
 	Threshold      int64                     `json:"threshold"`
-	ControlPeriod  time.Duration             `json:"controlPeriod"`
-	DiscardedUntil time.Time                 `json:"discardedUntil"`
+	ControlPeriod  time.Duration             `json:"control_period"`
+	DiscardedUntil time.Time                 `json:"discarded_until"`
 	Process        *ProcessContextSerializer `json:"process"`
 }
 
 // NewNoisyProcessEvent returns the rule and a populated custom event for a noisy_process event
-func NewNoisyProcessEvent(eventType model.EventType,
-	count uint64,
+func NewNoisyProcessEvent(count uint64,
 	threshold int64,
 	controlPeriod time.Duration,
 	discardedUntil time.Time,
@@ -287,7 +283,6 @@ func NewNoisyProcessEvent(eventType model.EventType,
 			ID: NoisyProcessRuleID,
 		}), newCustomEvent(model.CustomNoisyProcessEventType, NoisyProcessEvent{
 			Timestamp:      timestamp,
-			Event:          eventType.String(),
 			Count:          count,
 			Threshold:      threshold,
 			ControlPeriod:  controlPeriod,
@@ -300,8 +295,6 @@ func resolutionErrorToEventType(err error) model.EventType {
 	switch err.(type) {
 	case ErrTruncatedParents:
 		return model.CustomTruncatedParentsEventType
-	case ErrTruncatedSegment:
-		return model.CustomTruncatedSegmentEventType
 	default:
 		return model.UnknownEventType
 	}
@@ -311,17 +304,17 @@ func resolutionErrorToEventType(err error) model.EventType {
 // easyjson:json
 type AbnormalPathEvent struct {
 	Timestamp           time.Time        `json:"date"`
-	Event               *EventSerializer `json:"triggeringEvent"`
-	PathResolutionError string           `json:"pathResolutionError"`
+	Event               *EventSerializer `json:"triggering_event"`
+	PathResolutionError string           `json:"path_resolution_error"`
 }
 
-// NewAbnormalPathEvent returns the rule and a populated custom event for a abnormalPath event
+// NewAbnormalPathEvent returns the rule and a populated custom event for a abnormal_path event
 func NewAbnormalPathEvent(event *Event, pathResolutionError error) (*rules.Rule, *CustomEvent) {
 	return newRule(&rules.RuleDefinition{
 			ID: AbnormalPathRuleID,
 		}), newCustomEvent(resolutionErrorToEventType(event.GetPathResolutionError()), AbnormalPathEvent{
 			Timestamp:           event.ResolveEventTimestamp(),
-			Event:               newEventSerializer(event),
+			Event:               NewEventSerializer(event),
 			PathResolutionError: pathResolutionError.Error(),
 		}.MarshalJSON)
 }

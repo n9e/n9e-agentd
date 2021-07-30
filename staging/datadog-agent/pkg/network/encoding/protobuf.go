@@ -1,8 +1,8 @@
 package encoding
 
 import (
-	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
+	model "github.com/DataDog/agent-payload/process"
+	"github.com/DataDog/datadog-agent/pkg/network"
 	"github.com/gogo/protobuf/proto"
 )
 

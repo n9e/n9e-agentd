@@ -6,12 +6,13 @@
 package inventories
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
 )
 
 type schedulerInterface interface {
@@ -123,7 +124,7 @@ func createCheckInstanceMetadata(checkID, configProvider string) *CheckInstanceM
 }
 
 // CreatePayload fills and returns the inventory metadata payload
-func CreatePayload(hostname string, ac AutoConfigInterface, coll CollectorInterface) *Payload {
+func CreatePayload(ctx context.Context, hostname string, ac AutoConfigInterface, coll CollectorInterface) *Payload {
 	checkCacheMutex.Lock()
 	defer checkCacheMutex.Unlock()
 
@@ -170,12 +171,12 @@ func CreatePayload(hostname string, ac AutoConfigInterface, coll CollectorInterf
 }
 
 // GetPayload returns a new inventory metadata payload and updates lastGetPayload
-func GetPayload(hostname string, ac AutoConfigInterface, coll CollectorInterface) *Payload {
+func GetPayload(ctx context.Context, hostname string, ac AutoConfigInterface, coll CollectorInterface) *Payload {
 	lastGetPayloadMutex.Lock()
 	defer lastGetPayloadMutex.Unlock()
 	lastGetPayload = timeNow()
 
-	return CreatePayload(hostname, ac, coll)
+	return CreatePayload(ctx, hostname, ac, coll)
 }
 
 // StartMetadataUpdatedGoroutine starts a routine that listens to the metadataUpdatedC

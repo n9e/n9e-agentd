@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 	"google.golang.org/grpc"
 	pb "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 )
@@ -75,7 +75,7 @@ func (c *CRIUtil) init() error {
 	}
 	c.runtime = r.RuntimeName
 	c.runtimeVersion = r.RuntimeVersion
-	klog.V(5).Infof("Successfully connected to CRI %s %s", c.runtime, c.runtimeVersion)
+	log.Debugf("Successfully connected to CRI %s %s", c.runtime, c.runtimeVersion)
 
 	return nil
 }
@@ -98,7 +98,7 @@ func GetUtil() (*CRIUtil, error) {
 	})
 
 	if err := globalCRIUtil.initRetry.TriggerRetry(); err != nil {
-		klog.V(5).Infof("CRI init error: %s", err)
+		log.Debugf("CRI init error: %s", err)
 		return nil, err
 	}
 	return globalCRIUtil, nil
@@ -122,7 +122,7 @@ func (c *CRIUtil) ListContainerStats() (map[string]*pb.ContainerStats, error) {
 	return stats, nil
 }
 
-// ListContainer sends a ListContainerRequest to the server, and parses the returned response
+// GetContainerStatus requests a container status by its ID
 func (c *CRIUtil) GetContainerStatus(containerID string) (*pb.ContainerStatus, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.queryTimeout)
 	defer cancel()

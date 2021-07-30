@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 )
 
 // obfuscateHTTP obfuscates query strings and path segments containing digits in the span's

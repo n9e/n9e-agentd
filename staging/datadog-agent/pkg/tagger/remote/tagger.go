@@ -18,17 +18,17 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/n9e/n9e-agentd/pkg/apiserver/pb"
-	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	grpcutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/grpc"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
+	"github.com/DataDog/datadog-agent/pkg/api/security"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	grpcutil "github.com/DataDog/datadog-agent/pkg/util/grpc"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -107,7 +107,7 @@ func (t *Tagger) Init() error {
 		return err
 	}
 
-	klog.Info("remote tagger initialized successfully")
+	log.Info("remote tagger initialized successfully")
 
 	go t.run()
 
@@ -129,7 +129,7 @@ func (t *Tagger) Stop() error {
 		return err
 	}
 
-	klog.Info("remote tagger stopped successfully")
+	log.Info("remote tagger stopped successfully")
 
 	return nil
 }
@@ -163,6 +163,16 @@ func (t *Tagger) Standard(entityID string) ([]string, error) {
 	}
 
 	return entity.StandardTags, nil
+}
+
+// GetEntity returns the entity corresponding to the specified id and an error
+func (t *Tagger) GetEntity(entityID string) (*types.Entity, error) {
+	entity := t.store.getEntity(entityID)
+	if entity == nil {
+		return nil, fmt.Errorf("Entity not found for entityID")
+	}
+
+	return entity, nil
 }
 
 // List returns all the entities currently stored by the tagger.
@@ -224,14 +234,14 @@ func (t *Tagger) run() {
 			// can no longer be considered ready
 			t.ready = false
 
-			klog.Warningf("error received from remote tagger: %s", err)
+			log.Warnf("error received from remote tagger: %s", err)
 
 			// startTaggerStream(noTimeout) will never return
 			// unless a stream can be established, or the tagger
 			// has been stopped, which means the error handling
 			// here is just a sanity check.
 			if err := t.startTaggerStream(noTimeout); err != nil {
-				klog.Warningf("error received trying to start stream: %s", err)
+				log.Warnf("error received trying to start stream: %s", err)
 			}
 			continue
 		}
@@ -240,7 +250,7 @@ func (t *Tagger) run() {
 
 		err = t.processResponse(response)
 		if err != nil {
-			klog.Warningf("error processing event received from remote tagger: %s", err)
+			log.Warnf("error processing event received from remote tagger: %s", err)
 			continue
 		}
 	}
@@ -251,7 +261,7 @@ func (t *Tagger) processResponse(response *pb.StreamTagsResponse) error {
 	for _, ev := range response.Events {
 		eventType, err := convertEventType(ev.Type)
 		if err != nil {
-			klog.Warningf("error processing event received from remote tagger: %s", err)
+			log.Warnf("error processing event received from remote tagger: %s", err)
 			continue
 		}
 
@@ -303,7 +313,7 @@ func (t *Tagger) startTaggerStream(maxElapsed time.Duration) error {
 		token, err := security.FetchAuthToken()
 		if err != nil {
 			err = fmt.Errorf("unable to fetch authentication token: %w", err)
-			klog.Infof("unable to establish stream, will possibly retry: %s", err)
+			log.Infof("unable to establish stream, will possibly retry: %s", err)
 			return err
 		}
 
@@ -318,11 +328,11 @@ func (t *Tagger) startTaggerStream(maxElapsed time.Duration) error {
 		})
 
 		if err != nil {
-			klog.Infof("unable to establish stream, will possibly retry: %s", err)
+			log.Infof("unable to establish stream, will possibly retry: %s", err)
 			return err
 		}
 
-		klog.Info("tagger stream established successfully")
+		log.Info("tagger stream established successfully")
 
 		return nil
 	}, expBackoff)

@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type pathMapper struct {
@@ -27,7 +27,7 @@ func (m pathMapper) relativeToHostRoot(path string) string {
 	if filepath.HasPrefix(path, m.hostMountPath) {
 		p, err := filepath.Rel(m.hostMountPath, path)
 		if err != nil {
-			klog.Warningf("Unable to return original path for: %s", path)
+			log.Warnf("Unable to return original path for: %s", path)
 			return path
 		}
 

@@ -11,12 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/common/types"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/common/types"
 	logstypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
-	snmptypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/types"
 	traceconfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
@@ -114,10 +112,10 @@ type Config struct {
 	PrometheusScrape               PrometheusScrape         `json:"prometheusScrape,inline"`                                 // prometheus_scrape
 	Autoconfig                     Autoconfig               `json:"autoconfig,inline"`                                       //
 	Container                      Container                `json:"container,inline"`                                        //
-	SnmpTraps                      traps.Config             `json:"snmpTraps,inline"`                                        // snmp_traps_config
+	SnmpTraps                      SnmpTrapsConfig          `json:"snmpTraps,inline"`                                        // snmp_traps_config
 	ClusterAgent                   ClusterAgent             `json:"clusterAgent,inline"`                                     // cluster_agent
 	Network                        Network                  `json:"network,inline"`                                          // network
-	SnmpListener                   snmptypes.ListenerConfig `json:"snmpListener,inline"`                                     // snmp_listener
+	SnmpListener                   SnmpListenerConfig       `json:"snmpListener,inline"`                                     // snmp_listener
 	Cmd                            Cmd                      `json:"cmd,inline"`                                              // cmd
 	LogsConfig                     LogsConfig               `json:"logsConfig"`                                              // logs_config
 	CloudFoundryGarden             CloudFoundryGarden       `json:"cloudFoundryGarden,inline"`                               // cloud_foundry_garden

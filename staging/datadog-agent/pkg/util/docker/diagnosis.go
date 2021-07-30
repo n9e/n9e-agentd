@@ -8,8 +8,10 @@
 package docker
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/diagnose/diagnosis"
-	"k8s.io/klog/v2"
+	"context"
+
+	"github.com/DataDog/datadog-agent/pkg/diagnose/diagnosis"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func init() {
@@ -20,16 +22,16 @@ func init() {
 func diagnose() error {
 	_, err := GetDockerUtil()
 	if err != nil {
-		klog.Error(err)
+		log.Error(err)
 	} else {
-		klog.Info("successfully connected to docker")
+		log.Info("successfully connected to docker")
 	}
 
-	hostname, err := HostnameProvider()
+	hostname, err := HostnameProvider(context.TODO(), nil)
 	if err != nil {
-		klog.Errorf("returned hostname %q with error: %s", hostname, err)
+		log.Errorf("returned hostname %q with error: %s", hostname, err)
 	} else {
-		klog.Infof("successfully got hostname %q from docker", hostname)
+		log.Infof("successfully got hostname %q from docker", hostname)
 	}
 	return err
 }

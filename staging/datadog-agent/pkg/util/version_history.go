@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/version"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 type versionHistoryEntry struct {
@@ -28,8 +29,8 @@ const maxVersionHistoryEntries = 60
 
 // LogVersionHistory loads version history file, append new entry if agent version is different than the last entry in the
 // JSON file, trim the file if too many entries then save the file.
-func LogVersionHistory(runPath string) {
-	versionHistoryFilePath := filepath.Join(runPath, "version-history.json")
+func LogVersionHistory() {
+	versionHistoryFilePath := filepath.Join(config.Datadog.GetString("run_path"), "version-history.json")
 	logVersionHistoryToFile(versionHistoryFilePath, version.AgentVersion, time.Now().UTC())
 }
 
@@ -39,12 +40,12 @@ func logVersionHistoryToFile(versionHistoryFilePath, agentVersion string, timest
 	history := versionHistoryEntries{}
 
 	if err != nil {
-		klog.Infof("Cannot read file: %s, will create a new one. %v", versionHistoryFilePath, err)
+		log.Infof("Cannot read file: %s, will create a new one. %v", versionHistoryFilePath, err)
 	} else {
 		err = json.Unmarshal(file, &history)
 		if err != nil {
 			// If file is in illegal format, ignore the error and regenerate the file.
-			klog.Errorf("Cannot deserialize json file: %s. %v", versionHistoryFilePath, err)
+			log.Errorf("Cannot deserialize json file: %s. %v", versionHistoryFilePath, err)
 		}
 	}
 
@@ -70,13 +71,13 @@ func logVersionHistoryToFile(versionHistoryFilePath, agentVersion string, timest
 
 	file, err = json.Marshal(history)
 	if err != nil {
-		klog.Errorf("Cannot serialize json file: %s %v", versionHistoryFilePath, err)
+		log.Errorf("Cannot serialize json file: %s %v", versionHistoryFilePath, err)
 		return
 	}
 
 	err = ioutil.WriteFile(versionHistoryFilePath, file, 0644)
 	if err != nil {
-		klog.Errorf("Cannot write json file: %s %v", versionHistoryFilePath, err)
+		log.Errorf("Cannot write json file: %s %v", versionHistoryFilePath, err)
 		return
 	}
 }

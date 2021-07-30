@@ -12,10 +12,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // tolerationMargin is used to lean towards stability when rebalancing cluster level checks
@@ -111,7 +110,7 @@ func (d *dispatcher) pickCheckToMove(nodeName string) (string, int, error) {
 	d.store.RUnlock()
 
 	if !found {
-		klog.V(5).Infof("Node %s not found in store. Won't consider moving check", nodeName)
+		log.Debugf("Node %s not found in store. Won't consider moving check", nodeName)
 		return "", -1, fmt.Errorf("node %s not found in store", nodeName)
 	}
 
@@ -142,7 +141,7 @@ func pickNode(diffMap map[string]int, sourceNode string) string {
 
 // moveCheck moves a check by its ID from a node to another
 func (d *dispatcher) moveCheck(src, dest, checkID string) error {
-	klog.V(5).Infof("Moving %s from %s to %s", checkID, src, dest)
+	log.Debugf("Moving %s from %s to %s", checkID, src, dest)
 
 	d.store.RLock()
 	destNode, destFound := d.store.getNodeStore(dest)
@@ -150,13 +149,13 @@ func (d *dispatcher) moveCheck(src, dest, checkID string) error {
 	d.store.RUnlock()
 
 	if !destFound || !srcFound {
-		klog.V(5).Infof("Nodes not found in store: %s, %s. Check %s will not move", src, dest, checkID)
+		log.Debugf("Nodes not found in store: %s, %s. Check %s will not move", src, dest, checkID)
 		return fmt.Errorf("node %s not found", src)
 	}
 
 	runnerStats, err := sourceNode.GetRunnerStats(checkID)
 	if err != nil {
-		klog.V(5).Infof("Cannot get runner stats on node %s, check %s will not move", src, checkID)
+		log.Debugf("Cannot get runner stats on node %s, check %s will not move", src, checkID)
 		return err
 	}
 
@@ -164,12 +163,12 @@ func (d *dispatcher) moveCheck(src, dest, checkID string) error {
 	sourceNode.RemoveRunnerStats(checkID)
 
 	config, digest := d.getConfigAndDigest(checkID)
-	klog.V(6).Infof("Moving check %s with digest %s and config %s from %s to %s", checkID, digest, config.String(), src, dest)
+	log.Tracef("Moving check %s with digest %s and config %s from %s to %s", checkID, digest, config.String(), src, dest)
 
 	d.removeConfig(digest)
 	d.addConfig(config, dest)
 
-	klog.V(5).Infof("Check %s moved from %s to %s", checkID, src, dest)
+	log.Debugf("Check %s moved from %s to %s", checkID, src, dest)
 
 	return nil
 }
@@ -185,10 +184,10 @@ func (d *dispatcher) rebalance() []types.RebalanceResponse {
 		rebalancingDuration.Set(time.Since(start).Seconds(), le.JoinLeaderValue)
 	}()
 
-	klog.V(6).Info("Trying to rebalance cluster checks distribution if needed")
+	log.Trace("Trying to rebalance cluster checks distribution if needed")
 	totalAvg, err := d.calculateAvg()
 	if err != nil {
-		klog.V(5).Infof("Cannot rebalance checks: %v", err)
+		log.Debugf("Cannot rebalance checks: %v", err)
 		return nil
 	}
 
@@ -202,7 +201,7 @@ func (d *dispatcher) rebalance() []types.RebalanceResponse {
 			sourceNodeName := nodeWeight.nodeName
 			checkID, checkWeight, err := d.pickCheckToMove(sourceNodeName)
 			if err != nil {
-				klog.V(5).Infof("Cannot pick a check to move from node %s: %v", sourceNodeName, err)
+				log.Debugf("Cannot pick a check to move from node %s: %v", sourceNodeName, err)
 				break
 			}
 
@@ -219,12 +218,12 @@ func (d *dispatcher) rebalance() []types.RebalanceResponse {
 				rebalancingDecisions.Inc(le.JoinLeaderValue)
 				err = d.moveCheck(sourceNodeName, destNodeName, checkID)
 				if err != nil {
-					klog.V(5).Infof("Cannot move check %s: %v", checkID, err)
+					log.Debugf("Cannot move check %s: %v", checkID, err)
 					continue
 				}
 
 				successfulRebalancing.Inc(le.JoinLeaderValue)
-				klog.V(6).Infof("Check %s with weight %d moved, total avg: %d, source diff: %d, dest diff: %d",
+				log.Tracef("Check %s with weight %d moved, total avg: %d, source diff: %d, dest diff: %d",
 					checkID, checkWeight, totalAvg, sourceDiff, destDiff)
 				// diffMap needs to be updated on every check moved
 				diffMap = d.updateDiff(totalAvg)

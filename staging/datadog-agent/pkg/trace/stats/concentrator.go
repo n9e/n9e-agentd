@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/watchdog"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // defaultBufferLen represents the default buffer length; the number of bucket size
@@ -25,7 +25,7 @@ const defaultBufferLen = 2
 // Gets an imperial shitton of traces, and outputs pre-computed data structures
 // allowing to find the gold (stats) amongst the traces.
 type Concentrator struct {
-	In  chan []Input
+	In  chan Input
 	Out chan pb.StatsPayload
 
 	// bucket duration in nanoseconds
@@ -57,7 +57,7 @@ func NewConcentrator(conf *config.AgentConfig, out chan pb.StatsPayload, now tim
 		oldestTs: alignTs(now.UnixNano(), bsize),
 		// TODO: Move to configuration.
 		bufferLen:     defaultBufferLen,
-		In:            make(chan []Input, 100),
+		In:            make(chan Input, 100),
 		Out:           out,
 		exit:          make(chan struct{}),
 		agentEnv:      conf.DefaultEnv,
@@ -84,7 +84,7 @@ func (c *Concentrator) Run() {
 	flushTicker := time.NewTicker(time.Duration(c.bsize) * time.Nanosecond)
 	defer flushTicker.Stop()
 
-	klog.V(5).Info("Starting concentrator")
+	log.Debug("Starting concentrator")
 
 	go func() {
 		for {
@@ -99,7 +99,7 @@ func (c *Concentrator) Run() {
 		case <-flushTicker.C:
 			c.Out <- c.Flush()
 		case <-c.exit:
-			klog.Info("Exiting concentrator, computing remaining stats")
+			log.Info("Exiting concentrator, computing remaining stats")
 			c.Out <- c.Flush()
 			return
 		}
@@ -112,24 +112,30 @@ func (c *Concentrator) Stop() {
 	c.exitWG.Wait()
 }
 
-// Input contains input for the concentractor.
-type Input struct {
+// EnvTrace contains input for the concentractor.
+type EnvTrace struct {
 	Trace WeightedTrace
 	Env   string
 }
 
+// Input specifies a set of traces originating from a certain payload.
+type Input struct {
+	Traces      []EnvTrace
+	ContainerID string
+}
+
 // Add applies the given input to the concentrator.
-func (c *Concentrator) Add(inputs []Input) {
+func (c *Concentrator) Add(t Input) {
 	c.mu.Lock()
-	for i := range inputs {
-		c.addNow(&inputs[i])
+	for _, trace := range t.Traces {
+		c.addNow(&trace, t.ContainerID)
 	}
 	c.mu.Unlock()
 }
 
 // addNow adds the given input into the concentrator.
 // Callers must guard!
-func (c *Concentrator) addNow(i *Input) {
+func (c *Concentrator) addNow(i *EnvTrace, containerID string) {
 	env := i.Env
 	if env == "" {
 		env = c.agentEnv
@@ -151,7 +157,7 @@ func (c *Concentrator) addNow(i *Input) {
 			b = NewRawBucket(uint64(btime), uint64(c.bsize))
 			c.buckets[btime] = b
 		}
-		b.HandleSpan(s, env, c.agentHostname)
+		b.HandleSpan(s, env, c.agentHostname, containerID)
 	}
 }
 
@@ -161,7 +167,7 @@ func (c *Concentrator) Flush() pb.StatsPayload {
 }
 
 func (c *Concentrator) flushNow(now int64) pb.StatsPayload {
-	m := make(map[PayloadKey][]pb.ClientStatsBucket)
+	m := make(map[PayloadAggregationKey][]pb.ClientStatsBucket)
 
 	c.mu.Lock()
 	for ts, srb := range c.buckets {
@@ -171,7 +177,7 @@ func (c *Concentrator) flushNow(now int64) pb.StatsPayload {
 		if ts > now-int64(c.bufferLen)*c.bsize {
 			continue
 		}
-		klog.V(5).Infof("flushing bucket %d", ts)
+		log.Debugf("flushing bucket %d", ts)
 		for k, b := range srb.Export() {
 			m[k] = append(m[k], b)
 		}
@@ -181,18 +187,20 @@ func (c *Concentrator) flushNow(now int64) pb.StatsPayload {
 	// an already-flushed bucket.
 	newOldestTs := alignTs(now, c.bsize) - int64(c.bufferLen-1)*c.bsize
 	if newOldestTs > c.oldestTs {
-		klog.V(5).Infof("update oldestTs to %d", newOldestTs)
+		log.Debugf("update oldestTs to %d", newOldestTs)
 		c.oldestTs = newOldestTs
 	}
 	c.mu.Unlock()
 	sb := make([]pb.ClientStatsPayload, 0, len(m))
 	for k, s := range m {
-		sb = append(sb, pb.ClientStatsPayload{
-			Env:      k.env,
-			Hostname: k.hostname,
-			Version:  k.version,
-			Stats:    s,
-		})
+		p := pb.ClientStatsPayload{
+			Env:         k.Env,
+			Hostname:    k.Hostname,
+			ContainerID: k.ContainerID,
+			Version:     k.Version,
+			Stats:       s,
+		}
+		sb = append(sb, p)
 	}
 	return pb.StatsPayload{Stats: sb, AgentHostname: c.agentHostname, AgentEnv: c.agentEnv, AgentVersion: info.Version}
 }

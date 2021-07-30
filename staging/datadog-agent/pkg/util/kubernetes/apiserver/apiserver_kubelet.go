@@ -13,9 +13,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // NodeMetadataMapping only fetch the endpoints from Kubernetes apiserver and add the metadataMapper of the
@@ -24,14 +24,14 @@ import (
 func (c *APIClient) NodeMetadataMapping(nodeName string, pods []*kubelet.Pod) error {
 	endpointList, err := c.Cl.CoreV1().Endpoints("").List(context.TODO(), metav1.ListOptions{TimeoutSeconds: &c.timeoutSeconds})
 	if err != nil {
-		klog.Errorf("Could not collect endpoints from the API Server: %q", err.Error())
+		log.Errorf("Could not collect endpoints from the API Server: %q", err.Error())
 		return err
 	}
 	if endpointList.Items == nil {
-		klog.V(5).Info("No endpoints collected from the API server")
+		log.Debug("No endpoints collected from the API server")
 		return nil
 	}
-	klog.V(5).Infof("Successfully collected endpoints")
+	log.Debugf("Successfully collected endpoints")
 
 	var node v1.Node
 	var nodeList v1.NodeList
@@ -48,7 +48,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 	if nodeList.Items == nil || len(pods) == 0 || endpointList.Items == nil {
 		return
 	}
-	klog.V(5).Infof("Identified: %d node, %d pod, %d endpoints", len(nodeList.Items), len(pods), len(endpointList.Items))
+	log.Debugf("Identified: %d node, %d pod, %d endpoints", len(nodeList.Items), len(pods), len(endpointList.Items))
 	for _, node := range nodeList.Items {
 		nodeName := node.Name
 		nodeNameCacheKey := cache.BuildAgentKey(metadataMapperCachePrefix, nodeName)
@@ -66,7 +66,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 		// If a pod is killed and rescheduled during a run, we will only keep the old entry for another run, which is acceptable.
 		if found && freshnessCache != len(pods) || !freshnessFound {
 			cache.Cache.Set(freshness, len(pods), metadataMapExpire)
-			klog.V(5).Infof("Refreshing cache for %s", nodeNameCacheKey)
+			log.Debugf("Refreshing cache for %s", nodeNameCacheKey)
 		} else {
 			oldMetadataBundle, ok := cacheData.(*metadataMapperBundle)
 			if ok {
@@ -75,7 +75,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 		}
 
 		if err := newMetaBundle.mapServices(nodeName, pods, *endpointList); err != nil {
-			klog.Errorf("Could not map the services on node %s: %s", node.Name, err.Error())
+			log.Errorf("Could not map the services on node %s: %s", node.Name, err.Error())
 			continue
 		}
 		cache.Cache.Set(nodeNameCacheKey, newMetaBundle, metadataMapExpire)

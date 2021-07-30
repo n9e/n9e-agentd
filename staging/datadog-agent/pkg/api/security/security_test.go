@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 func initMockConf(t *testing.T) string {

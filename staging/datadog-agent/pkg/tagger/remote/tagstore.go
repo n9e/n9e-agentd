@@ -8,11 +8,11 @@ package remote
 import (
 	"sync"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/subscriber"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/subscriber"
+	"github.com/DataDog/datadog-agent/pkg/tagger/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
 )
 
 const remoteSource = "remote"

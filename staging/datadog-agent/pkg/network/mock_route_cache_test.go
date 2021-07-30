@@ -9,7 +9,7 @@ package network
 import (
 	reflect "reflect"
 
-	util "github.com/n9e/n9e-agentd/pkg/process/util"
+	util "github.com/DataDog/datadog-agent/pkg/process/util"
 	gomock "github.com/golang/mock/gomock"
 )
 

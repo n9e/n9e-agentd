@@ -21,10 +21,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/errors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/errors"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -78,8 +78,8 @@ type AutoscalersController struct {
 func (h *AutoscalersController) RunHPA(stopCh <-chan struct{}) {
 	defer h.HPAqueue.ShutDown()
 
-	klog.Infof("Starting HPA Controller ... ")
-	defer klog.Infof("Stopping HPA Controller")
+	log.Infof("Starting HPA Controller ... ")
+	defer log.Infof("Stopping HPA Controller")
 	if !cache.WaitForCacheSync(stopCh, h.autoscalersListerSynced) {
 		return
 	}
@@ -108,10 +108,10 @@ func (h *AutoscalersController) worker() {
 func (h *AutoscalersController) processNextHPA() bool {
 	key, quit := h.HPAqueue.Get()
 	if quit {
-		klog.Infof("HPA controller HPAqueue is shutting down, stopping processing")
+		log.Infof("HPA controller HPAqueue is shutting down, stopping processing")
 		return false
 	}
-	klog.V(6).Infof("Processing %s", key)
+	log.Tracef("Processing %s", key)
 	defer h.HPAqueue.Done(key)
 
 	err := h.syncHPA(key)
@@ -130,7 +130,7 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key.(string))
 	if err != nil {
-		klog.Errorf("Could not split the key: %v", err)
+		log.Errorf("Could not split the key: %v", err)
 		return err
 	}
 
@@ -138,12 +138,12 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 	switch {
 	case errors.IsNotFound(err):
 		// The object was deleted before we processed the add/update handle. Local store does not have the Ref data anymore. The GC will clean up the Global Store.
-		klog.Infof("HorizontalPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
+		log.Infof("HorizontalPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
 	case err != nil:
-		klog.Errorf("Unable to retrieve Horizontal Pod Autoscaler %v from store: %v", key, err)
+		log.Errorf("Unable to retrieve Horizontal Pod Autoscaler %v from store: %v", key, err)
 	default:
 		if hpaCached == nil {
-			klog.Errorf("Could not parse empty hpa %s/%s from local store", ns, name)
+			log.Errorf("Could not parse empty hpa %s/%s from local store", ns, name)
 			return ErrIsEmpty
 		}
 		emList := autoscalers.InspectHPA(hpaCached)
@@ -157,7 +157,7 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 			h.toStore.data[metric] = value
 		}
 		h.toStore.m.Unlock()
-		klog.V(6).Infof("Local batch cache of Ref is %v", h.toStore.data)
+		log.Tracef("Local batch cache of Ref is %v", h.toStore.data)
 	}
 	return err
 }
@@ -165,10 +165,10 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 func (h *AutoscalersController) addAutoscaler(obj interface{}) {
 	newAutoscaler, ok := obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		klog.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
+		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
 		return
 	}
-	klog.V(5).Infof("Adding autoscaler %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
+	log.Debugf("Adding autoscaler %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
 	h.EventRecorder.Event(newAutoscaler, corev1.EventTypeNormal, autoscalerNowHandleMsgEvent, "")
 	h.enqueue(newAutoscaler)
 }
@@ -180,24 +180,24 @@ func (h *AutoscalersController) addAutoscaler(obj interface{}) {
 func (h *AutoscalersController) updateAutoscaler(old, obj interface{}) {
 	newAutoscaler, ok := obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		klog.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
+		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
 		return
 	}
 	oldAutoscaler, ok := old.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		klog.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", old)
+		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", old)
 		h.enqueue(newAutoscaler) // We still want to enqueue the newAutoscaler to get the new change
 		return
 	}
 
 	if !autoscalers.AutoscalerMetricsUpdate(newAutoscaler, oldAutoscaler) {
-		klog.V(6).Infof("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
+		log.Tracef("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
 		return
 	}
 	// Need to delete the old object from the local cache. If the labels have changed, the syncAutoscaler would not override the old key.
 	toDelete := autoscalers.InspectHPA(oldAutoscaler)
 	h.deleteFromLocalStore(toDelete)
-	klog.V(6).Infof("Processing update event for autoscaler %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
+	log.Tracef("Processing update event for autoscaler %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
 	h.enqueue(newAutoscaler)
 }
 
@@ -213,11 +213,11 @@ func (h *AutoscalersController) deleteAutoscaler(obj interface{}) {
 	if ok {
 		toDelete.External = autoscalers.InspectHPA(deletedHPA)
 		h.deleteFromLocalStore(toDelete.External)
-		klog.V(5).Infof("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
+		log.Debugf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
 		if !h.isLeaderFunc() {
 			return
 		}
-		klog.Infof("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedHPA.Namespace, deletedHPA.Name)
+		log.Infof("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedHPA.Namespace, deletedHPA.Name)
 		if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 			h.enqueue(deletedHPA)
 			return
@@ -226,19 +226,19 @@ func (h *AutoscalersController) deleteAutoscaler(obj interface{}) {
 
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if !ok {
-		klog.Errorf("Could not get object from tombstone %#v", obj)
+		log.Errorf("Could not get object from tombstone %#v", obj)
 		return
 	}
 
 	deletedHPA, ok = tombstone.Obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		klog.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
+		log.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
 		return
 	}
 
-	klog.V(5).Infof("Deleting Metrics from Ref %s/%s", deletedHPA.Namespace, deletedHPA.Name)
+	log.Debugf("Deleting Metrics from Ref %s/%s", deletedHPA.Namespace, deletedHPA.Name)
 	toDelete.External = autoscalers.InspectHPA(deletedHPA)
-	klog.V(5).Infof("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
+	log.Debugf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
 	h.deleteFromLocalStore(toDelete.External)
 	if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 		h.enqueue(deletedHPA)

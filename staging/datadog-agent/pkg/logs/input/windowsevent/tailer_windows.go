@@ -18,19 +18,20 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	"golang.org/x/sys/windows"
 )
 
 // Start starts tailing the event log.
 func (t *Tailer) Start() {
-	klog.Infof("Starting windows event log tailing for channel %s query %s", t.config.ChannelPath, t.config.Query)
+	log.Infof("Starting windows event log tailing for channel %s query %s", t.config.ChannelPath, t.config.Query)
 	go t.tail()
 }
 
 // Stop stops the tailer
 func (t *Tailer) Stop() {
-	klog.Info("Stop tailing windows event log")
+	log.Info("Stop tailing windows event log")
 	t.stop <- struct{}{}
 	<-t.done
 }
@@ -64,32 +65,32 @@ func (t *Tailer) tail() {
 
 //export goStaleCallback
 func goStaleCallback(errCode C.ULONGLONG, ctx C.PVOID) {
-	klog.Warning("EventLog tailer got Stale callback")
+	log.Warn("EventLog tailer got Stale callback")
 }
 
 //export goErrorCallback
 func goErrorCallback(errCode C.ULONGLONG, ctx C.PVOID) {
-	klog.Warning("EventLog tailer got Error callback with code ", errCode)
+	log.Warn("EventLog tailer got Error callback with code ", errCode)
 }
 
 //export goNotificationCallback
 func goNotificationCallback(handle C.ULONGLONG, ctx C.PVOID) {
 	goctx := *(*eventContext)(unsafe.Pointer(uintptr(ctx)))
-	klog.V(5).Info("Callback from ", goctx.id)
+	log.Debug("Callback from ", goctx.id)
 
 	richEvt, err := EvtRender(handle)
 	if err != nil {
-		klog.Warningf("Error rendering xml: %v", err)
+		log.Warnf("Error rendering xml: %v", err)
 		return
 	}
 	t, exists := tailerForIndex(goctx.id)
 	if !exists {
-		klog.Warningf("Got invalid eventContext id %d when map is %v", goctx.id, eventContextToTailerMap)
+		log.Warnf("Got invalid eventContext id %d when map is %v", goctx.id, eventContextToTailerMap)
 		return
 	}
 	msg, err := t.toMessage(richEvt)
 	if err != nil {
-		klog.Warningf("Couldn't convert xml to json: %s for event %s", err, richEvt.xmlEvent)
+		log.Warnf("Couldn't convert xml to json: %s for event %s", err, richEvt.xmlEvent)
 		return
 	}
 
@@ -121,7 +122,7 @@ func EvtRender(h C.ULONGLONG) (richEvt *richEvent, err error) {
 		uintptr(unsafe.Pointer(&bufUsed)), // filled in with necessary buffer size
 		uintptr(0))                        // not used but must be provided
 	if err != error(windows.ERROR_INSUFFICIENT_BUFFER) {
-		klog.Warningf("Couldn't render xml event: %s", err)
+		log.Warnf("Couldn't render xml event: %s", err)
 		return
 	}
 	bufSize = bufUsed
@@ -136,10 +137,11 @@ func EvtRender(h C.ULONGLONG) (richEvt *richEvent, err error) {
 	if ret == 0 {
 		return
 	}
+	buf = buf[:bufUsed]
 	// Call will set error anyway.  Clear it so we don't return an error
 	err = nil
 
-	xml := ConvertWindowsString(buf)
+	xml := winutil.ConvertWindowsString(buf)
 
 	richEvt = enrichEvent(h, xml)
 
@@ -219,22 +221,6 @@ const (
 	EvtSubscribeStartAtOldestRecord
 	EvtSubscribeStartAfterBookmark
 )
-
-// ConvertWindowsString converts a windows c-string
-// into a go string.  Even though the input is array
-// of uint8, the underlying data is expected to be
-// uint16 (unicode)
-func ConvertWindowsString(winput []uint8) string {
-	var retstring string
-	for i := 0; i < len(winput); i += 2 {
-		dbyte := (uint16(winput[i+1]) << 8) + uint16(winput[i])
-		if dbyte == 0 {
-			break
-		}
-		retstring += string(rune(dbyte))
-	}
-	return retstring
-}
 
 // LPWSTRToString converts a C.LPWSTR to a string. It also truncates the
 // strings to 128kB as a basic protection mechanism to avoid allocating an

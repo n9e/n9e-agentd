@@ -3,8 +3,8 @@ package ebpf
 import (
 	"strings"
 
-	aconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
+	aconfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 )
 
 const (
@@ -34,6 +34,9 @@ type Config struct {
 	// KernelHeadersDir is the directories of the kernel headers to use for runtime compilation
 	KernelHeadersDirs []string
 
+	// KernelHeadersDownloadDir is the directory where the system-probe will attempt to download kernel headers, if necessary
+	KernelHeadersDownloadDir string
+
 	// RuntimeCompilerOutputDir is the directory where the runtime compiler will store compiled programs
 	RuntimeCompilerOutputDir string
 
@@ -47,18 +50,20 @@ func key(pieces ...string) string {
 
 // NewConfig creates a config with ebpf-related settings
 func NewConfig() *Config {
-	cf := aconfig.C.SystemProbe
+	cfg := aconfig.Datadog
+	aconfig.InitSystemProbeConfig(cfg)
 
 	return &Config{
-		BPFDebug:                 cf.BPFDebug,
-		BPFDir:                   cf.BPFDir,
-		ExcludedBPFLinuxVersions: cf.ExcludedLinuxVersions,
-		EnableTracepoints:        cf.EnableTracepoints,
+		BPFDebug:                 cfg.GetBool(key(spNS, "bpf_debug")),
+		BPFDir:                   cfg.GetString(key(spNS, "bpf_dir")),
+		ExcludedBPFLinuxVersions: cfg.GetStringSlice(key(spNS, "excluded_linux_versions")),
+		EnableTracepoints:        cfg.GetBool(key(spNS, "enable_tracepoints")),
 		ProcRoot:                 util.GetProcRoot(),
 
-		EnableRuntimeCompiler:    cf.EnableRuntimeCompiler,
-		RuntimeCompilerOutputDir: cf.RuntimeCompilerOutputDir,
-		KernelHeadersDirs:        cf.KernelHeaderDirs,
+		EnableRuntimeCompiler:    cfg.GetBool(key(spNS, "enable_runtime_compiler")),
+		RuntimeCompilerOutputDir: cfg.GetString(key(spNS, "runtime_compiler_output_dir")),
+		KernelHeadersDirs:        cfg.GetStringSlice(key(spNS, "kernel_header_dirs")),
+		KernelHeadersDownloadDir: cfg.GetString(key(spNS, "kernel_header_download_dir")),
 		AllowPrecompiledFallback: true,
 	}
 }

@@ -9,10 +9,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/atomic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog"
+	"github.com/DataDog/datadog-agent/pkg/trace/atomic"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/watchdog"
 )
 
 const (
@@ -133,8 +133,8 @@ func (s *Sampler) Start() {
 
 func (s *Sampler) report() {
 	kept, seen := s.Backend.report()
-	metrics.Count("trace_agent.sampler.kept", kept, s.tags, 1)
-	metrics.Count("trace_agent.sampler.seen", seen, s.tags, 1)
+	metrics.Count("datadog.trace_agent.sampler.kept", kept, s.tags, 1)
+	metrics.Count("datadog.trace_agent.sampler.seen", seen, s.tags, 1)
 }
 
 // Stop stops the main Run loop

@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/ebpf/manager"
 )
 
@@ -50,7 +50,7 @@ func (c *Config) ChooseSyscallProbe(tracepoint string, indirectProbe string, fal
 	}
 
 	if id, err := manager.GetTracepointID(category, tpName); c.EnableTracepoints && err == nil && id != -1 {
-		klog.Infof("Using a tracepoint to probe %s syscall", syscall)
+		log.Infof("Using a tracepoint to probe %s syscall", syscall)
 		return tracepoint, nil
 	}
 

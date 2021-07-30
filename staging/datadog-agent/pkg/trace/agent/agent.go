@@ -11,19 +11,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/api"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/event"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/filters"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics/timing"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/obfuscate"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/sampler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/stats"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/traceutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/writer"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/api"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/config/features"
+	"github.com/DataDog/datadog-agent/pkg/trace/event"
+	"github.com/DataDog/datadog-agent/pkg/trace/filters"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics/timing"
+	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/sampler"
+	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/writer"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -34,17 +35,19 @@ const (
 
 // Agent struct holds all the sub-routines structs and make the data flow between them
 type Agent struct {
-	Receiver          *api.HTTPReceiver
-	Concentrator      *stats.Concentrator
-	Blacklister       *filters.Blacklister
-	Replacer          *filters.Replacer
-	PrioritySampler   *sampler.PrioritySampler
-	ErrorsSampler     *sampler.ErrorsSampler
-	ExceptionSampler  *sampler.ExceptionSampler
-	NoPrioritySampler *sampler.NoPrioritySampler
-	EventProcessor    *event.Processor
-	TraceWriter       *writer.TraceWriter
-	StatsWriter       *writer.StatsWriter
+	Receiver              *api.HTTPReceiver
+	OTLPReceiver          *api.OTLPReceiver
+	Concentrator          *stats.Concentrator
+	ClientStatsAggregator *stats.ClientStatsAggregator
+	Blacklister           *filters.Blacklister
+	Replacer              *filters.Replacer
+	PrioritySampler       *sampler.PrioritySampler
+	ErrorsSampler         *sampler.ErrorsSampler
+	ExceptionSampler      *sampler.ExceptionSampler
+	NoPrioritySampler     *sampler.NoPrioritySampler
+	EventProcessor        *event.Processor
+	TraceWriter           *writer.TraceWriter
+	StatsWriter           *writer.StatsWriter
 
 	// obfuscator is used to obfuscate sensitive data from various span
 	// tags based on their type.
@@ -68,22 +71,24 @@ func NewAgent(ctx context.Context, conf *config.AgentConfig) *Agent {
 	statsChan := make(chan pb.StatsPayload, 100)
 
 	agnt := &Agent{
-		Concentrator:      stats.NewConcentrator(conf, statsChan, time.Now()),
-		Blacklister:       filters.NewBlacklister(conf.Ignore["resource"]),
-		Replacer:          filters.NewReplacer(conf.ReplaceTags),
-		PrioritySampler:   sampler.NewPrioritySampler(conf, dynConf),
-		ErrorsSampler:     sampler.NewErrorsSampler(conf),
-		ExceptionSampler:  sampler.NewExceptionSampler(),
-		NoPrioritySampler: sampler.NewNoPrioritySampler(conf),
-		EventProcessor:    newEventProcessor(conf),
-		TraceWriter:       writer.NewTraceWriter(conf),
-		StatsWriter:       writer.NewStatsWriter(conf, statsChan),
-		obfuscator:        obfuscate.NewObfuscator(conf.Obfuscation),
-		In:                in,
-		conf:              conf,
-		ctx:               ctx,
+		Concentrator:          stats.NewConcentrator(conf, statsChan, time.Now()),
+		ClientStatsAggregator: stats.NewClientStatsAggregator(conf, statsChan),
+		Blacklister:           filters.NewBlacklister(conf.Ignore["resource"]),
+		Replacer:              filters.NewReplacer(conf.ReplaceTags),
+		PrioritySampler:       sampler.NewPrioritySampler(conf, dynConf),
+		ErrorsSampler:         sampler.NewErrorsSampler(conf),
+		ExceptionSampler:      sampler.NewExceptionSampler(),
+		NoPrioritySampler:     sampler.NewNoPrioritySampler(conf),
+		EventProcessor:        newEventProcessor(conf),
+		TraceWriter:           writer.NewTraceWriter(conf),
+		StatsWriter:           writer.NewStatsWriter(conf, statsChan),
+		obfuscator:            obfuscate.NewObfuscator(conf.Obfuscation),
+		In:                    in,
+		conf:                  conf,
+		ctx:                   ctx,
 	}
 	agnt.Receiver = api.NewHTTPReceiver(conf, dynConf, in, agnt)
+	agnt.OTLPReceiver = api.NewOTLPReceiver(in, conf.OTLPReceiver)
 	return agnt
 }
 
@@ -92,10 +97,12 @@ func (a *Agent) Run() {
 	for _, starter := range []interface{ Start() }{
 		a.Receiver,
 		a.Concentrator,
+		a.ClientStatsAggregator,
 		a.PrioritySampler,
 		a.ErrorsSampler,
 		a.NoPrioritySampler,
 		a.EventProcessor,
+		a.OTLPReceiver,
 	} {
 		starter.Start()
 	}
@@ -114,16 +121,16 @@ func (a *Agent) Run() {
 // mode via the apm_config.sync_flush option.
 func (a *Agent) FlushSync() {
 	if !a.conf.SynchronousFlushing {
-		klog.Warning("(*Agent).FlushSync called without apm_conf.sync_flushing enabled. No data was sent to Datadog.")
+		log.Critical("(*Agent).FlushSync called without apm_conf.sync_flushing enabled. No data was sent to Datadog.")
 		return
 	}
 
 	if err := a.StatsWriter.FlushSync(); err != nil {
-		klog.Errorf("Error flushing stats: %s", err.Error())
+		log.Errorf("Error flushing stats: %s", err.Error())
 		return
 	}
 	if err := a.TraceWriter.FlushSync(); err != nil {
-		klog.Errorf("Error flushing traces: %s", err.Error())
+		log.Errorf("Error flushing traces: %s", err.Error())
 		return
 	}
 }
@@ -145,19 +152,25 @@ func (a *Agent) loop() {
 	for {
 		select {
 		case <-a.ctx.Done():
-			klog.Info("Exiting...")
+			log.Info("Exiting...")
 			if err := a.Receiver.Stop(); err != nil {
-				klog.Error(err)
+				log.Error(err)
 			}
-			a.Concentrator.Stop()
-			a.TraceWriter.Stop()
-			a.StatsWriter.Stop()
-			a.PrioritySampler.Stop()
-			a.ErrorsSampler.Stop()
-			a.NoPrioritySampler.Stop()
-			a.ExceptionSampler.Stop()
-			a.EventProcessor.Stop()
-			a.obfuscator.Stop()
+			for _, stopper := range []interface{ Stop() }{
+				a.Concentrator,
+				a.ClientStatsAggregator,
+				a.TraceWriter,
+				a.StatsWriter,
+				a.PrioritySampler,
+				a.ErrorsSampler,
+				a.NoPrioritySampler,
+				a.ExceptionSampler,
+				a.EventProcessor,
+				a.OTLPReceiver,
+				a.obfuscator,
+			} {
+				stopper.Stop()
+			}
 			return
 		}
 	}
@@ -167,17 +180,17 @@ func (a *Agent) loop() {
 // passes it downstream.
 func (a *Agent) Process(p *api.Payload) {
 	if len(p.Traces) == 0 {
-		klog.V(5).Infof("Skipping received empty payload")
+		log.Debugf("Skipping received empty payload")
 		return
 	}
-	defer timing.Since("trace_agent.internal.process_payload_ms", time.Now())
+	defer timing.Since("datadog.trace_agent.internal.process_payload_ms", time.Now())
 	ts := p.Source
 	ss := new(writer.SampledSpans)
-	var sinputs []stats.Input
+	var envtraces []stats.EnvTrace
 	a.PrioritySampler.CountClientDroppedP0s(p.ClientDroppedP0s)
 	for _, t := range p.Traces {
 		if len(t) == 0 {
-			klog.V(5).Infof("Skipping received empty trace")
+			log.Debugf("Skipping received empty trace")
 			continue
 		}
 
@@ -185,7 +198,7 @@ func (a *Agent) Process(p *api.Payload) {
 		atomic.AddInt64(&ts.SpansReceived, tracen)
 		err := normalizeTrace(p.Source, t)
 		if err != nil {
-			klog.V(5).Info("Dropping invalid trace: %s", err)
+			log.Debug("Dropping invalid trace: %s", err)
 			atomic.AddInt64(&ts.SpansDropped, tracen)
 			continue
 		}
@@ -194,14 +207,14 @@ func (a *Agent) Process(p *api.Payload) {
 		root := traceutil.GetRoot(t)
 
 		if !a.Blacklister.Allows(root) {
-			klog.V(5).Infof("Trace rejected by blacklister. root: %v", root)
+			log.Debugf("Trace rejected by blacklister. root: %v", root)
 			atomic.AddInt64(&ts.TracesFiltered, 1)
 			atomic.AddInt64(&ts.SpansFiltered, tracen)
 			continue
 		}
 
 		if filteredByTags(root, a.conf.RequireTags, a.conf.RejectTags) {
-			klog.V(5).Infof("Trace rejected as it fails to meet tag requirements. root: %v", root)
+			log.Debugf("Trace rejected as it fails to meet tag requirements. root: %v", root)
 			atomic.AddInt64(&ts.TracesFiltered, 1)
 			atomic.AddInt64(&ts.SpansFiltered, tracen)
 			continue
@@ -254,10 +267,10 @@ func (a *Agent) Process(p *api.Payload) {
 
 		events, keep := a.sample(ts, pt)
 		if !p.ClientComputedStats {
-			if sinputs == nil {
-				sinputs = make([]stats.Input, 0, len(p.Traces))
+			if envtraces == nil {
+				envtraces = make([]stats.EnvTrace, 0, len(p.Traces))
 			}
-			sinputs = append(sinputs, stats.Input{
+			envtraces = append(envtraces, stats.EnvTrace{
 				Trace: pt.WeightedTrace,
 				Env:   pt.Env,
 			})
@@ -280,14 +293,26 @@ func (a *Agent) Process(p *api.Payload) {
 	if ss.Size > 0 {
 		a.TraceWriter.In <- ss
 	}
-	if len(sinputs) > 0 {
-		a.Concentrator.In <- sinputs
+	if len(envtraces) > 0 {
+		in := stats.Input{Traces: envtraces}
+		if !features.Has("disable_cid_stats") && a.conf.IsFargate {
+			// only allow the ContainerID stats dimension if we're in a Fargate instance
+			// and it's not prohibited by the disable_cid_stats feature flag.
+			in.ContainerID = p.ContainerID
+		}
+		a.Concentrator.In <- in
 	}
 }
 
 var _ api.StatsProcessor = (*Agent)(nil)
 
-func (a *Agent) convertStats(in pb.ClientStatsPayload, lang, tracerVersion string) pb.StatsPayload {
+func (a *Agent) processStats(in pb.ClientStatsPayload, lang, tracerVersion string) pb.ClientStatsPayload {
+	if features.Has("disable_cid_stats") || !a.conf.IsFargate {
+		// this functionality is disabled by the disable_cid_stats feature flag
+		// or we're not in a Fargate instance.
+		in.ContainerID = ""
+		in.Tags = nil
+	}
 	if in.Env == "" {
 		in.Env = a.conf.DefaultEnv
 	}
@@ -307,19 +332,31 @@ func (a *Agent) convertStats(in pb.ClientStatsPayload, lang, tracerVersion strin
 			n++
 		}
 		in.Stats[i].Stats = group.Stats[:n]
+		mergeDuplicates(in.Stats[i])
 	}
-	return pb.StatsPayload{
-		Stats:          []pb.ClientStatsPayload{in},
-		AgentEnv:       a.conf.DefaultEnv,
-		AgentHostname:  a.conf.Hostname,
-		AgentVersion:   info.Version,
-		ClientComputed: true,
+	return in
+}
+
+func mergeDuplicates(s pb.ClientStatsBucket) {
+	indexes := make(map[stats.Aggregation]int, len(s.Stats))
+	for i, g := range s.Stats {
+		a := stats.NewAggregationFromGroup(g)
+		if j, ok := indexes[a]; ok {
+			s.Stats[j].Hits += g.Hits
+			s.Stats[j].Errors += g.Errors
+			s.Stats[j].Duration += g.Duration
+			s.Stats[i].Hits = 0
+			s.Stats[i].Errors = 0
+			s.Stats[i].Duration = 0
+		} else {
+			indexes[a] = i
+		}
 	}
 }
 
 // ProcessStats processes incoming client stats in from the given tracer.
 func (a *Agent) ProcessStats(in pb.ClientStatsPayload, lang, tracerVersion string) {
-	a.StatsWriter.SendPayload(a.convertStats(in, lang, tracerVersion))
+	a.ClientStatsAggregator.In <- a.processStats(in, lang, tracerVersion)
 }
 
 // sample decides whether the trace will be kept and extracts any APM events
@@ -422,4 +459,9 @@ func newEventProcessor(conf *config.AgentConfig) *event.Processor {
 	}
 
 	return event.NewProcessor(extractors, conf.MaxEPS)
+}
+
+// SetGlobalTagsUnsafe sets global tags to the agent configuration. Unsafe for concurrent use.
+func (a *Agent) SetGlobalTagsUnsafe(tags map[string]string) {
+	a.conf.GlobalTags = tags
 }

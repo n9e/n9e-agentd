@@ -18,7 +18,7 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // BBSCacheI is an interface for a structure that caches and automatically refreshes data from Cloud Foundry BBS API
@@ -132,7 +132,7 @@ func (bc *BBSCache) GetPollSuccesses() int {
 	return bc.pollSuccesses
 }
 
-// GetActualLRPsForApp returns slice of pointers to ActualLRP objects for given App GUID
+// GetActualLRPsForProcessGUID returns slice of pointers to ActualLRP objects for given App GUID
 func (bc *BBSCache) GetActualLRPsForProcessGUID(processGUID string) ([]*ActualLRP, error) {
 	bc.RLock()
 	defer bc.RUnlock()
@@ -194,7 +194,7 @@ func (bc *BBSCache) start() {
 }
 
 func (bc *BBSCache) readData() {
-	klog.V(5).Info("Reading data from BBS API")
+	log.Debug("Reading data from BBS API")
 	bc.Lock()
 	bc.pollAttempts++
 	bc.Unlock()
@@ -216,18 +216,18 @@ func (bc *BBSCache) readData() {
 	}()
 	wg.Wait()
 	if errActual != nil {
-		klog.Errorf("Failed reading Actual LRP data from BBS API: %s", errActual.Error())
+		log.Errorf("Failed reading Actual LRP data from BBS API: %s", errActual.Error())
 		return
 	}
 	if errDesired != nil {
-		klog.Errorf("Failed reading Desired LRP data from BBS API: %s", errDesired.Error())
+		log.Errorf("Failed reading Desired LRP data from BBS API: %s", errDesired.Error())
 		return
 	}
 
 	// put new values in cache
 	bc.Lock()
 	defer bc.Unlock()
-	klog.V(5).Info("Data from BBS API read successfully, refreshing the cache")
+	log.Debug("Data from BBS API read successfully, refreshing the cache")
 	bc.actualLRPsByProcessGUID = actualLRPsByProcessGUID
 	bc.actualLRPsByCellID = actualLRPsByCellID
 	bc.desiredLRPs = desiredLRPs
@@ -260,7 +260,7 @@ func (bc *BBSCache) readActualLRPs() (map[string][]*ActualLRP, map[string][]*Act
 			actualLRPsByCellID[alrp.CellID] = []*ActualLRP{&alrp}
 		}
 	}
-	klog.V(5).Infof("Successfully read %d Actual LRPs", len(actualLRPsBBS))
+	log.Debugf("Successfully read %d Actual LRPs", len(actualLRPsBBS))
 	return actualLRPsByProcessGUID, actualLRPsByCellID, nil
 }
 
@@ -274,7 +274,7 @@ func (bc *BBSCache) readDesiredLRPs() (map[string]*DesiredLRP, error) {
 		desiredLRP := DesiredLRPFromBBSModel(lrp, bc.envIncludeList, bc.envExcludeList)
 		desiredLRPs[desiredLRP.ProcessGUID] = &desiredLRP
 	}
-	klog.V(5).Infof("Successfully read %d Desired LRPs", len(desiredLRPsBBS))
+	log.Debugf("Successfully read %d Desired LRPs", len(desiredLRPsBBS))
 	return desiredLRPs, nil
 }
 
@@ -285,7 +285,7 @@ func (bc *BBSCache) extractNodeTags(nodeActualLRPs []*ActualLRP, desiredLRPsByPr
 	for _, alrp := range nodeActualLRPs {
 		dlrp, ok := desiredLRPsByProcessGUID[alrp.ProcessGUID]
 		if !ok {
-			klog.V(5).Infof("Could not find desired LRP for process GUID %s", alrp.ProcessGUID)
+			log.Debugf("Could not find desired LRP for process GUID %s", alrp.ProcessGUID)
 			continue
 		}
 		tags[alrp.InstanceGUID] = []string{

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/parser"
+	"github.com/DataDog/datadog-agent/pkg/logs/parser"
 	"github.com/stretchr/testify/assert"
 )
 

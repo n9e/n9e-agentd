@@ -12,7 +12,9 @@ import (
 	"sync"
 )
 
-const persistedStateFilePath = "/tmp/dd-lambda-extension-cache.json"
+const (
+	persistedStateFilePath = "/tmp/dd-lambda-extension-cache.json"
+)
 
 type persistedState struct {
 	CurrentARN   string
@@ -20,12 +22,18 @@ type persistedState struct {
 }
 
 var currentARN struct {
-	value string
+	value     string
+	qualifier string
 	sync.Mutex
 }
 
 var currentReqID struct {
 	value string
+	sync.Mutex
+}
+
+var currentColdStart struct {
+	value bool
 	sync.Mutex
 }
 
@@ -38,6 +46,22 @@ func GetARN() string {
 	return currentARN.value
 }
 
+// GetQualifier returns the qualifier for the current running function.
+// Thread-safe
+func GetQualifier() string {
+	currentARN.Lock()
+	defer currentARN.Unlock()
+	return currentARN.qualifier
+}
+
+// GetColdStart returns whether the current invocation is a cold start
+// Thread-safe
+func GetColdStart() bool {
+	currentColdStart.Lock()
+	defer currentColdStart.Unlock()
+	return currentColdStart.value
+}
+
 // SetARN stores the given ARN.
 // Thread-safe.
 func SetARN(arn string) {
@@ -46,21 +70,15 @@ func SetARN(arn string) {
 
 	arn = strings.ToLower(arn)
 
+	qualifier := ""
 	// remove the version if any
-	// format: arn:aws:lambda:<region>:<account-id>:function:<function-name>[:<version>]
 	if parts := strings.Split(arn, ":"); len(parts) > 7 {
 		arn = strings.Join(parts[:7], ":")
+		qualifier = strings.TrimPrefix(parts[7], "$")
 	}
 
 	currentARN.value = arn
-}
-
-// FunctionNameFromARN returns the function name from the currently set ARN.
-// Thread-safe.
-func FunctionNameFromARN() string {
-	arn := GetARN()
-	parts := strings.Split(arn, ":")
-	return parts[len(parts)-1]
+	currentARN.qualifier = qualifier
 }
 
 // GetRequestID returns the currently running function request ID.
@@ -77,6 +95,14 @@ func SetRequestID(reqID string) {
 	defer currentReqID.Unlock()
 
 	currentReqID.value = reqID
+}
+
+// SetColdStart stores the cold start state of the function
+func SetColdStart(coldstart bool) {
+	currentColdStart.Lock()
+	defer currentColdStart.Unlock()
+
+	currentColdStart.value = coldstart
 }
 
 // PersistCurrentStateToFile persists the current state (ARN and Request ID) to a file.

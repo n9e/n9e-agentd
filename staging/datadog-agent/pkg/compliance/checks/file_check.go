@@ -11,10 +11,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var fileReportedFields = []string{
@@ -24,14 +24,14 @@ var fileReportedFields = []string{
 	compliance.FileFieldGroup,
 }
 
-func resolveFile(_ context.Context, e env.Env, ruleID string, res compliance.Resource) (interface{}, error) {
+func resolveFile(_ context.Context, e env.Env, ruleID string, res compliance.Resource) (resolved, error) {
 	if res.File == nil {
 		return nil, fmt.Errorf("expecting file resource in file check")
 	}
 
 	file := res.File
 
-	klog.V(5).Infof("%s: running file check for %q", ruleID, file.Path)
+	log.Debugf("%s: running file check for %q", ruleID, file.Path)
 
 	path, err := resolvePath(e, file.Path)
 	if err != nil {
@@ -43,7 +43,7 @@ func resolveFile(_ context.Context, e env.Env, ruleID string, res compliance.Res
 		return nil, err
 	}
 
-	var instances []*eval.Instance
+	var instances []resolvedInstance
 
 	for _, path := range paths {
 		// Re-computing relative after glob filtering
@@ -51,46 +51,45 @@ func resolveFile(_ context.Context, e env.Env, ruleID string, res compliance.Res
 		fi, err := os.Stat(path)
 		if err != nil {
 			// This is not a failure unless we don't have any paths to act on
-			klog.V(5).Infof("%s: file check failed to stat %s [%s]", ruleID, path, relPath)
+			log.Debugf("%s: file check failed to stat %s [%s]", ruleID, path, relPath)
 			continue
 		}
 
-		instance := &eval.Instance{
-			Vars: eval.VarMap{
-				compliance.FileFieldPath:        relPath,
-				compliance.FileFieldPermissions: uint64(fi.Mode() & os.ModePerm),
-			},
-			Functions: eval.FunctionMap{
-				compliance.FileFuncJQ:     fileJQ(path),
-				compliance.FileFuncYAML:   fileYAML(path),
-				compliance.FileFuncRegexp: fileRegexp(path),
-			},
+		vars := eval.VarMap{
+			compliance.FileFieldPath:        relPath,
+			compliance.FileFieldPermissions: uint64(fi.Mode() & os.ModePerm),
 		}
 
 		user, err := getFileUser(fi)
 		if err == nil {
-			instance.Vars[compliance.FileFieldUser] = user
+			vars[compliance.FileFieldUser] = user
 		}
 
 		group, err := getFileGroup(fi)
 		if err == nil {
-			instance.Vars[compliance.FileFieldGroup] = group
+			vars[compliance.FileFieldGroup] = group
 		}
 
-		instances = append(instances, instance)
+		functions := eval.FunctionMap{
+			compliance.FileFuncJQ:     fileJQ(path),
+			compliance.FileFuncYAML:   fileYAML(path),
+			compliance.FileFuncRegexp: fileRegexp(path),
+		}
+
+		instance := eval.NewInstance(vars, functions)
+
+		instances = append(instances, newResolvedInstance(instance, path, "file"))
 	}
 
 	if len(instances) == 0 {
 		return nil, fmt.Errorf("no files found for file check %q", file.Path)
 	}
 
-	return &instanceIterator{
-		instances: instances,
-	}, nil
+	return newResolvedInstances(instances), nil
 }
 
 func fileQuery(path string, get getter) eval.Function {
-	return func(_ *eval.Instance, args ...interface{}) (interface{}, error) {
+	return func(_ eval.Instance, args ...interface{}) (interface{}, error) {
 		if len(args) != 1 {
 			return nil, fmt.Errorf(`invalid number of arguments, expecting 1 got %d`, len(args))
 		}

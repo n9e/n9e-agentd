@@ -6,9 +6,9 @@
 package common
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/scheduler"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/collector"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector"
 	lsched "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/scheduler"
 	lstatus "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/status"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"

@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/docker/docker/api/types"
 )
 
@@ -56,7 +56,7 @@ func (s *StorageStats) GetPercentUsed() float64 {
 	total := s.Total
 	if s.Total != nil && s.Used != nil && s.Free != nil {
 		if *s.Total < *s.Used+*s.Free {
-			klog.V(5).Infof("total lower than free+used, re-computing total")
+			log.Debugf("total lower than free+used, re-computing total")
 			totalValue := *s.Used + *s.Free
 			total = &totalValue
 		}
@@ -89,12 +89,12 @@ func parseStorageStatsFromInfo(info types.Info) ([]*StorageStats, error) {
 		valueString := entry[1]
 		fields := strings.Fields(key)
 		if len(fields) != 3 || strings.ToLower(fields[1]) != "space" {
-			klog.V(5).Infof("ignoring invalid storage stat: %s", key)
+			log.Debugf("ignoring invalid storage stat: %s", key)
 			continue
 		}
 		valueInt, err := parseDiskQuantity(valueString)
 		if err != nil {
-			klog.V(5).Infof("ignoring invalid value %s for stat %s: %s", valueString, key, err)
+			log.Debugf("ignoring invalid value %s for stat %s: %s", valueString, key, err)
 			continue
 		}
 		storageType := strings.ToLower(fields[0])

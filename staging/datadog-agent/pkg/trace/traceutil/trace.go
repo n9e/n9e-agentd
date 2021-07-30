@@ -8,8 +8,8 @@ package traceutil
 import (
 	"math"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // GetEnv returns the first "env" tag found in trace t.
@@ -50,7 +50,7 @@ func GetRoot(t pb.Trace) *pb.Span {
 
 	// Here, if the trace is valid, we should have len(parentIDToChild) == 1
 	if len(parentIDToChild) != 1 {
-		klog.V(5).Infof("Didn't reliably find the root span for traceID:%v", t[0].TraceID)
+		log.Debugf("Didn't reliably find the root span for traceID:%v", t[0].TraceID)
 	}
 
 	// Have a safe bahavior if that's not the case

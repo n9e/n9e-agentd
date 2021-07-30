@@ -43,13 +43,10 @@ if linux?
   dependency 'libkrb5'
   # needed for glusterfs
   dependency 'gstatus'
-
-  unless suse? || arm?
-    dependency 'aerospike-py2'
-  end
 end
 
 relative_path 'integrations-core'
+whitelist_file "embedded/lib/python2.7/site-packages/.libsaerospike"
 whitelist_file "embedded/lib/python2.7/site-packages/psycopg2"
 whitelist_file "embedded/lib/python2.7/site-packages/wrapt"
 whitelist_file "embedded/lib/python2.7/site-packages/pymqi"
@@ -77,11 +74,12 @@ blacklist_folders = [
 blacklist_packages = Array.new
 
 # We build these manually
-blacklist_packages.push(/^aerospike==/)
 blacklist_packages.push(/^snowflake-connector-python==/)
 
 if suse?
-  blacklist_folders.push('aerospike')  # Temporarily blacklist Aerospike until builder supports new dependency
+  # Temporarily blacklist Aerospike until builder supports new dependency
+  blacklist_packages.push(/^aerospike==/)
+  blacklist_folders.push('aerospike')
 end
 
 if osx?
@@ -98,11 +96,18 @@ if osx?
 
   # Blacklist aerospike, new version 3.10 is not supported on MacOS yet
   blacklist_folders.push('aerospike')
+
+  # Temporarily blacklist Aerospike until builder supports new dependency
+  blacklist_packages.push(/^aerospike==/)
+  blacklist_folders.push('aerospike')
 end
 
 if arm?
-  # These two checks don't build on ARM
+  # Temporarily blacklist Aerospike until builder supports new dependency
   blacklist_folders.push('aerospike')
+  blacklist_packages.push(/^aerospike==/)
+
+  # This doesn't build on ARM
   blacklist_folders.push('ibm_mq')
   blacklist_packages.push(/^pymqi==/)
 end
@@ -207,16 +212,16 @@ build do
     # there's no need to refer to `pip`, the interpreter will pick the right script.
     if windows?
       wheel_build_dir = "#{windows_safe_path(project_dir)}\\.wheels"
-      command "#{python} -m pip wheel . --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\datadog_checks_base"
+      command "#{python} -m pip wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\datadog_checks_base"
       command "#{python} -m pip install datadog_checks_base --no-deps --no-index --find-links=#{wheel_build_dir}"
-      command "#{python} -m pip wheel . --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\datadog_checks_downloader"
+      command "#{python} -m pip wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\datadog_checks_downloader"
       command "#{python} -m pip install datadog_checks_downloader --no-deps --no-index --find-links=#{wheel_build_dir}"
       command "#{python} -m piptools compile --generate-hashes --output-file #{windows_safe_path(install_dir)}\\#{agent_requirements_file} #{static_reqs_out_file}"
     else
       wheel_build_dir = "#{project_dir}/.wheels"
-      command "#{pip} wheel . --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/datadog_checks_base"
+      command "#{pip} wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/datadog_checks_base"
       command "#{pip} install datadog_checks_base --no-deps --no-index --find-links=#{wheel_build_dir}"
-      command "#{pip} wheel . --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/datadog_checks_downloader"
+      command "#{pip} wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/datadog_checks_downloader"
       command "#{pip} install datadog_checks_downloader --no-deps --no-index --find-links=#{wheel_build_dir}"
       command "#{python} -m piptools compile --generate-hashes --output-file #{install_dir}/#{agent_requirements_file} #{static_reqs_out_file}", :env => nix_build_env
     end
@@ -306,10 +311,10 @@ build do
 
       File.file?("#{check_dir}/setup.py") || next
       if windows?
-        command "#{python} -m pip wheel . --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\#{check}"
+        command "#{python} -m pip wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :cwd => "#{windows_safe_path(project_dir)}\\#{check}"
         command "#{python} -m pip install datadog-#{check} --no-deps --no-index --find-links=#{wheel_build_dir}"
       else
-        command "#{pip} wheel . --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/#{check}"
+        command "#{pip} wheel . --no-deps --no-index --wheel-dir=#{wheel_build_dir}", :env => nix_build_env, :cwd => "#{project_dir}/#{check}"
         command "#{pip} install datadog-#{check} --no-deps --no-index --find-links=#{wheel_build_dir}"
       end
     end

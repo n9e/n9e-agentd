@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/flags"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/flags"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Exists reports whether the given path exists.
@@ -24,8 +24,8 @@ func Exit(msg string) {
 	if flags.Info || flags.Version {
 		fmt.Println(msg)
 	} else {
-		klog.Error(msg)
-		klog.Flush()
+		log.Error(msg)
+		log.Flush()
 	}
 	os.Exit(1)
 }
@@ -36,8 +36,8 @@ func Exitf(format string, args ...interface{}) {
 		fmt.Printf(format, args...)
 		fmt.Println("")
 	} else {
-		klog.Warningf(format, args...)
-		klog.Flush()
+		log.Criticalf(format, args...)
+		log.Flush()
 	}
 	os.Exit(1)
 }

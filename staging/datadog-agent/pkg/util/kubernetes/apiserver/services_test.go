@@ -15,7 +15,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
 )
 
 func TestNamespacesPodsStringsSet(t *testing.T) {

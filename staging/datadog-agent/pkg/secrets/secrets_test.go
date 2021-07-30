@@ -12,7 +12,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
+	"github.com/DataDog/datadog-agent/pkg/util/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
@@ -195,7 +195,7 @@ func TestDecryptSecretError(t *testing.T) {
 // TestDecryptSecretStringMapStringWithDashValue checks that a nested string config value
 // that can be interpreted as YAML (such as a "-") is not interpreted as YAML by the secrets
 // decryption logic, but is left unchanged as a string instead.
-// See https://github.com/n9e/n9e-agentd/staging/datadog-agent/pull/6586 for details.
+// See https://github.com/DataDog/datadog-agent/pull/6586 for details.
 func TestDecryptSecretStringMapStringWithDashValue(t *testing.T) {
 	secretBackendCommand = "some_command"
 

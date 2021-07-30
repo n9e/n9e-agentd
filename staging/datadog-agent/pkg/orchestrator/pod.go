@@ -15,13 +15,13 @@ import (
 	"strings"
 	"time"
 
-	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/orchestrator/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/orchestrator/redact"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
-	"k8s.io/klog/v2"
+	model "github.com/DataDog/agent-payload/process"
+	"github.com/DataDog/datadog-agent/pkg/orchestrator/config"
+	"github.com/DataDog/datadog-agent/pkg/orchestrator/redact"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/twmb/murmur3"
@@ -42,6 +42,8 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 	podMsgs := make([]*model.Pod, 0, len(podList))
 
 	for _, p := range podList {
+		redact.RemoveLastAppliedConfigurationAnnotation(p.Annotations)
+
 		// extract pod info
 		podModel := extractPodMessage(p)
 
@@ -57,7 +59,7 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 		// insert tagger tags
 		tags, err := tagger.Tag(kubelet.PodUIDToTaggerEntityName(string(p.UID)), collectors.HighCardinality)
 		if err != nil {
-			klog.V(5).Infof("Could not retrieve tags for pod: %s", err)
+			log.Debugf("Could not retrieve tags for pod: %s", err)
 			continue
 		}
 
@@ -71,7 +73,7 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 		// model content. We'll use this information in place of the Kubelet
 		// resource version in the payload and for cache interactions.
 		if err := fillPodResourceVersion(podModel); err != nil {
-			klog.Warningf("Failed to compute pod resource version: %s", err)
+			log.Warnf("Failed to compute pod resource version: %s", err)
 			continue
 		}
 
@@ -93,7 +95,7 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 		// and marshalling is more performant than YAML
 		jsonPod, err := jsoniter.Marshal(p)
 		if err != nil {
-			klog.Warningf("Could not marshal pod to JSON: %s", err)
+			log.Warnf("Could not marshal pod to JSON: %s", err)
 			continue
 		}
 		podModel.Yaml = jsonPod
@@ -119,7 +121,7 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 		})
 	}
 
-	klog.V(5).Infof("Collected & enriched %d out of %d pods in %s", len(podMsgs), len(podList), time.Now().Sub(start))
+	log.Debugf("Collected & enriched %d out of %d pods in %s", len(podMsgs), len(podList), time.Now().Sub(start))
 	return messages, nil
 }
 
@@ -127,15 +129,8 @@ func ProcessPodList(podList []*v1.Pod, groupID int32, hostName string, clusterID
 func chunkPods(pods []*model.Pod, chunkCount, chunkSize int) [][]*model.Pod {
 	chunks := make([][]*model.Pod, 0, chunkCount)
 
-	for c := 1; c <= chunkCount; c++ {
-		var (
-			chunkStart = chunkSize * (c - 1)
-			chunkEnd   = chunkSize * (c)
-		)
-		// last chunk may be smaller than the chunk size
-		if c == chunkCount {
-			chunkEnd = len(pods)
-		}
+	for counter := 1; counter <= chunkCount; counter++ {
+		chunkStart, chunkEnd := ChunkRange(len(pods), chunkCount, chunkSize, counter)
 		chunks = append(chunks, pods[chunkStart:chunkEnd])
 	}
 

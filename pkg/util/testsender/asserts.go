@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/n9e/n9e-agentd/pkg/metrics"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
 )
 
 // AssertServiceCheck allows to assert a ServiceCheck was exclusively emitted with given parameters.

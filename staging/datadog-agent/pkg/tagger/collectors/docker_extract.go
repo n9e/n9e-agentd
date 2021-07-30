@@ -8,19 +8,20 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Allows to pass the dockerutil resolving method to
 // dockerExtractImage while using a mock for tests
-type resolveHook func(co types.ContainerJSON) (string, error)
+type resolveHook func(ctx context.Context, co types.ContainerJSON) (string, error)
 
 // extractFromInspect extract tags for a container inspect JSON
 func (c *DockerCollector) extractFromInspect(co types.ContainerJSON) ([]string, []string, []string, []string) {
@@ -53,9 +54,9 @@ func dockerExtractImage(tags *utils.TagList, co types.ContainerJSON, resolve res
 	}
 
 	// Resolve sha to image based on repotags/repodigests
-	dockerImage, err := resolve(co)
+	dockerImage, err := resolve(context.TODO(), co)
 	if err != nil {
-		klog.V(5).Infof("Error resolving image %s: %s", co.Image, err)
+		log.Debugf("Error resolving image %s: %s", co.Image, err)
 		return
 	}
 	tags.AddLow("docker_image", dockerImage)
@@ -67,11 +68,11 @@ func dockerExtractImage(tags *utils.TagList, co types.ContainerJSON, resolve res
 			var errFallback error
 			imageName, shortImage, imageTag, errFallback = containers.SplitImageName(co.Config.Image)
 			if errFallback != nil {
-				klog.V(5).Infof("Cannot split %s: %s - fallback also failed: %s: %s ", dockerImage, err, co.Config.Image, errFallback)
+				log.Debugf("Cannot split %s: %s - fallback also failed: %s: %s ", dockerImage, err, co.Config.Image, errFallback)
 				return
 			}
 		} else {
-			klog.V(5).Infof("Cannot split %s: %s", dockerImage, err)
+			log.Debugf("Cannot split %s: %s", dockerImage, err)
 			return
 		}
 	}

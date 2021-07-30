@@ -6,10 +6,11 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
-	"gopkg.in/yaml.v2"
+	"github.com/DataDog/viper"
 )
 
 // ParseJSON parses the data formatted in JSON
@@ -23,17 +24,23 @@ func ParseJSON(data []byte) ([]*LogsConfig, error) {
 	return configs, nil
 }
 
-type logsConfig struct {
-	Logs []*LogsConfig `yaml:"logs"`
-}
+const yaml = "yaml"
+const logsPath = "logs"
 
 // ParseYAML parses the data formatted in YAML,
 // returns an error if the parsing failed.
 func ParseYAML(data []byte) ([]*LogsConfig, error) {
-	var config logsConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	var configs []*LogsConfig
+	var err error
+	v := viper.New()
+	v.SetConfigType(yaml)
+	err = v.ReadConfig(bytes.NewBuffer(data))
+	if err != nil {
 		return nil, fmt.Errorf("could not decode YAML logs config: %v", err)
 	}
-
-	return config.Logs, nil
+	err = v.UnmarshalKey(logsPath, &configs)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse YAML logs config: %v", err)
+	}
+	return configs, nil
 }

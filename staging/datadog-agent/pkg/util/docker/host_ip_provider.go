@@ -12,11 +12,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ec2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/ec2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // GetDockerHostIPs returns the IP address of the host. This is meant to be called
@@ -29,7 +29,7 @@ func GetDockerHostIPs() []string {
 
 	ips := getDockerHostIPsUncached()
 	if len(ips) == 0 {
-		klog.Warningf("could not get host IP")
+		log.Warnf("could not get host IP")
 	}
 	cache.Cache.Set(cacheKey, ips, time.Hour*2)
 	return ips
@@ -52,10 +52,10 @@ func getDockerHostIPsUncached() []string {
 
 func tryProviders(providers []hostIPProvider) []string {
 	for _, attempt := range providers {
-		klog.V(5).Infof("attempting to get host ip from source: %s", attempt.name)
+		log.Debugf("attempting to get host ip from source: %s", attempt.name)
 		ips, err := attempt.provider()
 		if err != nil {
-			klog.Infof("could not deduce host IP from source %s: %s", attempt.name, err)
+			log.Infof("could not deduce host IP from source %s: %s", attempt.name, err)
 		} else {
 			return ips
 		}

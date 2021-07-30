@@ -8,7 +8,7 @@
 package resources
 
 import (
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/gohai/processes"
 )
 
@@ -18,7 +18,7 @@ func GetPayload(hostname string) *Payload {
 	// Get processes metadata from gohai
 	proc, err := new(processes.Processes).Collect()
 	if err != nil {
-		klog.Warning("Failed to retrieve processes metadata: ", err)
+		log.Warn("Failed to retrieve processes metadata: ", err)
 		return nil
 	}
 

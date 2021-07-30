@@ -9,11 +9,11 @@ import (
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/client"
 	"code.cloudfoundry.org/garden/client/connection"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 const (
@@ -66,8 +66,8 @@ type GardenUtil struct {
 func GetGardenUtil() (*GardenUtil, error) {
 	globalGardenUtilLock.Lock()
 	defer globalGardenUtilLock.Unlock()
-	network := config.C.CloudFoundryGarden.ListenNetwork
-	address := config.C.CloudFoundryGarden.ListenAddress
+	network := config.Datadog.GetString("cloud_foundry_garden.listen_network")
+	address := config.Datadog.GetString("cloud_foundry_garden.listen_address")
 	if globalGardenUtil == nil {
 		globalGardenUtil = &GardenUtil{
 			cli: client.New(connection.New(network, address)),
@@ -81,7 +81,7 @@ func GetGardenUtil() (*GardenUtil, error) {
 		})
 	}
 	if err := globalGardenUtil.retrier.TriggerRetry(); err != nil {
-		klog.V(5).Infof("Could not initiate connection to garden server %s using network %s: %s", address, network, err)
+		log.Debugf("Could not initiate connection to garden server %s using network %s: %s", address, network, err)
 		return nil, err
 	}
 	return globalGardenUtil, nil
@@ -119,12 +119,12 @@ func (gu *GardenUtil) ListContainers() ([]*containers.Container, error) {
 	for _, handle := range handles {
 		infoEntry := gardenContainerInfo[handle]
 		if err := infoEntry.Err; err != nil {
-			klog.V(5).Infof("could not get info for container %s: %v", handle, err)
+			log.Debugf("could not get info for container %s: %v", handle, err)
 			continue
 		}
 		metricsEntry := gardenContainerMetrics[handle]
 		if err := metricsEntry.Err; err != nil {
-			klog.V(5).Infof("could not get metrics for container %s: %v", handle, err)
+			log.Debugf("could not get metrics for container %s: %v", handle, err)
 			continue
 		}
 		container := containers.Container{
@@ -141,16 +141,16 @@ func (gu *GardenUtil) ListContainers() ([]*containers.Container, error) {
 
 	for _, container := range cList {
 		if container.State != containers.ContainerActiveState {
-			klog.V(5).Infof("Container %s not in state %s, skipping", container.ID[:12], containers.ContainerActiveState)
+			log.Debugf("Container %s not in state %s, skipping", container.ID[:12], containers.ContainerActiveState)
 			continue
 		}
 		if !providers.ContainerImpl().ContainerExists(container.ID) {
-			klog.V(5).Infof("Container %s not found, skipping", container.ID[:12])
+			log.Debugf("Container %s not found, skipping", container.ID[:12])
 			continue
 		}
 		limits, err := providers.ContainerImpl().GetContainerLimits(container.ID)
 		if err != nil {
-			klog.V(5).Infof("Cannot get limits for container %s: %s, skipping", container.ID[:12], err)
+			log.Debugf("Cannot get limits for container %s: %s, skipping", container.ID[:12], err)
 			continue
 		}
 		container.SetLimits(limits)
@@ -166,11 +166,11 @@ func (gu *GardenUtil) UpdateContainerMetrics(cList []*containers.Container) erro
 	}
 	for _, container := range cList {
 		if container.State != containers.ContainerActiveState {
-			klog.V(5).Infof("Container %s not in state %s, skipping", container.ID[:12], containers.ContainerActiveState)
+			log.Debugf("Container %s not in state %s, skipping", container.ID[:12], containers.ContainerActiveState)
 			continue
 		}
 		if !providers.ContainerImpl().ContainerExists(container.ID) {
-			klog.V(5).Infof("Container %s not found, skipping", container.ID[:12])
+			log.Debugf("Container %s not found, skipping", container.ID[:12])
 			continue
 		}
 
@@ -183,21 +183,21 @@ func (gu *GardenUtil) UpdateContainerMetrics(cList []*containers.Container) erro
 func (gu *GardenUtil) getContainerMetrics(ctn *containers.Container) {
 	metrics, err := providers.ContainerImpl().GetContainerMetrics(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.SetMetrics(metrics)
 
 	pids, err := providers.ContainerImpl().GetPIDs(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.Pids = pids
 
 	networkMetrics, err := providers.ContainerImpl().GetNetworkMetrics(ctn.ID, map[string]string{})
 	if err != nil {
-		klog.V(5).Infof("Cannot get network stats for container %s: %s", ctn.ID, err)
+		log.Debugf("Cannot get network stats for container %s: %s", ctn.ID, err)
 		return
 	}
 	ctn.Network = networkMetrics

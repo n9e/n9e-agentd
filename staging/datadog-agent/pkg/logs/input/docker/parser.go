@@ -11,7 +11,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // Length of the docker message header.

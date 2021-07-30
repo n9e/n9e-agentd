@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	agentcache "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	agentcache "github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -77,8 +77,8 @@ func NewMetadataController(nodeInformer coreinformers.NodeInformer, namespaceInf
 func (m *MetadataController) Run(stopCh <-chan struct{}) {
 	defer m.queue.ShutDown()
 
-	klog.Infof("Starting metadata controller")
-	defer klog.Infof("Stopping metadata controller")
+	log.Infof("Starting metadata controller")
+	defer log.Infof("Stopping metadata controller")
 
 	if !cache.WaitForCacheSync(stopCh, m.nodeListerSynced, m.namespaceListerSynced, m.endpointsListerSynced) {
 		return
@@ -102,7 +102,7 @@ func (m *MetadataController) processNextWorkItem() bool {
 
 	err := m.syncEndpoints(key.(string))
 	if err != nil {
-		klog.V(5).Infof("Error syncing endpoints %v: %v", key, err)
+		log.Debugf("Error syncing endpoints %v: %v", key, err)
 	}
 
 	return true
@@ -117,7 +117,7 @@ func (m *MetadataController) addNode(obj interface{}) {
 	bundle := m.store.getCopyOrNew(node.Name)
 	m.store.set(node.Name, bundle)
 
-	klog.V(5).Infof("Detected node %s", node.Name)
+	log.Debugf("Detected node %s", node.Name)
 }
 
 func (m *MetadataController) deleteNode(obj interface{}) {
@@ -125,19 +125,19 @@ func (m *MetadataController) deleteNode(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			klog.V(5).Infof("Couldn't get object from tombstone %#v", obj)
+			log.Debugf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		node, ok = tombstone.Obj.(*corev1.Node)
 		if !ok {
-			klog.V(5).Infof("Tombstone contained object that is not a node %#v", obj)
+			log.Debugf("Tombstone contained object that is not a node %#v", obj)
 			return
 		}
 	}
 
 	m.store.delete(node.Name)
 
-	klog.V(5).Infof("Forgot node %s", node.Name)
+	log.Debugf("Forgot node %s", node.Name)
 }
 
 func (m *MetadataController) addEndpoints(obj interface{}) {
@@ -145,7 +145,7 @@ func (m *MetadataController) addEndpoints(obj interface{}) {
 	if !ok {
 		return
 	}
-	klog.V(5).Infof("Adding endpoints %s/%s", endpoints.Namespace, endpoints.Name)
+	log.Debugf("Adding endpoints %s/%s", endpoints.Namespace, endpoints.Name)
 	m.enqueue(obj)
 }
 
@@ -154,7 +154,7 @@ func (m *MetadataController) updateEndpoints(old, cur interface{}) {
 	if !ok {
 		return
 	}
-	klog.V(6).Infof("Updating endpoints %s/%s", newEndpoints.Namespace, newEndpoints.Name)
+	log.Tracef("Updating endpoints %s/%s", newEndpoints.Namespace, newEndpoints.Name)
 	m.enqueue(cur)
 }
 
@@ -163,23 +163,23 @@ func (m *MetadataController) deleteEndpoints(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			klog.V(5).Infof("Couldn't get object from tombstone %#v", obj)
+			log.Debugf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		endpoints, ok = tombstone.Obj.(*corev1.Endpoints)
 		if !ok {
-			klog.V(5).Infof("Tombstone contained object that is not an endpoint %#v", obj)
+			log.Debugf("Tombstone contained object that is not an endpoint %#v", obj)
 			return
 		}
 	}
-	klog.V(5).Infof("Deleting endpoints %s/%s", endpoints.Namespace, endpoints.Name)
+	log.Debugf("Deleting endpoints %s/%s", endpoints.Namespace, endpoints.Name)
 	m.enqueue(obj)
 }
 
 func (m *MetadataController) enqueue(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		klog.V(5).Infof("Couldn't get key for object %v: %v", obj, err)
+		log.Debugf("Couldn't get key for object %v: %v", obj, err)
 		return
 	}
 	m.queue.Add(key)
@@ -195,10 +195,10 @@ func (m *MetadataController) syncEndpoints(key string) error {
 	switch {
 	case errors.IsNotFound(err):
 		// Endpoints absence in store means watcher caught the deletion, ensure metadata map is cleaned.
-		klog.V(6).Infof("Endpoints has been deleted %v. Attempting to cleanup metadata map", key)
+		log.Tracef("Endpoints has been deleted %v. Attempting to cleanup metadata map", key)
 		err = m.deleteMappedEndpoints(namespace, name)
 	case err != nil:
-		klog.V(5).Infof("Unable to retrieve endpoints %v from store: %v", key, err)
+		log.Debugf("Unable to retrieve endpoints %v from store: %v", key, err)
 	default:
 		err = m.mapEndpoints(endpoints)
 	}
@@ -215,7 +215,7 @@ func (m *MetadataController) mapEndpoints(endpoints *corev1.Endpoints) error {
 			if address.TargetRef == nil {
 				// Endpoints are also used by the control plane as resource locks for leader election.
 				// These endpoints will not have a TargetRef and can be ignored.
-				klog.V(6).Infof("No TargetRef for endpoints %s/%s, skipping", endpoints.Namespace, endpoints.Name)
+				log.Tracef("No TargetRef for endpoints %s/%s, skipping", endpoints.Namespace, endpoints.Name)
 				continue
 			}
 			if address.TargetRef.Kind != "Pod" {
@@ -224,7 +224,7 @@ func (m *MetadataController) mapEndpoints(endpoints *corev1.Endpoints) error {
 			namespace := address.TargetRef.Namespace
 			podName := address.TargetRef.Name
 			if podName == "" || namespace == "" {
-				klog.V(6).Infof("Incomplete reference for object %s on service %s/%s, skipping",
+				log.Tracef("Incomplete reference for object %s on service %s/%s, skipping",
 					address.TargetRef.UID, endpoints.Namespace, endpoints.Name)
 				continue
 			}
@@ -290,7 +290,7 @@ func GetPodMetadataNames(nodeName, ns, podName string) ([]string, error) {
 	cacheKey := agentcache.BuildAgentKey(metadataMapperCachePrefix, nodeName)
 	metaBundleInterface, found := agentcache.Cache.Get(cacheKey)
 	if !found {
-		klog.V(6).Infof("no metadata was found for the pod %s on node %s", podName, nodeName)
+		log.Tracef("no metadata was found for the pod %s on node %s", podName, nodeName)
 		return nil, nil
 	}
 
@@ -302,10 +302,10 @@ func GetPodMetadataNames(nodeName, ns, podName string) ([]string, error) {
 	// If new cluster level tags need to be collected by the agent, only this needs to be modified.
 	serviceList, foundServices := metaBundle.ServicesForPod(ns, podName)
 	if !foundServices {
-		klog.V(6).Infof("no cached services list found for the pod %s on the node %s", podName, nodeName)
+		log.Tracef("no cached services list found for the pod %s on the node %s", podName, nodeName)
 		return nil, nil
 	}
-	klog.V(6).Infof("CacheKey: %s, with %d services", cacheKey, len(serviceList))
+	log.Tracef("CacheKey: %s, with %d services", cacheKey, len(serviceList))
 	var metaList []string
 	for _, s := range serviceList {
 		metaList = append(metaList, fmt.Sprintf("kube_service:%s", s))
@@ -316,7 +316,7 @@ func GetPodMetadataNames(nodeName, ns, podName string) ([]string, error) {
 // GetNodeLabels retrieves the labels of the queried node from the cache of the shared informer.
 func GetNodeLabels(as *APIClient, nodeName string) (map[string]string, error) {
 	if !config.Datadog.GetBool("kubernetes_collect_metadata_tags") {
-		return nil, klog.Errorf("Metadata collection is disabled on the Cluster Agent")
+		return nil, log.Errorf("Metadata collection is disabled on the Cluster Agent")
 	}
 	node, err := as.InformerFactory.Core().V1().Nodes().Lister().Get(nodeName)
 	if err != nil {
@@ -331,7 +331,7 @@ func GetNodeLabels(as *APIClient, nodeName string) (map[string]string, error) {
 // GetNamespaceLabels retrieves the labels of the queried namespace from the cache of the shared informer.
 func GetNamespaceLabels(nsName string) (map[string]string, error) {
 	if !config.Datadog.GetBool("kubernetes_collect_metadata_tags") {
-		return nil, klog.Errorf("Metadata collection is disabled on the Cluster Agent")
+		return nil, log.Errorf("Metadata collection is disabled on the Cluster Agent")
 	}
 
 	as, err := GetAPIClient()

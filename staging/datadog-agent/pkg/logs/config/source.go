@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // SourceType used for log line parsing logic.

@@ -1,14 +1,15 @@
 package collectors
 
 import (
+	"context"
 	"testing"
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/pkg/version"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/version"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -100,15 +101,15 @@ func (fakeDCAClient) GetKubernetesMetadataNames(nodeName, ns, podName string) ([
 	panic("implement me")
 }
 
-func (fakeDCAClient) PostClusterCheckStatus(identifier string, status types.NodeStatus) (types.StatusResponse, error) {
+func (fakeDCAClient) PostClusterCheckStatus(ctx context.Context, identifier string, status types.NodeStatus) (types.StatusResponse, error) {
 	panic("implement me")
 }
 
-func (fakeDCAClient) GetClusterCheckConfigs(identifier string) (types.ConfigResponse, error) {
+func (fakeDCAClient) GetClusterCheckConfigs(ctx context.Context, identifier string) (types.ConfigResponse, error) {
 	panic("implement me")
 }
 
-func (fakeDCAClient) GetEndpointsCheckConfigs(nodeName string) (types.ConfigResponse, error) {
+func (fakeDCAClient) GetEndpointsCheckConfigs(ctx context.Context, nodeName string) (types.ConfigResponse, error) {
 	panic("implement me")
 }
 

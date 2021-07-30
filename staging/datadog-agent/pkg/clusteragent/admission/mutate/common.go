@@ -11,24 +11,24 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
 	"gomodules.xyz/jsonpatch/v3"
-	admiv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog/v2"
 )
 
 type mutateFunc func(*corev1.Pod, string, dynamic.Interface) error
 
 // mutate handles mutating pods and encoding and decoding admission
 // requests and responses for the public mutate functions
-func mutate(req *admiv1beta1.AdmissionRequest, m mutateFunc, dc dynamic.Interface) (*admiv1beta1.AdmissionResponse, error) {
+func mutate(rawPod []byte, ns string, m mutateFunc, dc dynamic.Interface) ([]byte, error) {
 	var pod corev1.Pod
-	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
+	if err := json.Unmarshal(rawPod, &pod); err != nil {
 		return nil, fmt.Errorf("failed to decode raw object: %v", err)
 	}
 
-	if err := m(&pod, req.Namespace, dc); err != nil {
+	if err := m(&pod, ns, dc); err != nil {
 		return nil, err
 	}
 
@@ -37,20 +37,12 @@ func mutate(req *admiv1beta1.AdmissionRequest, m mutateFunc, dc dynamic.Interfac
 		return nil, fmt.Errorf("failed to encode the mutated Pod object: %v", err)
 	}
 
-	patchOperation, err := jsonpatch.CreatePatch(req.Object.Raw, bytes) // TODO: Try to generate the patch at the mutateFunc
+	patchOperation, err := jsonpatch.CreatePatch(rawPod, bytes) // TODO: Try to generate the patch at the mutateFunc
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare the JSON patch: %v", err)
 	}
 
-	patchEncoded, err := json.Marshal(patchOperation)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode the JSON patch: %v", err)
-	}
-
-	return &admiv1beta1.AdmissionResponse{
-		Allowed: true,
-		Patch:   patchEncoded,
-	}, nil
+	return json.Marshal(patchOperation)
 }
 
 // contains returns whether EnvVar slice contains an env var with a given name
@@ -67,10 +59,10 @@ func contains(envs []corev1.EnvVar, name string) bool {
 func injectEnv(pod *corev1.Pod, env corev1.EnvVar) bool {
 	injected := false
 	podStr := podString(pod)
-	klog.V(5).Infof("Injecting env var '%s' into pod %s", env.Name, podStr)
+	log.Debugf("Injecting env var '%s' into pod %s", env.Name, podStr)
 	for i, ctr := range pod.Spec.Containers {
 		if contains(ctr.Env, env.Name) {
-			klog.V(5).Infof("Ignoring container '%s' in pod %s: env var '%s' already exist", ctr.Name, podStr, env.Name)
+			log.Debugf("Ignoring container '%s' in pod %s: env var '%s' already exist", ctr.Name, podStr, env.Name)
 			continue
 		}
 		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, env)

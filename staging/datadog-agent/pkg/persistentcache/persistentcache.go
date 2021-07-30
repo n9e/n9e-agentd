@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 // Invalid characters to clean up
@@ -22,7 +22,7 @@ var invalidChars = regexp.MustCompile("[^a-zA-Z0-9_-]")
 // first prefix as directory, if present. This is useful for integrations, which
 // use the check_id formed with $check_name:$hash
 func getFileForKey(key string) (string, error) {
-	parent := config.C.RunPath
+	parent := config.Datadog.GetString("run_path")
 	paths := strings.SplitN(key, ":", 2)
 	cleanedPath := invalidChars.ReplaceAllString(paths[0], "")
 	if len(paths) == 1 {

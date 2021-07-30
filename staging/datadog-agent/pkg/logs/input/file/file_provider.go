@@ -11,9 +11,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/status"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/status"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 )
 
 // OpenFilesLimitWarningType is the key of the message generated when too many
@@ -82,7 +83,7 @@ func (p *Provider) FilesToTail(sources []*config.LogSource) []*File {
 				source.Messages.AddMessage(source.Config.Path, fmt.Sprintf("%d files tailed out of %d files matching", tailedFileCounter, len(files)))
 			}
 			if shouldLogErrors {
-				klog.Warningf("Could not collect files: %v", err)
+				log.Warnf("Could not collect files: %v", err)
 			}
 			continue
 		}
@@ -110,7 +111,7 @@ func (p *Provider) FilesToTail(sources []*config.LogSource) []*File {
 	}
 
 	if len(filesToTail) == p.filesLimit {
-		klog.Warning("Reached the limit on the maximum number of files in use: ", p.filesLimit)
+		log.Warn("Reached the limit on the maximum number of files in use: ", p.filesLimit)
 		return filesToTail
 	}
 
@@ -169,10 +170,10 @@ func (p *Provider) searchFiles(pattern string, source *config.LogSource) ([]*Fil
 			return nil, fmt.Errorf("malformed exclusion pattern: %s, %s", excludePattern, err)
 		}
 		for _, excludedPath := range excludedGlob {
-			klog.V(5).Infof("Adding excluded path: %s", excludedPath)
+			log.Debugf("Adding excluded path: %s", excludedPath)
 			excludedPaths[excludedPath]++
 			if excludedPaths[excludedPath] > 1 {
-				klog.V(5).Infof("Overlapping excluded path: %s", excludedPath)
+				log.Debugf("Overlapping excluded path: %s", excludedPath)
 			}
 		}
 	}

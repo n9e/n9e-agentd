@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/api/security"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type dummyClusterAgent struct {
@@ -112,24 +112,24 @@ func newDummyClusterAgentWithCFMetadata() (*dummyClusterAgent, error) {
 }
 
 func (d *dummyClusterAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	klog.V(5).Infof("dummyDCA received %s on %s", r.Method, r.URL.Path)
+	log.Debugf("dummyDCA received %s on %s", r.Method, r.URL.Path)
 	d.requests <- r
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		klog.Errorf("no token provided")
+		log.Errorf("no token provided")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if token != fmt.Sprintf("Bearer %s", d.token) {
-		klog.Errorf("wrong token %s", token)
+		log.Errorf("wrong token %s", token)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	podIP := r.Header.Get(RealIPHeader)
 	if podIP != clcRunnerIP {
-		klog.Errorf("wrong clc runner IP: %s", podIP)
+		log.Errorf("wrong clc runner IP: %s", podIP)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -216,7 +216,7 @@ func (d *dummyClusterAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
-		klog.Errorf("unexpected len for the url != %d", len(s))
+		log.Errorf("unexpected len for the url != %d", len(s))
 		return
 	}
 

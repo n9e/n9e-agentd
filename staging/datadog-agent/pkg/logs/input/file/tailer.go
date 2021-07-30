@@ -15,17 +15,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
-	lineParser "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/parser"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"k8s.io/klog/v2"
+	coreConfig "github.com/DataDog/datadog-agent/pkg/config"
+	lineParser "github.com/DataDog/datadog-agent/pkg/logs/parser"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/docker"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/kubernetes"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/tag"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/docker"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/kubernetes"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/tag"
 )
 
 // DefaultSleepDuration represents the amount of time the tailer waits before reading new data when no data is received
@@ -35,6 +35,7 @@ const DefaultSleepDuration = 1 * time.Second
 type Tailer struct {
 	readOffset    int64
 	decodedOffset int64
+	bytesRead     int64
 
 	// file contains the logs configuration for the file to parse (path, source, ...)
 	// If you are looking for the os.file use to read on the FS, see osFile.
@@ -94,7 +95,7 @@ func NewTailer(outputChan chan *message.Message, file *File, sleepDuration time.
 	}
 
 	forwardContext, stopForward := context.WithCancel(context.Background())
-	closeTimeout := coreConfig.C.LogsConfig.CloseTimeout
+	closeTimeout := coreConfig.Datadog.GetDuration("logs_config.close_timeout") * time.Second
 
 	return &Tailer{
 		file:           file,
@@ -147,15 +148,12 @@ func (t *Tailer) readForever() {
 		if err != nil {
 			return
 		}
-		t.file.Source.BytesRead.Add(int64(n))
-		if t.file.Source.ParentSource != nil {
-			t.file.Source.ParentSource.BytesRead.Add(int64(n))
-		}
+		t.recordBytes(int64(n))
 
 		select {
 		case <-t.stop:
 			if n != 0 && atomic.LoadInt32(&t.didFileRotate) == 1 {
-				klog.Warning("Tailer stopped after rotation close timeout with remaining unread data")
+				log.Warn("Tailer stopped after rotation close timeout with remaining unread data")
 			}
 			// stop reading data from file
 			return
@@ -210,9 +208,9 @@ func (t *Tailer) startStopTimer() {
 
 // onStop finishes to stop the tailer
 func (t *Tailer) onStop() {
-	klog.Info("Closing", t.file.Path, "for tailer key", t.file.GetScanKey())
 	t.osFile.Close()
 	t.decoder.Stop()
+	log.Info("Closed", t.file.Path, "for tailer key", t.file.GetScanKey(), "read", t.bytesRead, "bytes and", t.decoder.GetLineCount(), "lines")
 }
 
 // forwardMessages lets the Tailer forward log messages to the output channel
@@ -244,7 +242,6 @@ func (t *Tailer) forwardMessages() {
 		// normal case.
 		select {
 		case t.outputChan <- message.NewMessage(output.Content, origin, output.Status, output.IngestionTimestamp):
-			//klog.V(11).Infof("input.outputChan %p <- %s", t.outputChan, string(output.Content))
 		case <-t.forwardContext.Done():
 		}
 	}
@@ -282,4 +279,12 @@ func (t *Tailer) shouldTrackOffset() bool {
 // wait lets the tailer sleep for a bit
 func (t *Tailer) wait() {
 	time.Sleep(t.sleepDuration)
+}
+
+func (t *Tailer) recordBytes(n int64) {
+	t.bytesRead += n
+	t.file.Source.BytesRead.Add(n)
+	if t.file.Source.ParentSource != nil {
+		t.file.Source.ParentSource.BytesRead.Add(n)
+	}
 }

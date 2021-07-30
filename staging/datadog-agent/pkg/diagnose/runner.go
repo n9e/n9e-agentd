@@ -10,8 +10,11 @@ import (
 	"io"
 	"sort"
 
+	"github.com/DataDog/datadog-agent/pkg/diagnose/diagnosis"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	"github.com/cihub/seelog"
 	"github.com/fatih/color"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/diagnose/diagnosis"
 )
 
 // RunAll runs all registered connectivity checks, output it in writer
@@ -19,6 +22,14 @@ func RunAll(w io.Writer) error {
 	if w != color.Output {
 		color.NoColor = true
 	}
+
+	// Use temporarily a custom logger to our Writer
+	customLogger, err := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg - %Ns%n")
+	if err != nil {
+		return err
+	}
+	log.RegisterAdditionalLogger("diagnose", customLogger)
+	defer log.UnregisterAdditionalLogger("diagnose")
 
 	var sortedDiagnosis []string
 	for name := range diagnosis.DefaultCatalog {

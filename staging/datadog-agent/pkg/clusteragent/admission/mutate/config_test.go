@@ -10,7 +10,7 @@ package mutate
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 	corev1 "k8s.io/api/core/v1"
 )
 

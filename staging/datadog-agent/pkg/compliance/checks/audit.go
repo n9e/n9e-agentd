@@ -15,8 +15,8 @@ import (
 	"github.com/elastic/go-libaudit/rule"
 	"github.com/elastic/go-libaudit/rule/flags"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func newAuditClient() (env.AuditClient, error) {
@@ -55,17 +55,17 @@ func (c *auditClient) GetFileWatchRules() ([]*rule.FileWatchRule, error) {
 	for _, d := range data {
 		cmdline, err := rule.ToCommandLine(rule.WireFormat(d), false)
 		if err != nil {
-			klog.Errorf("Failed to convert to command line: %v", err)
+			log.Errorf("Failed to convert to command line: %v", err)
 			continue
 		}
 		r, err := flags.Parse(cmdline)
 		if err != nil {
-			klog.Errorf("Failed to parse rule: %s - %v", cmdline, err)
+			log.Errorf("Failed to parse rule: %s - %v", cmdline, err)
 			continue
 		}
 
 		if r.TypeOf() != rule.FileWatchRuleType {
-			klog.V(6).Infof("Skipped rule of type %d", r.TypeOf())
+			log.Tracef("Skipped rule of type %d", r.TypeOf())
 			continue
 		}
 		if r, ok := r.(*rule.FileWatchRule); ok {

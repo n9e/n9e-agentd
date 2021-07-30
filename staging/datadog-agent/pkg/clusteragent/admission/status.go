@@ -13,10 +13,10 @@ import (
 	"hash/fnv"
 	"strconv"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/certificate"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/certificate"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -100,10 +100,11 @@ func getSecretStatus(ns, name string, apiCl kubernetes.Interface) (map[string]in
 	secretStatus["Namespace"] = secret.GetNamespace()
 	secretStatus["CreatedAt"] = secret.GetCreationTimestamp()
 	secretStatus["CABundleDigest"] = getDigest(secret.Data["cert.pem"])
-	t, err := certificate.GetDurationBeforeExpiration(secret.Data)
+	cert, err := certificate.GetCertFromSecret(secret.Data)
 	if err != nil {
-		klog.Errorf("Cannot get certificate validity duration: %v", err)
+		log.Errorf("Cannot get certificate from secret: %v", err)
 	}
+	t := certificate.GetDurationBeforeExpiration(cert)
 	secretStatus["CertValidDuration"] = t.String()
 	return secretStatus, nil
 }

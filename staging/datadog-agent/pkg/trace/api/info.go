@@ -1,3 +1,8 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2016-present Datadog, Inc.
+
 package api
 
 import (
@@ -6,8 +11,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/config/features"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
 )
 
 // makeInfoHandler returns a new handler for handling the discovery endpoint.
@@ -19,28 +25,28 @@ func (r *HTTPReceiver) makeInfoHandler() (hash string, handler http.HandlerFunc)
 		}
 	}
 	type reducedObfuscationConfig struct {
-		ElasticSearch        bool                         `json:"elasticSearch"`
+		ElasticSearch        bool                         `json:"elastic_search"`
 		Mongo                bool                         `json:"mongo"`
-		SQLExecPlan          bool                         `json:"sqlExecPlan"`
-		SQLExecPlanNormalize bool                         `json:"sqlExecPlanNormalize"`
+		SQLExecPlan          bool                         `json:"sql_exec_plan"`
+		SQLExecPlanNormalize bool                         `json:"sql_exec_plan_normalize"`
 		HTTP                 config.HTTPObfuscationConfig `json:"http"`
-		RemoveStackTraces    bool                         `json:"removeStackTraces"`
+		RemoveStackTraces    bool                         `json:"remove_stack_traces"`
 		Redis                bool                         `json:"redis"`
 		Memcached            bool                         `json:"memcached"`
 	}
 	type reducedConfig struct {
-		DefaultEnv             string                        `json:"defaultEnv"`
-		TargetTPS              float64                       `json:"targetTps"`
-		MaxEPS                 float64                       `json:"maxEps"`
-		ReceiverPort           int                           `json:"receiverPort"`
-		ReceiverSocket         string                        `json:"receiverSocket"`
-		ConnectionLimit        int                           `json:"connectionLimit"`
-		ReceiverTimeout        int                           `json:"receiverTimeout"`
-		MaxRequestBytes        int64                         `json:"maxRequestBytes"`
-		StatsdPort             int                           `json:"statsdPort"`
-		MaxMemory              float64                       `json:"maxMemory"`
-		MaxCPU                 float64                       `json:"maxCpu"`
-		AnalyzedSpansByService map[string]map[string]float64 `json:"analyzedSpansByService"`
+		DefaultEnv             string                        `json:"default_env"`
+		TargetTPS              float64                       `json:"target_tps"`
+		MaxEPS                 float64                       `json:"max_eps"`
+		ReceiverPort           int                           `json:"receiver_port"`
+		ReceiverSocket         string                        `json:"receiver_socket"`
+		ConnectionLimit        int                           `json:"connection_limit"`
+		ReceiverTimeout        int                           `json:"receiver_timeout"`
+		MaxRequestBytes        int64                         `json:"max_request_bytes"`
+		StatsdPort             int                           `json:"statsd_port"`
+		MaxMemory              float64                       `json:"max_memory"`
+		MaxCPU                 float64                       `json:"max_cpu"`
+		AnalyzedSpansByService map[string]map[string]float64 `json:"analyzed_spans_by_service"`
 		Obfuscation            reducedObfuscationConfig      `json:"obfuscation"`
 	}
 	var oconf reducedObfuscationConfig
@@ -56,18 +62,18 @@ func (r *HTTPReceiver) makeInfoHandler() (hash string, handler http.HandlerFunc)
 	}
 	txt, err := json.MarshalIndent(struct {
 		Version       string        `json:"version"`
-		GitCommit     string        `json:"gitCommit"`
-		BuildDate     string        `json:"buildDate"`
+		GitCommit     string        `json:"git_commit"`
+		BuildDate     string        `json:"build_date"`
 		Endpoints     []string      `json:"endpoints"`
-		FeatureFlags  []string      `json:"featureFlags,omitempty"`
-		ClientDropP0s bool          `json:"clientDropP0s"`
+		FeatureFlags  []string      `json:"feature_flags,omitempty"`
+		ClientDropP0s bool          `json:"client_drop_p0s"`
 		Config        reducedConfig `json:"config"`
 	}{
 		Version:       info.Version,
 		GitCommit:     info.GitCommit,
 		BuildDate:     info.BuildDate,
 		Endpoints:     all,
-		FeatureFlags:  config.Features(),
+		FeatureFlags:  features.All(),
 		ClientDropP0s: true,
 		Config: reducedConfig{
 			DefaultEnv:             r.conf.DefaultEnv,

@@ -10,12 +10,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 // QueryDCAMetrics gets the metrics payload exposed by the cluster agent
 func QueryDCAMetrics() ([]byte, error) {
-	r, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", config.C.MetricsPort))
+	r, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", config.Datadog.GetInt("metrics_port")))
 	if err != nil {
 		return nil, err
 	}

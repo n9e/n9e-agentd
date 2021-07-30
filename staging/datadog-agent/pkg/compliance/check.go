@@ -6,8 +6,8 @@
 package compliance
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
 )
 
 // Check is the interface for compliance checks

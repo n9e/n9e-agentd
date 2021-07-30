@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 )
@@ -81,6 +81,8 @@ func (d *DockerUtil) dispatchEvents(sub *eventSubscriber) {
 	fltrs.Add("type", "container")
 	fltrs.Add("event", "start")
 	fltrs.Add("event", "die")
+	fltrs.Add("event", "died")
+	fltrs.Add("event", "rename")
 
 	// On initial subscribe, don't go back in time. On reconnect, we'll
 	// resume at the latest timestamp we got.
@@ -106,19 +108,19 @@ CONNECT: // Outer loop handles re-connecting in case the docker daemon closes th
 			case err := <-errs:
 				if err == io.EOF {
 					// Silently ignore io.EOF that happens on http connection reset
-					klog.V(5).Info("Got EOF, re-connecting")
+					log.Debug("Got EOF, re-connecting")
 				} else {
 					// Else, let's wait 10 seconds and try reconnecting
-					klog.Warningf("Got error from docker, waiting for 10 seconds: %s", err)
+					log.Warnf("Got error from docker, waiting for 10 seconds: %s", err)
 					time.Sleep(10 * time.Second)
 				}
 				cancelFunc()
 				continue CONNECT // Re-connect to docker
 			case msg := <-messages:
 				latestTimestamp = msg.Time
-				event, err := d.processContainerEvent(msg)
+				event, err := d.processContainerEvent(ctx, msg)
 				if err != nil {
-					klog.V(5).Infof("Skipping event: %s", err)
+					log.Debugf("Skipping event: %s", err)
 					continue
 				}
 				if event == nil {

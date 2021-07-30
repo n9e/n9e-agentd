@@ -3,9 +3,11 @@ package encoding
 import (
 	"strings"
 
-	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/http"
+	model "github.com/DataDog/agent-payload/process"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/network"
+	"github.com/DataDog/datadog-agent/pkg/network/http"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gogo/protobuf/jsonpb"
 )
 
@@ -52,11 +54,25 @@ func modelConnections(conns *network.Connections) *model.Connections {
 	domainSet := make(map[string]int)
 	routeIndex := make(map[string]RouteIdx)
 	httpIndex := FormatHTTPStats(conns.HTTP)
+	httpMatches := make(map[http.Key]struct{}, len(httpIndex))
+
+	dnsWithQueryType := config.Datadog.GetBool("network_config.enable_dns_by_querytype")
 
 	for i, conn := range conns.Conns {
-		httpKey := http.NewKey(conn.Source, conn.Dest, conn.SPort, conn.DPort, "")
-		agentConns[i] = FormatConnection(conn, domainSet, routeIndex, httpIndex[httpKey])
-		delete(httpIndex, httpKey)
+		httpKey := httpKeyFromConn(conn)
+		httpAggregations := httpIndex[httpKey]
+		if httpAggregations != nil {
+			httpMatches[httpKey] = struct{}{}
+		}
+
+		agentConns[i] = FormatConnection(conn, domainSet, routeIndex, httpAggregations, dnsWithQueryType)
+	}
+
+	if orphans := len(httpIndex) - len(httpMatches); orphans > 0 {
+		log.Debugf(
+			"detected orphan http aggreggations. this can be either caused by conntrack sampling or missed tcp close events. count=%d",
+			orphans,
+		)
 	}
 
 	domains := make([]string, len(domainSet))

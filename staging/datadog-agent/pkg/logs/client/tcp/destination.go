@@ -11,11 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/client"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -35,7 +34,7 @@ type Destination struct {
 }
 
 // NewDestination returns a new destination.
-func NewDestination(endpoint types.Endpoint, useProto bool, destinationsContext *client.DestinationsContext) *Destination {
+func NewDestination(endpoint config.Endpoint, useProto bool, destinationsContext *client.DestinationsContext) *Destination {
 	prefix := endpoint.APIKey + string(' ')
 	return &Destination{
 		prefixer:            newPrefixer(prefix),
@@ -81,7 +80,7 @@ func (d *Destination) Send(payload []byte) error {
 	}
 
 	if d.connManager.ShouldReset(d.connCreationTime) {
-		klog.V(5).Info("Resetting TCP connection")
+		log.Debug("Resetting TCP connection")
 		d.connManager.CloseConnection(d.conn)
 		d.conn = nil
 	}
@@ -105,7 +104,7 @@ func (d *Destination) SendAsync(payload []byte) {
 	default:
 		// TODO: Display the warning in the status
 		if metrics.DestinationLogsDropped.Get(host).(*expvar.Int).Value()%warningPeriod == 0 {
-			klog.Warningf("Some logs sent to additional destination %v were dropped", host)
+			log.Warnf("Some logs sent to additional destination %v were dropped", host)
 		}
 		metrics.DestinationLogsDropped.Add(host, 1)
 		metrics.TlmLogsDropped.Inc(host)

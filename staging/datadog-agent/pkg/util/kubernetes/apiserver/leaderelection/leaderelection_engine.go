@@ -20,8 +20,8 @@ import (
 	rl "k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func (le *LeaderEngine) getCurrentLeader() (string, *v1.ConfigMap, error) {
@@ -32,7 +32,7 @@ func (le *LeaderEngine) getCurrentLeader() (string, *v1.ConfigMap, error) {
 
 	val, found := configMap.Annotations[rl.LeaderElectionRecordAnnotationKey]
 	if !found {
-		klog.V(5).Infof("The configmap/%s in the namespace %s doesn't have the annotation %q: no one is leading yet", le.LeaseName, le.LeaderNamespace, rl.LeaderElectionRecordAnnotationKey)
+		log.Debugf("The configmap/%s in the namespace %s doesn't have the annotation %q: no one is leading yet", le.LeaseName, le.LeaderNamespace, rl.LeaderElectionRecordAnnotationKey)
 		return "", configMap, nil
 	}
 
@@ -71,24 +71,24 @@ func (le *LeaderEngine) newElection() (*ld.LeaderElector, error) {
 	if err != nil {
 		return nil, err
 	}
-	klog.V(5).Infof("Current registered leader is %q, building leader elector %q as candidate", currentLeader, le.HolderIdentity)
+	log.Debugf("Current registered leader is %q, building leader elector %q as candidate", currentLeader, le.HolderIdentity)
 	callbacks := ld.LeaderCallbacks{
 		OnNewLeader: func(identity string) {
 			le.updateLeaderIdentity(identity)
 			le.reportLeaderMetric(false)
-			klog.Infof("New leader %q", identity)
+			log.Infof("New leader %q", identity)
 		},
 		OnStartedLeading: func(ctx context.Context) {
 			le.updateLeaderIdentity(le.HolderIdentity)
 			le.reportLeaderMetric(true)
-			klog.Infof("Started leading as %q...", le.HolderIdentity)
+			log.Infof("Started leading as %q...", le.HolderIdentity)
 		},
 		// OnStoppedLeading shouldn't be called unless the election is lost. This could happen if
 		// we lose connection to the apiserver for the duration of the lease.
 		OnStoppedLeading: func() {
 			le.updateLeaderIdentity("")
 			le.reportLeaderMetric(false)
-			klog.Infof("Stopped leading %q", le.HolderIdentity)
+			log.Infof("Stopped leading %q", le.HolderIdentity)
 		},
 	}
 

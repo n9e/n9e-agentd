@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // RunEventCollection will return the most recent events emitted by the apiserver.
@@ -29,7 +29,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 	// list if latestResVer is "" or if lastListTS is > syncTimeout
 	diffTime := time.Now().Sub(lastListTime)
 	if resVer == "" || diffTime > syncTimeout {
-		klog.V(5).Infof("Return listForEventResync diffTime: %d/%d", diffTime, syncTimeout)
+		log.Debugf("Return listForEventResync diffTime: %d/%d", diffTime, syncTimeout)
 		listed, lastResVer, lastTime, err := c.listForEventResync(eventReadTimeout, eventCardinalityLimit, filter)
 		if err != nil {
 			return nil, "", time.Now(), err
@@ -53,7 +53,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 	}
 
 	defer evWatcher.Stop()
-	klog.V(5).Infof("Starting to watch from %s", resVer)
+	log.Debugf("Starting to watch from %s", resVer)
 	// watch during 2 * timeout maximum and store where we are at.
 	timeoutParse := time.NewTimer(time.Duration(eventReadTimeout) * time.Second)
 	for {
@@ -70,14 +70,14 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 				switch status.Reason {
 				// Using a switch as there are a lot of different types and we might want to explore adapting the behaviour for certain ones in the future.
 				case "Expired":
-					klog.V(5).Infof("Resource Version is too old, listing all events and collecting only the new ones")
+					log.Debugf("Resource Version is too old, listing all events and collecting only the new ones")
 					evList, resVer, lastListTime, err := c.listForEventResync(eventReadTimeout, eventCardinalityLimit, filter)
 					if err != nil {
 						return added, resVer, lastListTime, err
 					}
 					i, err := strconv.Atoi(resVer)
 					if err != nil {
-						klog.Errorf("Error converting the stored Resource Version: %s", err.Error())
+						log.Errorf("Error converting the stored Resource Version: %s", err.Error())
 						continue
 					}
 					return diffEvents(i, evList), resVer, lastListTime, nil
@@ -98,7 +98,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			ev, ok := rcv.Object.(*v1.Event)
 			if !ok {
 				// Could not cast the ev, might as well drop this event, and continue.
-				klog.Errorf("The event object for %v cannot be safely converted, skipping it.", rcv.Object)
+				log.Errorf("The event object for %v cannot be safely converted, skipping it.", rcv.Object)
 				continue
 			}
 			evResVer, err := strconv.Atoi(ev.ResourceVersion)
@@ -110,7 +110,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			added = append(added, ev)
 			i, err := strconv.Atoi(resVer)
 			if err != nil {
-				klog.Errorf("Could not cast %s into an integer: %s", resVer, err.Error())
+				log.Errorf("Could not cast %s into an integer: %s", resVer, err.Error())
 				continue
 			}
 			if evResVer > i {
@@ -119,7 +119,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			}
 
 		case <-timeoutParse.C:
-			klog.V(5).Infof("Collected %d events, will resume watching from resource version %s", len(added), resVer)
+			log.Debugf("Collected %d events, will resume watching from resource version %s", len(added), resVer)
 			// No more events to read or the watch lasted more than `eventReadTimeout`.
 			// so return what was processed.
 			return added, resVer, lastListTime, nil
@@ -132,14 +132,14 @@ func diffEvents(latestStoredRV int, fullList []*v1.Event) []*v1.Event {
 	for _, ev := range fullList {
 		erv, err := strconv.Atoi(ev.ResourceVersion)
 		if err != nil {
-			klog.Errorf("Could not parse resource version of an event, will skip: %s", err)
+			log.Errorf("Could not parse resource version of an event, will skip: %s", err)
 			continue
 		}
 		if erv > latestStoredRV {
 			diffEvents = append(diffEvents, ev)
 		}
 	}
-	klog.V(5).Infof("Returning %d events that we have not collected", len(diffEvents))
+	log.Debugf("Returning %d events that we have not collected", len(diffEvents))
 	return diffEvents
 }
 
@@ -150,7 +150,7 @@ func (c *APIClient) listForEventResync(eventReadTimeout int64, eventCardinalityL
 		FieldSelector:  filter,
 	})
 	if err != nil {
-		klog.Errorf("Error Listing events: %s", err.Error())
+		log.Errorf("Error Listing events: %s", err.Error())
 		return nil, resVer, lastListTime, err
 	}
 	for id := range evList.Items {

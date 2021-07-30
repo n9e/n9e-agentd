@@ -10,7 +10,7 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator/mocksender"
+	"github.com/DataDog/datadog-agent/pkg/aggregator/mocksender"
 )
 
 func init() {
@@ -63,20 +63,20 @@ func TestContainerMetricsTagging(t *testing.T) {
 
 	ok := sender.AssertMetricTaggedWith(t, "Gauge", "docker.containers.running", pauseTags)
 	if !ok {
-		klog.Warningf("Missing Gauge docker.containers.running with tags %s", pauseTags)
+		log.Warnf("Missing Gauge docker.containers.running with tags %s", pauseTags)
 	}
 
 	for method, metricList := range expectedMetrics {
 		for _, metric := range metricList {
 			ok := sender.AssertMetricTaggedWith(t, method, metric, expectedTags)
 			if !ok {
-				klog.Warningf("Missing %s %s with tags %s", method, metric, expectedTags)
+				log.Warnf("Missing %s %s with tags %s", method, metric, expectedTags)
 			}
 
 			// Excluded pause container
 			ok = sender.AssertMetricNotTaggedWith(t, method, metric, pauseTags)
 			if !ok {
-				klog.Warningf("Shouldn't call %s %s with tags %s", method, metric, pauseTags)
+				log.Warnf("Shouldn't call %s %s with tags %s", method, metric, pauseTags)
 			}
 		}
 	}

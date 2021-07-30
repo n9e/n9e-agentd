@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers/names"
-	logsConfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/klog/v2"
+
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/providers/names"
+	logsConfig "github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -57,15 +58,15 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 			continue
 		}
 		if config.HasFilter(containers.LogsFilter) {
-			klog.V(5).Infof("Config %s is filtered out for logs collection, ignoring it", s.configName(config))
+			log.Debugf("Config %s is filtered out for logs collection, ignoring it", s.configName(config))
 			continue
 		}
 		switch {
 		case s.newSources(config):
-			klog.Infof("Received a new logs config: %v", s.configName(config))
+			log.Infof("Received a new logs config: %v", s.configName(config))
 			sources, err := s.toSources(config)
 			if err != nil {
-				klog.Warningf("Invalid configuration: %v", err)
+				log.Warnf("Invalid configuration: %v", err)
 				continue
 			}
 			for _, source := range sources {
@@ -74,17 +75,17 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 		case s.newService(config):
 			entityType, _, err := s.parseEntity(config.TaggerEntity)
 			if err != nil {
-				klog.Warningf("Invalid service: %v", err)
+				log.Warnf("Invalid service: %v", err)
 				continue
 			}
 			// logs only consider container services
 			if entityType != containers.ContainerEntityName {
 				continue
 			}
-			klog.Infof("Received a new service: %v", config.Entity)
+			log.Infof("Received a new service: %v", config.Entity)
 			service, err := s.toService(config)
 			if err != nil {
-				klog.Warningf("Invalid service: %v", err)
+				log.Warnf("Invalid service: %v", err)
 				continue
 			}
 			s.services.AddService(service)
@@ -103,11 +104,11 @@ func (s *Scheduler) Unschedule(configs []integration.Config) {
 		}
 		switch {
 		case s.newSources(config):
-			klog.Infof("New source to remove: entity: %v", config.Entity)
+			log.Infof("New source to remove: entity: %v", config.Entity)
 
 			_, identifier, err := s.parseEntity(config.Entity)
 			if err != nil {
-				klog.Warningf("Invalid configuration: %v", err)
+				log.Warnf("Invalid configuration: %v", err)
 				continue
 			}
 			for _, source := range s.sources.GetSources() {
@@ -119,17 +120,17 @@ func (s *Scheduler) Unschedule(configs []integration.Config) {
 			// new service to remove
 			entityType, _, err := s.parseEntity(config.TaggerEntity)
 			if err != nil {
-				klog.Warningf("Invalid service: %v", err)
+				log.Warnf("Invalid service: %v", err)
 				continue
 			}
 			// logs only consider container services
 			if entityType != containers.ContainerEntityName {
 				continue
 			}
-			klog.Infof("New service to remove: entity: %v", config.Entity)
+			log.Infof("New service to remove: entity: %v", config.Entity)
 			service, err := s.toService(config)
 			if err != nil {
-				klog.Warningf("Invalid service: %v", err)
+				log.Warnf("Invalid service: %v", err)
 				continue
 			}
 			s.services.RemoveService(service)
@@ -228,7 +229,7 @@ func (s *Scheduler) toSources(config integration.Config) ([]*logsConfig.LogSourc
 		source := logsConfig.NewLogSource(configName, cfg)
 		sources = append(sources, source)
 		if err := cfg.Validate(); err != nil {
-			klog.Warningf("Invalid logs configuration: %v", err)
+			log.Warnf("Invalid logs configuration: %v", err)
 			source.Status.Error(err)
 			continue
 		}
@@ -269,4 +270,14 @@ func (s *Scheduler) getCreationTime(config integration.Config) service.CreationT
 // GetScheduler returns the logs-config scheduler if set.
 func GetScheduler() *Scheduler {
 	return adScheduler
+}
+
+// GetSourceFromName returns the LogSource from the source name if it exists.
+func (s *Scheduler) GetSourceFromName(name string) *logsConfig.LogSource {
+	for _, source := range s.sources.GetSources() {
+		if name == source.Config.Source {
+			return source
+		}
+	}
+	return nil
 }

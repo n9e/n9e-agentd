@@ -8,7 +8,7 @@ package message
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 )
 
 // Origin represents the Origin of a message
@@ -39,11 +39,11 @@ func (o *Origin) TagsPayload() []byte {
 
 	source := o.Source()
 	if source != "" {
-		tagsPayload = append(tagsPayload, []byte("[dd source=\""+source+"\"]")...)
+		tagsPayload = append(tagsPayload, []byte("[dd ddsource=\""+source+"\"]")...)
 	}
 	sourceCategory := o.LogSource.Config.SourceCategory
 	if sourceCategory != "" {
-		tagsPayload = append(tagsPayload, []byte("[dd sourcecategory=\""+sourceCategory+"\"]")...)
+		tagsPayload = append(tagsPayload, []byte("[dd ddsourcecategory=\""+sourceCategory+"\"]")...)
 	}
 
 	var tags []string
@@ -51,7 +51,7 @@ func (o *Origin) TagsPayload() []byte {
 	tags = append(tags, o.tags...)
 
 	if len(tags) > 0 {
-		tagsPayload = append(tagsPayload, []byte("[dd tags=\""+strings.Join(tags, ",")+"\"]")...)
+		tagsPayload = append(tagsPayload, []byte("[dd ddtags=\""+strings.Join(tags, ",")+"\"]")...)
 	}
 	if len(tagsPayload) == 0 {
 		tagsPayload = []byte{}

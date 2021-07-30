@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -51,12 +51,12 @@ func (c ContainerCgroup) ContainerStartTime() (int64, error) {
 func (c ContainerCgroup) cgroupFilePath(target, file string) string {
 	mount, ok := c.Mounts[target]
 	if !ok {
-		klog.V(5).Infof("Missing target %s from mounts", target)
+		log.Debugf("Missing target %s from mounts", target)
 		return ""
 	}
 	targetPath, ok := c.Paths[target]
 	if !ok {
-		klog.V(5).Infof("Missing target %s from paths", target)
+		log.Debugf("Missing target %s from paths", target)
 		return ""
 	}
 	// sometimes the container is running inside a "dind container" instead of directly on the host,
@@ -111,7 +111,7 @@ func cgroupMountPoints() (map[string]string, error) {
 }
 
 func parseCgroupMountPoints(r io.Reader) map[string]string {
-	cgroupRoot := config.C.ContainerCgroupRoot
+	cgroupRoot := config.Datadog.GetString("container_cgroup_root")
 	mountPoints := make(map[string]string)
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -134,7 +134,7 @@ func parseCgroupMountPoints(r io.Reader) map[string]string {
 		}
 	}
 	if len(mountPoints) == 0 {
-		klog.Warningf("No mountPoints were detected, current cgroup root is: %s", cgroupRoot)
+		log.Warnf("No mountPoints were detected, current cgroup root is: %s", cgroupRoot)
 	}
 	return mountPoints
 }
@@ -161,7 +161,7 @@ func scrapeAllCgroups() (map[string]*ContainerCgroup, error) {
 		return cgs, err
 	}
 
-	prefix := config.C.ContainerCgroupPrefix
+	prefix := config.Datadog.GetString("container_cgroup_prefix")
 
 	for _, dirName := range dirNames {
 		pid, err := strconv.ParseInt(dirName, 10, 32)
@@ -170,22 +170,36 @@ func scrapeAllCgroups() (map[string]*ContainerCgroup, error) {
 		}
 		cgPath := hostProc(dirName, "cgroup")
 		containerID, paths, err := readCgroupsForPath(cgPath, prefix)
+
+		// Checking if it's a container cgroup. With CRIO and systemd cgroup manager
+		// we can encounter hierarchies like:
+		// /usr/libexec/crio/conmon -b /var/run/containers/storage/overlay-containers/abbfba09988 -> dedicated cgroup containing containerID
+		//   \_ /pause -> real container cgroup
+		// However a real container should always have a 'freezer' cgroup
 		if containerID == "" {
 			continue
 		}
+
+		mP, mFound := paths["memory"]
+		fP, fFound := paths["freezer"]
+		if !fFound || !mFound || mP != fP {
+			log.Tracef("skipping cgroup from pid: %s as it does not appear to be a container cgroup")
+			continue
+		}
+
 		if err != nil {
-			klog.V(5).Infof("error reading cgroup paths %s: %s", cgPath, err)
+			log.Debugf("error reading cgroup paths %s: %s", cgPath, err)
 			continue
 		}
 		if cg, ok := cgs[containerID]; ok {
-			// Assumes that the paths will always be the same for a container id.
 			cg.Pids = append(cg.Pids, int32(pid))
 		} else {
 			cgs[containerID] = &ContainerCgroup{
 				ContainerID: containerID,
 				Pids:        []int32{int32(pid)},
 				Paths:       paths,
-				Mounts:      mountPoints}
+				Mounts:      mountPoints,
+			}
 		}
 	}
 	return cgs, nil
@@ -195,10 +209,10 @@ func scrapeAllCgroups() (map[string]*ContainerCgroup, error) {
 func readCgroupsForPath(pidCgroupPath, prefix string) (string, map[string]string, error) {
 	f, err := os.Open(pidCgroupPath)
 	if os.IsNotExist(err) {
-		klog.V(5).Infof("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
+		log.Debugf("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
 		return "", nil, nil
 	} else if err != nil {
-		klog.V(5).Infof("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
+		log.Debugf("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
 		return "", nil, err
 	}
 	defer f.Close()
@@ -224,7 +238,7 @@ func parseCgroupPaths(r io.Reader, prefix string) (string, map[string]string, er
 		l := scanner.Text()
 		cID, ok := containerIDFromCgroup(l, prefix)
 		if !ok {
-			klog.V(6).Infof("could not parse container id from path '%s'", l)
+			log.Tracef("could not parse container id from path '%s'", l)
 		}
 		if containerID == "" {
 			// Take the first valid containerID

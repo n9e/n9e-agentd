@@ -9,11 +9,12 @@ package autoscalers
 
 import (
 	"reflect"
+	"regexp"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta1"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/watermarkpodautoscaler/api/v1alpha1"
 )
 
@@ -23,7 +24,12 @@ func InspectHPA(hpa *autoscalingv2.HorizontalPodAutoscaler) (emList []custommetr
 		switch metricSpec.Type {
 		case autoscalingv2.ExternalMetricSourceType:
 			if metricSpec.External == nil {
-				klog.Errorf("Missing required \"external\" section in the %s/%s Ref, skipping processing", hpa.Namespace, hpa.Name)
+				log.Errorf("Missing required \"external\" section in the %s/%s Ref, skipping processing", hpa.Namespace, hpa.Name)
+				continue
+			}
+
+			if !IsValidMetricName(metricSpec.External.MetricName) {
+				log.Errorf("Metric name \"%s\" in %s/%s is invalid, skipping processing", metricSpec.External.MetricName, hpa.Namespace, hpa.Name)
 				continue
 			}
 
@@ -41,7 +47,7 @@ func InspectHPA(hpa *autoscalingv2.HorizontalPodAutoscaler) (emList []custommetr
 			}
 			emList = append(emList, em)
 		default:
-			klog.V(5).Infof("Unsupported metric type %s", metricSpec.Type)
+			log.Debugf("Unsupported metric type %s", metricSpec.Type)
 		}
 	}
 	return
@@ -53,7 +59,7 @@ func InspectWPA(wpa *v1alpha1.WatermarkPodAutoscaler) (emList []custommetrics.Ex
 		switch metricSpec.Type {
 		case v1alpha1.ExternalMetricSourceType:
 			if metricSpec.External == nil {
-				klog.Errorf("Missing required \"external\" section in the %s/%s WPA, skipping processing", wpa.Namespace, wpa.Name)
+				log.Errorf("Missing required \"external\" section in the %s/%s WPA, skipping processing", wpa.Namespace, wpa.Name)
 				continue
 			}
 
@@ -71,7 +77,7 @@ func InspectWPA(wpa *v1alpha1.WatermarkPodAutoscaler) (emList []custommetrics.Ex
 			}
 			emList = append(emList, em)
 		default:
-			klog.V(5).Infof("Unsupported metric type %s", metricSpec.Type)
+			log.Debugf("Unsupported metric type %s", metricSpec.Type)
 		}
 	}
 	return
@@ -126,6 +132,14 @@ func AutoscalerMetricsUpdate(new, old *autoscalingv2.HorizontalPodAutoscaler) bo
 	}
 
 	return old.ResourceVersion == new.ResourceVersion || oldAnn != newAnn
+}
+
+// IsValidMetricName will return true if the metric name follows the Datadog metric naming conventions.
+// See https://docs.datadoghq.com/developers/metrics/#naming-custom-metrics
+func IsValidMetricName(metricName string) bool {
+	metricNamingConvention := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_.]{0,199}$")
+
+	return metricNamingConvention.Match([]byte(metricName))
 }
 
 // WPAutoscalerMetricsUpdate will return true if the applied configuration of the Autoscaler has changed.

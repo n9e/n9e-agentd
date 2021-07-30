@@ -22,10 +22,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 type dummyCLCRunner struct {
@@ -55,17 +55,17 @@ func newDummyCLCRunner() (*dummyCLCRunner, error) {
 }
 
 func (d *dummyCLCRunner) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	klog.V(5).Infof("dummyCLCRunner received %s on %s", r.Method, r.URL.Path)
+	log.Debugf("dummyCLCRunner received %s on %s", r.Method, r.URL.Path)
 	d.requests <- r
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		klog.Errorf("no token provided")
+		log.Errorf("no token provided")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if token != fmt.Sprintf("Bearer %s", d.token) {
-		klog.Errorf("wrong token %s", token)
+		log.Errorf("wrong token %s", token)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

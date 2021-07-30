@@ -8,7 +8,7 @@ import (
 	"github.com/DataDog/gopsutil/mem"
 
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
 )
 
 // CollectSystemInfo collects a set of system-level information that will not

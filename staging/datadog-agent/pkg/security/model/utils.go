@@ -7,22 +7,24 @@ package model
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
+	"regexp"
 	"unsafe"
-
-	"github.com/pkg/errors"
 )
 
-var (
-	// ErrStringArrayOverflow returned when there is a string array overflow
-	ErrStringArrayOverflow = errors.New("string array overflow")
-)
+// containerIDPattern is the pattern of a container ID
+var containerIDPattern = regexp.MustCompile(fmt.Sprintf(`([[:xdigit:]]{%v})`, sha256.Size*2))
+
+// FindContainerID extracts the first sub string that matches the pattern of a container ID
+func FindContainerID(s string) string {
+	return containerIDPattern.FindString(s)
+}
 
 // SliceToArray copy src bytes to dst. Destination should have enough space
 func SliceToArray(src []byte, dst unsafe.Pointer) {
-	//dstPtr :=
 	for i := range src {
 		*(*byte)(unsafe.Pointer(uintptr(dst) + uintptr(i))) = src[i]
-		//dstPtr++
 	}
 }
 
@@ -55,4 +57,18 @@ func UnmarshalStringArray(data []byte) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+// UnmarshalString unmarshal string
+func UnmarshalString(data []byte, size int) (string, error) {
+	if len(data) < size {
+		return "", ErrNotEnoughData
+	}
+
+	str := string(bytes.Trim(data[0:size], "\x00"))
+	if !IsPrintable(str) {
+		return "", ErrNonPrintable
+	}
+
+	return str, nil
 }

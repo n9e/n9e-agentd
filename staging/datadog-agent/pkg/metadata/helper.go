@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -64,7 +64,7 @@ func addCollector(name string, intl time.Duration, sch *Scheduler) error {
 	if err := sch.AddCollector(name, intl); err != nil {
 		return fmt.Errorf("Unable to add '%s' metadata provider: %v", name, err)
 	}
-	klog.Infof("Scheduled metadata provider '%v' to run every %v", name, intl)
+	log.Infof("Scheduled metadata provider '%v' to run every %v", name, intl)
 	return nil
 }
 
@@ -76,10 +76,10 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 		}
 		err := sch.AddCollector(name, cInfo.interval)
 		if err != nil && cInfo.ignoreError == false {
-			klog.Warningf("Could not add metadata provider for %s: %v", name, err)
+			log.Warnf("Could not add metadata provider for %s: %v", name, err)
 			return err
 		}
-		klog.V(5).Infof("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval)
+		log.Debugf("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval)
 		return nil
 	}
 	return fmt.Errorf("Unknown default metadata provider '%s'", name)
@@ -90,26 +90,31 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 // collectors listed in 'additionalCollectors' if they're not listed in the
 // configuration.
 func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) error {
-	if !config.C.EnableMetadataCollection {
-		klog.Warningf("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
+	if !config.Datadog.GetBool("enable_metadata_collection") {
+		log.Warnf("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
 		return nil
 	}
 
 	collectorAdded := map[string]interface{}{}
-	C := config.C.MetadataProviders
-	klog.V(5).Infof("Adding configured providers to the metadata collector")
-	for _, c := range C {
-		if c.Interval == 0 {
-			klog.Infof("Interval of metadata provider '%v' set to 0, skipping provider", c.Name)
-			continue
-		}
+	var C []config.MetadataProviders
+	err := config.Datadog.UnmarshalKey("metadata_providers", &C)
+	if err == nil {
+		log.Debugf("Adding configured providers to the metadata collector")
+		for _, c := range C {
+			if c.Interval == 0 {
+				log.Infof("Interval of metadata provider '%v' set to 0, skipping provider", c.Name)
+				continue
+			}
 
-		intl := c.Interval * time.Second
-		if err := addCollector(c.Name, intl, sch); err != nil {
-			klog.Error(err.Error())
-		} else {
-			collectorAdded[c.Name] = nil
+			intl := c.Interval * time.Second
+			if err := addCollector(c.Name, intl, sch); err != nil {
+				log.Error(err.Error())
+			} else {
+				collectorAdded[c.Name] = nil
+			}
 		}
+	} else {
+		log.Errorf("Unable to parse metadata_providers config: %v", err)
 	}
 
 	// Adding default collectors if they were not listed in the configuration

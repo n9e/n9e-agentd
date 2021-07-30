@@ -12,39 +12,49 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 )
 
 func TestPathValidation(t *testing.T) {
-	model := &Model{}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "/var/log/*"}); err != nil {
+	mod := &Model{}
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "/var/log/*"}); err != nil {
 		t.Fatalf("shouldn't return an error: %s", err)
 	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "~/apache/httpd.conf"}); err == nil {
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "~/apache/httpd.conf"}); err == nil {
 		t.Fatal("should return an error")
 	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "../../../etc/apache/httpd.conf"}); err == nil {
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "../../../etc/apache/httpd.conf"}); err == nil {
 		t.Fatal("should return an error")
 	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "/etc/apache/./httpd.conf"}); err == nil {
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "/etc/apache/./httpd.conf"}); err == nil {
 		t.Fatal("should return an error")
 	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "*/"}); err == nil {
-		t.Fatal("should return an error")
-	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16"}); err == nil {
-		t.Fatal("should return an error")
-	}
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "f59226f52267c120c1accfe3d158aa2f201ff02f45692a1c574da29c07fb985ef59226f52267c120c1accfe3d158aa2f201ff02f45692a1c574da29c07fb985e"}); err == nil {
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "*/"}); err == nil {
 		t.Fatal("should return an error")
 	}
 
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: ".*", Type: eval.RegexpValueType}); err == nil {
+	var val string
+	for i := 0; i <= model.MaxPathDepth; i++ {
+		val += "a/"
+	}
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: val}); err == nil {
 		t.Fatal("should return an error")
 	}
 
-	if err := model.ValidateField("open.file.path", eval.FieldValue{Value: "/etc/*", Type: eval.PatternValueType}); err != nil {
+	val = ""
+	for i := 0; i <= model.MaxSegmentLength; i++ {
+		val += "a"
+	}
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: val}); err == nil {
+		t.Fatal("should return an error")
+	}
+
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: ".*", Type: eval.RegexpValueType}); err == nil {
+		t.Fatal("should return an error")
+	}
+
+	if err := mod.ValidateField("open.file.path", eval.FieldValue{Value: "/etc/*", Type: eval.PatternValueType}); err != nil {
 		t.Fatal("shouldn't return an error")
 	}
 }
@@ -80,17 +90,23 @@ func TestSetFieldValue(t *testing.T) {
 func TestExecArgsFlags(t *testing.T) {
 	e := Event{
 		Event: model.Event{
-			ProcessContext: model.ProcessContext{
+			Exec: model.ExecEvent{
 				Process: model.Process{
-					ArgsArray: []string{
-						"-abc", "--verbose", "test",
-						"-v=1", "--host=myhost",
-						"-9", "-", "--",
+					ArgsEntry: &model.ArgsEntry{
+						Values: []string{
+							"-abc", "--verbose", "test",
+							"-v=1", "--host=myhost",
+							"-9", "-", "--",
+						},
 					},
 				},
 			},
-			Exec: model.ExecEvent{},
 		},
+	}
+
+	resolver, _ := NewProcessResolver(nil, nil, nil, NewProcessResolverOpts(10000))
+	e.resolvers = &Resolvers{
+		ProcessResolver: resolver,
 	}
 
 	flags := e.ResolveExecArgsFlags(&e.Exec)
@@ -133,21 +149,27 @@ func TestExecArgsFlags(t *testing.T) {
 func TestExecArgsOptions(t *testing.T) {
 	e := Event{
 		Event: model.Event{
-			ProcessContext: model.ProcessContext{
+			Exec: model.ExecEvent{
 				Process: model.Process{
-					ArgsArray: []string{
-						"--config", "/etc/myfile", "--host=myhost", "--verbose",
-						"-c", "/etc/myfile", "-h=myhost", "-v",
-						"--", "---", "-9",
+					ArgsEntry: &model.ArgsEntry{
+						Values: []string{
+							"--config", "/etc/myfile", "--host=myhost", "--verbose",
+							"-c", "/etc/myfile", "-e", "", "-h=myhost", "-v",
+							"--", "---", "-9",
+						},
 					},
 				},
 			},
-			Exec: model.ExecEvent{},
 		},
 	}
 
+	resolver, _ := NewProcessResolver(nil, nil, nil, NewProcessResolverOpts(10000))
+	e.resolvers = &Resolvers{
+		ProcessResolver: resolver,
+	}
+
 	options := e.ResolveExecArgsOptions(&e.Exec)
-	sort.Sort(sort.StringSlice(options))
+	sort.Strings(options)
 
 	hasOption := func(options []string, option string) bool {
 		i := sort.SearchStrings(options, option)
@@ -162,6 +184,10 @@ func TestExecArgsOptions(t *testing.T) {
 		t.Error("option 'c=/etc/myfile' not found")
 	}
 
+	if !hasOption(options, "e=") {
+		t.Error("option 'e=' not found")
+	}
+
 	if !hasOption(options, "host=myhost") {
 		t.Error("option 'host=myhost' not found")
 	}
@@ -174,7 +200,7 @@ func TestExecArgsOptions(t *testing.T) {
 		t.Error("option 'verbose=' found")
 	}
 
-	if len(options) != 4 {
-		t.Errorf("expected 4 options, got %d", len(options))
+	if len(options) != 5 {
+		t.Errorf("expected 5 options, got %d", len(options))
 	}
 }

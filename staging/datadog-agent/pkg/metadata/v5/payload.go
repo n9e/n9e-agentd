@@ -11,8 +11,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/gohai"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/metadata/gohai"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 )
 
 // Payload handles the JSON unmarshalling of the metadata payload

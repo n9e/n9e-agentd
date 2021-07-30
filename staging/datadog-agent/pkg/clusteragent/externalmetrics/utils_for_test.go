@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/externalmetrics/model"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/externalmetrics/model"
 	"github.com/stretchr/testify/assert"
 
 	"k8s.io/apimachinery/pkg/util/diff"

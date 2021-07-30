@@ -9,40 +9,41 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
 	// OrchestratorScopeEntityID defines the orchestrator scope entity ID
-	OrchestratorScopeEntityID = "internal:orchestrator-scope-entity-id"
+	OrchestratorScopeEntityID = "internal://orchestrator-scope-entity-id"
 
 	autodiscoveryLabelTagsKey = "com.datadoghq.ad.tags"
 )
 
 // retrieveMappingFromConfig gets a stringmapstring config key and
 // lowercases all map keys to make envvar and yaml sources consistent
-//func retrieveMappingFromConfig(configKey string) map[string]string {
-//	labelsList := config.Datadog.GetStringMapString(configKey)
-//	for label, value := range labelsList {
-//		delete(labelsList, label)
-//		labelsList[strings.ToLower(label)] = value
-//	}
-//
-//	return labelsList
-//}
+func retrieveMappingFromConfig(configKey string) map[string]string {
+	labelsList := config.Datadog.GetStringMapString(configKey)
+	for label, value := range labelsList {
+		delete(labelsList, label)
+		labelsList[strings.ToLower(label)] = value
+	}
+
+	return labelsList
+}
 
 func parseContainerADTagsLabels(tags *utils.TagList, labelValue string) {
 	tagNames := []string{}
 	err := json.Unmarshal([]byte(labelValue), &tagNames)
 	if err != nil {
-		klog.V(5).Infof("Cannot unmarshal AD tags: %s", err)
+		log.Debugf("Cannot unmarshal AD tags: %s", err)
 	}
 	for _, tag := range tagNames {
 		tagParts := strings.Split(tag, ":")
 		// skip if tag is not in expected k:v format
 		if len(tagParts) != 2 {
-			klog.V(5).Infof("Tag '%s' is not in k:v format", tag)
+			log.Debugf("Tag '%s' is not in k:v format", tag)
 			continue
 		}
 		tags.AddHigh(tagParts[0], tagParts[1])

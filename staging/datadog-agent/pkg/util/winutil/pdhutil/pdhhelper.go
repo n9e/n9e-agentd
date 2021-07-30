@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"unsafe"
 
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -24,6 +24,7 @@ var (
 	procPdhMakeCounterPath          = modPdhDll.NewProc("PdhMakeCounterPathW")
 	procPdhGetFormattedCounterValue = modPdhDll.NewProc("PdhGetFormattedCounterValue")
 	procPdhAddCounterW              = modPdhDll.NewProc("PdhAddCounterW")
+	procPdhAddEnglishCounterW       = modPdhDll.NewProc("PdhAddEnglishCounterW")
 	procPdhCollectQueryData         = modPdhDll.NewProc("PdhCollectQueryData")
 	procPdhCloseQuery               = modPdhDll.NewProc("PdhCloseQuery")
 	procPdhOpenQuery                = modPdhDll.NewProc("PdhOpenQuery")
@@ -51,8 +52,8 @@ func pdhLookupPerfNameByIndex(ndx int) (string, error) {
 		uintptr(unsafe.Pointer(&len)))
 
 	if r != PDH_MORE_DATA {
-		klog.Errorf("Failed to look up Windows performance counter (looking for index %d)", ndx)
-		klog.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		log.Errorf("Failed to look up Windows performance counter (looking for index %d)", ndx)
+		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
 		return name, fmt.Errorf("Failed to get buffer size %v", r)
 	}
 	buf := make([]uint16, len)
@@ -73,7 +74,7 @@ func pdhEnumObjectItems(className string) (counters []string, instances []string
 	var instancelen uint32
 
 	if counterlen != 0 || instancelen != 0 {
-		klog.Errorf("invalid parameter %v %v", counterlen, instancelen)
+		log.Errorf("invalid parameter %v %v", counterlen, instancelen)
 		counterlen = 0
 		instancelen = 0
 	}
@@ -88,8 +89,8 @@ func pdhEnumObjectItems(className string) (counters []string, instances []string
 		uintptr(PERF_DETAIL_WIZARD),
 		uintptr(0))
 	if r != PDH_MORE_DATA {
-		klog.Errorf("Failed to enumerate windows performance counters (%v) (class %s)", r, className)
-		klog.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		log.Errorf("Failed to enumerate windows performance counters (%v) (class %s)", r, className)
+		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
 		return nil, nil, fmt.Errorf("Failed to get buffer size %v", r)
 	}
 	counterbuf := make([]uint16, counterlen)
@@ -165,8 +166,8 @@ func pdhMakeCounterPath(machine string, object string, instance string, counter 
 		uintptr(unsafe.Pointer(&len)),
 		uintptr(0))
 	if r != PDH_MORE_DATA {
-		klog.Errorf("Failed to make Windows performance counter (%s %s %s %s)", machine, object, instance, counter)
-		klog.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		log.Errorf("Failed to make Windows performance counter (%s %s %s %s)", machine, object, instance, counter)
+		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
 		err = fmt.Errorf("Failed to get buffer size %v", r)
 		return
 	}
@@ -247,6 +248,11 @@ func makeCounterSetIndexes() error {
 		} else if regerr != nil {
 			return regerr
 		}
+		// must set the length of the slice to the actual amount of data
+		// sz is in bytes, but it's a slice of uint16s, so divide the returned
+		// buffer size by two.
+
+		counterlist = counterlist[:(sz / 2)]
 		break
 	}
 	clist := winutil.ConvertWindowsStringList(counterlist)

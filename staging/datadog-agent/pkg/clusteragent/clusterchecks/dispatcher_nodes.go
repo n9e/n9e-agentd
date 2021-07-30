@@ -11,12 +11,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const defaultBusynessValue int = -1
@@ -119,11 +118,11 @@ func (d *dispatcher) expireNodes() {
 		if node.heartbeat < cutoffTimestamp {
 			if name != "" {
 				// Don't report on the dummy "" host for unscheduled configs
-				klog.Infof("Expiring out node %s, last status report %d seconds ago", name, timestampNow()-node.heartbeat)
+				log.Infof("Expiring out node %s, last status report %d seconds ago", name, timestampNow()-node.heartbeat)
 			}
 			for digest, config := range node.digestToConfig {
 				delete(d.store.digestToNode, digest)
-				klog.V(5).Infof("Adding %s:%s as a dangling Cluster Check config", config.Name, digest)
+				log.Debugf("Adding %s:%s as a dangling Cluster Check config", config.Name, digest)
 				d.store.danglingConfigs[digest] = config
 				danglingConfigs.Inc(le.JoinLeaderValue)
 			}
@@ -139,7 +138,7 @@ func (d *dispatcher) expireNodes() {
 	}
 
 	if initialNodeCount != 0 && len(d.store.nodes) == 0 {
-		klog.Warning("No nodes reporting, cluster checks will not run")
+		log.Warn("No nodes reporting, cluster checks will not run")
 	}
 }
 
@@ -147,7 +146,7 @@ func (d *dispatcher) expireNodes() {
 // Cluster Level Check runners and updates the stats cache
 func (d *dispatcher) updateRunnersStats() {
 	if d.clcRunnersClient == nil {
-		klog.V(5).Info("Cluster Level Check runner client was not correctly initialised")
+		log.Debug("Cluster Level Check runner client was not correctly initialised")
 		return
 	}
 
@@ -165,7 +164,7 @@ func (d *dispatcher) updateRunnersStats() {
 
 		stats, err := d.clcRunnersClient.GetRunnerStats(ip)
 		if err != nil {
-			klog.V(5).Infof("Cannot get CLC Runner stats with IP %s on node %s: %v", node.clientIP, name, err)
+			log.Debugf("Cannot get CLC Runner stats with IP %s on node %s: %v", node.clientIP, name, err)
 			statsCollectionFails.Inc(name, le.JoinLeaderValue)
 			continue
 		}
@@ -176,15 +175,15 @@ func (d *dispatcher) updateRunnersStats() {
 			// so they can be included in calculating node Agent busyness and excluded from rebalancing decisions.
 			if _, found := d.store.idToDigest[check.ID(id)]; found {
 				// Cluster check detected (exists in the Cluster Agent checks store)
-				klog.V(6).Infof("Check %s running on node %s is a cluster check", id, node.name)
+				log.Tracef("Check %s running on node %s is a cluster check", id, node.name)
 				checkStats.IsClusterCheck = true
 				stats[id] = checkStats
 			}
 		}
 		node.clcRunnerStats = stats
-		klog.V(6).Infof("Updated CLC Runner stats on node: %s, node IP: %s, stats: %v", name, node.clientIP, stats)
+		log.Tracef("Updated CLC Runner stats on node: %s, node IP: %s, stats: %v", name, node.clientIP, stats)
 		node.busyness = calculateBusyness(stats)
-		klog.V(5).Infof("Updated busyness on node: %s, node IP: %s, busyness value: %d", name, node.clientIP, node.busyness)
+		log.Debugf("Updated busyness on node: %s, node IP: %s, busyness value: %d", name, node.clientIP, node.busyness)
 		busyness.Set(float64(node.busyness), node.name, le.JoinLeaderValue)
 		node.Unlock()
 	}

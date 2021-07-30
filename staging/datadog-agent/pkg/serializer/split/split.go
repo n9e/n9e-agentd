@@ -8,11 +8,12 @@ package split
 import (
 	"expvar"
 
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
+
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // the backend accepts payloads up to 3MB, but being conservative is okay
@@ -77,7 +78,7 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 	}
 	// If the payload's size is fine, just return it
 	if !tooBig {
-		klog.V(5).Info("The payload was not too big, returning the full payload")
+		log.Debug("The payload was not too big, returning the full payload")
 		splitterNotTooBig.Add(1)
 		tlmSplitterNotTooBig.Inc()
 		smallEnoughPayloads = append(smallEnoughPayloads, &compressedPayload)
@@ -108,11 +109,11 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 			// This is the same function used in dd-agent
 			compressionRatio := float64(payloadSize) / float64(compressedSize)
 			numChunks := compressedSize/maxPayloadSizeCompressed + 1 + int(compressionRatio/2)
-			klog.V(5).Infof("split the payload into into %d chunks", numChunks)
+			log.Debugf("split the payload into into %d chunks", numChunks)
 			chunks, err := toSplit.SplitPayload(numChunks)
-			klog.V(5).Infof("payload was split into %d chunks", len(chunks))
+			log.Debugf("payload was split into %d chunks", len(chunks))
 			if err != nil {
-				klog.Warningf("Some payloads could not be split, dropping them")
+				log.Warnf("Some payloads could not be split, dropping them")
 				splitterPayloadDrops.Add(1)
 				tlmSplitterPayloadDrops.Inc()
 				return smallEnoughPayloads, err
@@ -122,30 +123,30 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 				// serialize the payload
 				tooBigChunk, compressedPayload, _, err := CheckSizeAndSerialize(chunk, compress, mType)
 				if err != nil {
-					klog.V(5).Infof("Error serializing a chunk: %s", err)
+					log.Debugf("Error serializing a chunk: %s", err)
 					continue
 				}
 				if !tooBigChunk {
 					// if the payload is small enough, return it straight away
 					smallEnoughPayloads = append(smallEnoughPayloads, &compressedPayload)
-					klog.V(5).Infof("chunk was small enough: %v, smallEnoughPayloads are of length: %v", len(compressedPayload), len(smallEnoughPayloads))
+					log.Debugf("chunk was small enough: %v, smallEnoughPayloads are of length: %v", len(compressedPayload), len(smallEnoughPayloads))
 				} else {
 					// if it is not small enough, append it to the list of payloads
 					marshallers = append(marshallers, chunk)
-					klog.V(5).Infof("chunk was not small enough: %v, marshallers are of length: %v", len(compressedPayload), len(marshallers))
+					log.Debugf("chunk was not small enough: %v, marshallers are of length: %v", len(compressedPayload), len(marshallers))
 				}
 			}
 		}
 		if len(marshallers) == 0 {
-			klog.V(5).Info("marshallers was empty, breaking out of the loop")
+			log.Debug("marshallers was empty, breaking out of the loop")
 			tooBig = false
 		} else {
-			klog.V(5).Info("marshallers was not empty, running around the loop again")
+			log.Debug("marshallers was not empty, running around the loop again")
 			loops++
 		}
 	}
 	if len(marshallers) != 0 {
-		klog.Warningf("Some payloads could not be split, dropping them")
+		log.Warnf("Some payloads could not be split, dropping them")
 		splitterPayloadDrops.Add(1)
 		tlmSplitterPayloadDrops.Inc()
 	}

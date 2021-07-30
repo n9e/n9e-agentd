@@ -14,10 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // DefaultRegistryFilename is the default registry filename
@@ -91,7 +92,7 @@ func (a *RegistryAuditor) Stop() {
 	a.closeChannels()
 	a.cleanupRegistry()
 	if err := a.flushRegistry(); err != nil {
-		klog.Warning(err)
+		log.Warn(err)
 	}
 }
 
@@ -160,12 +161,10 @@ func (a *RegistryAuditor) run() {
 		select {
 		case <-a.health.C:
 		case msg, isOpen := <-a.inputChan:
-
 			if !isOpen {
 				// inputChan has been closed, no need to update the registry anymore
 				return
 			}
-			//klog.V(11).Infof("auditor.outputChan %p -> %s", a.inputChan, string(msg.Content))
 			// update the registry with new entry
 			a.updateRegistry(msg.Origin.Identifier, msg.Origin.Offset, msg.Origin.LogSource.Config.TailingMode)
 		case <-cleanUpTicker.C:
@@ -177,10 +176,10 @@ func (a *RegistryAuditor) run() {
 			if err != nil {
 				if os.IsPermission(err) || os.IsNotExist(err) {
 					fileError.Do(func() {
-						klog.Warning(err)
+						log.Warn(err)
 					})
 				} else {
-					klog.Warning(err)
+					log.Warn(err)
 				}
 			}
 		}
@@ -192,15 +191,15 @@ func (a *RegistryAuditor) recoverRegistry() map[string]*RegistryEntry {
 	mr, err := ioutil.ReadFile(a.registryPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			klog.V(5).Infof("Could not find state file at %q, will start with default offsets", a.registryPath)
+			log.Debugf("Could not find state file at %q, will start with default offsets", a.registryPath)
 		} else {
-			klog.Error(err)
+			log.Error(err)
 		}
 		return make(map[string]*RegistryEntry)
 	}
 	r, err := a.unmarshalRegistry(mr)
 	if err != nil {
-		klog.Error(err)
+		log.Error(err)
 		return make(map[string]*RegistryEntry)
 	}
 	return r

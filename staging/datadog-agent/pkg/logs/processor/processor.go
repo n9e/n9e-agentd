@@ -9,12 +9,12 @@ import (
 	"context"
 	"sync"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/metrics"
 )
 
 // A Processor updates messages from an inputChan and pushes
@@ -22,7 +22,7 @@ import (
 type Processor struct {
 	inputChan                 chan *message.Message
 	outputChan                chan *message.Message
-	processingRules           []*types.ProcessingRule
+	processingRules           []*config.ProcessingRule
 	encoder                   Encoder
 	done                      chan struct{}
 	diagnosticMessageReceiver diagnostic.MessageReceiver
@@ -30,8 +30,7 @@ type Processor struct {
 }
 
 // New returns an initialized Processor.
-func New(inputChan, outputChan chan *message.Message, processingRules []*types.ProcessingRule, encoder Encoder, diagnosticMessageReceiver diagnostic.MessageReceiver) *Processor {
-	//klog.V(6).Infof("process inputChan %p outputChan %p", inputChan, outputChan)
+func New(inputChan, outputChan chan *message.Message, processingRules []*config.ProcessingRule, encoder Encoder, diagnosticMessageReceiver diagnostic.MessageReceiver) *Processor {
 	return &Processor{
 		inputChan:                 inputChan,
 		outputChan:                outputChan,
@@ -56,7 +55,6 @@ func (p *Processor) Stop() {
 
 // Flush processes synchronously the messages that this processor has to process.
 func (p *Processor) Flush(ctx context.Context) {
-	klog.V(6).Infof("---- entering flush")
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for {
@@ -68,7 +66,6 @@ func (p *Processor) Flush(ctx context.Context) {
 				return
 			}
 			msg := <-p.inputChan
-			//klog.V(11).Infof("processor.inputChan %p -> %s", p.inputChan, string(msg.Content))
 			p.processMessage(msg)
 		}
 	}
@@ -80,7 +77,6 @@ func (p *Processor) run() {
 		p.done <- struct{}{}
 	}()
 	for msg := range p.inputChan {
-		//klog.V(11).Infof("processor.inputChan %p -> %s", p.inputChan, string(msg.Content))
 		p.processMessage(msg)
 		p.mu.Lock() // block here if we're trying to flush synchronously
 		p.mu.Unlock()
@@ -88,7 +84,6 @@ func (p *Processor) run() {
 }
 
 func (p *Processor) processMessage(msg *message.Message) {
-	klog.V(6).Infof("entering processMessage")
 	metrics.LogsDecoded.Add(1)
 	metrics.TlmLogsDecoded.Inc()
 	if shouldProcess, redactedMsg := p.applyRedactingRules(msg); shouldProcess {
@@ -100,12 +95,11 @@ func (p *Processor) processMessage(msg *message.Message) {
 		// Encode the message to its final format
 		content, err := p.encoder.Encode(msg, redactedMsg)
 		if err != nil {
-			klog.Error("unable to encode msg ", err)
+			log.Error("unable to encode msg ", err)
 			return
 		}
 		msg.Content = content
 		p.outputChan <- msg
-		//klog.V(11).Infof("processor.outputChan %p <- %s", p.outputChan, string(msg.Content))
 	}
 }
 
@@ -116,15 +110,15 @@ func (p *Processor) applyRedactingRules(msg *message.Message) (bool, []byte) {
 	rules := append(p.processingRules, msg.Origin.LogSource.Config.ProcessingRules...)
 	for _, rule := range rules {
 		switch rule.Type {
-		case types.ExcludeAtMatch:
+		case config.ExcludeAtMatch:
 			if rule.Regex.Match(content) {
 				return false, nil
 			}
-		case types.IncludeAtMatch:
+		case config.IncludeAtMatch:
 			if !rule.Regex.Match(content) {
 				return false, nil
 			}
-		case types.MaskSequences:
+		case config.MaskSequences:
 			content = rule.Regex.ReplaceAll(content, rule.Placeholder)
 		}
 	}

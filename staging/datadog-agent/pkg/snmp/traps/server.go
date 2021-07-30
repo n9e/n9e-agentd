@@ -9,8 +9,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/soniah/gosnmp"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/gosnmp/gosnmp"
 )
 
 // SnmpPacket is the type of packets yielded by server listeners.
@@ -36,8 +36,8 @@ var (
 )
 
 // StartServer starts the global trap server.
-func StartServer(cf *Config) error {
-	server, err := NewTrapServer(cf)
+func StartServer() error {
+	server, err := NewTrapServer()
 	serverInstance = server
 	startError = err
 	return err
@@ -63,17 +63,22 @@ func GetPacketsChannel() PacketsChannel {
 }
 
 // NewTrapServer configures and returns a running SNMP traps server.
-func NewTrapServer(cf *Config) (*TrapServer, error) {
+func NewTrapServer() (*TrapServer, error) {
+	config, err := ReadConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	packets := make(PacketsChannel, packetsChanSize)
 
-	listener, err := startSNMPv2Listener(cf, packets)
+	listener, err := startSNMPv2Listener(config, packets)
 	if err != nil {
 		return nil, err
 	}
 
 	server := &TrapServer{
 		listener: listener,
-		config:   cf,
+		config:   config,
 		packets:  packets,
 	}
 
@@ -86,11 +91,11 @@ func startSNMPv2Listener(c *Config, packets PacketsChannel) (*gosnmp.TrapListene
 
 	listener.OnNewTrap = func(p *gosnmp.SnmpPacket, u *net.UDPAddr) {
 		if err := validateCredentials(p, c); err != nil {
-			klog.Warningf("Invalid credentials from %s on listener %s, dropping packet", u.String(), c.Addr())
+			log.Warnf("Invalid credentials from %s on listener %s, dropping packet", u.String(), c.Addr())
 			trapsPacketsAuthErrors.Add(1)
 			return
 		}
-		klog.V(5).Infof("Packet received from %s on listener %s", u.String(), c.Addr())
+		log.Debugf("Packet received from %s on listener %s", u.String(), c.Addr())
 		trapsPackets.Add(1)
 		packets <- &SnmpPacket{Content: p, Addr: u}
 	}
@@ -99,7 +104,7 @@ func startSNMPv2Listener(c *Config, packets PacketsChannel) (*gosnmp.TrapListene
 
 	// Start actually listening in the background.
 	go func() {
-		klog.Infof("Start listening for traps on %s", c.Addr())
+		log.Infof("Start listening for traps on %s", c.Addr())
 		err := listener.Listen(c.Addr())
 		if err != nil {
 			errors <- err
@@ -108,7 +113,7 @@ func startSNMPv2Listener(c *Config, packets PacketsChannel) (*gosnmp.TrapListene
 
 	select {
 	// Wait for listener to be started and listening to traps.
-	// See: https://godoc.org/github.com/soniah/gosnmp#TrapListener.Listening
+	// See: https://godoc.org/github.com/gosnmp/gosnmp#TrapListener.Listening
 	case <-listener.Listening():
 		break
 	// If the listener failed to start (eg because it couldn't bind to a socket),
@@ -126,7 +131,7 @@ func (s *TrapServer) Stop() {
 	stopped := make(chan interface{})
 
 	go func() {
-		klog.Infof("Stop listening on %s", s.config.Addr())
+		log.Infof("Stop listening on %s", s.config.Addr())
 		s.listener.Close()
 		close(stopped)
 	}()
@@ -134,7 +139,7 @@ func (s *TrapServer) Stop() {
 	select {
 	case <-stopped:
 	case <-time.After(time.Duration(s.config.StopTimeout) * time.Second):
-		klog.Errorf("Stopping server. Timeout after %d seconds", s.config.StopTimeout)
+		log.Errorf("Stopping server. Timeout after %d seconds", s.config.StopTimeout)
 	}
 
 	// Let consumers know that we will not be sending any more packets.

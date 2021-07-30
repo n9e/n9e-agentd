@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/quantile/summary"
+	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 
 	"github.com/stretchr/testify/require"
 )

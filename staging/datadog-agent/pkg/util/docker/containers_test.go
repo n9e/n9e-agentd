@@ -14,7 +14,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
 )
 
 func TestIsMissingIP(t *testing.T) {

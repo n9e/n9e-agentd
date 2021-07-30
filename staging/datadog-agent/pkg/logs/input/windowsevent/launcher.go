@@ -6,11 +6,11 @@
 package windowsevent
 
 import (
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/restart"
 )
 
 // Launcher is in charge of starting and stopping windows event logs tailers
@@ -35,9 +35,9 @@ func NewLauncher(sources *config.LogSources, pipelineProvider pipeline.Provider)
 func (l *Launcher) Start() {
 	availableChannels, err := EnumerateChannels()
 	if err != nil {
-		klog.V(5).Info("Could not list windows event log channels: ", err)
+		log.Debug("Could not list windows event log channels: ", err)
 	} else {
-		klog.V(5).Info("Found available windows event log channels: ", availableChannels)
+		log.Debug("Found available windows event log channels: ", availableChannels)
 	}
 	go l.run()
 }
@@ -54,7 +54,7 @@ func (l *Launcher) run() {
 			}
 			tailer, err := l.setupTailer(source)
 			if err != nil {
-				klog.Info("Could not set up windows event log tailer: ", err)
+				log.Info("Could not set up windows event log tailer: ", err)
 			} else {
 				l.tailers[identifier] = tailer
 			}

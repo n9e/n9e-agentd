@@ -6,12 +6,12 @@
 package providers
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // ContainerImpl without implementation
-// Implementations should could Register() in their init()
+// Implementations should call Register() in their init()
 var containerImpl containers.ContainerImplementation
 
 // ContainerImpl returns the ContainerImplementation
@@ -28,7 +28,7 @@ func Register(impl containers.ContainerImplementation) {
 	if containerImpl == nil {
 		containerImpl = impl
 	} else {
-		klog.Warning("Trying to set multiple ContainerImplementation")
+		log.Critical("Trying to set multiple ContainerImplementation")
 	}
 }
 

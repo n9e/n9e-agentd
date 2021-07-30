@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ type MockCollector struct {
 	SendCalledC chan bool
 }
 
-func (c MockCollector) Send(s *serializer.Serializer) error {
+func (c MockCollector) Send(ctx context.Context, s *serializer.Serializer) error {
 	c.SendCalledC <- true
 	return nil
 }
@@ -28,7 +28,7 @@ type MockCollectorWithInit struct {
 	InitCalledC chan bool
 }
 
-func (c MockCollectorWithInit) Send(s *serializer.Serializer) error {
+func (c MockCollectorWithInit) Send(ctx context.Context, s *serializer.Serializer) error {
 	return nil
 }
 

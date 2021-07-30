@@ -5,7 +5,7 @@ package tracer
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
+	"github.com/DataDog/datadog-agent/pkg/util/kernel"
 	"github.com/stretchr/testify/assert"
 )
 

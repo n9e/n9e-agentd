@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -24,14 +24,14 @@ var commandReportedFields = []string{
 	compliance.CommandFieldExitCode,
 }
 
-func resolveCommand(ctx context.Context, _ env.Env, ruleID string, res compliance.Resource) (interface{}, error) {
+func resolveCommand(ctx context.Context, _ env.Env, ruleID string, res compliance.Resource) (resolved, error) {
 	if res.Command == nil {
 		return nil, fmt.Errorf("%s: expecting command resource in command check", ruleID)
 	}
 
 	command := res.Command
 
-	klog.V(5).Infof("%s: running command check: %v", ruleID, command)
+	log.Debugf("%s: running command check: %v", ruleID, command)
 
 	if command.BinaryCmd == nil && command.ShellCmd == nil {
 		return nil, fmt.Errorf("unable to execute commandCheck - need a binary or a shell command")
@@ -58,10 +58,11 @@ func resolveCommand(ctx context.Context, _ env.Env, ruleID string, res complianc
 		return nil, fmt.Errorf("command '%v' execution failed, error: %v", command, err)
 	}
 
-	return &eval.Instance{
-		Vars: eval.VarMap{
+	return newResolvedInstance(eval.NewInstance(
+		eval.VarMap{
 			compliance.CommandFieldExitCode: exitCode,
 			compliance.CommandFieldStdout:   string(stdout),
-		},
-	}, nil
+		}, nil),
+		execCommand.Name, "command",
+	), nil
 }

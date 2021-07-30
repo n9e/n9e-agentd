@@ -17,7 +17,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -66,7 +67,7 @@ func evtNextChannel(h evtEnumHandle) (ch string, err error) {
 		uintptr(0),                        //no buffer for now, just getting necessary size
 		uintptr(unsafe.Pointer(&bufUsed))) // filled in with necessary buffer size
 	if err != error(windows.ERROR_INSUFFICIENT_BUFFER) {
-		klog.Warningf("Next: %v %v", ret, err)
+		log.Warnf("Next: %v %v", ret, err)
 		return
 	}
 	bufSize = bufUsed
@@ -76,11 +77,14 @@ func evtNextChannel(h evtEnumHandle) (ch string, err error) {
 		uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(unsafe.Pointer(&bufUsed))) // filled in with necessary buffer size
 	if ret == 0 {
-		klog.Warningf("Next: %v %v", ret, err)
+		log.Warnf("Next: %v %v", ret, err)
 		return
 	}
 	err = nil
 	// Call will set error anyway.  Clear it so we don't return an error
-	ch = ConvertWindowsString(buf)
+
+	// make sure size of buffer is set
+	buf = buf[:(bufUsed * 2)]
+	ch = winutil.ConvertWindowsString(buf)
 	return
 }

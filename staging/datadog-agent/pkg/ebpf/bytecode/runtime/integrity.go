@@ -70,7 +70,7 @@ func genIntegrity(inputFile, outputFile, pkg string) error {
 
 	if filepath.Dir(outputFile) != runtimeDir {
 		packagePrefix = "runtime."
-		imports = "import \"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode/runtime\"\n"
+		imports = "import \"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode/runtime\"\n"
 	}
 
 	if err := assetTemplate.Execute(f, struct {

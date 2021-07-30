@@ -8,12 +8,15 @@ package traps
 import (
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/soniah/gosnmp"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/gosnmp/gosnmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 // List of variables for a NetSNMP::ExampleHeartBeatNotification trap message.
@@ -49,19 +52,20 @@ func GetPort(t *testing.T) uint16 {
 	return parsePort(t, conn.LocalAddr().String())
 }
 
-//func Configure(t *testing.T, trapConfig Config) {
-//	datadogYaml := map[string]interface{}{
-//		"snmp_traps_enabled": true,
-//		"snmp_traps_config":  trapConfig,
-//	}
-//
-//	config.Datadog.SetConfigType("yaml")
-//	out, err := yaml.Marshal(datadogYaml)
-//	require.NoError(t, err)
-//
-//	err = config.Datadog.ReadConfig(strings.NewReader(string(out)))
-//	require.NoError(t, err)
-//}
+// Configure sets Datadog Agent configuration from a config object.
+func Configure(t *testing.T, trapConfig Config) {
+	datadogYaml := map[string]interface{}{
+		"snmp_traps_enabled": true,
+		"snmp_traps_config":  trapConfig,
+	}
+
+	config.Datadog.SetConfigType("yaml")
+	out, err := yaml.Marshal(datadogYaml)
+	require.NoError(t, err)
+
+	err = config.Datadog.ReadConfig(strings.NewReader(string(out)))
+	require.NoError(t, err)
+}
 
 func sendTestV2Trap(t *testing.T, trapConfig Config, community string) *gosnmp.GoSNMP {
 	params := trapConfig.BuildV2Params()

@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -116,7 +116,7 @@ func (c *CircuitBreaker) update(now time.Time) {
 
 	// Update circuit breaker status accordingly
 	if int64(newEventRate) > c.maxEventsPerSec {
-		klog.Warningf(
+		log.Warnf(
 			"exceeded maximum number of netlink messages per second. expected=%d actual=%d",
 			c.maxEventsPerSec,
 			int(newEventRate),

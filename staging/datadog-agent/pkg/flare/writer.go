@@ -12,8 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 //RedactingWriter is a writer that will redact content before writing to target
@@ -54,7 +53,7 @@ func (f *RedactingWriter) WriteFromFile(filePath string) (int, error) {
 
 	if _, err := os.Stat(filePath); err != nil {
 		if os.IsNotExist(err) {
-			klog.Warningf("the specified path: %s does not exist", filePath)
+			log.Warnf("the specified path: %s does not exist", filePath)
 		}
 
 		return 0, err

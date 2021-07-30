@@ -8,22 +8,23 @@
 package hostinfo
 
 import (
+	"context"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes"
 )
 
 // GetTags gets the tags from the kubernetes apiserver
-func GetTags() ([]string, error) {
+func GetTags(ctx context.Context) ([]string, error) {
 	labelsToTags := getLabelsToTags()
 	if len(labelsToTags) == 0 {
 		// Nothing to extract
 		return nil, nil
 	}
 
-	nodeLabels, err := GetNodeLabels()
+	nodeLabels, err := GetNodeLabels(ctx)
 	if err != nil {
 		return nil, err
 	}

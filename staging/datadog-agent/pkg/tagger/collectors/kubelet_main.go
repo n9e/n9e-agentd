@@ -8,14 +8,15 @@
 package collectors
 
 import (
+	"context"
 	"errors"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	agenterr "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/errors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	agenterr "github.com/DataDog/datadog-agent/pkg/errors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/gobwas/glob"
 )
@@ -40,7 +41,7 @@ type KubeletCollector struct {
 }
 
 // Detect tries to connect to the kubelet
-func (c *KubeletCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) {
+func (c *KubeletCollector) Detect(ctx context.Context, out chan<- []*TagInfo) (CollectionMode, error) {
 	if !config.IsKubernetes() {
 		return NoCollection, errors.New("the Agent is not running in Kubernetes")
 	}
@@ -52,8 +53,8 @@ func (c *KubeletCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error)
 	c.init(
 		watcher,
 		out,
-		config.C.KubernetesPodLabelsAsTags,
-		config.C.KubernetesPodAnnotationsAsTags,
+		config.Datadog.GetStringMapString("kubernetes_pod_labels_as_tags"),
+		config.Datadog.GetStringMapString("kubernetes_pod_annotations_as_tags"),
 	)
 
 	return PullCollection, nil
@@ -71,9 +72,9 @@ func (c *KubeletCollector) init(watcher *kubelet.PodWatcher, out chan<- []*TagIn
 
 // Pull triggers a podlist refresh and sends new info. It also triggers
 // container deletion computation every 'expireFreq'
-func (c *KubeletCollector) Pull() error {
+func (c *KubeletCollector) Pull(ctx context.Context) error {
 	// Compute new/updated pods
-	updatedPods, err := c.watcher.PullChanges()
+	updatedPods, err := c.watcher.PullChanges(ctx)
 	if err != nil {
 		return err
 	}
@@ -105,8 +106,8 @@ func (c *KubeletCollector) Pull() error {
 
 // Fetch fetches tags for a given entity by iterating on the whole podlist
 // TODO: optimize if called too often on production
-func (c *KubeletCollector) Fetch(entity string) ([]string, []string, []string, error) {
-	pod, err := c.watcher.GetPodForEntityID(entity)
+func (c *KubeletCollector) Fetch(ctx context.Context, entity string) ([]string, []string, []string, error) {
+	pod, err := c.watcher.GetPodForEntityID(ctx, entity)
 	if err != nil {
 		return []string{}, []string{}, []string{}, err
 	}
@@ -133,7 +134,7 @@ func (c *KubeletCollector) parseExpires(idList []string) ([]*TagInfo, error) {
 	for _, id := range idList {
 		entityID, err := kubelet.KubeIDToTaggerEntityID(id)
 		if err != nil {
-			klog.Warningf("error extracting tagger entity id from %q: %s", id, err)
+			log.Warnf("error extracting tagger entity id from %q: %s", id, err)
 			continue
 		}
 

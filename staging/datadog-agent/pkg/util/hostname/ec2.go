@@ -5,7 +5,7 @@
 
 package hostname
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ec2"
+import "github.com/DataDog/datadog-agent/pkg/util/ec2"
 
 func init() {
 	RegisterHostnameProvider("ec2", ec2.HostnameProvider)

@@ -185,6 +185,7 @@
 
 enum event_type
 {
+    EVENT_ANY = 0,
     EVENT_FIRST_DISCARDER = 1,
     EVENT_OPEN = EVENT_FIRST_DISCARDER,
     EVENT_MKDIR,
@@ -210,29 +211,8 @@ enum event_type
     EVENT_CAPSET,
     EVENT_ARGS_ENVS,
     EVENT_MOUNT_RELEASED,
+    EVENT_SELINUX,
     EVENT_MAX, // has to be the last one
-};
-
-enum syscall_type
-{
-    SYSCALL_OPEN        = 1 << EVENT_OPEN,
-    SYSCALL_MKDIR       = 1 << EVENT_MKDIR,
-    SYSCALL_LINK        = 1 << EVENT_LINK,
-    SYSCALL_RENAME      = 1 << EVENT_RENAME,
-    SYSCALL_UNLINK      = 1 << EVENT_UNLINK,
-    SYSCALL_RMDIR       = 1 << EVENT_RMDIR,
-    SYSCALL_CHMOD       = 1 << EVENT_CHMOD,
-    SYSCALL_CHOWN       = 1 << EVENT_CHOWN,
-    SYSCALL_UTIME       = 1 << EVENT_UTIME,
-    SYSCALL_MOUNT       = 1 << EVENT_MOUNT,
-    SYSCALL_UMOUNT      = 1 << EVENT_UMOUNT,
-    SYSCALL_SETXATTR    = 1 << EVENT_SETXATTR,
-    SYSCALL_REMOVEXATTR = 1 << EVENT_REMOVEXATTR,
-    SYSCALL_EXEC        = 1 << EVENT_EXEC,
-    SYSCALL_FORK        = 1 << EVENT_FORK,
-    SYSCALL_SETUID      = 1 << EVENT_SETUID,
-    SYSCALL_SETGID      = 1 << EVENT_SETGID,
-    SYSCALL_CAPSET      = 1 << EVENT_CAPSET,
 };
 
 struct kevent_t {
@@ -287,6 +267,27 @@ struct file_t {
     struct file_metadata_t metadata;
 };
 
+struct tracepoint_raw_syscalls_sys_exit_t
+{
+    unsigned short common_type;
+    unsigned char common_flags;
+    unsigned char common_preempt_count;
+    int common_pid;
+
+    long id;
+    long ret;
+};
+
+struct tracepoint_syscalls_sys_exit_t {
+    unsigned short common_type;
+    unsigned char common_flags;
+    unsigned char common_preempt_count;
+    int common_pid;
+
+    int __syscall_ret;
+    long ret;
+};
+
 struct bpf_map_def SEC("maps/path_id") path_id = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(u32),
@@ -301,13 +302,9 @@ static __attribute__((always_inline)) u32 get_path_id(int invalidate) {
 
     u32 *prev_id = bpf_map_lookup_elem(&path_id, &key);
     if (!prev_id) {
-        u32 first_id = 1;
-        bpf_map_update_elem(&path_id, &key, &first_id, BPF_ANY);
-
-        return first_id;
+        return 0;
     }
 
-    // return the current id so that the current event will use it. Increase the id for the next event only.
     u32 id = *prev_id;
 
     // need to invalidate the current path id for event which may change the association inode/name like
@@ -510,7 +507,7 @@ static __attribute__((always_inline)) u64 get_enabled_events(void) {
 }
 
 static __attribute__((always_inline)) int mask_has_event(u64 mask, enum event_type event) {
-    return mask & (1 << (event-1));
+    return mask & (1 << (event-EVENT_FIRST_DISCARDER));
 }
 
 static __attribute__((always_inline)) int is_event_enabled(enum event_type event) {

@@ -10,9 +10,9 @@ package probe
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 )
 
 var openCapabilities = Capabilities{

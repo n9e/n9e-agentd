@@ -10,7 +10,7 @@ package status
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/process/net"
+	"github.com/DataDog/datadog-agent/pkg/process/net"
 )
 
 // GetSystemProbeStats returns the expvar stats of the system probe

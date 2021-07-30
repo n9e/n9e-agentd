@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/cihub/seelog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -28,13 +29,12 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	rl "k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/klog/v2"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
+	"github.com/DataDog/datadog-agent/test/integration/utils"
 )
 
 const setupTimeout = time.Second * 10
@@ -93,7 +93,7 @@ func (suite *apiserverSuite) SetupTest() {
 			if err == nil {
 				return
 			}
-			klog.Warningf("Could not list pods: %s", err)
+			log.Warnf("Could not list pods: %s", err)
 		}
 	}
 }
@@ -109,10 +109,10 @@ func (suite *apiserverSuite) waitForLeaderName(le *leaderelection.LeaderEngine) 
 		case <-tick.C:
 			leaderName = le.GetLeader()
 			if leaderName == le.HolderIdentity {
-				klog.Infof("Waiting for leader: leader is %q", leaderName)
+				log.Infof("Waiting for leader: leader is %q", leaderName)
 				return
 			}
-			klog.Infof("Waiting for leader: leader is %q", leaderName)
+			log.Infof("Waiting for leader: leader is %q", leaderName)
 		case <-timeout.C:
 			require.FailNow(suite.T(), "timeout after %s", t.String())
 		}

@@ -10,8 +10,8 @@ import (
 )
 
 type jmxCheckStatus struct {
-	InitializedChecks map[string]interface{} `json:"initializedChecks"`
-	FailedChecks      map[string]interface{} `json:"failedChecks"`
+	InitializedChecks map[string]interface{} `json:"initialized_checks"`
+	FailedChecks      map[string]interface{} `json:"failed_checks"`
 }
 
 // JMXStatus holds status for JMX checks

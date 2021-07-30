@@ -17,10 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // collectNetworkStats retrieves the network statistics for a given pid.
@@ -31,12 +31,12 @@ func collectNetworkStats(pid int, networks map[string]string) (metrics.Container
 
 	procNetFile := hostProc(strconv.Itoa(pid), "net", "dev")
 	if !pathExists(procNetFile) {
-		klog.V(5).Infof("Unable to read %s for pid %d", procNetFile, pid)
+		log.Debugf("Unable to read %s for pid %d", procNetFile, pid)
 		return netStats, nil
 	}
 	lines, err := readLines(procNetFile)
 	if err != nil {
-		klog.V(5).Infof("Unable to read %s for pid %d", procNetFile, pid)
+		log.Debugf("Unable to read %s for pid %d", procNetFile, pid)
 		return netStats, nil
 	}
 	if len(lines) < 2 {
@@ -107,12 +107,12 @@ func detectNetworkDestinations(pid int) ([]containers.NetworkDestination, error)
 		}
 		dest, err := strconv.ParseUint(fields[1], 16, 32)
 		if err != nil {
-			klog.V(5).Infof("Cannot parse destination %q: %v", fields[1], err)
+			log.Debugf("Cannot parse destination %q: %v", fields[1], err)
 			continue
 		}
 		mask, err := strconv.ParseUint(fields[7], 16, 32)
 		if err != nil {
-			klog.V(5).Infof("Cannot parse mask %q: %v", fields[7], err)
+			log.Debugf("Cannot parse mask %q: %v", fields[7], err)
 			continue
 		}
 		d := containers.NetworkDestination{
@@ -181,12 +181,12 @@ func defaultHostIPs() ([]string, error) {
 // The returned value would be ["enp0s3","00000000","0202000A","0003","0","0","0","00000000","0","0","0"]
 //
 func defaultGatewayFields() ([]string, error) {
-	procRoot := config.C.ProcRoot
+	procRoot := config.Datadog.GetString("proc_root")
 	netRouteFile := filepath.Join(procRoot, "net", "route")
 	f, err := os.Open(netRouteFile)
 	if err != nil {
 		if os.IsNotExist(err) || os.IsPermission(err) {
-			klog.Errorf("Unable to open %s: %s", netRouteFile, err)
+			log.Errorf("Unable to open %s: %s", netRouteFile, err)
 			return nil, nil
 		}
 		// Unknown error types will bubble up for handling.

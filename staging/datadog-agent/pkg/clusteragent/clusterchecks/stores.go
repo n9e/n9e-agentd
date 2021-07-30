@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // clusterStore holds the state of cluster-check management.
@@ -61,7 +61,7 @@ func (s *clusterStore) getOrCreateNodeStore(nodeName, clientIP string) *nodeStor
 	node, ok := s.nodes[nodeName]
 	if ok {
 		if node.clientIP != clientIP && clientIP != "" {
-			klog.V(5).Infof("Client IP changed for node %s: updating %s to %s", nodeName, node.clientIP, clientIP)
+			log.Debugf("Client IP changed for node %s: updating %s to %s", nodeName, node.clientIP, clientIP)
 			node.clientIP = clientIP
 		}
 		return node
@@ -110,7 +110,7 @@ func (s *nodeStore) addConfig(config integration.Config) {
 func (s *nodeStore) removeConfig(digest string) {
 	_, found := s.digestToConfig[digest]
 	if !found {
-		klog.V(5).Infof("unknown digest %s, skipping", digest)
+		log.Debugf("unknown digest %s, skipping", digest)
 		return
 	}
 	s.lastConfigChange = timestampNow()
@@ -132,7 +132,7 @@ func (s *nodeStore) RemoveRunnerStats(checkID string) {
 	s.Lock()
 	defer s.Unlock()
 	if _, found := s.clcRunnerStats[checkID]; !found {
-		klog.V(5).Infof("unknown check ID %s, skipping", checkID)
+		log.Debugf("unknown check ID %s, skipping", checkID)
 		return
 	}
 	delete(s.clcRunnerStats, checkID)
@@ -145,7 +145,7 @@ func (s *nodeStore) GetRunnerStats(checkID string) (types.CLCRunnerStats, error)
 	defer s.RUnlock()
 	stats, found := s.clcRunnerStats[checkID]
 	if !found {
-		klog.V(5).Infof("unknown check ID %s", checkID)
+		log.Debugf("unknown check ID %s", checkID)
 		return stats, fmt.Errorf("check ID not found: %s", checkID)
 	}
 	return stats, nil
@@ -169,7 +169,7 @@ func (s *nodeStore) GetMostWeightedClusterCheck(busynessFunc func(stats types.CL
 	s.RLock()
 	defer s.RUnlock()
 	if len(s.clcRunnerStats) == 0 {
-		klog.V(5).Infof("Node %s has no check stats", s.name)
+		log.Debugf("Node %s has no check stats", s.name)
 		return "", -1, fmt.Errorf("node %s has no check stats", s.name)
 	}
 	firstItr := true
@@ -185,7 +185,7 @@ func (s *nodeStore) GetMostWeightedClusterCheck(busynessFunc func(stats types.CL
 		}
 	}
 	if firstItr {
-		klog.V(5).Infof("Node %s has no check stats for cluster checks: %v", s.name, s.clcRunnerStats)
+		log.Debugf("Node %s has no check stats for cluster checks: %v", s.name, s.clcRunnerStats)
 		return "", -1, fmt.Errorf("no cluster checks found on node %s", s.name)
 	}
 	return checkID, checkWeight, nil

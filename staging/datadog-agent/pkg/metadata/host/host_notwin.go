@@ -11,11 +11,11 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // InitHostMetadata initializes necessary CPU info
@@ -24,6 +24,7 @@ func InitHostMetadata() error {
 	_, err = cpu.Info()
 
 	return err
+
 }
 
 func getSystemStats() *systemStats {
@@ -61,7 +62,7 @@ func getCPUInfo() *cpu.InfoStat {
 	i, err := cpu.Info()
 	if err != nil {
 		// don't cache and return zero value
-		klog.Errorf("failed to retrieve cpu info: %s", err)
+		log.Errorf("failed to retrieve cpu info: %s", err)
 		return &cpu.InfoStat{}
 	}
 	info := &i[0]
@@ -78,7 +79,7 @@ func getHostInfo() *host.InfoStat {
 	info, err := host.Info()
 	if err != nil {
 		// don't cache and return zero value
-		klog.Errorf("failed to retrieve host info: %s", err)
+		log.Errorf("failed to retrieve host info: %s", err)
 		return &host.InfoStat{}
 	}
 	cache.Cache.Set(key, info, cache.NoExpiration)

@@ -9,26 +9,27 @@ import (
 	"context"
 	"time"
 
-	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"k8s.io/klog/v2"
+	coreConfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/channel"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/container"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/file"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/journald"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/listener"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/traps"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/windowsevent"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
-	logstypes "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
+	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
+	"github.com/DataDog/datadog-agent/pkg/logs/client"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/channel"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/container"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/docker"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/file"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/journald"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/kubernetes"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/listener"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/traps"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/windowsevent"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/restart"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
 )
 
 // Agent represents the data pipeline that collects, decodes,
@@ -48,34 +49,62 @@ type Agent struct {
 }
 
 // NewAgent returns a new Logs Agent
-func NewAgent(sources *config.LogSources, services *service.Services, processingRules []*logstypes.ProcessingRule, endpoints *logstypes.Endpoints) *Agent {
+func NewAgent(sources *config.LogSources, services *service.Services, processingRules []*config.ProcessingRule, endpoints *config.Endpoints) *Agent {
 	health := health.RegisterLiveness("logs-agent")
 
 	// setup the auditor
 	// We pass the health handle to the auditor because it's the end of the pipeline and the most
 	// critical part. Arguably it could also be plugged to the destination.
-	auditorTTL := coreConfig.C.LogsConfig.AuditorTTL
-	auditor := auditor.New(coreConfig.C.LogsConfig.RunPath, auditor.DefaultRegistryFilename, auditorTTL, health)
+	auditorTTL := time.Duration(coreConfig.Datadog.GetInt("logs_config.auditor_ttl")) * time.Hour
+	auditor := auditor.New(coreConfig.Datadog.GetString("logs_config.run_path"), auditor.DefaultRegistryFilename, auditorTTL, health)
 	destinationsCtx := client.NewDestinationsContext()
 	diagnosticMessageReceiver := diagnostic.NewBufferedMessageReceiver()
 
 	// setup the pipeline provider that provides pairs of processor and sender
 	pipelineProvider := pipeline.NewProvider(config.NumberOfPipelines, auditor, diagnosticMessageReceiver, processingRules, endpoints, destinationsCtx)
 
+	containerLaunchables := []container.Launchable{
+		{
+			IsAvailable: docker.IsAvailable,
+			Launcher: func() restart.Restartable {
+				return docker.NewLauncher(
+					time.Duration(coreConfig.Datadog.GetInt("logs_config.docker_client_read_timeout"))*time.Second,
+					sources,
+					services,
+					pipelineProvider,
+					auditor,
+					coreConfig.Datadog.GetBool("logs_config.docker_container_use_file"),
+					coreConfig.Datadog.GetBool("logs_config.docker_container_force_use_file"))
+			},
+		},
+		{
+			IsAvailable: kubernetes.IsAvailable,
+			Launcher: func() restart.Restartable {
+				return kubernetes.NewLauncher(sources, services, coreConfig.Datadog.GetBool("logs_config.container_collect_all"))
+			},
+		},
+	}
+
+	// when k8s_container_use_file is true, always attempt to use the kubernetes launcher first
+	if coreConfig.Datadog.GetBool("logs_config.k8s_container_use_file") {
+		containerLaunchables[0], containerLaunchables[1] = containerLaunchables[1], containerLaunchables[0]
+	}
+
+	validatePodContainerID := coreConfig.Datadog.GetBool("logs_config.validate_pod_container_id")
+
 	// setup the inputs
 	inputs := []restart.Restartable{
-		file.NewScanner(sources, coreConfig.C.LogsConfig.OpenFilesLimit, pipelineProvider, auditor, file.DefaultSleepDuration),
-		container.NewLauncher(
-			coreConfig.C.LogsConfig.ContainerCollectAll,
-			coreConfig.C.LogsConfig.K8SContainerUseFile,
-			coreConfig.C.LogsConfig.DockerContainerUseFile,
-			coreConfig.C.LogsConfig.DockerContainerForceUseFile,
-			coreConfig.C.LogsConfig.DockerClientReadTimeout,
-			sources, services, pipelineProvider, auditor),
-		listener.NewLauncher(sources, coreConfig.C.LogsConfig.FrameSize, pipelineProvider),
+		file.NewScanner(sources, coreConfig.Datadog.GetInt("logs_config.open_files_limit"), pipelineProvider, auditor,
+			file.DefaultSleepDuration, validatePodContainerID, time.Duration(coreConfig.Datadog.GetFloat64("logs_config.file_scan_period")*float64(time.Second))),
+		listener.NewLauncher(sources, coreConfig.Datadog.GetInt("logs_config.frame_size"), pipelineProvider),
 		journald.NewLauncher(sources, pipelineProvider, auditor),
 		windowsevent.NewLauncher(sources, pipelineProvider),
 		traps.NewLauncher(sources, pipelineProvider),
+	}
+
+	// Only try to start the container launchers if Docker or Kubernetes is available
+	if coreConfig.IsFeaturePresent(coreConfig.Docker) || coreConfig.IsFeaturePresent(coreConfig.Kubernetes) {
+		inputs = append(inputs, container.NewLauncher(containerLaunchables))
 	}
 
 	return &Agent{
@@ -91,7 +120,7 @@ func NewAgent(sources *config.LogSources, services *service.Services, processing
 // NewServerless returns a Logs Agent instance to run in a serverless environment.
 // The Serverless Logs Agent has only one input being the channel to receive the logs to process.
 // It is using a NullAuditor because we've nothing to do after having sent the logs to the intake.
-func NewServerless(sources *config.LogSources, services *service.Services, processingRules []*logstypes.ProcessingRule, endpoints *logstypes.Endpoints) *Agent {
+func NewServerless(sources *config.LogSources, services *service.Services, processingRules []*config.ProcessingRule, endpoints *config.Endpoints) *Agent {
 	health := health.RegisterLiveness("logs-agent")
 
 	diagnosticMessageReceiver := diagnostic.NewBufferedMessageReceiver()
@@ -158,11 +187,11 @@ func (a *Agent) Stop() {
 		stopper.Stop()
 		close(c)
 	}()
-	timeout := coreConfig.C.LogsConfig.StopGracePeriod
+	timeout := time.Duration(coreConfig.Datadog.GetInt("logs_config.stop_grace_period")) * time.Second
 	select {
 	case <-c:
 	case <-time.After(timeout):
-		klog.Info("Timed out when stopping logs-agent, forcing it to stop now")
+		log.Info("Timed out when stopping logs-agent, forcing it to stop now")
 		// We force all destinations to read/flush all the messages they get without
 		// trying to write to the network.
 		a.destinationsCtx.Stop()
@@ -174,11 +203,11 @@ func (a *Agent) Stop() {
 		select {
 		case <-c:
 		case <-timeout.C:
-			klog.Warning("Force close of the Logs Agent, dumping the Go routines.")
+			log.Warn("Force close of the Logs Agent, dumping the Go routines.")
 			if stack, err := util.GetGoRoutinesDump(); err != nil {
-				klog.Warningf("can't get the Go routines dump: %s\n", err)
+				log.Warnf("can't get the Go routines dump: %s\n", err)
 			} else {
-				klog.Warning(stack)
+				log.Warn(stack)
 			}
 		}
 	}

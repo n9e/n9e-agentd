@@ -6,27 +6,29 @@
 package cloudfoundry
 
 import (
+	"context"
 	"os"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // Define alias in order to mock in the tests
 var getFqdn = util.Fqdn
 
 // GetHostAliases returns the host aliases from Cloud Foundry
-func GetHostAliases() ([]string, error) {
-	if !config.C.CloudFoundry {
-		klog.V(5).Infof("cloud_foundry is not enabled in the conf: no cloudfoudry host alias")
+func GetHostAliases(ctx context.Context) ([]string, error) {
+	if !config.Datadog.GetBool("cloud_foundry") {
+		log.Debugf("cloud_foundry is not enabled in the conf: no cloudfoudry host alias")
 		return nil, nil
 	}
 
 	aliases := []string{}
 
 	// Always send the bosh_id if specified
-	boshID := config.C.BoshID
+	boshID := config.Datadog.GetString("bosh_id")
 	if boshID != "" {
 		aliases = append(aliases, boshID)
 	}
@@ -34,7 +36,7 @@ func GetHostAliases() ([]string, error) {
 	hostname, _ := os.Hostname()
 	fqdn := getFqdn(hostname)
 
-	if config.C.CfOSHostnameAliasing {
+	if config.Datadog.GetBool("cf_os_hostname_aliasing") {
 		// If set, send os hostname and fqdn as additional aliases
 		aliases = append(aliases, hostname)
 		if fqdn != hostname {

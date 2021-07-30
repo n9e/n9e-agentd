@@ -18,11 +18,11 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 	utilserror "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	httputils "github.com/DataDog/datadog-agent/pkg/util/http"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -68,7 +68,7 @@ const (
 func (p *Processor) queryDatadogExternal(ddQueries []string, bucketSize int64) (map[string]Point, error) {
 	ddQueriesLen := len(ddQueries)
 	if ddQueriesLen == 0 {
-		klog.V(6).Infof("No query in input - nothing to do")
+		log.Tracef("No query in input - nothing to do")
 		return nil, nil
 	}
 
@@ -76,24 +76,24 @@ func (p *Processor) queryDatadogExternal(ddQueries []string, bucketSize int64) (
 	seriesSlice, err := p.datadogClient.QueryMetrics(time.Now().Unix()-bucketSize, time.Now().Unix(), query)
 	if err != nil {
 		ddRequests.Inc("error", le.JoinLeaderValue)
-		return nil, klog.Errorf("Error while executing metric query %s: %s", query, err)
+		return nil, log.Errorf("Error while executing metric query %s: %s", query, err)
 	}
 	ddRequests.Inc("success", le.JoinLeaderValue)
 
 	processedMetrics := make(map[string]Point, ddQueriesLen)
 	for _, serie := range seriesSlice {
 		if serie.Metric == nil {
-			klog.Infof("Could not collect values for all processedMetrics in the query %s", query)
+			log.Infof("Could not collect values for all processedMetrics in the query %s", query)
 			continue
 		}
 
 		// Perform matching between query and reply, using query order and `QueryIndex` from API reply (QueryIndex is 0-based)
-		var queryIndex int = 0
+		var queryIndex int
 		if ddQueriesLen > 1 {
 			if serie.QueryIndex != nil && *serie.QueryIndex < ddQueriesLen {
 				queryIndex = *serie.QueryIndex
 			} else {
-				klog.Errorf("Received Serie without QueryIndex or invalid QueryIndex while we sent multiple queries. Full query: %s / Serie expression: %v / QueryIndex: %v", query, serie.Expression, serie.QueryIndex)
+				log.Errorf("Received Serie without QueryIndex or invalid QueryIndex while we sent multiple queries. Full query: %s / Serie expression: %v / QueryIndex: %v", query, serie.Expression, serie.QueryIndex)
 				continue
 			}
 		}
@@ -102,7 +102,7 @@ func (p *Processor) queryDatadogExternal(ddQueries []string, bucketSize int64) (
 		// Otherwise we are not able to determine which value we should take for Autoscaling
 		if existingPoint, found := processedMetrics[ddQueries[queryIndex]]; found {
 			if existingPoint.Valid {
-				klog.Warningf("Multiple Series found for query: %s. Please change your query to return a single Serie. Results will be flagged as invalid", ddQueries[queryIndex])
+				log.Warnf("Multiple Series found for query: %s. Please change your query to return a single Serie. Results will be flagged as invalid", ddQueries[queryIndex])
 				existingPoint.Valid = false
 				existingPoint.Timestamp = time.Now().Unix()
 				processedMetrics[ddQueries[queryIndex]] = existingPoint
@@ -138,7 +138,7 @@ func (p *Processor) queryDatadogExternal(ddQueries []string, bucketSize int64) (
 			precision := time.Now().Unix() - point.Timestamp
 			metricsDelay.Set(float64(precision), m, le.JoinLeaderValue)
 
-			klog.V(5).Infof("Validated %s | Value:%v at %d after %d/%d buckets", ddQueries[queryIndex], point.Value, point.Timestamp, i+1, len(serie.Points))
+			log.Debugf("Validated %s | Value:%v at %d after %d/%d buckets", ddQueries[queryIndex], point.Value, point.Timestamp, i+1, len(serie.Points))
 			break
 		}
 	}
@@ -154,7 +154,7 @@ func (p *Processor) queryDatadogExternal(ddQueries []string, bucketSize int64) (
 
 	// If we add no series at all, return an error on top of invalid metrics
 	if len(seriesSlice) == 0 {
-		return processedMetrics, klog.Errorf("Returned series slice empty")
+		return processedMetrics, log.Errorf("Returned series slice empty")
 	}
 
 	return processedMetrics, nil
@@ -210,7 +210,7 @@ func NewDatadogClient() (*datadog.Client, error) {
 		return nil, errors.New("missing the api/app key pair to query Datadog")
 	}
 
-	klog.Infof("Initialized the Datadog Client for HPA with endpoint %q", endpoint)
+	log.Infof("Initialized the Datadog Client for HPA with endpoint %q", endpoint)
 
 	client := datadog.NewClient(apiKey, appKey)
 	client.HttpClient.Transport = httputils.CreateHTTPTransport()

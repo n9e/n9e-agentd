@@ -6,8 +6,8 @@
 package event
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/sampler"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/sampler"
 )
 
 // noopExtractor is a no-op APM event extractor used when APM event extraction is disabled.

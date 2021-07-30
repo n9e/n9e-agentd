@@ -13,9 +13,9 @@ import (
 	"errors"
 	"expvar"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 )
 
 const (
@@ -59,7 +59,7 @@ func init() {
 	compressorExpvars.Set("BytesOut", &expvarsBytesOut)
 }
 
-// compressor is in charge of compressing items for a single payload
+// Compressor is in charge of compressing items for a single payload
 type Compressor struct {
 	input               *bytes.Buffer // temporary buffer for data that has not been compressed yet
 	compressed          *bytes.Buffer // output buffer containing the compressed payload
@@ -79,8 +79,8 @@ type Compressor struct {
 func NewCompressor(input, output *bytes.Buffer, header, footer []byte, separator []byte) (*Compressor, error) {
 	// the backend accepts payloads up to 3MB compressed / 50MB uncompressed but
 	// prefers small uncompressed payloads of ~4MB
-	maxPayloadSize := config.C.SerializerMaxPayloadSize
-	maxUncompressedSize := config.C.SerializerMaxUncompressedPayloadSize
+	maxPayloadSize := config.Datadog.GetInt("serializer_max_payload_size")
+	maxUncompressedSize := config.Datadog.GetInt("serializer_max_uncompressed_payload_size")
 	c := &Compressor{
 		header:              header,
 		footer:              footer,
@@ -132,7 +132,7 @@ func (c *Compressor) pack() error {
 	return nil
 }
 
-// addItem will try to add the given item
+// AddItem will try to add the given item
 func (c *Compressor) AddItem(data []byte) error {
 	// check item size sanity
 	if !c.checkItemSize(data) {

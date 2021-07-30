@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // rateLimitedListener wraps a regular TCPListener with rate limiting.
@@ -66,11 +66,11 @@ func (sl *rateLimitedListener) Refresh(conns int) {
 				"status:errored":  &sl.errored,
 			} {
 				v := int64(atomic.SwapUint32(stat, 0))
-				metrics.Count("trace_agent.receiver.tcp_connections", v, []string{tag}, 1)
+				metrics.Count("datadog.trace_agent.receiver.tcp_connections", v, []string{tag}, 1)
 			}
 		case <-t.C:
 			atomic.StoreInt32(&sl.lease, int32(conns))
-			klog.V(5).Infof("Refreshed the connection lease: %d conns available", conns)
+			log.Debugf("Refreshed the connection lease: %d conns available", conns)
 		}
 	}
 }

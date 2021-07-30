@@ -21,9 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilserror "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/watermarkpodautoscaler/api/v1alpha1"
 )
 
@@ -69,14 +69,14 @@ func NewProcessor(datadogCl DatadogClient) *Processor {
 	}
 }
 
-// ProcessHPAs processes the HorizontalPodAutoscalers into a list of ExternalMetricValues.
+// ProcessEMList processes a list of ExternalMetricValue.
 func (p *Processor) ProcessEMList(emList []custommetrics.ExternalMetricValue) map[string]custommetrics.ExternalMetricValue {
 	externalMetrics := make(map[string]custommetrics.ExternalMetricValue)
 	for _, em := range emList {
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		klog.V(6).Infof("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -91,7 +91,7 @@ func (p *Processor) ProcessHPAs(hpa *autoscalingv2.HorizontalPodAutoscaler) map[
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		klog.V(6).Infof("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -106,7 +106,7 @@ func (p *Processor) ProcessWPAs(wpa *v1alpha1.WatermarkPodAutoscaler) map[string
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		klog.V(6).Infof("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -134,7 +134,7 @@ func (p *Processor) UpdateExternalMetrics(emList map[string]custommetrics.Extern
 
 	metrics, err := p.QueryExternalMetric(batch)
 	if len(metrics) == 0 && err != nil {
-		klog.Errorf("Error getting metrics from Datadog: %v", err.Error())
+		log.Errorf("Error getting metrics from Datadog: %v", err.Error())
 		// If no metrics can be retrieved from Datadog in a given list, we need to invalidate them
 		// To avoid undesirable autoscaling behaviors
 		return invalidate(emList)
@@ -156,13 +156,13 @@ func (p *Processor) UpdateExternalMetrics(emList map[string]custommetrics.Extern
 		em.Valid = true
 		em.Value = metric.Value
 		em.Timestamp = metric.Timestamp
-		klog.V(5).Infof("Updated the external metric %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		log.Debugf("Updated the external metric %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
 		updated[id] = em
 	}
 	return updated
 }
 
-// queryExternalMetric queries Datadog to validate the availability and value of one or more external metrics
+// QueryExternalMetric queries Datadog to validate the availability and value of one or more external metrics
 // Also updates the rate limits statistics as a result of the query.
 func (p *Processor) QueryExternalMetric(queries []string) (processed map[string]Point, err error) {
 	processed = make(map[string]Point)
@@ -172,7 +172,7 @@ func (p *Processor) QueryExternalMetric(queries []string) (processed map[string]
 
 	bucketSize := config.Datadog.GetInt64("external_metrics_provider.bucket_size")
 	chunks := makeChunks(queries)
-	klog.V(6).Infof("List of batches %v", chunks)
+	log.Tracef("List of batches %v", chunks)
 
 	// we have a number of chunks with `chunkSize` metrics.
 	responses := make(chan queryResponse, len(queries))
@@ -197,7 +197,7 @@ func (p *Processor) QueryExternalMetric(queries []string) (processed map[string]
 			errors = append(errors, elem.err)
 		}
 	}
-	klog.V(5).Infof("Processed %d chunks", len(chunks))
+	log.Debugf("Processed %d chunks", len(chunks))
 
 	if err := p.updateRateLimitingMetrics(); err != nil {
 		errors = append(errors, err)
@@ -226,7 +226,7 @@ func makeChunks(batch []string) (chunks [][]string) {
 		uriLength = uriLength + tempSize
 		beyond, err := isURLBeyondLimits(uriLength, len(tempBucket))
 		if err != nil {
-			klog.Errorf(fmt.Sprintf("%s: %s", err.Error(), val))
+			log.Errorf(fmt.Sprintf("%s: %s", err.Error(), val))
 			continue
 		}
 		if beyond {

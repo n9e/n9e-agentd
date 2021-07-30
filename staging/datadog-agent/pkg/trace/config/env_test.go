@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 	"github.com/cihub/seelog"
 	"github.com/stretchr/testify/assert"
 )
@@ -349,6 +349,30 @@ func TestLoadEnv(t *testing.T) {
 		_, err = Load("./testdata/full.yaml")
 		assert.NoError(err)
 		assert.Equal("my-site.com", config.Datadog.GetString("apm_config.profiling_dd_url"))
+	})
+
+	env = "DD_OTLP_HTTP_PORT"
+	t.Run(env, func(t *testing.T) {
+		defer cleanConfig()()
+		assert := assert.New(t)
+		err := os.Setenv(env, "50061")
+		assert.NoError(err)
+		defer os.Unsetenv(env)
+		_, err = Load("./testdata/full.yaml")
+		assert.NoError(err)
+		assert.Equal(50061, config.Datadog.GetInt("experimental.otlp.http_port"))
+	})
+
+	env = "DD_OTLP_GRPC_PORT"
+	t.Run(env, func(t *testing.T) {
+		defer cleanConfig()()
+		assert := assert.New(t)
+		err := os.Setenv(env, "50066")
+		assert.NoError(err)
+		defer os.Unsetenv(env)
+		_, err = Load("./testdata/full.yaml")
+		assert.NoError(err)
+		assert.Equal(50066, config.Datadog.GetInt("experimental.otlp.grpc_port"))
 	})
 
 	env = "DD_APM_PROFILING_ADDITIONAL_ENDPOINTS"

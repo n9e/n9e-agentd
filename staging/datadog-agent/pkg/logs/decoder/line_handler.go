@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 )
 
 // truncatedFlag is the flag that is added at the beginning
@@ -51,7 +51,6 @@ func NewSingleLineHandler(outputChan chan *Message, lineLimit int) *SingleLineHa
 // Handle puts all new lines into a channel for later processing.
 func (h *SingleLineHandler) Handle(input *Message) {
 	h.inputChan <- input
-	//klog.V(11).Infof("decoder.inputChan %p <- %s", h.inputChan, string(input.Content))
 }
 
 // Stop stops the handler.
@@ -91,13 +90,11 @@ func (h *SingleLineHandler) process(message *Message) {
 
 	if len(message.Content) < h.lineLimit {
 		h.outputChan <- message
-		//klog.V(11).Infof("decoder.outputChan %p <- %s", h.outputChan, string(message.Content))
 	} else {
 		// the line is too long, it needs to be cut off and send,
 		// adding the truncated flag the end of the content
 		message.Content = append(message.Content, truncatedFlag...)
 		h.outputChan <- message
-		//klog.V(11).Infof("decoder.outputChan %p <- %s", h.outputChan, string(message.Content))
 		// make sure the following part of the line will be cut off as well
 		h.shouldTruncate = true
 	}
@@ -135,7 +132,6 @@ func NewMultiLineHandler(outputChan chan *Message, newContentRe *regexp.Regexp, 
 // Handle forward lines to lineChan to process them.
 func (h *MultiLineHandler) Handle(input *Message) {
 	h.inputChan <- input
-	//klog.V(11).Infof("decoder.inputChan %p <- %s", h.inputChan, string(input.Content))
 }
 
 // Stop stops the handler.
@@ -166,7 +162,6 @@ func (h *MultiLineHandler) run() {
 				// lineChan has been closed, no more lines are expected
 				return
 			}
-			//klog.V(11).Infof("decoder.inputChan %p -> %s", h.inputChan, string(message.Content))
 			// process the new line and restart the timeout
 			if !flushTimer.Stop() {
 				// timer stop doesn't not prevent the timer to tick,
@@ -248,8 +243,6 @@ func (h *MultiLineHandler) sendBuffer() {
 	copy(content, data)
 
 	if len(content) > 0 || h.linesLen > 0 {
-		msg := NewMessage(content, h.status, h.linesLen, h.timestamp)
-		h.outputChan <- msg
-		//klog.V(11).Infof("decoder.outputChan %p <- %s", h.outputChan, string(msg.Content))
+		h.outputChan <- NewMessage(content, h.status, h.linesLen, h.timestamp)
 	}
 }

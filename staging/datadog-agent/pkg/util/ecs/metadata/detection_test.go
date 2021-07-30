@@ -8,6 +8,7 @@
 package metadata
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -18,10 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/testutil"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/testutil"
 )
 
 func TestLocateECSHTTP(t *testing.T) {
@@ -75,6 +76,8 @@ func TestLocateECSHTTPFail(t *testing.T) {
 }
 
 func TestGetAgentV1ContainerURLs(t *testing.T) {
+	ctx := context.Background()
+
 	config.Datadog.SetDefault("ecs_agent_container_name", "ecs-agent-custom")
 	defer config.Datadog.SetDefault("ecs_agent_container_name", "ecs-agent")
 
@@ -96,7 +99,7 @@ func TestGetAgentV1ContainerURLs(t *testing.T) {
 	cacheKey := docker.GetInspectCacheKey("ecs-agent-custom", false)
 	cache.Cache.Set(cacheKey, co, 10*time.Second)
 
-	agentURLS, err := getAgentV1ContainerURLs()
+	agentURLS, err := getAgentV1ContainerURLs(ctx)
 	assert.NoError(t, err)
 	require.Len(t, agentURLS, 3)
 	assert.Contains(t, agentURLS, "http://172.17.0.2:51678/")

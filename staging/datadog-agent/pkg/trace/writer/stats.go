@@ -14,13 +14,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/logutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics/timing"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/logutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics/timing"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -81,7 +83,7 @@ func NewStatsWriter(cfg *config.AgentConfig, in <-chan pb.StatsPayload) *StatsWr
 		}
 		qsize = int(math.Max(1, maxmem/payloadSize))
 	}
-	klog.V(5).Infof("Stats writer initialized (climit=%d qsize=%d)", climit, qsize)
+	log.Debugf("Stats writer initialized (climit=%d qsize=%d)", climit, qsize)
 	sw.senders = newSenders(cfg, sw, pathStats, climit, qsize)
 	return sw
 }
@@ -143,7 +145,7 @@ func (w *StatsWriter) SendPayload(p pb.StatsPayload) {
 		"Content-Encoding": "gzip",
 	})
 	if err := encodePayload(req.body, p); err != nil {
-		klog.Errorf("Stats encoding error: %v", err)
+		log.Errorf("Stats encoding error: %v", err)
 		return
 	}
 	sendPayloads(w.senders, req, w.syncMode)
@@ -164,7 +166,7 @@ func encodePayload(w io.Writer, payload pb.StatsPayload) error {
 	}
 	defer func() {
 		if err := gz.Close(); err != nil {
-			klog.Errorf("Error closing gzip stream when writing stats payload: %v", err)
+			log.Errorf("Error closing gzip stream when writing stats payload: %v", err)
 		}
 	}()
 	return msgp.Encode(gz, &payload)
@@ -183,7 +185,7 @@ func (w *StatsWriter) buildPayloads(sp pb.StatsPayload, maxEntriesPerPayload int
 	}
 	var nbEntries, nbBuckets int
 	addPayload := func() {
-		klog.V(5).Infof("Flushing %d entries (buckets=%d client_payloads=%d)", nbEntries, nbBuckets, len(current.Stats))
+		log.Debugf("Flushing %d entries (buckets=%d client_payloads=%d)", nbEntries, nbBuckets, len(current.Stats))
 		atomic.AddInt64(&w.stats.StatsBuckets, int64(nbBuckets))
 		atomic.AddInt64(&w.stats.ClientPayloads, int64(len(current.Stats)))
 		atomic.AddInt64(&w.stats.StatsEntries, int64(nbEntries))
@@ -198,6 +200,7 @@ func (w *StatsWriter) buildPayloads(sp pb.StatsPayload, maxEntriesPerPayload int
 		}
 		nbEntries += p.nbEntries
 		nbBuckets += len(p.Stats)
+		resolveContainerTags(&p.ClientStatsPayload)
 		current.Stats = append(current.Stats, p.ClientStatsPayload)
 	}
 	if nbEntries > 0 {
@@ -207,6 +210,25 @@ func (w *StatsWriter) buildPayloads(sp pb.StatsPayload, maxEntriesPerPayload int
 		atomic.AddInt64(&w.stats.Splits, 1)
 	}
 	return grouped
+}
+
+// resolveContainerTags takes any ContainerID found in p to fill in the appropriate tags.
+func resolveContainerTags(p *pb.ClientStatsPayload) {
+	if p.ContainerID == "" {
+		p.Tags = nil
+		return
+	}
+	ctags, err := tagger.Tag("container_id://"+p.ContainerID, collectors.HighCardinality)
+	switch {
+	case err != nil:
+		log.Tracef("Error resolving container tags for %q: %v", p.ContainerID, err)
+		p.ContainerID = ""
+		p.Tags = nil
+	case len(ctags) == 0:
+		p.Tags = nil
+	default:
+		p.Tags = ctags
+	}
 }
 
 func splitPayloads(payloads []pb.ClientStatsPayload, maxEntriesPerPayload int) []clientStatsPayload {
@@ -253,10 +275,16 @@ func splitPayload(p pb.ClientStatsPayload, maxEntriesPerPayload int) []clientSta
 		payloads[i] = clientStatsPayload{
 			bucketIndexes: make(map[timeWindow]int, 1),
 			ClientStatsPayload: pb.ClientStatsPayload{
-				Hostname: p.Hostname,
-				Env:      p.Env,
-				Version:  p.Version,
-				Stats:    make([]pb.ClientStatsBucket, 0, maxEntriesPerPayload),
+				Hostname:         p.Hostname,
+				Env:              p.Env,
+				Version:          p.Version,
+				Service:          p.Service,
+				Lang:             p.Lang,
+				TracerVersion:    p.TracerVersion,
+				RuntimeID:        p.RuntimeID,
+				Sequence:         p.Sequence,
+				AgentAggregation: p.AgentAggregation,
+				Stats:            make([]pb.ClientStatsBucket, 0, maxEntriesPerPayload),
 			},
 		}
 	}
@@ -286,40 +314,40 @@ func splitPayload(p pb.ClientStatsPayload, maxEntriesPerPayload int) []clientSta
 var _ eventRecorder = (*StatsWriter)(nil)
 
 func (w *StatsWriter) report() {
-	metrics.Count("trace_agent.stats_writer.client_payloads", atomic.SwapInt64(&w.stats.ClientPayloads, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.stats_buckets", atomic.SwapInt64(&w.stats.StatsBuckets, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.stats_entries", atomic.SwapInt64(&w.stats.StatsEntries, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.splits", atomic.SwapInt64(&w.stats.Splits, 0), nil, 1)
-	metrics.Count("trace_agent.stats_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.client_payloads", atomic.SwapInt64(&w.stats.ClientPayloads, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.payloads", atomic.SwapInt64(&w.stats.Payloads, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.stats_buckets", atomic.SwapInt64(&w.stats.StatsBuckets, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.stats_entries", atomic.SwapInt64(&w.stats.StatsEntries, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.bytes", atomic.SwapInt64(&w.stats.Bytes, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.retries", atomic.SwapInt64(&w.stats.Retries, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.splits", atomic.SwapInt64(&w.stats.Splits, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.stats_writer.errors", atomic.SwapInt64(&w.stats.Errors, 0), nil, 1)
 }
 
 // recordEvent implements eventRecorder.
 func (w *StatsWriter) recordEvent(t eventType, data *eventData) {
 	if data != nil {
-		metrics.Histogram("trace_agent.stats_writer.connection_fill", data.connectionFill, nil, 1)
-		metrics.Histogram("trace_agent.stats_writer.queue_fill", data.queueFill, nil, 1)
+		metrics.Histogram("datadog.trace_agent.stats_writer.connection_fill", data.connectionFill, nil, 1)
+		metrics.Histogram("datadog.trace_agent.stats_writer.queue_fill", data.queueFill, nil, 1)
 	}
 	switch t {
 	case eventTypeRetry:
-		klog.V(5).Infof("Retrying to flush stats payload (error: %q)", data.err)
+		log.Debugf("Retrying to flush stats payload (error: %q)", data.err)
 		atomic.AddInt64(&w.stats.Retries, 1)
 
 	case eventTypeSent:
-		klog.V(5).Infof("Flushed stats to the API; time: %s, bytes: %d", data.duration, data.bytes)
-		timing.Since("trace_agent.stats_writer.flush_duration", time.Now().Add(-data.duration))
+		log.Debugf("Flushed stats to the API; time: %s, bytes: %d", data.duration, data.bytes)
+		timing.Since("datadog.trace_agent.stats_writer.flush_duration", time.Now().Add(-data.duration))
 		atomic.AddInt64(&w.stats.Bytes, int64(data.bytes))
 		atomic.AddInt64(&w.stats.Payloads, 1)
 
 	case eventTypeRejected:
-		klog.Warningf("Stats writer payload rejected by edge: %v", data.err)
+		log.Warnf("Stats writer payload rejected by edge: %v", data.err)
 		atomic.AddInt64(&w.stats.Errors, 1)
 
 	case eventTypeDropped:
 		w.easylog.Warn("Stats writer queue full. Payload dropped (%.2fKB).", float64(data.bytes)/1024)
-		metrics.Count("trace_agent.stats_writer.dropped", 1, nil, 1)
-		metrics.Count("trace_agent.stats_writer.dropped_bytes", int64(data.bytes), nil, 1)
+		metrics.Count("datadog.trace_agent.stats_writer.dropped", 1, nil, 1)
+		metrics.Count("datadog.trace_agent.stats_writer.dropped_bytes", int64(data.bytes), nil, 1)
 	}
 }

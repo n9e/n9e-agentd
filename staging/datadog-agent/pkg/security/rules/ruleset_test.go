@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 )
 
 type testFieldValues map[string][]interface{}

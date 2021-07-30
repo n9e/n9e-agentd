@@ -2,7 +2,7 @@ package checks
 
 import (
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
 )
 
 // Check is an interface for Agent checks that collect data. Each check returns

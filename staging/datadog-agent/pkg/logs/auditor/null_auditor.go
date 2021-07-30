@@ -1,7 +1,7 @@
 package auditor
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // NullAuditor is an auditor not doing anything with the message it received.

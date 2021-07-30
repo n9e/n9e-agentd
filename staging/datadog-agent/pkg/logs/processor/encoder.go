@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // Encoder turns a message into a raw byte array ready to be sent.

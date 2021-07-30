@@ -7,11 +7,11 @@ import (
 	"path"
 	"strings"
 
-	ddebpf "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
-	"k8s.io/klog/v2"
+	ddebpf "github.com/DataDog/datadog-agent/pkg/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/metadata/host"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/kernel"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Feature versions sourced from: https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md
@@ -35,7 +35,7 @@ func IsTracerSupportedByOS(exclusionList []string) (bool, string) {
 	}
 
 	hostInfo := host.GetStatusInformation()
-	klog.Infof("running on platform: %s", hostInfo.Platform)
+	log.Infof("running on platform: %s", hostInfo.Platform)
 	return verifyOSVersion(currentKernelCode, hostInfo.Platform, exclusionList)
 }
 
@@ -64,7 +64,7 @@ func verifyOSVersion(kernelCode kernel.Version, platform string, exclusionList [
 
 	missing, err := ddebpf.VerifyKernelFuncs(path.Join(util.GetProcRoot(), "kallsyms"), requiredKernelFuncs)
 	if err != nil {
-		klog.Warningf("error reading /proc/kallsyms file: %s (check your kernel version, current is: %s)", err, kernelCode)
+		log.Warnf("error reading /proc/kallsyms file: %s (check your kernel version, current is: %s)", err, kernelCode)
 		// If we can't read the /proc/kallsyms file let's just return true to avoid blocking the tracer from running
 		return true, ""
 	}

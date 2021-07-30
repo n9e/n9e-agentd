@@ -8,7 +8,7 @@
 package probe
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/utils"
+	"github.com/DataDog/datadog-agent/pkg/security/utils"
 )
 
 // ContainerResolver is used to resolve the container context of the events
@@ -18,10 +18,4 @@ type ContainerResolver struct{}
 func (cr *ContainerResolver) GetContainerID(pid uint32) (utils.ContainerID, error) {
 	// Parse /proc/[pid]/moutinfo
 	return utils.GetProcContainerID(pid, pid)
-}
-
-// ResolveLabels resolves the label of a container from its container ID
-func (cr *ContainerResolver) ResolveLabels(containerID string) ([]string, error) {
-	// Do not use the tagger for now
-	return []string{}, nil
 }

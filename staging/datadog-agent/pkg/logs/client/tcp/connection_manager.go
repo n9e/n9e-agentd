@@ -17,10 +17,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 	"golang.org/x/net/proxy"
-	"k8s.io/klog/v2"
+
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/status"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -31,13 +32,13 @@ const (
 
 // A ConnectionManager manages connections
 type ConnectionManager struct {
-	endpoint  types.Endpoint
+	endpoint  config.Endpoint
 	mutex     sync.Mutex
 	firstConn sync.Once
 }
 
 // NewConnectionManager returns an initialized ConnectionManager
-func NewConnectionManager(endpoint types.Endpoint) *ConnectionManager {
+func NewConnectionManager(endpoint config.Endpoint) *ConnectionManager {
 	return &ConnectionManager{
 		endpoint: endpoint,
 	}
@@ -57,9 +58,9 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 
 	cm.firstConn.Do(func() {
 		if cm.endpoint.ProxyAddress != "" {
-			klog.Infof("Connecting to the backend: %v, via socks5: %v, with SSL: %v", cm.address(), cm.endpoint.ProxyAddress, cm.endpoint.UseSSL)
+			log.Infof("Connecting to the backend: %v, via socks5: %v, with SSL: %v", cm.address(), cm.endpoint.ProxyAddress, cm.endpoint.UseSSL)
 		} else {
-			klog.Infof("Connecting to the backend: %v, with SSL: %v", cm.address(), cm.endpoint.UseSSL)
+			log.Infof("Connecting to the backend: %v, with SSL: %v", cm.address(), cm.endpoint.UseSSL)
 		}
 	})
 
@@ -70,7 +71,7 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			status.AddGlobalWarning(statusConnectionError, fmt.Sprintf("Connection to the log intake cannot be established: %v", err))
 		}
 		if retries > 0 {
-			klog.V(5).Infof("Connect attempt #%d", retries)
+			log.Debugf("Connect attempt #%d", retries)
 			cm.backoff(ctx, retries)
 		}
 		retries++
@@ -89,7 +90,7 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			var dialer proxy.Dialer
 			dialer, err = proxy.SOCKS5("tcp", cm.endpoint.ProxyAddress, nil, proxy.Direct)
 			if err != nil {
-				klog.Warning(err)
+				log.Warn(err)
 				continue
 			}
 			// TODO: handle timeouts with ctx.
@@ -101,10 +102,10 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			conn, err = dialer.DialContext(dctx, "tcp", cm.address())
 		}
 		if err != nil {
-			klog.Warning(err)
+			log.Warn(err)
 			continue
 		}
-		klog.V(5).Infof("connected to %v", cm.address())
+		log.Debugf("connected to %v", cm.address())
 
 		if cm.endpoint.UseSSL {
 			sslConn := tls.Client(conn, &tls.Config{
@@ -112,10 +113,10 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			})
 			err = cm.handshakeWithTimeout(sslConn, connectionTimeout)
 			if err != nil {
-				klog.Warning(err)
+				log.Warn(err)
 				continue
 			}
-			klog.V(5).Info("SSL handshake successful")
+			log.Debug("SSL handshake successful")
 			conn = sslConn
 		}
 
@@ -131,9 +132,9 @@ func (cm *ConnectionManager) handshakeWithTimeout(conn *tls.Conn, timeout time.D
 		errChannel <- tlsTimeoutError{}
 	})
 	go func() {
-		klog.V(5).Info("Start TLS handshake")
+		log.Debug("Start TLS handshake")
 		errChannel <- conn.Handshake()
-		klog.V(5).Info("TLS handshake ended")
+		log.Debug("TLS handshake ended")
 	}()
 	return <-errChannel
 }
@@ -152,7 +153,7 @@ func (cm *ConnectionManager) ShouldReset(connCreationTime time.Time) bool {
 // CloseConnection closes a connection on the client side
 func (cm *ConnectionManager) CloseConnection(conn net.Conn) {
 	conn.Close()
-	klog.V(5).Info("Connection closed")
+	log.Debug("Connection closed")
 }
 
 // handleServerClose lets the connection manager detect when a connection
@@ -173,7 +174,7 @@ func (cm *ConnectionManager) handleServerClose(conn net.Conn) {
 			cm.CloseConnection(conn)
 			return
 		default:
-			klog.Warning(err)
+			log.Warn(err)
 			return
 		}
 	}

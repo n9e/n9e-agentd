@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	//"k8s.io/klog/v2"
+	//"github.com/DataDog/datadog-agent/pkg/util/log"
 	"golang.org/x/mobile/asset"
 	yaml "gopkg.in/yaml.v2"
 )

@@ -5,7 +5,7 @@
 
 package clusteragent
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks"
+import "github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks"
 
 // ServerContext holds business logic classes required to setup API endpoints
 type ServerContext struct {

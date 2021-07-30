@@ -6,13 +6,14 @@
 package docker
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/pkg/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 func init() {
@@ -20,6 +21,8 @@ func init() {
 }
 
 func TestEvents(t *testing.T) {
+	ctx := context.Background()
+
 	nowTimestamp := time.Now().Unix()
 	expectedTags := []string{
 		"highcardlabeltag:eventhigh",
@@ -28,7 +31,7 @@ func TestEvents(t *testing.T) {
 		"lowcardenvtag:eventlowenv",
 	}
 
-	localHostname, err := util.GetHostname()
+	localHostname, err := util.GetHostname(ctx)
 	assert.Nil(t, err)
 
 	expectedBusyboxEvent := metrics.Event{

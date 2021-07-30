@@ -22,13 +22,13 @@ import (
 
 	"context"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 const (
@@ -103,7 +103,7 @@ func GetCustomLeaderEngine(holderIdentity string, ttl time.Duration) (*LeaderEng
 	}
 	err := globalLeaderEngine.initRetry.TriggerRetry()
 	if err != nil {
-		klog.V(5).Infof("Leader Election init error: %s", err)
+		log.Debugf("Leader Election init error: %s", err)
 		return nil, err
 	}
 	return globalLeaderEngine, nil
@@ -115,11 +115,11 @@ func (le *LeaderEngine) init() error {
 	if le.HolderIdentity == "" {
 		le.HolderIdentity, err = os.Hostname()
 		if err != nil {
-			klog.V(5).Infof("cannot get hostname: %s", err)
+			log.Debugf("cannot get hostname: %s", err)
 			return err
 		}
 	}
-	klog.V(5).Infof("Init LeaderEngine with HolderIdentity: %q", le.HolderIdentity)
+	log.Debugf("Init LeaderEngine with HolderIdentity: %q", le.HolderIdentity)
 
 	leaseDuration := config.Datadog.GetInt("leader_lease_duration")
 	if leaseDuration > 0 {
@@ -127,12 +127,12 @@ func (le *LeaderEngine) init() error {
 	} else {
 		le.LeaseDuration = defaultLeaderLeaseDuration
 	}
-	klog.V(5).Infof("LeaderLeaseDuration: %s", le.LeaseDuration.String())
+	log.Debugf("LeaderLeaseDuration: %s", le.LeaseDuration.String())
 
 	// Using GetAPIClient (no retry) as LeaderElection is already wrapped in a retrier
 	apiClient, err := apiserver.GetAPIClient()
 	if err != nil {
-		klog.Errorf("Not Able to set up a client for the Leader Election: %s", err)
+		log.Errorf("Not Able to set up a client for the Leader Election: %s", err)
 		return err
 	}
 
@@ -141,16 +141,16 @@ func (le *LeaderEngine) init() error {
 	// check if we can get ConfigMap.
 	_, err = le.coreClient.ConfigMaps(le.LeaderNamespace).Get(context.TODO(), defaultLeaseName, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) == false {
-		klog.Errorf("Cannot retrieve ConfigMap from the %s namespace: %s", le.LeaderNamespace, err)
+		log.Errorf("Cannot retrieve ConfigMap from the %s namespace: %s", le.LeaderNamespace, err)
 		return err
 	}
 
 	le.leaderElector, err = le.newElection()
 	if err != nil {
-		klog.Errorf("Could not initialize the Leader Election process: %s", err)
+		log.Errorf("Could not initialize the Leader Election process: %s", err)
 		return err
 	}
-	klog.V(5).Infof("Leader Engine for %q successfully initialized", le.HolderIdentity)
+	log.Debugf("Leader Engine for %q successfully initialized", le.HolderIdentity)
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 	defer le.m.Unlock()
 
 	if le.running {
-		klog.V(5).Infof("Currently Leader: %t. Leader identity: %q", le.IsLeader(), le.GetLeader())
+		log.Debugf("Currently Leader: %t. Leader identity: %q", le.IsLeader(), le.GetLeader())
 		return nil
 	}
 
@@ -180,12 +180,12 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
-		klog.V(6).Infof("Waiting for new leader identity...")
+		log.Tracef("Waiting for new leader identity...")
 		select {
 		case <-tick.C:
 			leaderIdentity := le.GetLeader()
 			if leaderIdentity != "" {
-				klog.Infof("Leader election running, current leader is %q", leaderIdentity)
+				log.Infof("Leader election running, current leader is %q", leaderIdentity)
 				le.running = true
 				return nil
 			}
@@ -197,9 +197,9 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 
 func (le *LeaderEngine) runLeaderElection() {
 	for {
-		klog.Infof("Starting leader election process for %q...", le.HolderIdentity)
+		log.Infof("Starting leader election process for %q...", le.HolderIdentity)
 		le.leaderElector.Run(context.Background())
-		klog.Info("Leader election lost")
+		log.Info("Leader election lost")
 	}
 }
 
@@ -252,7 +252,7 @@ func GetLeaderElectionRecord() (leaderDetails rl.LeaderElectionRecord, err error
 	if err != nil {
 		return led, err
 	}
-	klog.V(5).Infof("LeaderElection cm is %#v", leaderElectionCM)
+	log.Debugf("LeaderElection cm is %#v", leaderElectionCM)
 	annotation, found := leaderElectionCM.Annotations[rl.LeaderElectionRecordAnnotationKey]
 	if !found {
 		return led, apiserver.ErrNotFound

@@ -9,8 +9,6 @@ struct rmdir_event_t {
     struct container_context_t container;
     struct syscall_t syscall;
     struct file_t file;
-    u32 discarder_revision;
-    u32 padding;
 };
 
 int __attribute__((always_inline)) rmdir_approvers(struct syscall_cache_t *syscall) {
@@ -20,7 +18,7 @@ int __attribute__((always_inline)) unlink_approvers(struct syscall_cache_t *sysc
 
 SYSCALL_KPROBE0(rmdir) {
     struct syscall_cache_t syscall = {
-        .type = SYSCALL_RMDIR,
+        .type = EVENT_RMDIR,
         .policy = fetch_policy(EVENT_RMDIR),
     };
 
@@ -29,21 +27,22 @@ SYSCALL_KPROBE0(rmdir) {
     return 0;
 }
 
+int __attribute__((always_inline)) rmdir_predicate(u64 type) {
+    return type == EVENT_RMDIR || type == EVENT_UNLINK;
+}
+
 // security_inode_rmdir is shared between rmdir and unlink syscalls
 SEC("kprobe/security_inode_rmdir")
 int kprobe__security_inode_rmdir(struct pt_regs *ctx) {
-    struct syscall_cache_t *syscall = peek_syscall(SYSCALL_RMDIR | SYSCALL_UNLINK);
+    struct syscall_cache_t *syscall = peek_syscall_with(rmdir_predicate);
     if (!syscall)
         return 0;
 
-    u64 event_type = 0;
     struct path_key_t key = {};
     struct dentry *dentry = NULL;
 
     switch (syscall->type) {
-        case SYSCALL_RMDIR:
-            event_type = EVENT_RMDIR;
-
+        case EVENT_RMDIR:
             if (syscall->rmdir.file.path_key.ino) {
                 return 0;
             }
@@ -62,9 +61,7 @@ int kprobe__security_inode_rmdir(struct pt_regs *ctx) {
             }
 
             break;
-        case SYSCALL_UNLINK:
-            event_type = EVENT_UNLINK;
-
+        case EVENT_UNLINK:
             if (syscall->unlink.file.path_key.ino) {
                 return 0;
             }
@@ -84,28 +81,44 @@ int kprobe__security_inode_rmdir(struct pt_regs *ctx) {
             }
 
             break;
+        default:
+            return 0;
     }
 
-    if (is_discarded_by_process(syscall->policy.mode, event_type)) {
+    if (is_discarded_by_process(syscall->policy.mode, syscall->type)) {
         return mark_as_discarded(syscall);
     }
 
     if (dentry != NULL) {
-        int ret = resolve_dentry(dentry, key, syscall->policy.mode != NO_FILTER ? event_type : 0);
-        if (ret == DENTRY_DISCARDED) {
-            return mark_as_discarded(syscall);
-        }
-    }
+        syscall->resolver.key = key;
+        syscall->resolver.dentry = dentry;
+        syscall->resolver.discarder_type = syscall->policy.mode != NO_FILTER ? syscall->type : 0;
+        syscall->resolver.callback = DR_SECURITY_INODE_RMDIR_CALLBACK_KPROBE_KEY;
+        syscall->resolver.iteration = 0;
+        syscall->resolver.ret = 0;
 
+        resolve_dentry(ctx, DR_KPROBE);
+    }
     return 0;
 }
 
-SYSCALL_KRETPROBE(rmdir) {
-    struct syscall_cache_t *syscall = pop_syscall(SYSCALL_RMDIR | SYSCALL_UNLINK);
+SEC("kprobe/dr_security_inode_rmdir_callback")
+int __attribute__((always_inline)) dr_security_inode_rmdir_callback(struct pt_regs *ctx) {
+    struct syscall_cache_t *syscall = peek_syscall_with(rmdir_predicate);
     if (!syscall)
         return 0;
 
-    int retval = PT_REGS_RC(ctx);
+    if (syscall->resolver.ret == DENTRY_DISCARDED) {
+        return mark_as_discarded(syscall);
+    }
+    return 0;
+}
+
+int __attribute__((always_inline)) sys_rmdir_ret(void *ctx, int retval) {
+    struct syscall_cache_t *syscall = pop_syscall_with(rmdir_predicate);
+    if (!syscall)
+        return 0;
+
     if (IS_UNHANDLED_ERROR(retval)) {
         return 0;
     }
@@ -115,7 +128,6 @@ SYSCALL_KRETPROBE(rmdir) {
         struct rmdir_event_t event = {
             .syscall.retval = retval,
             .file = syscall->rmdir.file,
-            .discarder_revision = bump_discarder_revision(syscall->rmdir.file.path_key.mount_id),
         };
 
         struct proc_cache_t *entry = fill_process_context(&event.process);
@@ -127,6 +139,21 @@ SYSCALL_KRETPROBE(rmdir) {
     invalidate_inode(ctx, syscall->rmdir.file.path_key.mount_id, syscall->rmdir.file.path_key.ino, !pass_to_userspace);
 
     return 0;
+}
+
+SEC("tracepoint/syscalls/sys_exit_rmdir")
+int tracepoint_syscalls_sys_exit_rmdir(struct tracepoint_syscalls_sys_exit_t *args) {
+    return sys_rmdir_ret(args, args->ret);
+}
+
+SYSCALL_KRETPROBE(rmdir) {
+    int retval = PT_REGS_RC(ctx);
+    return sys_rmdir_ret(ctx, retval);
+}
+
+SEC("tracepoint/handle_sys_rmdir_exit")
+int tracepoint_handle_sys_rmdir_exit(struct tracepoint_raw_syscalls_sys_exit_t *args) {
+    return sys_rmdir_ret(args, args->ret);
 }
 
 #endif

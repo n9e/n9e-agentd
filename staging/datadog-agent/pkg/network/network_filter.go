@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-// ConnectionFilter holds a user-defined blacklisted IP/CIDR, and ports
+// ConnectionFilter holds a user-defined excluded IP/CIDR, and ports
 type ConnectionFilter struct {
 	IP       *net.IPNet // If nil, then all IPs will be considered matching.
 	AllPorts ConnTypeFilter
@@ -24,8 +24,8 @@ type ConnTypeFilter struct {
 	UDP bool
 }
 
-// ParseConnectionFilters takes the user defined blacklist and returns a slice of ConnectionFilters
-func ParseConnectionFilters(filters map[string][]string) (blacklist []*ConnectionFilter) {
+// ParseConnectionFilters takes the user defined excludelist and returns a slice of ConnectionFilters
+func ParseConnectionFilters(filters map[string][]string) (excludelist []*ConnectionFilter) {
 	for ip, portFilters := range filters {
 		filter := &ConnectionFilter{Ports: map[uint16]ConnTypeFilter{}}
 		var subnet *net.IPNet
@@ -41,12 +41,12 @@ func ParseConnectionFilters(filters map[string][]string) (blacklist []*Connectio
 		} else if strings.Contains(ip, "::") {
 			_, subnet, err = net.ParseCIDR(ip + "/64") // if given ipv6, prefix length of 64
 		} else {
-			klog.Errorf("Invalid IP/CIDR/* defined for connection filter")
+			log.Errorf("Invalid IP/CIDR/* defined for connection filter")
 			continue
 		}
 
 		if err != nil {
-			klog.Errorf("Given filter will not be respected. Could not parse address: %s", err)
+			log.Errorf("Given filter will not be respected. Could not parse address: %s", err)
 			continue
 		}
 
@@ -56,14 +56,14 @@ func ParseConnectionFilters(filters map[string][]string) (blacklist []*Connectio
 		for _, rawPortMapping := range portFilters {
 			lowerPort, upperPort, transportFilter, e := parsePortFilter(rawPortMapping)
 			if e != nil {
-				err = e
+				err = log.Error(e)
 				break
 			}
 
 			// Port filter for is a wildcard
 			if lowerPort == 0 && upperPort == 0 {
 				if subnet == nil { // Check that theres no wildcard filter above, or we'd just skip everything which is invalid
-					err = fmt.Errorf("Given rule will not be respected. Invalid filter with IP/CIDR as * and port as *")
+					err = log.Errorf("Given rule will not be respected. Invalid filter with IP/CIDR as * and port as *")
 					break
 				}
 
@@ -83,10 +83,10 @@ func ParseConnectionFilters(filters map[string][]string) (blacklist []*Connectio
 
 		// If there were any errors in parsing the port filters above, we'll skip this entry.
 		if err == nil {
-			blacklist = append(blacklist, filter)
+			excludelist = append(excludelist, filter)
 		}
 	}
-	return blacklist
+	return excludelist
 }
 
 // parsePortFilter checks for valid port(s) and protocol filters

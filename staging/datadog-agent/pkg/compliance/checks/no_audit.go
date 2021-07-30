@@ -10,7 +10,7 @@ package checks
 import (
 	"errors"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
 )
 
 func newAuditClient() (env.AuditClient, error) {

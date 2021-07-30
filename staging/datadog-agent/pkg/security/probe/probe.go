@@ -12,26 +12,29 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode"
-	pconfig "github.com/n9e/n9e-agentd/pkg/process/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf/probes"
-	seclog "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/log"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
-	"k8s.io/klog/v2"
 	"github.com/DataDog/datadog-go/statsd"
 	lib "github.com/DataDog/ebpf"
 	"github.com/DataDog/ebpf/manager"
 	"github.com/cihub/seelog"
 	"github.com/pkg/errors"
+
+	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode"
+	pconfig "github.com/DataDog/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/security/config"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf/kernel"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf/probes"
+	seclog "github.com/DataDog/datadog-agent/pkg/security/log"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // EventHandler represents an handler for the events sent by the probe
@@ -49,10 +52,11 @@ type Probe struct {
 	config         *config.Config
 	statsdClient   *statsd.Client
 	startTime      time.Time
-	kernelVersion  kernel.Version
+	kernelVersion  *kernel.Version
 	_              uint32 // padding for goarch=386
 	ctx            context.Context
 	cancelFnc      context.CancelFunc
+	wg             sync.WaitGroup
 	// Events section
 	handler   EventHandler
 	monitor   *Monitor
@@ -89,12 +93,21 @@ func (p *Probe) Map(name string) (*lib.Map, error) {
 	return m, nil
 }
 
-func (p *Probe) detectKernelVersion() {
-	if kernelVersion, err := kernel.HostVersion(); err != nil {
-		klog.Warning("unable to detect the kernel version")
-	} else {
-		p.kernelVersion = kernelVersion
+func (p *Probe) detectKernelVersion() error {
+	kernelVersion, err := kernel.NewKernelVersion()
+	if err != nil {
+		return errors.Wrap(err, "unable to detect the kernel version")
 	}
+	p.kernelVersion = kernelVersion
+	return nil
+}
+
+// VerifyOSVersion returns an error if the current kernel version is not supported
+func (p *Probe) VerifyOSVersion() error {
+	if !p.kernelVersion.IsRH7Kernel() && !p.kernelVersion.IsRH8Kernel() && p.kernelVersion.Code < kernel.Kernel4_15 {
+		return errors.Errorf("the following kernel is not supported: %s", p.kernelVersion)
+	}
+	return nil
 }
 
 // Init initializes the probe
@@ -116,7 +129,7 @@ func (p *Probe) Init(client *statsd.Client) error {
 	if p.config.EnableRuntimeCompiler {
 		bytecodeReader, err = getRuntimeCompiledProbe(p.config, useSyscallWrapper)
 		if err != nil {
-			klog.Warningf("error compiling runtime-security probe, falling back to pre-compiled: %s", err)
+			log.Warnf("error compiling runtime-security probe, falling back to pre-compiled: %s", err)
 		} else {
 			defer bytecodeReader.Close()
 		}
@@ -136,8 +149,6 @@ func (p *Probe) Init(client *statsd.Client) error {
 		defer bytecodeReader.Close()
 	}
 
-	p.manager = ebpf.NewRuntimeSecurityManager()
-
 	var ok bool
 	if p.perfMap, ok = p.manager.GetPerfMap("events"); !ok {
 		return errors.New("couldn't find events perf map")
@@ -151,7 +162,7 @@ func (p *Probe) Init(client *statsd.Client) error {
 	if os.Getenv("RUNTIME_SECURITY_TESTSUITE") != "true" {
 		p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, manager.ConstantEditor{
 			Name:  "system_probe_pid",
-			Value: uint64(os.Getpid()),
+			Value: uint64(utils.Getpid()),
 		})
 	}
 
@@ -197,16 +208,14 @@ func (p *Probe) Init(client *statsd.Client) error {
 
 // Start the runtime security probe
 func (p *Probe) Start() error {
-	go p.reOrderer.Start(p.ctx)
+	p.wg.Add(1)
+	go p.reOrderer.Start(p.ctx, &p.wg)
 
 	if err := p.manager.Start(); err != nil {
 		return err
 	}
 
-	if err := p.monitor.Start(p.ctx); err != nil {
-		return err
-	}
-	return nil
+	return p.monitor.Start(p.ctx, &p.wg)
 }
 
 // SetEventHandler set the probe event handler
@@ -218,7 +227,7 @@ func (p *Probe) SetEventHandler(handler EventHandler) {
 func (p *Probe) DispatchEvent(event *Event, size uint64, CPU int, perfMap *manager.PerfMap) {
 	if logLevel, err := log.GetLogLevel(); err != nil || logLevel == seelog.TraceLvl {
 		prettyEvent := event.String()
-		klog.V(6).Infof("Dispatching event %s\n", prettyEvent)
+		seclog.Tracef("Dispatching event %s\n", prettyEvent)
 	}
 
 	if p.handler != nil {
@@ -233,7 +242,7 @@ func (p *Probe) DispatchEvent(event *Event, size uint64, CPU int, perfMap *manag
 func (p *Probe) DispatchCustomEvent(rule *rules.Rule, event *CustomEvent) {
 	if logLevel, err := log.GetLogLevel(); err != nil || logLevel == seelog.TraceLvl {
 		prettyEvent := event.String()
-		klog.V(6).Infof("Dispatching custom event %s\n", prettyEvent)
+		seclog.Tracef("Dispatching custom event %s\n", prettyEvent)
 	}
 
 	if p.handler != nil && p.config.AgentMonitoringEvents {
@@ -252,11 +261,9 @@ func (p *Probe) GetMonitor() *Monitor {
 }
 
 func (p *Probe) handleLostEvents(CPU int, count uint64, perfMap *manager.PerfMap, manager *manager.Manager) {
-	klog.V(6).Infof("lost %d events", count)
+	seclog.Tracef("lost %d events", count)
 	p.monitor.perfBufferMonitor.CountLostEvent(count, perfMap, CPU)
 }
-
-var eventZero Event
 
 func (p *Probe) zeroEvent() *Event {
 	*p.event = eventZero
@@ -272,16 +279,15 @@ func (p *Probe) unmarshalProcessContainer(data []byte, event *Event) (int, error
 	return read, nil
 }
 
-func (p *Probe) invalidateDentry(mountID uint32, inode uint64, revision uint32) {
-	if p.resolvers.MountResolver.IsOverlayFS(mountID) {
-		klog.V(6).Infof("remove all dentry entries for mount id %d", mountID)
-		p.resolvers.DentryResolver.DelCacheEntries(mountID)
-
-		p.inodeDiscarders.setRevision(mountID, revision)
-	} else {
-		klog.V(6).Infof("remove dentry cache entry for inode %d", inode)
-		p.resolvers.DentryResolver.DelCacheEntry(mountID, inode)
+func (p *Probe) invalidateDentry(mountID uint32, inode uint64) {
+	// sanity check
+	if mountID == 0 || inode == 0 {
+		log.Errorf("invalid mount_id/inode tuple %d:%d", mountID, inode)
+		return
 	}
+
+	seclog.Tracef("remove dentry cache entry for inode %d", inode)
+	p.resolvers.DentryResolver.DelCacheEntry(mountID, inode)
 }
 
 func (p *Probe) handleEvent(CPU uint64, data []byte) {
@@ -291,7 +297,7 @@ func (p *Probe) handleEvent(CPU uint64, data []byte) {
 
 	read, err := event.UnmarshalBinary(data)
 	if err != nil {
-		klog.Errorf("failed to decode event: %s", err)
+		log.Errorf("failed to decode event: %s", err)
 		return
 	}
 	offset += read
@@ -303,7 +309,7 @@ func (p *Probe) handleEvent(CPU uint64, data []byte) {
 	switch eventType {
 	case model.MountReleasedEventType:
 		if _, err := event.MountReleased.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode mount released event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode mount released event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
@@ -316,21 +322,21 @@ func (p *Probe) handleEvent(CPU uint64, data []byte) {
 
 		// Delete new mount point from cache
 		if err := p.resolvers.MountResolver.Delete(event.MountReleased.MountID); err != nil {
-			klog.Warningf("failed to delete mount point %d from cache: %s", event.MountReleased.MountID, err)
+			log.Warnf("failed to delete mount point %d from cache: %s", event.MountReleased.MountID, err)
 		}
 		return
 	case model.InvalidateDentryEventType:
 		if _, err := event.InvalidateDentry.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode invalidate dentry event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode invalidate dentry event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
-		p.invalidateDentry(event.InvalidateDentry.MountID, event.InvalidateDentry.Inode, event.InvalidateDentry.DiscarderRevision)
+		p.invalidateDentry(event.InvalidateDentry.MountID, event.InvalidateDentry.Inode)
 
 		return
 	case model.ArgsEnvsEventType:
 		if _, err := event.ArgsEnvs.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode args envs event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode args envs event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
@@ -341,7 +347,7 @@ func (p *Probe) handleEvent(CPU uint64, data []byte) {
 
 	read, err = p.unmarshalProcessContainer(data[offset:], event)
 	if err != nil {
-		klog.Errorf("failed to decode event `%s`: %s", eventType, err)
+		log.Errorf("failed to decode event `%s`: %s", eventType, err)
 		return
 	}
 	offset += read
@@ -349,135 +355,182 @@ func (p *Probe) handleEvent(CPU uint64, data []byte) {
 	switch eventType {
 	case model.FileMountEventType:
 		if _, err := event.Mount.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode mount event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode mount event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
 		// Resolve mount point
-		event.ResolveMountPoint(&event.Mount)
+		event.SetMountPoint(&event.Mount)
 		// Resolve root
-		event.ResolveMountRoot(&event.Mount)
+		event.SetMountRoot(&event.Mount)
 		// Insert new mount point in cache
 		p.resolvers.MountResolver.Insert(event.Mount)
+
+		// There could be entries of a previous mount_id in the cache for instance,
+		// runc does the following : it bind mounts itself (using /proc/exe/self),
+		// opens a file descriptor on the new file with O_CLOEXEC then umount the bind mount using
+		// MNT_DETACH. It then does an exec syscall, that will cause the fd to be closed.
+		// Our dentry resolution of the exec event causes the inode/mount_id to be put in cache,
+		// so we remove all dentry entries belonging to the mountID.
+		p.resolvers.DentryResolver.DelCacheEntries(event.Mount.MountID)
 	case model.FileUmountEventType:
 		if _, err := event.Umount.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode umount event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode umount event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileOpenEventType:
 		if _, err := event.Open.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode open event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode open event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileMkdirEventType:
 		if _, err := event.Mkdir.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode mkdir event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode mkdir event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileRmdirEventType:
 		if _, err := event.Rmdir.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode rmdir event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode rmdir event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
 		// defer it do ensure that it will be done after the dispatch that could re-add it
-		defer p.invalidateDentry(event.Rmdir.File.MountID, event.Rmdir.File.Inode, event.Rmdir.DiscarderRevision)
+		defer p.invalidateDentry(event.Rmdir.File.MountID, event.Rmdir.File.Inode)
 	case model.FileUnlinkEventType:
 		if _, err := event.Unlink.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode unlink event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode unlink event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
 		// defer it do ensure that it will be done after the dispatch that could re-add it
-		defer p.invalidateDentry(event.Unlink.File.MountID, event.Unlink.File.Inode, event.Unlink.DiscarderRevision)
+		defer p.invalidateDentry(event.Unlink.File.MountID, event.Unlink.File.Inode)
 	case model.FileRenameEventType:
 		if _, err := event.Rename.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode rename event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode rename event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 
-		defer p.invalidateDentry(event.Rename.New.MountID, event.Rename.New.Inode, event.Rename.DiscarderRevision)
+		defer p.invalidateDentry(event.Rename.New.MountID, event.Rename.New.Inode)
 	case model.FileChmodEventType:
 		if _, err := event.Chmod.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode chmod event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode chmod event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileChownEventType:
 		if _, err := event.Chown.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode chown event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode chown event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileUtimeEventType:
 		if _, err := event.Utimes.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode utime event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode utime event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileLinkEventType:
 		if _, err := event.Link.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode link event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode link event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileSetXAttrEventType:
 		if _, err := event.SetXAttr.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode setxattr event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode setxattr event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.FileRemoveXAttrEventType:
 		if _, err := event.RemoveXAttr.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode removexattr event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode removexattr event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
 	case model.ForkEventType:
 		if _, err := event.UnmarshalProcess(data[offset:]); err != nil {
-			klog.Errorf("failed to decode fork event: %s (offset %d, len %d)", err, offset, dataLen)
+			log.Errorf("failed to decode fork event: %s (offset %d, len %d)", err, offset, dataLen)
 			return
 		}
-		event.updateProcessCachePointer(p.resolvers.ProcessResolver.AddForkEntry(event.ProcessContext.Pid, event.processCacheEntry))
+
+		p.resolvers.ProcessResolver.ApplyBootTime(event.processCacheEntry)
+
+		p.resolvers.ProcessResolver.AddForkEntry(event.ProcessContext.Pid, event.processCacheEntry)
 	case model.ExecEventType:
+		// unmarshal and fill event.processCacheEntry
 		if _, err := event.UnmarshalProcess(data[offset:]); err != nil {
-			klog.Errorf("failed to decode exec event: %s (offset %d, len %d)", err, offset, len(data))
+			log.Errorf("failed to decode exec event: %s (offset %d, len %d)", err, offset, len(data))
 			return
 		}
 		p.resolvers.ProcessResolver.SetProcessArgs(event.processCacheEntry)
 		p.resolvers.ProcessResolver.SetProcessEnvs(event.processCacheEntry)
 
 		if _, err := p.resolvers.ProcessResolver.SetProcessPath(event.processCacheEntry); err != nil {
-			klog.V(5).Infof("failed to resolve exec path: %s", err)
+			log.Debugf("failed to resolve exec path: %s", err)
 		}
-		p.resolvers.ProcessResolver.SetProcessContainerPath(event.processCacheEntry)
+		p.resolvers.ProcessResolver.SetProcessFilesystem(event.processCacheEntry)
 
-		event.updateProcessCachePointer(p.resolvers.ProcessResolver.AddExecEntry(event.ProcessContext.Pid, event.processCacheEntry))
+		p.resolvers.ProcessResolver.SetProcessTTY(event.processCacheEntry)
+
+		p.resolvers.ProcessResolver.SetProcessUsersGroups(event.processCacheEntry)
+
+		p.resolvers.ProcessResolver.ApplyBootTime(event.processCacheEntry)
+
+		p.resolvers.ProcessResolver.AddExecEntry(event.ProcessContext.Pid, event.processCacheEntry)
+
+		// copy some of the field from the entry
+		event.Exec.Process = event.processCacheEntry.Process
+		event.Exec.FileFields = event.processCacheEntry.Process.FileFields
 	case model.ExitEventType:
 		defer p.resolvers.ProcessResolver.DeleteEntry(event.ProcessContext.Pid, event.ResolveEventTimestamp())
 	case model.SetuidEventType:
 		if _, err := event.SetUID.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode setuid event: %s (offset %d, len %d)", err, offset, len(data))
+			log.Errorf("failed to decode setuid event: %s (offset %d, len %d)", err, offset, len(data))
 			return
 		}
 		defer p.resolvers.ProcessResolver.UpdateUID(event.ProcessContext.Pid, event)
 	case model.SetgidEventType:
 		if _, err := event.SetGID.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode setgid event: %s (offset %d, len %d)", err, offset, len(data))
+			log.Errorf("failed to decode setgid event: %s (offset %d, len %d)", err, offset, len(data))
 			return
 		}
 		defer p.resolvers.ProcessResolver.UpdateGID(event.ProcessContext.Pid, event)
 	case model.CapsetEventType:
 		if _, err := event.Capset.UnmarshalBinary(data[offset:]); err != nil {
-			klog.Errorf("failed to decode capset event: %s (offset %d, len %d)", err, offset, len(data))
+			log.Errorf("failed to decode capset event: %s (offset %d, len %d)", err, offset, len(data))
 			return
 		}
 		defer p.resolvers.ProcessResolver.UpdateCapset(event.ProcessContext.Pid, event)
+	case model.SELinuxEventType:
+		if _, err := event.SELinux.UnmarshalBinary(data[offset:]); err != nil {
+			log.Errorf("failed to decode selinux event: %s (offset %d, len %d)", err, offset, len(data))
+			return
+		}
 	default:
-		klog.Errorf("unsupported event type %d", eventType)
+		log.Errorf("unsupported event type %d", eventType)
 		return
 	}
 
 	// resolve event context
 	if eventType != model.ExitEventType {
 		event.ResolveProcessCacheEntry()
+
+		// in case of exec event we take the parent a process context as this
+		// the parent which generated the exec
+		if eventType == model.ExecEventType {
+			if ancestor := event.processCacheEntry.ProcessContext.Ancestor; ancestor != nil {
+				event.ProcessContext = ancestor.ProcessContext
+			}
+		} else {
+			event.ProcessContext = event.processCacheEntry.ProcessContext
+		}
 	}
 
 	p.DispatchEvent(event, dataLen, int(CPU), p.perfMap)
+
+	// flush exited process
+	p.resolvers.ProcessResolver.DequeueExited()
+}
+
+// OnRuleMatch is called when a rule matches just before sending
+func (p *Probe) OnRuleMatch(rule *rules.Rule, event *Event) {
+	// ensure that all the fields are resolved before sending
+	event.ResolveContainerID(&event.ContainerContext)
+	event.ResolveContainerTags(&event.ContainerContext)
 }
 
 // OnNewDiscarder is called when a new discarder is found
@@ -491,7 +544,7 @@ func (p *Probe) OnNewDiscarder(rs *rules.RuleSet, event *Event, field eval.Field
 		return nil
 	}
 
-	klog.V(6).Infof("New discarder of type %s for field %s", eventType, field)
+	seclog.Tracef("New discarder of type %s for field %s", eventType, field)
 
 	if handler, ok := allDiscarderHandlers[eventType]; ok {
 		return handler(rs, event, p, Discarder{Field: field})
@@ -502,7 +555,7 @@ func (p *Probe) OnNewDiscarder(rs *rules.RuleSet, event *Event, field eval.Field
 
 // ApplyFilterPolicy is called when a passing policy for an event type is applied
 func (p *Probe) ApplyFilterPolicy(eventType eval.EventType, mode PolicyMode, flags PolicyFlag) error {
-	klog.Infof("Setting in-kernel filter policy to `%s` for `%s`", mode, eventType)
+	log.Infof("Setting in-kernel filter policy to `%s` for `%s`", mode, eventType)
 	table, err := p.Map("filter_policy")
 	if err != nil {
 		return errors.Wrap(err, "unable to find policy table")
@@ -530,11 +583,11 @@ func (p *Probe) SetApprovers(eventType eval.EventType, approvers rules.Approvers
 
 	newApprovers, err := handler(p, approvers)
 	if err != nil {
-		klog.Errorf("Error while adding approvers fallback in-kernel policy to `%s` for `%s`: %s", PolicyModeAccept, eventType, err)
+		log.Errorf("Error while adding approvers fallback in-kernel policy to `%s` for `%s`: %s", PolicyModeAccept, eventType, err)
 	}
 
 	for _, newApprover := range newApprovers {
-		klog.V(6).Infof("Applying approver %+v", newApprover)
+		seclog.Tracef("Applying approver %+v", newApprover)
 		if err := newApprover.Apply(p); err != nil {
 			return err
 		}
@@ -543,7 +596,7 @@ func (p *Probe) SetApprovers(eventType eval.EventType, approvers rules.Approvers
 	if previousApprovers, exist := p.approvers[eventType]; exist {
 		previousApprovers.Sub(newApprovers)
 		for _, previousApprover := range previousApprovers {
-			klog.V(6).Infof("Removing previous approver %+v", previousApprover)
+			seclog.Tracef("Removing previous approver %+v", previousApprover)
 			if err := previousApprover.Remove(p); err != nil {
 				return err
 			}
@@ -582,7 +635,7 @@ func (p *Probe) SelectProbes(rs *rules.RuleSet) error {
 			}
 			if !exists {
 				selectedIDs = append(selectedIDs, id)
-				klog.V(6).Infof("probe %s selected", id)
+				seclog.Tracef("probe %s selected", id)
 			}
 		}
 	}
@@ -610,7 +663,7 @@ func (p *Probe) SelectProbes(rs *rules.RuleSet) error {
 	}
 	defer func() {
 		if err := p.perfMap.Resume(); err != nil {
-			klog.Errorf("failed to resume perf map: %s", err)
+			log.Errorf("failed to resume perf map: %s", err)
 		}
 	}()
 
@@ -623,7 +676,7 @@ func (p *Probe) SelectProbes(rs *rules.RuleSet) error {
 
 // FlushDiscarders removes all the discarders
 func (p *Probe) FlushDiscarders() error {
-	klog.V(5).Infof("Freezing discarders")
+	log.Debug("Freezing discarders")
 
 	flushingMap, err := p.Map("flushing_discarders")
 	if err != nil {
@@ -638,10 +691,10 @@ func (p *Probe) FlushDiscarders() error {
 		atomic.StoreInt64(&p.flushingDiscarders, 0)
 
 		if err := flushingMap.Put(ebpf.ZeroUint32MapItem, uint32(0)); err != nil {
-			klog.Errorf("Failed to reset flush_discarders flag: %s", err)
+			log.Errorf("Failed to reset flush_discarders flag: %s", err)
 		}
 
-		klog.V(5).Infof("Unfreezing discarders")
+		log.Debugf("Unfreezing discarders")
 	}
 	defer unfreezeDiscarders()
 
@@ -666,7 +719,7 @@ func (p *Probe) FlushDiscarders() error {
 
 	discarderCount := len(discardedInodes) + len(discardedPids)
 	if discarderCount == 0 {
-		klog.V(5).Infof("No discarder found")
+		log.Debugf("No discarder found")
 		return nil
 	}
 
@@ -674,11 +727,11 @@ func (p *Probe) FlushDiscarders() error {
 	delay := flushWindow / time.Duration(discarderCount)
 
 	flushDiscarders := func() {
-		klog.V(5).Infof("Flushing discarders")
+		log.Debugf("Flushing discarders")
 
 		for _, inode := range discardedInodes {
 			if err := p.inodeDiscarders.Delete(unsafe.Pointer(&inode)); err != nil {
-				klog.V(6).Infof("Failed to flush discarder for inode %d: %s", inode, err)
+				seclog.Tracef("Failed to flush discarder for inode %d: %s", inode, err)
 			}
 
 			discarderCount--
@@ -689,7 +742,7 @@ func (p *Probe) FlushDiscarders() error {
 
 		for _, pid := range discardedPids {
 			if err := p.pidDiscarders.Delete(unsafe.Pointer(&pid)); err != nil {
-				klog.V(6).Infof("Failed to flush discarder for pid %d: %s", pid, err)
+				seclog.Tracef("Failed to flush discarder for pid %d: %s", pid, err)
 			}
 
 			discarderCount--
@@ -717,8 +770,12 @@ func (p *Probe) Snapshot() error {
 // Close the probe
 func (p *Probe) Close() error {
 	p.cancelFnc()
+	p.wg.Wait()
 
-	return p.manager.Stop(manager.CleanAll)
+	if err := p.manager.Stop(manager.CleanAll); err != nil {
+		return err
+	}
+	return p.resolvers.Close()
 }
 
 // GetDebugStats returns the debug stats
@@ -735,7 +792,7 @@ func (p *Probe) NewRuleSet(opts *rules.Opts) *rules.RuleSet {
 	eventCtor := func() eval.Event {
 		return NewEvent(p.resolvers, p.scrubber)
 	}
-	opts.Logger = seclog.DatadogAgentLogger{}
+	opts.Logger = &seclog.PatternLogger{}
 
 	return rules.NewRuleSet(&Model{}, eventCtor, opts)
 }
@@ -752,16 +809,30 @@ func NewProbe(config *config.Config, client *statsd.Client) (*Probe, error) {
 	p := &Probe{
 		config:         config,
 		approvers:      make(map[eval.EventType]activeApprovers),
+		manager:        ebpf.NewRuntimeSecurityManager(),
 		managerOptions: ebpf.NewDefaultOptions(),
 		ctx:            ctx,
 		cancelFnc:      cancel,
 		statsdClient:   client,
 		erpc:           erpc,
 	}
-	p.detectKernelVersion()
+
+	if err = p.detectKernelVersion(); err != nil {
+		// we need the kernel version to start, fail if we can't get it
+		return nil, err
+	}
+	if err = p.VerifyOSVersion(); err != nil {
+		log.Warnf("the current kernel isn't officially supported, some features might not work properly: %v", err)
+	}
+
+	numCPU, err := utils.NumCPU()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse CPU count")
+	}
+	p.managerOptions.MapSpecEditors = probes.AllMapSpecEditors(numCPU)
 
 	if !p.config.EnableKernelFilters {
-		klog.Warning("Forcing in-kernel filter policy to `pass`: filtering not enabled")
+		log.Warn("Forcing in-kernel filter policy to `pass`: filtering not enabled")
 	}
 
 	if p.config.SyscallMonitor {
@@ -771,6 +842,10 @@ func NewProbe(config *config.Config, client *statsd.Client) (*Probe, error) {
 
 	// Add global constant editors
 	p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors,
+		manager.ConstantEditor{
+			Name:  "runtime_pid",
+			Value: uint64(utils.Getpid()),
+		},
 		manager.ConstantEditor{
 			Name:  "do_fork_input",
 			Value: getDoForkInput(p),
@@ -787,15 +862,40 @@ func NewProbe(config *config.Config, client *statsd.Client) (*Probe, error) {
 			Name:  "sb_magic_offset",
 			Value: getSuperBlockMagicOffset(p),
 		},
+		manager.ConstantEditor{
+			Name:  "getattr2",
+			Value: getAttr2(p),
+		},
 	)
 	p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, TTYConstants(p)...)
 	p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, erpc.GetConstants()...)
 	p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, DiscarderConstants...)
+	p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, getCGroupWriteConstants())
+
+	// if we are using tracepoints to probe syscall exits, i.e. if we are using an old kernel version (< 4.12)
+	// we need to use raw_syscall tracepoints for exits, as syscall are not trace when running an ia32 userspace
+	// process
+	if probes.ShouldUseSyscallExitTracepoints() {
+		p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors,
+			manager.ConstantEditor{
+				Name:  "tracepoint_raw_syscall_fallback",
+				Value: uint64(1),
+			},
+		)
+	}
+
+	// constants syscall monitor
+	if p.config.SyscallMonitor {
+		p.managerOptions.ConstantEditors = append(p.managerOptions.ConstantEditors, manager.ConstantEditor{
+			Name:  "syscall_monitor",
+			Value: uint64(1),
+		})
+	}
 
 	// tail calls
 	p.managerOptions.TailCallRouter = probes.AllTailRoutes()
 
-	resolvers, err := NewResolvers(p, client)
+	resolvers, err := NewResolvers(config, p)
 	if err != nil {
 		return nil, err
 	}

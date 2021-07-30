@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 )
 
 // AgentMetadata contains metadata provided by the agent itself
@@ -27,8 +27,8 @@ type CheckInstanceMetadata map[string]interface{}
 type Payload struct {
 	Hostname      string         `json:"hostname"`
 	Timestamp     int64          `json:"timestamp"`
-	CheckMetadata *CheckMetadata `json:"checkMetadata"`
-	AgentMetadata *AgentMetadata `json:"agentMetadata"`
+	CheckMetadata *CheckMetadata `json:"check_metadata"`
+	AgentMetadata *AgentMetadata `json:"agent_metadata"`
 }
 
 // MarshalJSON serialization a Payload to JSON

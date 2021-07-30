@@ -17,8 +17,8 @@ import (
 	"time"
 	"unsafe"
 
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -28,7 +28,7 @@ var (
 
 	eventLogChannelsToExport = map[string]string{
 		"System":      "Event/System/Provider[@Name=\"Service Control Manager\"]",
-		"Application": "Event/System/Provider[@Name=\"datadog-trace-agent\"]",
+		"Application": "Event/System/Provider[@Name=\"datadog-trace-agent\" or @Name=\"DatadogAgent\"]",
 		"Microsoft-Windows-WMI-Activity/Operational": "*",
 	}
 	execTimeout = 30 * time.Second
@@ -61,6 +61,10 @@ func zipCounterStrings(tempDir, hostname string) error {
 			bufferSize += bufferIncrement
 			continue
 		}
+		// must set the length of the slice to the actual amount of data
+		// sz is in bytes, but it's a slice of uint16s, so divide the returned
+		// buffer size by two.
+		counterlist = counterlist[:(sz / 2)]
 		break
 	}
 	clist := winutil.ConvertWindowsStringList(counterlist)
@@ -117,7 +121,7 @@ func zipLodctrOutput(tempDir, hostname string) error {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		klog.Warningf("Error running lodctr command %v", err)
+		log.Warnf("Error running lodctr command %v", err)
 		// for some reason the lodctr command returns error 259 even when
 		// it succeeds.  Log the error in case it's some other error,
 		// but continue on.
@@ -125,13 +129,13 @@ func zipLodctrOutput(tempDir, hostname string) error {
 	f := filepath.Join(tempDir, hostname, "lodctr.txt")
 	err = ensureParentDirsExist(f)
 	if err != nil {
-		klog.Warningf("Error in ensureParentDirsExist %v", err)
+		log.Warnf("Error in ensureParentDirsExist %v", err)
 		return err
 	}
 
 	err = ioutil.WriteFile(f, out.Bytes(), os.ModePerm)
 	if err != nil {
-		klog.Warningf("Error writing file %v", err)
+		log.Warnf("Error writing file %v", err)
 		return err
 	}
 	return nil
@@ -154,7 +158,7 @@ func zipWindowsEventLogs(tempDir, hostname string) error {
 			hostname)
 
 		if errExport != nil {
-			klog.Warningf("could not export event log %v, error: %v", eventLogChannel, errExport)
+			log.Warnf("could not export event log %v, error: %v", eventLogChannel, errExport)
 			err = errExport
 		}
 	}
@@ -170,7 +174,7 @@ func exportWindowsEventLog(eventLogChannel, eventLogQuery, destFileName, tempDir
 
 	err := ensureParentDirsExist(destFullFileName)
 	if err != nil {
-		klog.Warningf("cannot create folder for %s: %v", destFullFileName, err)
+		log.Warnf("cannot create folder for %s: %v", destFullFileName, err)
 		return err
 	}
 
@@ -187,7 +191,7 @@ func exportWindowsEventLog(eventLogChannel, eventLogQuery, destFileName, tempDir
 
 	// ret is a DWORD, TRUE for success, FALSE for failure.
 	if ret == 0 {
-		klog.Warningf(
+		log.Warnf(
 			"could not export event log from channel %s to file %s, LastError: %v",
 			eventLogChannel,
 			destFullFileName,
@@ -195,7 +199,7 @@ func exportWindowsEventLog(eventLogChannel, eventLogQuery, destFileName, tempDir
 
 		err = evtExportLogError
 	} else {
-		klog.Infof("successfully exported event channel %v to %v", eventLogChannel, destFullFileName)
+		log.Infof("successfully exported event channel %v to %v", eventLogChannel, destFullFileName)
 	}
 
 	return err

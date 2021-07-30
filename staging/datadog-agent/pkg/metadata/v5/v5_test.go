@@ -6,13 +6,15 @@
 package v5
 
 import (
+	"context"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPayload(t *testing.T) {
-	pl := GetPayload(util.HostnameData{Hostname: "testhostname", Provider: ""})
+	ctx := context.Background()
+	pl := GetPayload(ctx, util.HostnameData{Hostname: "testhostname", Provider: ""})
 	assert.NotNil(t, pl)
 }

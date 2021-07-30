@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // PortMapping represents a port binding
@@ -29,7 +29,7 @@ var statusMap = map[ConnectionType]int64{
 func ReadInitialState(procRoot string, protocol ConnectionType, collectIPv6 bool) (map[PortMapping]struct{}, error) {
 	start := time.Now()
 	defer func() {
-		klog.V(5).Infof("Read initial %s pid->port mapping in %s", protocol.String(), time.Now().Sub(start))
+		log.Debugf("Read initial %s pid->port mapping in %s", protocol.String(), time.Now().Sub(start))
 	}()
 
 	lp := strings.ToLower(protocol.String())
@@ -49,7 +49,7 @@ func readState(procRoot string, paths []string, status int64) (map[PortMapping]s
 		nsIno, err := util.GetNetNsInoFromPid(procRoot, pid)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				klog.Errorf("error getting net ns for pid %d: %s", pid, err)
+				log.Errorf("error getting net ns for pid %d: %s", pid, err)
 			}
 			return nil
 		}
@@ -62,7 +62,7 @@ func readState(procRoot string, paths []string, status int64) (map[PortMapping]s
 		for _, p := range paths {
 			ports, err := readProcNetWithStatus(path.Join(procRoot, fmt.Sprintf("%d", pid), p), status)
 			if err != nil {
-				klog.Errorf("error reading port state net ns ino=%d pid=%d path=%s status=%d", nsIno, pid, p, status)
+				log.Errorf("error reading port state net ns ino=%d pid=%d path=%s status=%d", nsIno, pid, p, status)
 				continue
 			}
 

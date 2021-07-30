@@ -9,10 +9,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/custom"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/custom"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
 )
 
 type customCheck struct {
@@ -60,6 +60,10 @@ func newCustomCheck(ruleID string, res compliance.Resource) (checkable, error) {
 	}, nil
 }
 
-func (c *customCheck) check(e env.Env) (*compliance.Report, error) {
-	return c.checkFunc(e, c.ruleID, c.custom.Variables, c.expr)
+func (c *customCheck) check(e env.Env) []*compliance.Report {
+	report, err := c.checkFunc(e, c.ruleID, c.custom.Variables, c.expr)
+	if err != nil {
+		report = compliance.BuildReportForError(err)
+	}
+	return []*compliance.Report{report}
 }

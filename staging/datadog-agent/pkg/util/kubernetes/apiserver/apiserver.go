@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"strings"
 	"sync"
 	"time"
@@ -20,30 +19,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	dynamic_informer "k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
-	dd_client "github.com/DataDog/datadog-operator/pkg/generated/clientset/versioned"
-	dd_informers "github.com/DataDog/datadog-operator/pkg/generated/informers/externalversions"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 var (
 	globalAPIClient     *APIClient
 	globalAPIClientOnce sync.Once
-	ErrNotFound         = errors.New("entity not found")
-	ErrIsEmpty          = errors.New("entity is empty")
-	ErrNotLeader        = errors.New("not Leader")
+	ErrNotFound         = errors.New("entity not found") //nolint:revive
+	ErrIsEmpty          = errors.New("entity is empty")  //nolint:revive
+	ErrNotLeader        = errors.New("not Leader")       //nolint:revive
 	isConnectVerbose    = false
+
+	gvrDDM = &schema.GroupVersionResource{
+		Group:    "datadoghq.com",
+		Version:  "v1alpha1",
+		Resource: "datadogmetrics",
+	}
 )
 
 const (
@@ -76,17 +81,26 @@ type APIClient struct {
 	// WPAClient gives access to WPA API
 	WPAClient dynamic.Interface
 	// WPAInformerFactory gives access to informers for Watermark Pod Autoscalers.
-	WPAInformerFactory dynamic_informer.DynamicSharedInformerFactory
+	WPAInformerFactory dynamicinformer.DynamicSharedInformerFactory
 
 	// DDClient gives access to all datadoghq/ custom types
-	DDClient dd_client.Interface
+	DDClient dynamic.Interface
 	// DDInformerFactory gives access to informers for all datadoghq/ custom types
-	DDInformerFactory dd_informers.SharedInformerFactory
+	DDInformerFactory dynamicinformer.DynamicSharedInformerFactory
 
-	// used to setup the APIClient
-	initRetry      retry.Retrier
-	Cl             kubernetes.Interface
-	DynamicCl      dynamic.Interface
+	// initRetry used to setup the APIClient
+	initRetry retry.Retrier
+
+	// Cl holds the main kubernetes client
+	Cl kubernetes.Interface
+
+	// DynamicCl holds a dynamic kubernetes client
+	DynamicCl dynamic.Interface
+
+	// DiscoveryCl holds kubernetes discovery client
+	DiscoveryCl discovery.DiscoveryInterface
+
+	// timeoutSeconds defines the kubernetes client timeout
 	timeoutSeconds int64
 }
 
@@ -111,7 +125,7 @@ func GetAPIClient() (*APIClient, error) {
 
 	err := globalAPIClient.initRetry.TriggerRetry()
 	if err != nil {
-		klog.V(5).Infof("API Server init error: %s", err)
+		log.Debugf("API Server init error: %s", err)
 		return nil, err
 	}
 	return globalAPIClient, nil
@@ -130,7 +144,7 @@ func WaitForAPIClient(ctx context.Context) (*APIClient, error) {
 			return nil, fmt.Errorf("Permanent failure while waiting for Kubernetes APIServer")
 		default:
 			sleepFor := globalAPIClient.initRetry.NextRetry().UTC().Sub(time.Now().UTC()) + time.Second
-			klog.V(5).Infof("Waiting for APIServer, next retry: %v", sleepFor)
+			log.Debugf("Waiting for APIServer, next retry: %v", sleepFor)
 			select {
 			case <-ctx.Done():
 				return nil, fmt.Errorf("Context deadline reached while waiting for Kubernetes APIServer")
@@ -140,21 +154,21 @@ func WaitForAPIClient(ctx context.Context) (*APIClient, error) {
 	}
 }
 
-func getClientConfig() (*rest.Config, error) {
+func getClientConfig(timeout time.Duration) (*rest.Config, error) {
 	var clientConfig *rest.Config
 	var err error
 	cfgPath := config.Datadog.GetString("kubernetes_kubeconfig_path")
 	if cfgPath == "" {
 		clientConfig, err = rest.InClusterConfig()
 		if err != nil {
-			klog.V(5).Infof("Can't create a config for the official client from the service account's token: %v", err)
+			log.Debugf("Can't create a config for the official client from the service account's token: %v", err)
 			return nil, err
 		}
 	} else {
 		// use the current context in kubeconfig
 		clientConfig, err = clientcmd.BuildConfigFromFlags("", cfgPath)
 		if err != nil {
-			klog.V(5).Infof("Can't create a config for the official client from the configured path to the kubeconfig: %s, %v", cfgPath, err)
+			log.Debugf("Can't create a config for the official client from the configured path to the kubeconfig: %s, %v", cfgPath, err)
 			return nil, err
 		}
 	}
@@ -162,63 +176,77 @@ func getClientConfig() (*rest.Config, error) {
 	if config.Datadog.GetBool("kubernetes_apiserver_use_protobuf") {
 		clientConfig.ContentType = "application/vnd.kubernetes.protobuf"
 	}
+
+	clientConfig.Timeout = timeout
+
 	return clientConfig, nil
 }
 
 func getKubeClient(timeout time.Duration) (kubernetes.Interface, error) {
-	clientConfig, err := getClientConfig()
+	// TODO: Remove custom warning logger when we remove usage of ComponentStatus
+	rest.SetDefaultWarningHandler(CustomWarningLogger{})
+	clientConfig, err := getClientConfig(timeout)
 	if err != nil {
 		return nil, err
 	}
-	clientConfig.Timeout = timeout
+
 	return kubernetes.NewForConfig(clientConfig)
 }
 
 func getKubeDynamicClient(timeout time.Duration) (dynamic.Interface, error) {
-	clientConfig, err := getClientConfig()
+	clientConfig, err := getClientConfig(timeout)
 	if err != nil {
 		return nil, err
 	}
-	clientConfig.Timeout = timeout
+
 	return dynamic.NewForConfig(clientConfig)
 }
 
-func getWPAInformerFactory() (dynamic_informer.DynamicSharedInformerFactory, error) {
+func getKubeDiscoveryClient(timeout time.Duration) (discovery.DiscoveryInterface, error) {
+	clientConfig, err := getClientConfig(timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return discovery.NewDiscoveryClientForConfig(clientConfig)
+}
+
+func getWPAInformerFactory() (dynamicinformer.DynamicSharedInformerFactory, error) {
 	// default to 300s
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
 	client, err := getKubeDynamicClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		klog.Infof("Could not get apiserver client: %v", err)
+		log.Infof("Could not get apiserver client: %v", err)
 		return nil, err
 	}
-	return dynamic_informer.NewDynamicSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
+	return dynamicinformer.NewDynamicSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
 }
 
-func getDDClient(timeout time.Duration) (dd_client.Interface, error) {
-	clientConfig, err := getClientConfig()
+func getDDClient(timeout time.Duration) (dynamic.Interface, error) {
+	clientConfig, err := getClientConfig(timeout)
 	if err != nil {
 		return nil, err
 	}
-	clientConfig.Timeout = timeout
-	return dd_client.NewForConfig(clientConfig)
+
+	return dynamic.NewForConfig(clientConfig)
 }
 
-func getDDInformerFactory() (dd_informers.SharedInformerFactory, error) {
+func getDDInformerFactory() (dynamicinformer.DynamicSharedInformerFactory, error) {
 	// default to 300s
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
-	client, err := getDDClient(0) // No timeout for the Informers, to allow long watch.
+	client, err := getKubeDynamicClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		klog.Infof("Could not get apiserver client: %v", err)
+		log.Infof("Could not get apiserver client: %v", err)
 		return nil, err
 	}
-	return dd_informers.NewSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
+	return dynamicinformer.NewDynamicSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
 }
 
 func getInformerFactory() (informers.SharedInformerFactory, error) {
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
 	client, err := getKubeClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		klog.Errorf("Could not get apiserver client: %v", err)
+		log.Errorf("Could not get apiserver client: %v", err)
 		return nil, err
 	}
 	return informers.NewSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
@@ -228,7 +256,7 @@ func getInformerFactoryWithOption(options ...informers.SharedInformerOption) (in
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
 	client, err := getKubeClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		klog.Errorf("Could not get apiserver client: %v", err)
+		log.Errorf("Could not get apiserver client: %v", err)
 		return nil, err
 	}
 	return informers.NewSharedInformerFactoryWithOptions(client, resyncPeriodSeconds*time.Second, options...), nil
@@ -238,14 +266,20 @@ func (c *APIClient) connect() error {
 	var err error
 	c.Cl, err = getKubeClient(time.Duration(c.timeoutSeconds) * time.Second)
 	if err != nil {
-		klog.Infof("Could not get apiserver client: %v", err)
+		log.Infof("Could not get apiserver client: %v", err)
 		return err
 	}
 
 	if config.Datadog.GetBool("admission_controller.enabled") || config.Datadog.GetBool("compliance_config.enabled") {
 		c.DynamicCl, err = getKubeDynamicClient(time.Duration(c.timeoutSeconds) * time.Second)
 		if err != nil {
-			klog.Infof("Could not get apiserver dynamic client: %v", err)
+			log.Infof("Could not get apiserver dynamic client: %v", err)
+			return err
+		}
+
+		c.DiscoveryCl, err = getKubeDiscoveryClient(time.Duration(c.timeoutSeconds) * time.Second)
+		if err != nil {
+			log.Infof("Could not get apiserver discovery client: %v", err)
 			return err
 		}
 	}
@@ -270,7 +304,7 @@ func (c *APIClient) connect() error {
 		optionsForService := func(options *metav1.ListOptions) {
 			options.FieldSelector = fields.OneTermEqualSelector(nameFieldkey, config.Datadog.GetString("admission_controller.certificate.secret_name")).String()
 		}
-		c.CertificateSecretInformerFactory, err = getInformerFactoryWithOption(
+		c.CertificateSecretInformerFactory, _ = getInformerFactoryWithOption(
 			informers.WithTweakListOptions(optionsForService),
 			informers.WithNamespace(common.GetResourcesNamespace()),
 		)
@@ -281,25 +315,26 @@ func (c *APIClient) connect() error {
 		c.WebhookConfigInformerFactory, err = getInformerFactoryWithOption(
 			informers.WithTweakListOptions(optionsForWebhook),
 		)
+
 	}
 
 	if config.Datadog.GetBool("external_metrics_provider.wpa_controller") {
 		if c.WPAInformerFactory, err = getWPAInformerFactory(); err != nil {
-			klog.Errorf("Error getting WPA Informer Factory: %s", err.Error())
+			log.Errorf("Error getting WPA Informer Factory: %s", err.Error())
 			return err
 		}
 		if c.WPAClient, err = getKubeDynamicClient(time.Duration(c.timeoutSeconds) * time.Second); err != nil {
-			klog.Errorf("Error getting WPA Client: %s", err.Error())
+			log.Errorf("Error getting WPA Client: %s", err.Error())
 			return err
 		}
 	}
 	if config.Datadog.GetBool("external_metrics_provider.use_datadogmetric_crd") {
 		if c.DDInformerFactory, err = getDDInformerFactory(); err != nil {
-			klog.Errorf("Error getting datadoghq Client: %s", err.Error())
+			log.Errorf("Error getting datadoghq Client: %s", err.Error())
 			return err
 		}
 		if c.DDClient, err = getDDClient(time.Duration(c.timeoutSeconds) * time.Second); err != nil {
-			klog.Errorf("Error getting datadoghq Informer Factory: %s", err.Error())
+			log.Errorf("Error getting datadoghq Informer Factory: %s", err.Error())
 			return err
 		}
 	}
@@ -308,13 +343,13 @@ func (c *APIClient) connect() error {
 	if APIversion.Empty() {
 		return fmt.Errorf("cannot retrieve the version of the API server at the moment")
 	}
-	klog.V(5).Infof("Connected to kubernetes apiserver, version %s", APIversion.Version)
+	log.Debugf("Connected to kubernetes apiserver, version %s", APIversion.Version)
 
 	err = c.checkResourcesAuth()
 	if err != nil {
 		return err
 	}
-	klog.V(5).Info("Could successfully collect Pods, Nodes, Services and Events")
+	log.Debug("Could successfully collect Pods, Nodes, Services and Events")
 	return nil
 }
 
@@ -380,7 +415,7 @@ func (c *APIClient) checkResourcesAuth() error {
 	}
 
 	if c.DDClient != nil {
-		_, err = c.DDClient.DatadoghqV1alpha1().DatadogMetrics("").List(context.TODO(), metav1.ListOptions{Limit: 1, TimeoutSeconds: &c.timeoutSeconds})
+		_, err = c.DDClient.Resource(*gvrDDM).List(context.TODO(), metav1.ListOptions{Limit: 1, TimeoutSeconds: &c.timeoutSeconds})
 		if err != nil {
 			errorMessages = append(errorMessages, fmt.Sprintf("DatadogMetric collection: %q", err.Error()))
 		}
@@ -397,7 +432,7 @@ func (c *APIClient) ComponentStatuses() (*v1.ComponentStatusList, error) {
 func (c *APIClient) getOrCreateConfigMap(name, namespace string) (cmEvent *v1.ConfigMap, err error) {
 	cmEvent, err = c.Cl.CoreV1().ConfigMaps(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Could not get the ConfigMap %s: %s, trying to create it.", name, err.Error())
+		log.Errorf("Could not get the ConfigMap %s: %s, trying to create it.", name, err.Error())
 		cmEvent, err = c.Cl.CoreV1().ConfigMaps(namespace).Create(context.TODO(), &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -407,7 +442,7 @@ func (c *APIClient) getOrCreateConfigMap(name, namespace string) (cmEvent *v1.Co
 		if err != nil {
 			return nil, fmt.Errorf("could not create the ConfigMap: %s", err.Error())
 		}
-		klog.Infof("Created the ConfigMap %s", name)
+		log.Infof("Created the ConfigMap %s", name)
 	}
 	return cmEvent, nil
 }
@@ -428,24 +463,24 @@ func (c *APIClient) GetTokenFromConfigmap(token string) (string, time.Time, erro
 	}
 	tokenValue, found := cmEvent.Data[eventTokenKey]
 	if !found {
-		klog.V(5).Infof("%s was not found in the ConfigMap %s, updating it to resync.", eventTokenKey, configMapDCAToken)
+		log.Debugf("%s was not found in the ConfigMap %s, updating it to resync.", eventTokenKey, configMapDCAToken)
 		// we should try to set it to "" .
 		err = c.UpdateTokenInConfigmap(token, "", time.Now())
 		return "", time.Now(), err
 	}
-	klog.V(6).Infof("%s is %q", token, tokenValue)
+	log.Tracef("%s is %q", token, tokenValue)
 
 	eventTokenTS := fmt.Sprintf("%s.%s", token, tokenTime)
 	tokenTimeStr, set := cmEvent.Data[eventTokenTS]
 	if !set {
-		klog.V(5).Infof("Could not find timestamp associated with %s in the ConfigMap %s. Refreshing.", eventTokenTS, configMapDCAToken)
+		log.Debugf("Could not find timestamp associated with %s in the ConfigMap %s. Refreshing.", eventTokenTS, configMapDCAToken)
 		// The timestamp of the last List is not present, it will be set during the next Collection.
 		return tokenValue, nowTs, nil
 	}
 
 	tokenTime, err := time.Parse(time.RFC3339, tokenTimeStr)
 	if err != nil {
-		klog.Errorf("Could not convert the timestamp associated with %s from the ConfigMap %s, resync might not work correctly.", token, configMapDCAToken)
+		log.Errorf("Could not convert the timestamp associated with %s from the ConfigMap %s, resync might not work correctly.", token, configMapDCAToken)
 		return tokenValue, nowTs, nil
 	}
 	return tokenValue, tokenTime, err
@@ -472,7 +507,7 @@ func (c *APIClient) UpdateTokenInConfigmap(token, tokenValue string, timestamp t
 	if err != nil {
 		return err
 	}
-	klog.V(5).Infof("Updated %s to %s in the ConfigMap %s", eventTokenKey, tokenValue, configMapDCAToken)
+	log.Debugf("Updated %s to %s in the ConfigMap %s", eventTokenKey, tokenValue, configMapDCAToken)
 	return nil
 }
 
@@ -486,8 +521,8 @@ func (c *APIClient) NodeLabels(nodeName string) (map[string]string, error) {
 }
 
 // GetNodeForPod retrieves a pod and returns the name of the node it is scheduled on
-func (c *APIClient) GetNodeForPod(namespace, podName string) (string, error) {
-	pod, err := c.Cl.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+func (c *APIClient) GetNodeForPod(ctx context.Context, namespace, podName string) (string, error) {
+	pod, err := c.Cl.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -507,7 +542,7 @@ func GetMetadataMapBundleOnAllNodes(cl *APIClient) (*apiv1.MetadataResponse, err
 
 	for _, node := range nodes {
 		if node.GetObjectMeta() == nil {
-			klog.Error("Incorrect payload when evaluating a node for the service mapper") // This will be removed as we move to the client-go
+			log.Error("Incorrect payload when evaluating a node for the service mapper") // This will be removed as we move to the client-go
 			continue
 		}
 		var bundle *metadataMapperBundle
@@ -547,7 +582,7 @@ func getMetadataMapBundle(nodeName string) (*metadataMapperBundle, error) {
 func getNodeList(cl *APIClient) ([]v1.Node, error) {
 	nodes, err := cl.Cl.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{TimeoutSeconds: &cl.timeoutSeconds})
 	if err != nil {
-		klog.Errorf("Can't list nodes from the API server: %s", err.Error())
+		log.Errorf("Can't list nodes from the API server: %s", err.Error())
 		return nil, err
 	}
 	return nodes.Items, nil
@@ -557,7 +592,7 @@ func getNodeList(cl *APIClient) ([]v1.Node, error) {
 func GetNode(cl *APIClient, name string) (*v1.Node, error) {
 	node, err := cl.Cl.CoreV1().Nodes().Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Can't get node from the API server: %s", err.Error())
+		log.Errorf("Can't get node from the API server: %s", err.Error())
 		return nil, err
 	}
 	return node, nil
@@ -571,6 +606,14 @@ func (c *APIClient) GetRESTObject(path string, output runtime.Object) error {
 	}
 
 	return result.Into(output)
+}
+
+// IsAPIServerReady retrieves the API Server readiness status
+func (c *APIClient) IsAPIServerReady(ctx context.Context) (bool, error) {
+	path := "/readyz"
+	_, err := c.Cl.Discovery().RESTClient().Get().AbsPath(path).DoRaw(ctx)
+
+	return err == nil, err
 }
 
 func convertmetadataMapperBundleToAPI(input *metadataMapperBundle) *apiv1.MetadataResponseBundle {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/gopsutil/process"
 )
 
@@ -50,7 +50,7 @@ func getProcesses(maxAge time.Duration) (processes, error) {
 		return value.(processes), nil
 	}
 
-	klog.V(5).Info("Updating process cache")
+	log.Debug("Updating process cache")
 	rawProcesses, err := processFetcher()
 	if err != nil {
 		return nil, err

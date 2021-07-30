@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // obfuscateJSON obfuscates the given span's tag using the given obfuscator. If the obfuscator is
@@ -71,7 +71,7 @@ func sqlObfuscationTransformer(o *Obfuscator) func(string) string {
 	return func(s string) string {
 		result, err := o.ObfuscateSQLString(s)
 		if err != nil {
-			klog.V(5).Infof("Failed to obfuscate SQL string '%s': %s", s, err.Error())
+			log.Debugf("Failed to obfuscate SQL string '%s': %s", s, err.Error())
 			// instead of returning an empty string we explicitly return an error string here within the result in order
 			// to surface the problem clearly to the user
 			return "Datadog-agent failed to obfuscate SQL string. Enable agent debug logs for more info."

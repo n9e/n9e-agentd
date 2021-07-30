@@ -21,8 +21,8 @@ import (
 	"github.com/cihub/seelog"
 	"github.com/stretchr/testify/assert"
 
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
-	"k8s.io/klog/v2"
+	httputils "github.com/DataDog/datadog-agent/pkg/util/http"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const testAPIKey = "123"
@@ -30,6 +30,24 @@ const testAPIKey = "123"
 func TestMain(m *testing.M) {
 	log.SetupLogger(seelog.Disabled, "error")
 	os.Exit(m.Run())
+}
+
+func TestIsRetriable(t *testing.T) {
+	for code, want := range map[int]bool{
+		400: false,
+		404: false,
+		408: true,
+		409: false,
+		500: true,
+		503: true,
+		505: true,
+		200: false,
+		204: false,
+		306: false,
+		101: false,
+	} {
+		assert.Equal(t, isRetriable(code), want)
+	}
 }
 
 func TestSender(t *testing.T) {
@@ -143,7 +161,7 @@ func TestSender(t *testing.T) {
 		}
 
 		s := newSender(testSenderConfig(server.URL))
-		s.Push(expectResponses(503, 503, 200))
+		s.Push(expectResponses(503, 408, 200))
 		s.Stop()
 
 		assert.Equal([]int{0, 1, 2}, backoffCalls)
@@ -264,7 +282,7 @@ func TestPayload(t *testing.T) {
 
 	t.Run("httpRequest", func(t *testing.T) {
 		assert := assert.New(t)
-		p := newPayload(map[string]string{"Bearer": testAPIKey})
+		p := newPayload(map[string]string{"DD-Api-Key": testAPIKey})
 		p.body = expectBody
 		url, err := url.Parse("http://localhost/my/path")
 		if err != nil {
@@ -275,7 +293,7 @@ func TestPayload(t *testing.T) {
 		assert.Equal(http.MethodPost, req.Method)
 		assert.Equal("/my/path", req.URL.Path)
 		assert.Equal("4", req.Header.Get("Content-Length"))
-		assert.Equal(testAPIKey, req.Header.Get("Bearer"))
+		assert.Equal(testAPIKey, req.Header.Get("DD-Api-Key"))
 		slurp, err := ioutil.ReadAll(req.Body)
 		assert.NoError(err)
 		req.Body.Close()
@@ -328,25 +346,5 @@ func (r *mockRecorder) recordEvent(t eventType, data *eventData) {
 		r.dropped = append(r.dropped, data)
 	case eventTypeRejected:
 		r.rejected = append(r.rejected, data)
-	}
-}
-
-func TestShouldWarnRetry(t *testing.T) {
-	for _, test := range []struct {
-		retries    int32
-		shouldWarn bool
-	}{{0, false},
-		{1, true},
-		{2, false},
-		{3, false},
-		{4, true},
-		{5, false},
-		{6, false},
-		{8, true},
-	} {
-		actual := shouldWarnRetry(test.retries)
-		if actual != test.shouldWarn {
-			t.Fatalf("expected: %t, actual: %t", test.shouldWarn, actual)
-		}
 	}
 }

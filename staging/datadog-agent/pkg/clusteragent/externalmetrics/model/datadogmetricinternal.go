@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/klog/v2"
-	datadoghq "github.com/DataDog/datadog-operator/pkg/apis/datadoghq/v1alpha1"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	datadoghq "github.com/DataDog/datadog-operator/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,6 +21,7 @@ import (
 	"k8s.io/metrics/pkg/apis/external_metrics"
 )
 
+// exported for testing purposes
 const (
 	DatadogMetricErrorConditionReason string = "Unable to fetch data from Datadog"
 )
@@ -83,7 +84,7 @@ func NewDatadogMetricInternal(id string, datadogMetric datadoghq.DatadogMetric) 
 	// Handling value last as we may invalidate DatadogMetric if we get a parsing error
 	value, err := parseDatadogMetricValue(datadogMetric.Status.Value)
 	if err != nil {
-		klog.Errorf("Unable to parse DatadogMetric value from string: '%s', invalidating: %s", datadogMetric.Status.Value, id)
+		log.Errorf("Unable to parse DatadogMetric value from string: '%s', invalidating: %s", datadogMetric.Status.Value, id)
 		internal.Valid = false
 		internal.UpdateTime = time.Now().UTC()
 		value = 0
@@ -149,7 +150,7 @@ func (d *DatadogMetricInternal) IsNewerThan(currentStatus datadoghq.DatadogMetri
 	return true
 }
 
-// HasBeenUpdated returns true if the current `DatadogMetricInternal` has been update between Now() and Now() - duration
+// HasBeenUpdatedFor returns true if the current `DatadogMetricInternal` has been update between Now() and Now() - duration
 func (d *DatadogMetricInternal) HasBeenUpdatedFor(duration time.Duration) bool {
 	return d.UpdateTime.After(time.Now().UTC().Add(-duration))
 }
@@ -234,7 +235,7 @@ func (d *DatadogMetricInternal) newCondition(status bool, updateTime metav1.Time
 func (d *DatadogMetricInternal) resolveQuery(query string) {
 	resolvedQuery, err := resolveQuery(query)
 	if err != nil {
-		klog.Errorf("Unable to resolve DatadogMetric query %q: %w", d.query, err)
+		log.Errorf("Unable to resolve DatadogMetric query %q: %w", d.query, err)
 		d.Valid = false
 		d.Error = fmt.Errorf("Cannot resolve query: %v", err)
 		d.UpdateTime = time.Now().UTC()
@@ -242,6 +243,7 @@ func (d *DatadogMetricInternal) resolveQuery(query string) {
 		return
 	}
 	if resolvedQuery != "" {
+		log.Infof("DatadogMetric query %q was resolved successfully, new query: %q", query, resolvedQuery)
 		d.resolvedQuery = &resolvedQuery
 		return
 	}
@@ -254,7 +256,7 @@ func (d *DatadogMetricInternal) SetQueries(q string) {
 	d.resolvedQuery = &q
 }
 
-// SetQueries is only used for testing in other packages
+// SetQuery is only used for testing in other packages
 func (d *DatadogMetricInternal) SetQuery(q string) {
 	d.query = q
 }

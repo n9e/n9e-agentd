@@ -6,12 +6,13 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/resources"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/metadata/resources"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // ResourcesCollector sends the old metadata payload used in the
@@ -19,8 +20,8 @@ import (
 type ResourcesCollector struct{}
 
 // Send collects the data needed and submits the payload
-func (rp *ResourcesCollector) Send(s *serializer.Serializer) error {
-	hostname, _ := util.GetHostname()
+func (rp *ResourcesCollector) Send(ctx context.Context, s *serializer.Serializer) error {
+	hostname, _ := util.GetHostname(ctx)
 
 	res := resources.GetPayload(hostname)
 	if res == nil {
@@ -29,7 +30,7 @@ func (rp *ResourcesCollector) Send(s *serializer.Serializer) error {
 	payload := map[string]interface{}{
 		"resources": resources.GetPayload(hostname),
 	}
-	if err := s.SendJSONToV1Intake(payload); err != nil {
+	if err := s.SendProcessesMetadata(payload); err != nil {
 		return fmt.Errorf("unable to serialize processes metadata payload, %s", err)
 	}
 	return nil

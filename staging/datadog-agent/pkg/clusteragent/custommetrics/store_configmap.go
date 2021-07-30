@@ -14,16 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/klog/v2"
 )
 
 var (
@@ -54,16 +53,16 @@ func NewConfigMapStore(client kubernetes.Interface, ns, name string) (Store, err
 	}
 	err := store.getConfigMap()
 	if err == nil {
-		klog.Infof("Retrieved the configmap %s", name)
+		log.Infof("Retrieved the configmap %s", name)
 		return store, nil
 	}
 
 	if !errors.IsNotFound(err) {
-		klog.Infof("Error while attempting to fetch the configmap %s: %v", name, err)
+		log.Infof("Error while attempting to fetch the configmap %s: %v", name, err)
 		return nil, err
 	}
 
-	klog.Infof("The configmap %s does not exist, trying to create it", name)
+	log.Infof("The configmap %s does not exist, trying to create it", name)
 	cm := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -99,7 +98,7 @@ func (c *configMapStore) SetExternalMetricValues(added map[string]ExternalMetric
 	for key, m := range added {
 		toStore, err := json.Marshal(m)
 		if err != nil {
-			klog.V(5).Infof("Could not marshal the external metric %v: %v", m, err)
+			log.Debugf("Could not marshal the external metric %v: %v", m, err)
 			continue
 		}
 		c.cm.Data[key] = string(toStore)
@@ -122,12 +121,12 @@ func (c *configMapStore) DeleteExternalMetricValues(deleted *MetricsBundle) erro
 	for _, m := range deleted.External {
 		key := ExternalMetricValueKeyFunc(m)
 		delete(c.cm.Data, key)
-		klog.V(5).Infof("Deleted metric %s for Autoscaler %s/%s from the configmap %s", m.MetricName, m.Ref.Namespace, m.Ref.Name, c.name)
+		log.Debugf("Deleted metric %s for Autoscaler %s/%s from the configmap %s", m.MetricName, m.Ref.Namespace, m.Ref.Name, c.name)
 	}
 	for _, m := range deleted.Deprecated {
 		key := DeprecatedExternalMetricValueKeyFunc(m)
 		delete(c.cm.Data, key)
-		klog.V(5).Infof("Deleted key %s deprecated metric %s for HPA %s/%s from the configmap %s", key, m.MetricName, m.HPA.Namespace, m.HPA.Name, c.name)
+		log.Debugf("Deleted key %s deprecated metric %s for HPA %s/%s from the configmap %s", key, m.MetricName, m.HPA.Namespace, m.HPA.Name, c.name)
 	}
 	return c.updateConfigMap()
 }
@@ -159,14 +158,14 @@ func (c *configMapStore) doGetMetrics() (*MetricsBundle, error) {
 		}
 		m := ExternalMetricValue{}
 		if err := json.Unmarshal([]byte(v), &m); err != nil {
-			klog.V(5).Infof("Could not unmarshal the external metric for key %s: %v", k, err)
+			log.Debugf("Could not unmarshal the external metric for key %s: %v", k, err)
 			continue
 		}
 		if m.Ref.Type == "" {
 			// We are processing a deprecated format, invalidate for now.
 			deprecated := DeprecatedExternalMetricValue{}
 			if err := json.Unmarshal([]byte(v), &deprecated); err != nil {
-				klog.V(5).Infof("Could not unmarshal the external metric for key %s: %v", k, err)
+				log.Debugf("Could not unmarshal the external metric for key %s: %v", k, err)
 				continue
 			}
 			deprecated.Valid = false
@@ -182,7 +181,7 @@ func (c *configMapStore) getConfigMap() error {
 	var err error
 	c.cm, err = c.client.ConfigMaps(c.namespace).Get(context.TODO(), c.name, metav1.GetOptions{})
 	if err != nil {
-		klog.Infof("Could not get the configmap %s: %v", c.name, err)
+		log.Infof("Could not get the configmap %s: %v", c.name, err)
 		return err
 	}
 	return nil
@@ -193,7 +192,7 @@ func (c *configMapStore) updateConfigMap() error {
 	var err error
 	c.cm, err = c.client.ConfigMaps(c.namespace).Update(context.TODO(), c.cm, metav1.UpdateOptions{})
 	if err != nil {
-		klog.Infof("Could not update the configmap %s: %v", c.name, err)
+		log.Infof("Could not update the configmap %s: %v", c.name, err)
 		return err
 	}
 	setStoreStats(c)

@@ -10,10 +10,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/config"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/n9e/n9e-agentd/pkg/config"
-	traceconfig "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
 )
 
 func mockConfig(k string, v interface{}) func() {
@@ -53,7 +52,7 @@ func TestProfileProxy(t *testing.T) {
 		if body := string(slurp); body != "body" {
 			t.Fatalf("invalid request body: %q", body)
 		}
-		if v := req.Header.Get("Bearer"); v != "123" {
+		if v := req.Header.Get("DD-API-KEY"); v != "123" {
 			t.Fatalf("got invalid API key: %q", v)
 		}
 		if v := req.Header.Get("X-Datadog-Additional-Tags"); v != "key:val" {
@@ -156,8 +155,20 @@ func TestProfileProxyHandler(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		var called bool
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if v := req.Header.Get("X-Datadog-Additional-Tags"); v != "host:myhost,default_env:none" {
-				t.Fatalf("invalid X-Datadog-Additional-Tags header: %q", v)
+			v := req.Header.Get("X-Datadog-Additional-Tags")
+			tags := strings.Split(v, ",")
+			m := make(map[string]string)
+			for _, tag := range tags {
+				kv := strings.Split(tag, ":")
+				if strings.Contains(kv[0], "orchestrator") {
+					t.Fatalf("non-fargate environment shouldn't contain '%s' tag : %q", kv[0], v)
+				}
+				m[kv[0]] = kv[1]
+			}
+			for _, tag := range []string{"host", "default_env", "agent_version"} {
+				if _, ok := m[tag]; !ok {
+					t.Fatalf("invalid X-Datadog-Additional-Tags header, should contain '%s': %q", tag, v)
+				}
 			}
 			called = true
 		}))
@@ -168,6 +179,30 @@ func TestProfileProxyHandler(t *testing.T) {
 		}
 		conf := newTestReceiverConfig()
 		conf.Hostname = "myhost"
+		receiver := newTestReceiverFromConfig(conf)
+		receiver.profileProxyHandler().ServeHTTP(httptest.NewRecorder(), req)
+		if !called {
+			t.Fatal("request not proxied")
+		}
+	})
+
+	t.Run("ok_fargate", func(t *testing.T) {
+		var called bool
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			v := req.Header.Get("X-Datadog-Additional-Tags")
+			if !strings.Contains(v, "orchestrator:fargate_unknown") {
+				t.Fatalf("invalid X-Datadog-Additional-Tags header, fargate env should contain '%s' tag: %q", "orchestrator", v)
+			}
+			called = true
+		}))
+		defer mockConfig("apm_config.profiling_dd_url", srv.URL)()
+		req, err := http.NewRequest("POST", "/some/path", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		conf := newTestReceiverConfig()
+		conf.Hostname = "myhost"
+		conf.IsFargate = true
 		receiver := newTestReceiverFromConfig(conf)
 		receiver.profileProxyHandler().ServeHTTP(httptest.NewRecorder(), req)
 		if !called {
@@ -200,7 +235,7 @@ func TestProfileProxyHandler(t *testing.T) {
 	t.Run("multiple_targets", func(t *testing.T) {
 		called := make(map[string]bool)
 		handler := func(w http.ResponseWriter, req *http.Request) {
-			called[fmt.Sprintf("http://%s|%s", req.Host, req.Header.Get("Bearer"))] = true
+			called[fmt.Sprintf("http://%s|%s", req.Host, req.Header.Get("DD-API-KEY"))] = true
 		}
 		srv1 := httptest.NewServer(http.HandlerFunc(handler))
 		srv2 := httptest.NewServer(http.HandlerFunc(handler))

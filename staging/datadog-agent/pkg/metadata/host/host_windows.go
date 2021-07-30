@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/metadata/common"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	"github.com/DataDog/gohai/cpu"
 	"github.com/DataDog/gohai/platform"
 	"github.com/shirou/w32"
@@ -170,5 +170,4 @@ func Pids() ([]int32, error) {
 		return ret, nil
 
 	}
-
 }

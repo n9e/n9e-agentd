@@ -6,9 +6,9 @@
 package custom
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
 )
 
 // CheckFunc defines the custom check function interface

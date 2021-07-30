@@ -5,7 +5,7 @@
 
 package diagnosis
 
-import "k8s.io/klog/v2"
+import "github.com/DataDog/datadog-agent/pkg/util/log"
 
 // Catalog holds available diagnosis for detection and usage
 type Catalog map[string]Diagnosis
@@ -16,7 +16,7 @@ var DefaultCatalog = make(Catalog)
 // Register a diagnosis that will be called on diagnose
 func Register(name string, d Diagnosis) {
 	if _, ok := DefaultCatalog[name]; ok {
-		klog.Warningf("Diagnosis %s already registered, overriding it", name)
+		log.Warnf("Diagnosis %s already registered, overriding it", name)
 	}
 	DefaultCatalog[name] = d
 }

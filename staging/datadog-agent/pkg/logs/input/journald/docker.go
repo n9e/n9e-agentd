@@ -10,10 +10,10 @@ package journald
 import (
 	"github.com/coreos/go-systemd/sdjournal"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	dockerutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	dockerutil "github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // containerIDKey represents the key of the container identifier in a journal entry.
@@ -35,7 +35,7 @@ func (t *Tailer) getContainerID(entry *sdjournal.JournalEntry) string {
 func (t *Tailer) getContainerTags(containerID string) []string {
 	tags, err := tagger.Tag(dockerutil.ContainerIDToTaggerEntityName(containerID), collectors.HighCardinality)
 	if err != nil {
-		klog.Warning(err)
+		log.Warn(err)
 	}
 	return tags
 }

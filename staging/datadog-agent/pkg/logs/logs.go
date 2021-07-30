@@ -12,23 +12,26 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
-	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/http"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/scheduler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serverless/aws"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
+	coreConfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/client/http"
+	"github.com/DataDog/datadog-agent/pkg/logs/metrics"
+
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
+	"github.com/DataDog/datadog-agent/pkg/logs/scheduler"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
+	"github.com/DataDog/datadog-agent/pkg/logs/status"
 )
 
 const (
 	// key used to display a warning message on the agent status
 	invalidProcessingRules = "invalid_global_processing_rules"
 	invalidEndpoints       = "invalid_endpoints"
+	intakeTrackType        = "logs"
+	intakeProtocol         = "agent-json"
 )
 
 var (
@@ -49,16 +52,26 @@ func Start(getAC func() *autodiscovery.AutoConfig) error {
 }
 
 // StartServerless starts a Serverless instance of the Logs Agent.
-func StartServerless(getAC func() *autodiscovery.AutoConfig, logsChan chan aws.LogMessage, extraTags []string) error {
+func StartServerless(getAC func() *autodiscovery.AutoConfig, logsChan chan *config.ChannelMessage, extraTags []string) error {
 	return start(getAC, true, logsChan, extraTags)
 }
 
-func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan chan aws.LogMessage, extraTags []string) error {
+// buildEndpoints builds endpoints for the logs agent
+func buildEndpoints(serverless bool) (*config.Endpoints, error) {
+	if serverless {
+		return config.BuildServerlessEndpoints(intakeTrackType, config.DefaultIntakeProtocol, config.DefaultIntakeSource)
+	}
+	httpConnectivity := config.HTTPConnectivityFailure
+	if endpoints, err := config.BuildHTTPEndpoints(intakeTrackType, intakeProtocol, config.DefaultIntakeSource); err == nil {
+		httpConnectivity = http.CheckConnectivity(endpoints.Main)
+	}
+	return config.BuildEndpoints(httpConnectivity, intakeTrackType, intakeProtocol, config.DefaultIntakeSource)
+}
+
+func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan chan *config.ChannelMessage, extraTags []string) error {
 	if IsAgentRunning() {
 		return nil
 	}
-
-	klog.V(6).Infof("entering start, serverless %v extraTags %v", serverless, extraTags)
 
 	// setup the sources and the services
 	sources := config.NewLogSources()
@@ -68,11 +81,8 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 	scheduler.CreateScheduler(sources, services)
 
 	// setup the server config
-	httpConnectivity := config.HTTPConnectivityFailure
-	if endpoints, err := config.BuildHTTPEndpoints(); err == nil {
-		httpConnectivity = http.CheckConnectivity(endpoints.Main)
-	}
-	endpoints, err := config.BuildEndpoints(httpConnectivity)
+	endpoints, err := buildEndpoints(serverless)
+
 	if err != nil {
 		message := fmt.Sprintf("Invalid endpoints: %v", err)
 		status.AddGlobalError(invalidEndpoints, message)
@@ -97,22 +107,20 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 	// setup and start the logs agent
 	if !serverless {
 		// regular logs agent
-		klog.Info("Starting logs-agent...")
+		log.Info("Starting logs-agent...")
 		agent = NewAgent(sources, services, processingRules, endpoints)
 	} else {
 		// serverless logs agent
-		klog.Info("Starting a serverless logs-agent...")
+		log.Info("Starting a serverless logs-agent...")
 		agent = NewServerless(sources, services, processingRules, endpoints)
 	}
 
-	klog.V(6).Infof("endpoints %#v", endpoints)
-
 	agent.Start()
 	atomic.StoreInt32(&isRunning, 1)
-	klog.Info("logs-agent started")
+	log.Info("logs-agent started")
 
 	if serverless {
-		klog.V(5).Info("Adding AWS Logs collection source")
+		log.Debug("Adding AWS Logs collection source")
 
 		chanSource := config.NewLogSource("AWS Logs", &config.LogsConfig{
 			Type:    config.StringChannelType,
@@ -125,7 +133,7 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 
 	// add SNMP traps source forwarding SNMP traps as logs if enabled.
 	if source := config.SNMPTrapsSource(); source != nil {
-		klog.V(5).Info("Adding SNMPTraps source to the Logs Agent")
+		log.Debug("Adding SNMPTraps source to the Logs Agent")
 		sources.AddSource(source)
 	}
 
@@ -133,8 +141,8 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 	// but ensure that it is enabled after the AutoConfig initialization
 	if source := config.ContainerCollectAllSource(); source != nil {
 		go func() {
-			BlockUntilAutoConfigRanOnce(getAC, coreConfig.C.AcLoadTimeout)
-			klog.V(5).Info("Adding ContainerCollectAll source to the Logs Agent")
+			BlockUntilAutoConfigRanOnce(getAC, time.Millisecond*time.Duration(coreConfig.Datadog.GetInt("ac_load_timeout")))
+			log.Debug("Adding ContainerCollectAll source to the Logs Agent")
 			sources.AddSource(source)
 		}()
 	}
@@ -152,7 +160,7 @@ func BlockUntilAutoConfigRanOnce(getAC func() *autodiscovery.AutoConfig, timeout
 			return
 		}
 		if time.Since(now) > timeout {
-			klog.Error("BlockUntilAutoConfigRanOnce timeout after", timeout)
+			log.Error("BlockUntilAutoConfigRanOnce timeout after", timeout)
 			return
 		}
 	}
@@ -161,7 +169,7 @@ func BlockUntilAutoConfigRanOnce(getAC func() *autodiscovery.AutoConfig, timeout
 // Stop stops properly the logs-agent to prevent data loss,
 // it only returns when the whole pipeline is flushed.
 func Stop() {
-	klog.Info("Stopping logs-agent")
+	log.Info("Stopping logs-agent")
 	if IsAgentRunning() {
 		if agent != nil {
 			agent.Stop()
@@ -173,19 +181,19 @@ func Stop() {
 		status.Clear()
 		atomic.StoreInt32(&isRunning, 0)
 	}
-	klog.Info("logs-agent stopped")
+	log.Info("logs-agent stopped")
 }
 
 // Flush flushes synchronously the running instance of the Logs Agent.
 // Use a WithTimeout context in order to have a flush that can be cancelled.
 func Flush(ctx context.Context) {
-	klog.Info("Triggering a flush in the logs-agent")
+	log.Info("Triggering a flush in the logs-agent")
 	if IsAgentRunning() {
 		if agent != nil {
 			agent.Flush(ctx)
 		}
 	}
-	klog.V(5).Info("Flush in the logs-agent done.")
+	log.Debug("Flush in the logs-agent done.")
 }
 
 // IsAgentRunning returns true if the logs-agent is running.

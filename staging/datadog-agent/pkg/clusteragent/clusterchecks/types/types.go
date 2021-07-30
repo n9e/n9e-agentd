@@ -6,12 +6,12 @@
 package types
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 )
 
 // NodeStatus holds the status report from the node-agent
 type NodeStatus struct {
-	LastChange int64 `json:"lastChange"`
+	LastChange int64 `json:"last_change"`
 }
 
 // StatusResponse holds the DCA response for a status report
@@ -21,25 +21,25 @@ type StatusResponse struct {
 
 // RebalanceResponse holds the DCA response for a rebalancing request
 type RebalanceResponse struct {
-	CheckID     string `json:"checkId"`
-	CheckWeight int    `json:"checkWeight"`
+	CheckID     string `json:"check_id"`
+	CheckWeight int    `json:"check_weight"`
 
-	SourceNodeName string `json:"sourceNodeName"`
-	SourceDiff     int    `json:"sourceDiff"`
+	SourceNodeName string `json:"source_node_name"`
+	SourceDiff     int    `json:"source_diff"`
 
-	DestNodeName string `json:"destNodeName"`
-	DestDiff     int    `json:"destDiff"`
+	DestNodeName string `json:"dest_node_name"`
+	DestDiff     int    `json:"dest_diff"`
 }
 
 // ConfigResponse holds the DCA response for a config query
 type ConfigResponse struct {
-	LastChange int64                `json:"lastChange"`
+	LastChange int64                `json:"last_change"`
 	Configs    []integration.Config `json:"configs"`
 }
 
 // StateResponse holds the DCA response for a dispatching state query
 type StateResponse struct {
-	NotRunning string               `json:"notRunning"` // Reason why not running, empty if leading
+	NotRunning string               `json:"not_running"` // Reason why not running, empty if leading
 	Warmup     bool                 `json:"warmup"`
 	Nodes      []StateNodeResponse  `json:"nodes"`
 	Dangling   []integration.Config `json:"dangling"`

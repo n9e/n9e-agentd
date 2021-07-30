@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/tracer"
+	"github.com/DataDog/datadog-agent/pkg/network"
+	"github.com/DataDog/datadog-agent/pkg/network/config"
+	"github.com/DataDog/datadog-agent/pkg/network/tracer"
 )
 
 func main() {

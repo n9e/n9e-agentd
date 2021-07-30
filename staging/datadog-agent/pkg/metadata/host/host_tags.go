@@ -1,24 +1,29 @@
 package host
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ec2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/gce"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/clustername"
-	k8s "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/hostinfo"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/ec2"
+	"github.com/DataDog/datadog-agent/pkg/util/gce"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/clustername"
+	k8s "github.com/DataDog/datadog-agent/pkg/util/kubernetes/hostinfo"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-var (
-	retrySleepTime = time.Second
-)
+var retrySleepTime = time.Second
+
+type providerDef struct {
+	retries   int
+	getTags   func(context.Context) ([]string, error)
+	retrieved bool
+}
 
 // this is a "low-tech" version of tagger/utils/taglist.go
 // but host tags are handled separately here for now
@@ -51,8 +56,7 @@ func appendAndSplitTags(target []string, tags []string, splits map[string]string
 }
 
 // GetHostTags get the host tags, optionally looking in the cache
-func GetHostTags(cached bool) *Tags {
-
+func GetHostTags(ctx context.Context, cached bool) *Tags {
 	key := buildKey("hostTags")
 	if cached {
 		if x, found := cache.Cache.Get(key); found {
@@ -61,74 +65,69 @@ func GetHostTags(cached bool) *Tags {
 		}
 	}
 
-	splits := config.C.TagValueSplitSeparator
+	splits := config.Datadog.GetStringMapString("tag_value_split_separator")
 	appendToHostTags := func(old, new []string) []string {
 		return appendAndSplitTags(old, new, splits)
 	}
 
-	rawHostTags := config.C.Tags
+	rawHostTags := config.GetConfiguredTags(false)
 	hostTags := make([]string, 0, len(rawHostTags))
 	hostTags = appendToHostTags(hostTags, rawHostTags)
 
-	if env := config.C.Env; env != "" {
+	env := config.Datadog.GetString("env")
+	if env != "" {
 		hostTags = appendToHostTags(hostTags, []string{"env:" + env})
 	}
 
-	hostname, _ := util.GetHostname()
-	clusterName := clustername.GetClusterName(hostname)
+	hostname, _ := util.GetHostname(ctx)
+	clusterName := clustername.GetClusterName(ctx, hostname)
 	if len(clusterName) != 0 {
 		clusterNameTags := []string{"kube_cluster_name:" + clusterName}
-		if !config.C.DisableClusterNameTagKey {
+		if !config.Datadog.GetBool("disable_cluster_name_tag_key") {
 			clusterNameTags = append(clusterNameTags, "cluster_name:"+clusterName)
-			klog.Info("Adding both tags cluster_name and kube_cluster_name. You can use 'disable_cluster_name_tag_key' in the Agent config to keep the kube_cluster_name tag only")
+			log.Info("Adding both tags cluster_name and kube_cluster_name. You can use 'disable_cluster_name_tag_key' in the Agent config to keep the kube_cluster_name tag only")
 		}
 		hostTags = appendToHostTags(hostTags, clusterNameTags)
 	}
 
-	getEC2 := func() ([]string, error) {
-		if config.C.CollectEC2Tags {
-			return ec2.GetTags()
-		}
-		return nil, nil
-	}
-
 	gceTags := []string{}
-	getGCE := func() ([]string, error) {
-		if config.C.CollectGCETags {
-			rawGceTags, err := gce.GetTags()
-			if err != nil {
-				return nil, err
-			}
-			gceTags = appendToHostTags(gceTags, rawGceTags)
+	getGCE := func(ctx context.Context) ([]string, error) {
+		rawGceTags, err := gce.GetTags(ctx)
+		if err != nil {
+			return nil, err
 		}
+		gceTags = appendToHostTags(gceTags, rawGceTags)
 		return nil, nil
 	}
 
-	providers := map[string]*struct {
-		retries   int
-		getTags   func() ([]string, error)
-		retrieved bool
-	}{
-		"ec2":        {1, getEC2, false},
-		"kubernetes": {1, k8s.GetTags, false},
-		"docker":     {1, docker.GetTags, false},
-		"gce":        {1, getGCE, false},
+	providers := make(map[string]*providerDef)
+
+	if config.Datadog.GetBool("collect_ec2_tags") {
+		providers["ec2"] = &providerDef{1, ec2.GetTags, false}
 	}
 
-	if config.IsKubernetes() {
-		providers["kubernetes"].retries = 10
+	if config.Datadog.GetBool("collect_gce_tags") {
+		providers["gce"] = &providerDef{1, getGCE, false}
+	}
+
+	if config.IsFeaturePresent(config.Kubernetes) {
+		providers["kubernetes"] = &providerDef{10, k8s.GetTags, false}
+	}
+
+	if config.IsFeaturePresent(config.Docker) {
+		providers["docker"] = &providerDef{1, docker.GetTags, false}
 	}
 
 	for {
 		for name, provider := range providers {
 			provider.retries--
-			tags, err := provider.getTags()
+			tags, err := provider.getTags(ctx)
 			if err != nil {
-				klog.V(5).Infof("No %s host tags, remaining attempts: %d, err: %v", name, provider.retries, err)
+				log.Debugf("No %s host tags, remaining attempts: %d, err: %v", name, provider.retries, err)
 			} else {
 				provider.retrieved = true
 				hostTags = appendToHostTags(hostTags, tags)
-				klog.V(5).Infof("Host tags from %s retrieved successfully", name)
+				log.Debugf("Host tags from %s retrieved successfully", name)
 			}
 
 			if provider.retrieved || provider.retries <= 0 {
@@ -144,11 +143,10 @@ func GetHostTags(cached bool) *Tags {
 	}
 
 	t := &Tags{
-		System:              hostTags,
+		System:              util.SortUniqInPlace(hostTags),
 		GoogleCloudPlatform: gceTags,
 	}
 
 	cache.Cache.Set(key, t, cache.NoExpiration)
 	return t
-
 }

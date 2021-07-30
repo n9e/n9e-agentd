@@ -9,11 +9,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/custom"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/mocks"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/custom"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance/mocks"
 
 	assert "github.com/stretchr/testify/require"
 )
@@ -38,7 +38,6 @@ func TestNewCustomCheck(t *testing.T) {
 		checkFactory      checkFactoryFunc
 		expectError       error
 		expectCheckReport *compliance.Report
-		expectCheckError  error
 	}{
 		{
 			name: "wrong resource kind",
@@ -78,7 +77,10 @@ func TestNewCustomCheck(t *testing.T) {
 			checkFactory: func(_ string) custom.CheckFunc {
 				return customCheckFunc(nil, expectCheckError)
 			},
-			expectCheckError: expectCheckError,
+			expectCheckReport: &compliance.Report{
+				Passed: false,
+				Error:  expectCheckError,
+			},
 		},
 		{
 			name: "condition expression failure",
@@ -115,12 +117,12 @@ func TestNewCustomCheck(t *testing.T) {
 			} else {
 				assert.NotNil(check)
 				env := &mocks.Env{}
-				report, err := check.check(env)
-				if test.expectCheckError != nil {
-					assert.EqualError(err, test.expectCheckError.Error())
-
+				reports := check.check(env)
+				if test.expectCheckReport.Error != nil {
+					assert.EqualError(reports[0].Error, test.expectCheckReport.Error.Error())
 				}
-				assert.Equal(test.expectCheckReport, report)
+				assert.Equal(test.expectCheckReport.Passed, reports[0].Passed)
+				assert.Equal(test.expectCheckReport.Data, reports[0].Data)
 			}
 		})
 	}

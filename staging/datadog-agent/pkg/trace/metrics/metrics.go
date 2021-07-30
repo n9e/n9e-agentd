@@ -11,27 +11,29 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 
+	mainconfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-go/statsd"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
 )
 
 // findAddr finds the correct address to connect to the Dogstatsd server.
 func findAddr(conf *config.AgentConfig) (string, error) {
-	//if conf.StatsdPort > 0 {
-	//	// UDP enabled
-	//	return fmt.Sprintf("%s:%d", conf.StatsdHost, conf.StatsdPort), nil
-	//}
-	//pipename := mainconfig.Datadog.GetString("dogstatsd_pipe_name")
-	//if pipename != "" {
-	//	// Windows Pipes can be used
-	//	return `\\.\pipe\` + pipename, nil
-	//}
-	//sockname := mainconfig.Datadog.GetString("dogstatsd_socket")
-	//if sockname != "" {
-	//	// Unix sockets can be used
-	//	return `unix://` + sockname, nil
-	//}
+	if conf.StatsdPort > 0 {
+		// UDP enabled
+		return fmt.Sprintf("%s:%d", conf.StatsdHost, conf.StatsdPort), nil
+	}
+	pipename := mainconfig.Datadog.GetString("dogstatsd_pipe_name")
+	if pipename != "" {
+		// Windows Pipes can be used
+		return `\\.\pipe\` + pipename, nil
+	}
+	sockname := mainconfig.Datadog.GetString("dogstatsd_socket")
+	if sockname != "" {
+		// Unix sockets can be used
+		return `unix://` + sockname, nil
+	}
 	return "", errors.New("dogstatsd_port is set to 0 and no alternative is available")
 }
 

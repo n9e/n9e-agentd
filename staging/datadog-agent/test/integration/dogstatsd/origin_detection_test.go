@@ -8,7 +8,7 @@ package dogstatsd
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 func TestUDSOriginDetection(t *testing.T) {

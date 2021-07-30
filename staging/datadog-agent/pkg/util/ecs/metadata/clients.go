@@ -8,18 +8,19 @@
 package metadata
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/common"
-	v1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v1"
-	v2 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v2"
-	v3 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v3"
+	"github.com/DataDog/datadog-agent/pkg/util/ecs/common"
+	v1 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v1"
+	v2 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v2"
+	v3 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v3"
 )
 
 var globalUtil util
@@ -54,7 +55,7 @@ func V1() (*v1.Client, error) {
 		})
 	})
 	if err := globalUtil.initRetryV1.TriggerRetry(); err != nil {
-		klog.V(5).Infof("ECS metadata v1 client init error: %s", err)
+		log.Debugf("ECS metadata v1 client init error: %s", err)
 		return nil, err
 	}
 	return globalUtil.v1, nil
@@ -77,12 +78,12 @@ func V2() (*v2.Client, error) {
 // V3 returns a client for the ECS metadata API v3 by detecting the endpoint
 // address for the specified container. Returns an error if it was not possible
 // to detect the endpoint address.
-func V3(containerID string) (*v3.Client, error) {
+func V3(ctx context.Context, containerID string) (*v3.Client, error) {
 	if !config.IsCloudProviderEnabled(common.CloudProviderName) {
 		return nil, fmt.Errorf("Cloud Provider %s is disabled by configuration", common.CloudProviderName)
 	}
 
-	return newClientV3ForContainer(containerID)
+	return newClientV3ForContainer(ctx, containerID)
 }
 
 // V3FromCurrentTask returns a client for the ECS metadata API v3 by detecting
@@ -103,7 +104,7 @@ func V3FromCurrentTask() (*v3.Client, error) {
 		})
 	})
 	if err := globalUtil.initRetryV3.TriggerRetry(); err != nil {
-		klog.V(5).Infof("ECS metadata v3 client init error: %s", err)
+		log.Debugf("ECS metadata v3 client init error: %s", err)
 		return nil, err
 	}
 	return globalUtil.v3, nil
@@ -121,8 +122,8 @@ func newAutodetectedClientV1() (*v1.Client, error) {
 
 // newClientV3ForContainer detects the metadata API v3 endpoint for the specified
 // container and creates a new client for it.
-func newClientV3ForContainer(id string) (*v3.Client, error) {
-	agentURL, err := getAgentV3URLFromDocker(id)
+func newClientV3ForContainer(ctx context.Context, id string) (*v3.Client, error) {
+	agentURL, err := getAgentV3URLFromDocker(ctx, id)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/DataDog/ebpf/manager"
 	"golang.org/x/sys/unix"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf/probes"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf/probes"
 )
 
 // NewDefaultOptions returns a new instance of the default runtime security manager options

@@ -6,13 +6,25 @@
 package compliance
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
 )
 
 // Report contains the result of a compliance check
 type Report struct {
 	// Data contains arbitrary data linked to check evaluation
 	Data event.Data
+	// Resource associated with the report
+	Resource ReportResource
 	// Passed defines whether check was successful or not
 	Passed bool
+	// Aggregated defines whether check was aggregated or not
+	Aggregated bool
+	// Error of th check evaluation
+	Error error
+}
+
+// ReportResource holds the id and type of the resource associated with a report
+type ReportResource struct {
+	ID   string
+	Type string
 }

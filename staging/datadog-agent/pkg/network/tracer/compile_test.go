@@ -5,8 +5,8 @@ package tracer
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode/runtime"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
+	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode/runtime"
+	"github.com/DataDog/datadog-agent/pkg/network/config"
 	"github.com/stretchr/testify/require"
 )
 

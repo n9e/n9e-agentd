@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/stretchr/testify/assert"
 )
 

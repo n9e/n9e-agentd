@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	. "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 )
 
 func TestValidateShouldSucceedWithValidConfigs(t *testing.T) {

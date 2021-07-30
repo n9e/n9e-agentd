@@ -22,11 +22,11 @@ import (
 	log "github.com/cihub/seelog"
 	datadog "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/dogstatsd"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
 )
 
 const (
@@ -210,11 +210,11 @@ func main() {
 	mockConfig := config.Mock()
 
 	if err := InitLogging("info"); err != nil {
-		klog.Infof("Unable to replace logger, default logging will apply (highly verbose): %s", err)
+		log.Infof("Unable to replace logger, default logging will apply (highly verbose): %s", err)
 	}
 	defer log.Flush()
 
-	klog.Infof("starting benchmarking...")
+	log.Infof("starting benchmarking...")
 	flag.Parse()
 	f := &forwarderBenchStub{
 		received:      0,
@@ -226,10 +226,10 @@ func main() {
 	mockConfig.Set("dogstatsd_stats_enable", true)
 	mockConfig.Set("dogstatsd_stats_buffer", 100)
 	s := serializer.NewSerializer(f, nil)
-	aggr := aggregator.InitAggregator(s, "localhost")
+	aggr := aggregator.InitAggregator(s, nil, "localhost")
 	statsd, err := dogstatsd.NewServer(aggr.GetBufferedChannels(), nil)
 	if err != nil {
-		klog.Errorf("Problem allocating dogstatsd server: %s", err)
+		log.Errorf("Problem allocating dogstatsd server: %s", err)
 		return
 	}
 	defer statsd.Stop()
@@ -237,7 +237,7 @@ func main() {
 	uri := fmt.Sprintf("localhost:%d", config.Datadog.GetInt("dogstatsd_port"))
 	generator, err := NewStatsdGenerator(uri)
 	if err != nil {
-		klog.Errorf("Problem allocating statistics generator: %s", err)
+		log.Errorf("Problem allocating statistics generator: %s", err)
 		return
 	}
 	defer generator.Close()
@@ -291,7 +291,7 @@ func main() {
 							err = submitPacket([]byte(packets[rand.Int63n(int64(*ser))]), generator)
 						}
 						if err != nil {
-							klog.Warningf("Problem sending packet: %v", err)
+							log.Warnf("Problem sending packet: %v", err)
 						}
 						if sent++; (*mode == pMode) && (sent == target) {
 							quitStatter <- true
@@ -303,7 +303,7 @@ func main() {
 
 			wg.Add(1)
 			go func() {
-				klog.Infof("[stats] starting stats reader")
+				log.Infof("[stats] starting stats reader")
 				processed = 0
 				quit := false
 				tickChan := time.NewTicker(time.Second).C
@@ -314,13 +314,13 @@ func main() {
 					case <-quitStatter:
 						quit = true
 					case v := <-statsd.Statistics.Aggregated:
-						klog.Infof("[stats] [mem: %v] processed %v packets @%v ", memstats.Alloc, v.Val, v.Ts)
+						log.Infof("[stats] [mem: %v] processed %v packets @%v ", memstats.Alloc, v.Val, v.Ts)
 						if quit && v.Val == 0 {
 							return
 						}
 						processed += uint64(v.Val)
 					default:
-						klog.Infof("[stats] no statistics were available.")
+						log.Infof("[stats] no statistics were available.")
 					}
 				}
 			}()
@@ -333,22 +333,22 @@ func main() {
 
 			wg.Wait()
 			ticker.Stop()
-			klog.Infof("[generator] submit on packet every: %v", time.Second/time.Duration(rate))
-			klog.Infof("[generator] rate for iteration: %v", rate)
-			klog.Infof("[generator] pps for iteration: %v", float64(processed)/float64(*dur))
-			klog.Infof("[generator] packets submitted: %v", sent)
-			klog.Infof("[dogstatsd] packets processed: %v", processed)
-			klog.Infof("[forwarder stats] packets received: %v", f.received)
-			klog.Infof("[forwarder stats] bytes received: %v", f.receivedBytes)
+			log.Infof("[generator] submit on packet every: %v", time.Second/time.Duration(rate))
+			log.Infof("[generator] rate for iteration: %v", rate)
+			log.Infof("[generator] pps for iteration: %v", float64(processed)/float64(*dur))
+			log.Infof("[generator] packets submitted: %v", sent)
+			log.Infof("[dogstatsd] packets processed: %v", processed)
+			log.Infof("[forwarder stats] packets received: %v", f.received)
+			log.Infof("[forwarder stats] bytes received: %v", f.receivedBytes)
 
 			if *apiKey != "" && *brk && processed != sent {
-				klog.Infof("Pushing results to DataDog backend")
+				log.Infof("Pushing results to DataDog backend")
 
 				t := time.Now().Unix()
 				client := datadog.NewClient(*apiKey, "")
 				tags := []string{}
 				if *branchName != "" {
-					klog.Infof("Adding branchName to tags")
+					log.Infof("Adding branchName to tags")
 					tags = []string{fmt.Sprintf("branch:%s", *branchName)}
 				}
 
@@ -358,7 +358,7 @@ func main() {
 
 				err := client.PostMetrics(results)
 				if err != nil {
-					klog.Errorf("Could not post metrics: %s", err)
+					log.Errorf("Could not post metrics: %s", err)
 				}
 			}
 

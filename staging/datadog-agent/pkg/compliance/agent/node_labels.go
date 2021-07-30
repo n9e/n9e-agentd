@@ -6,11 +6,12 @@
 package agent
 
 import (
+	"context"
 	"math"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/hostinfo"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/hostinfo"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/cenkalti/backoff"
 )
@@ -43,7 +44,7 @@ type labelsFetcher struct {
 }
 
 func (f *labelsFetcher) fetch() (err error) {
-	f.nodeLabels, err = hostinfo.GetNodeLabels()
+	f.nodeLabels, err = hostinfo.GetNodeLabels(context.TODO())
 	return
 }
 
@@ -53,6 +54,6 @@ func notifyFetchNodeLabels() backoff.Notify {
 		attempt++
 		mins := int(delay.Minutes())
 		secs := int(math.Mod(delay.Seconds(), 60))
-		klog.Warningf("Failed to get node labels (attempt=%d): will retry in %dm%ds: %v", attempt, mins, secs, err)
+		log.Warnf("Failed to get node labels (attempt=%d): will retry in %dm%ds: %v", attempt, mins, secs, err)
 	}
 }

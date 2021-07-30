@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	taggerutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	v2 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v2"
+	taggerutil "github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	v2 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v2"
 )
 
 func TestParseECSClusterName(t *testing.T) {

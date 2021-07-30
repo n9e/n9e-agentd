@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Stop stops the JMXFetch process
@@ -39,10 +39,10 @@ func (j *JMXFetch) Stop() error {
 
 	select {
 	case <-time.After(time.Millisecond * 500):
-		klog.Warningf("Jmxfetch did not exit during it's grace period, killing it")
+		log.Warnf("Jmxfetch did not exit during it's grace period, killing it")
 		err = j.cmd.Process.Signal(os.Kill)
 		if err != nil {
-			klog.Warningf("Could not kill jmxfetch: %v", err)
+			log.Warnf("Could not kill jmxfetch: %v", err)
 		}
 	case <-stopChan:
 	}

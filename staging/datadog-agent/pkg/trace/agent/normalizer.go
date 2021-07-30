@@ -13,11 +13,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/traceutil"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config/features"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -45,17 +45,17 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 	switch err {
 	case traceutil.ErrEmpty:
 		atomic.AddInt64(&ts.SpansMalformed.ServiceEmpty, 1)
-		klog.V(5).Infof("Fixing malformed trace. Service is empty (reason:service_empty), setting span.service=%s: %s", s.Service, s)
+		log.Debugf("Fixing malformed trace. Service is empty (reason:service_empty), setting span.service=%s: %s", s.Service, s)
 	case traceutil.ErrTooLong:
 		atomic.AddInt64(&ts.SpansMalformed.ServiceTruncate, 1)
-		klog.V(5).Infof("Fixing malformed trace. Service is too long (reason:service_truncate), truncating span.service to length=%d: %s", traceutil.MaxServiceLen, s)
+		log.Debugf("Fixing malformed trace. Service is too long (reason:service_truncate), truncating span.service to length=%d: %s", traceutil.MaxServiceLen, s)
 	case traceutil.ErrInvalid:
 		atomic.AddInt64(&ts.SpansMalformed.ServiceInvalid, 1)
-		klog.V(5).Infof("Fixing malformed trace. Service is invalid (reason:service_invalid), replacing invalid span.service=%s with fallback span.service=%s: %s", s.Service, svc, s)
+		log.Debugf("Fixing malformed trace. Service is invalid (reason:service_invalid), replacing invalid span.service=%s with fallback span.service=%s: %s", s.Service, svc, s)
 	}
 	s.Service = svc
 
-	if config.HasFeature("component2name") {
+	if features.Has("component2name") {
 		// This feature flag determines the component tag to become the span name.
 		//
 		// It works around the incompatibility between Opentracing and Datadog where the
@@ -70,18 +70,18 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 	switch err {
 	case traceutil.ErrEmpty:
 		atomic.AddInt64(&ts.SpansMalformed.SpanNameEmpty, 1)
-		klog.V(5).Infof("Fixing malformed trace. Name is empty (reason:span_name_empty), setting span.name=%s: %s", s.Name, s)
+		log.Debugf("Fixing malformed trace. Name is empty (reason:span_name_empty), setting span.name=%s: %s", s.Name, s)
 	case traceutil.ErrTooLong:
 		atomic.AddInt64(&ts.SpansMalformed.SpanNameTruncate, 1)
-		klog.V(5).Infof("Fixing malformed trace. Name is too long (reason:span_name_truncate), truncating span.name to length=%d: %s", traceutil.MaxServiceLen, s)
+		log.Debugf("Fixing malformed trace. Name is too long (reason:span_name_truncate), truncating span.name to length=%d: %s", traceutil.MaxServiceLen, s)
 	case traceutil.ErrInvalid:
 		atomic.AddInt64(&ts.SpansMalformed.SpanNameInvalid, 1)
-		klog.V(5).Infof("Fixing malformed trace. Name is invalid (reason:span_name_invalid), setting span.name=%s: %s", s.Name, s)
+		log.Debugf("Fixing malformed trace. Name is invalid (reason:span_name_invalid), setting span.name=%s: %s", s.Name, s)
 	}
 
 	if s.Resource == "" {
 		atomic.AddInt64(&ts.SpansMalformed.ResourceEmpty, 1)
-		klog.V(5).Infof("Fixing malformed trace. Resource is empty (reason:resource_empty), setting span.resource=%s: %s", s.Name, s)
+		log.Debugf("Fixing malformed trace. Resource is empty (reason:resource_empty), setting span.resource=%s: %s", s.Name, s)
 		s.Resource = s.Name
 	}
 
@@ -92,7 +92,7 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 	// root span's ``trace id = span id`` has been removed
 	if s.ParentID == s.TraceID && s.ParentID == s.SpanID {
 		s.ParentID = 0
-		klog.V(5).Infof("span.normalize: `ParentID`, `TraceID` and `SpanID` are the same; `ParentID` set to 0: %d", s.TraceID)
+		log.Debugf("span.normalize: `ParentID`, `TraceID` and `SpanID` are the same; `ParentID` set to 0: %d", s.TraceID)
 	}
 
 	// Start & Duration as nanoseconds timestamps
@@ -100,17 +100,17 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 	// (or it is "le bug de l'an 2000")
 	if s.Duration < 0 {
 		atomic.AddInt64(&ts.SpansMalformed.InvalidDuration, 1)
-		klog.V(5).Infof("Fixing malformed trace. Duration is invalid (reason:invalid_duration), setting span.duration=0: %s", s)
+		log.Debugf("Fixing malformed trace. Duration is invalid (reason:invalid_duration), setting span.duration=0: %s", s)
 		s.Duration = 0
 	}
 	if s.Duration > math.MaxInt64-s.Start {
 		atomic.AddInt64(&ts.SpansMalformed.InvalidDuration, 1)
-		klog.V(5).Infof("Fixing malformed trace. Duration is too large and causes overflow (reason:invalid_duration), setting span.duration=0: %s", s)
+		log.Debugf("Fixing malformed trace. Duration is too large and causes overflow (reason:invalid_duration), setting span.duration=0: %s", s)
 		s.Duration = 0
 	}
 	if s.Start < Year2000NanosecTS {
 		atomic.AddInt64(&ts.SpansMalformed.InvalidStartDate, 1)
-		klog.V(5).Infof("Fixing malformed trace. Start date is invalid (reason:invalid_start_date), setting span.start=time.now(): %s", s)
+		log.Debugf("Fixing malformed trace. Start date is invalid (reason:invalid_start_date), setting span.start=time.now(): %s", s)
 		now := time.Now().UnixNano()
 		s.Start = now - s.Duration
 		if s.Start < 0 {
@@ -120,7 +120,7 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 
 	if len(s.Type) > MaxTypeLen {
 		atomic.AddInt64(&ts.SpansMalformed.TypeTruncate, 1)
-		klog.V(5).Infof("Fixing malformed trace. Type is too long (reason:type_truncate), truncating span.type to length=%d: %s", MaxTypeLen, s)
+		log.Debugf("Fixing malformed trace. Type is too long (reason:type_truncate), truncating span.type to length=%d: %s", MaxTypeLen, s)
 		s.Type = traceutil.TruncateUTF8(s.Type, MaxTypeLen)
 	}
 	if env, ok := s.Meta["env"]; ok {
@@ -129,7 +129,7 @@ func normalize(ts *info.TagStats, s *pb.Span) error {
 	if sc, ok := s.Meta["http.status_code"]; ok {
 		if !isValidStatusCode(sc) {
 			atomic.AddInt64(&ts.SpansMalformed.InvalidHTTPStatusCode, 1)
-			klog.V(5).Infof("Fixing malformed trace. HTTP status code is invalid (reason:invalid_http_status_code), dropping invalid http.status_code=%s: %s", sc, s)
+			log.Debugf("Fixing malformed trace. HTTP status code is invalid (reason:invalid_http_status_code), dropping invalid http.status_code=%s: %s", sc, s)
 			delete(s.Meta, "http.status_code")
 		}
 	}
@@ -163,7 +163,7 @@ func normalizeTrace(ts *info.TagStats, t pb.Trace) error {
 		}
 		if _, ok := spanIDs[span.SpanID]; ok {
 			atomic.AddInt64(&ts.SpansMalformed.DuplicateSpanID, 1)
-			klog.V(5).Infof("Found malformed trace with duplicate span ID (reason:duplicate_span_id): %s", span)
+			log.Debugf("Found malformed trace with duplicate span ID (reason:duplicate_span_id): %s", span)
 		}
 		spanIDs[span.SpanID] = struct{}{}
 	}

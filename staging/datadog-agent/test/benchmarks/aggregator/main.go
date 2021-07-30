@@ -19,10 +19,10 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
 
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -115,7 +115,7 @@ type stats struct {
 func getExpvarJSON() (*aggregatorStats, error) {
 	resp, err := http.Get("http://127.0.0.1:5000/debug/vars")
 	if err != nil {
-		klog.Errorf("could not contact expvar server: %s", err)
+		log.Errorf("could not contact expvar server: %s", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -124,7 +124,7 @@ func getExpvarJSON() (*aggregatorStats, error) {
 	res := stats{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		klog.Errorf("could not load json: %s", err)
+		log.Errorf("could not load json: %s", err)
 		return nil, err
 	}
 	return &res.Aggregator, nil
@@ -133,7 +133,7 @@ func getExpvarJSON() (*aggregatorStats, error) {
 func waitForAggregatorEmptyQueue() {
 	// waiting for the aggregator to consume every event
 	for agg.IsInputQueueEmpty() == false {
-		klog.V(5).Info("Queue is not empty, waiting a 0.2s")
+		log.Debug("Queue is not empty, waiting a 0.2s")
 		time.Sleep(10 * time.Millisecond)
 	}
 }
@@ -141,7 +141,7 @@ func waitForAggregatorEmptyQueue() {
 func report(lastInfo *aggregatorStats, waitingKey string) *aggregatorStats {
 	// waiting for the aggregator to consume every event
 	for agg.IsInputQueueEmpty() == false {
-		klog.V(5).Info("Queue is not empty, waiting a 0.2s")
+		log.Debug("Queue is not empty, waiting a 0.2s")
 		time.Sleep(200 * time.Millisecond)
 	}
 	flush <- time.Now()
@@ -150,7 +150,7 @@ func report(lastInfo *aggregatorStats, waitingKey string) *aggregatorStats {
 	for {
 		stats, err := getExpvarJSON()
 		if err != nil {
-			klog.Warningf("got error from getExpvarJSON: %v", err)
+			log.Criticalf("got error from getExpvarJSON: %v", err)
 		}
 
 		if lastInfo != nil && lastInfo.Flush[waitingKey].FlushIndex == stats.Flush[waitingKey].FlushIndex {
@@ -201,7 +201,7 @@ func main() {
 	defer log.Flush()
 
 	if *branchName == "" {
-		klog.Warningf("Error: '-branch' parameter is mandatory")
+		log.Criticalf("Error: '-branch' parameter is mandatory")
 		return
 	}
 
@@ -210,12 +210,12 @@ func main() {
 	f := &forwarderBenchStub{}
 	s := serializer.NewSerializer(f, nil)
 
-	agg = aggregator.InitAggregatorWithFlushInterval(s, "hostname", time.Duration(*flushIval)*time.Second)
+	agg = aggregator.InitAggregatorWithFlushInterval(s, nil, "hostname", time.Duration(*flushIval)*time.Second)
 
 	aggregator.SetDefaultAggregator(agg)
 	sender, err := aggregator.GetSender(check.ID("benchmark check"))
 	if err != nil {
-		klog.Warningf("could not get sender: %s", err)
+		log.Criticalf("could not get sender: %s", err)
 		return
 	}
 
@@ -223,7 +223,7 @@ func main() {
 	for _, n := range strings.Split(*points, ",") {
 		res, err := strconv.Atoi(n)
 		if err != nil {
-			klog.Errorf("Could not parse 'points' arguments '%s': %s", n, err)
+			log.Errorf("Could not parse 'points' arguments '%s': %s", n, err)
 			return
 		}
 		nbPoints = append(nbPoints, res)
@@ -252,7 +252,7 @@ func main() {
 	} else {
 		startInfo := report(nil, "")
 
-		klog.Infof("Starting benchmark with %v series of %v points.\n\n", nbSeries, nbPoints)
+		log.Infof("Starting benchmark with %v series of %v points.\n\n", nbSeries, nbPoints)
 		results = benchmarkMetrics(nbSeries, nbPoints, sender, startInfo, *branchName)
 	}
 
@@ -266,9 +266,9 @@ func main() {
 	}
 
 	if *apiKey != "" {
-		klog.Infof("Pushing results to DataDog backend")
+		log.Infof("Pushing results to DataDog backend")
 		pushMetricsToDatadog(*apiKey, results)
 	} else {
-		klog.Infof("No API key provided: no results was push to the DataDog backend")
+		log.Infof("No API key provided: no results was push to the DataDog backend")
 	}
 }

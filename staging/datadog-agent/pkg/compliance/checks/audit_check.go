@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/elastic/go-libaudit/rule"
 )
 
@@ -23,7 +23,7 @@ var auditReportedFields = []string{
 	compliance.AuditFieldPermissions,
 }
 
-func resolveAudit(_ context.Context, e env.Env, ruleID string, res compliance.Resource) (interface{}, error) {
+func resolveAudit(_ context.Context, e env.Env, ruleID string, res compliance.Resource) (resolved, error) {
 	if res.Audit == nil {
 		return nil, fmt.Errorf("%s: expecting audit resource in audit check", ruleID)
 	}
@@ -47,34 +47,35 @@ func resolveAudit(_ context.Context, e env.Env, ruleID string, res compliance.Re
 
 	paths := []string{path}
 
-	klog.V(5).Infof("%s: evaluating audit rules", ruleID)
+	log.Debugf("%s: evaluating audit rules", ruleID)
 
 	auditRules, err := client.GetFileWatchRules()
 	if err != nil {
 		return nil, err
 	}
 
-	var instances []*eval.Instance
+	var instances []eval.Instance
 	for _, auditRule := range auditRules {
 		for _, path := range paths {
 			if auditRule.Path != path {
 				continue
 			}
 
-			klog.V(5).Infof("%s: audit check - match %s", ruleID, path)
-			instances = append(instances, &eval.Instance{
-				Vars: eval.VarMap{
-					compliance.AuditFieldPath:        path,
-					compliance.AuditFieldEnabled:     true,
-					compliance.AuditFieldPermissions: auditPermissionsString(auditRule),
-				},
-			})
+			log.Debugf("%s: audit check - match %s", ruleID, path)
+			instances = append(instances, newResolvedInstance(
+				eval.NewInstance(
+					eval.VarMap{
+						compliance.AuditFieldPath:        path,
+						compliance.AuditFieldEnabled:     true,
+						compliance.AuditFieldPermissions: auditPermissionsString(auditRule),
+					}, nil,
+				),
+				auditRule.Path, "audit"),
+			)
 		}
 	}
 
-	return &instanceIterator{
-		instances: instances,
-	}, nil
+	return newResolvedIterator(newInstanceIterator(instances)), nil
 }
 
 func auditPermissionsString(r *rule.FileWatchRule) string {

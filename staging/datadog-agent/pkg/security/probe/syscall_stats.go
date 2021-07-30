@@ -19,11 +19,11 @@ import (
 	"github.com/DataDog/ebpf/manager"
 	"github.com/pkg/errors"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/metrics"
+import "github.com/DataDog/datadog-agent/pkg/security/metrics"
 
 // ProcessSyscall represents a syscall made by a process
 type ProcessSyscall struct {
@@ -175,7 +175,7 @@ func (sm *SyscallMonitor) CollectStats(collector SyscallStatsCollector) error {
 
 		if !processSyscall.IsNull() {
 			if err := buffer.Delete(processSyscallRaw); err != nil {
-				klog.V(5).Info(err)
+				log.Debug(err)
 			}
 		}
 
@@ -184,7 +184,7 @@ func (sm *SyscallMonitor) CollectStats(collector SyscallStatsCollector) error {
 		}
 	}
 	if mapIterator.Err() != nil {
-		klog.V(5).Infof("couldn't iterate over %s: %v", buffer.String(), mapIterator.Err())
+		log.Debugf("couldn't iterate over %s: %v", buffer.String(), mapIterator.Err())
 	}
 
 	// exec counter
@@ -192,7 +192,7 @@ func (sm *SyscallMonitor) CollectStats(collector SyscallStatsCollector) error {
 	for mapIterator.Next(&processPath, &value) {
 		if !processPath.IsEmpty() {
 			if err := execBuffer.Delete(&processPath.PathRaw); err != nil {
-				klog.V(5).Info(err)
+				log.Debug(err)
 			}
 
 			if err := collector.CountExec(processPath.Path, value); err != nil {
@@ -202,7 +202,7 @@ func (sm *SyscallMonitor) CollectStats(collector SyscallStatsCollector) error {
 
 	}
 	if mapIterator.Err() != nil {
-		klog.V(5).Infof("couldn't iterate over %s: %v", execBuffer.String(), mapIterator.Err())
+		log.Debugf("couldn't iterate over %s: %v", execBuffer.String(), mapIterator.Err())
 	}
 
 	// concurrent syscalls counter

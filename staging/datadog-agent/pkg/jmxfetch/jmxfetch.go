@@ -17,14 +17,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	auth "github.com/n9e/n9e-agentd/pkg/authentication"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/cmd/agent/common"
+	api "github.com/DataDog/datadog-agent/pkg/api/util"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"gopkg.in/yaml.v2"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -78,7 +78,7 @@ type JMXFetch struct {
 	stopped            chan struct{}
 }
 
-// JMXFetch supports different way of reporting the data it has fetched.
+// JMXReporter supports different way of reporting the data it has fetched.
 type JMXReporter string
 
 var (
@@ -107,11 +107,7 @@ type checkInitCfg struct {
 }
 
 func (j *JMXFetch) Monitor() {
-	idx := 0
-	cf := config.C.Jmx
-	maxRestarts := cf.MaxRestarts
-	ival := cf.RestartInterval
-	stopTimes := make([]time.Time, maxRestarts)
+	limiter := newRestartLimiter(config.Datadog.GetInt("jmx_max_restarts"), float64(config.Datadog.GetInt("jmx_restart_interval")))
 	ticker := time.NewTicker(500 * time.Millisecond)
 
 	defer ticker.Stop()
@@ -122,34 +118,24 @@ func (j *JMXFetch) Monitor() {
 	for {
 		err := j.Wait()
 		if err == nil {
-			klog.Infof("JMXFetch stopped and exited sanely.")
+			log.Infof("JMXFetch stopped and exited sanely.")
 			break
 		}
 
-		stopTimes[idx] = time.Now()
-		oldestIdx := (idx + maxRestarts + 1) % maxRestarts
-
-		// Please note that the zero value for `time.Time` is `0001-01-01 00:00:00 +0000 UTC`
-		// therefore for the first iteration (the initial launch attempt), the interval will
-		// always be biger than ival (jmx_restart_interval). In fact, this sub operation with
-		// stopTimes here will only start yielding values potentially <= ival _after_ the first
-		// maxRestarts attempts, which is fine and consistent.
-		if stopTimes[idx].Sub(stopTimes[oldestIdx]) <= ival {
-			msg := fmt.Sprintf("Too many JMXFetch restarts (%v) in time interval (%vs) - giving up", maxRestarts, ival)
-			klog.Errorf(msg)
+		if !limiter.canRestart(time.Now()) {
+			msg := fmt.Sprintf("Too many JMXFetch restarts (%v) in time interval (%vs) - giving up", limiter.maxRestarts, limiter.interval)
+			log.Errorf(msg)
 			s := status.JMXStartupError{LastError: msg, Timestamp: time.Now().Unix()}
 			status.SetJMXStartupError(s)
 			return
 		}
-
-		idx = (idx + 1) % maxRestarts
 
 		select {
 		case <-j.shutdown:
 			return
 		default:
 			// restart
-			klog.Warningf("JMXFetch process had to be restarted.")
+			log.Warnf("JMXFetch process had to be restarted.")
 			j.Start(false) //nolint:errcheck
 		}
 	}
@@ -174,7 +160,7 @@ func (j *JMXFetch) setDefaults() {
 		j.Checks = []string{}
 	}
 	if j.Output == nil {
-		j.Output = klog.Info
+		j.Output = log.JMXInfo
 	}
 }
 
@@ -182,13 +168,12 @@ func (j *JMXFetch) setDefaults() {
 func (j *JMXFetch) Start(manage bool) error {
 	j.setDefaults()
 
-	cf := config.C.Jmx
-	classpath := filepath.Join(config.C.WorkDir, "jmx", jmxJarName)
+	classpath := filepath.Join(common.GetDistPath(), "jmx", jmxJarName)
 	if j.JavaToolsJarPath != "" {
 		classpath = fmt.Sprintf("%s%s%s", j.JavaToolsJarPath, string(os.PathListSeparator), classpath)
 	}
 
-	globalCustomJars := cf.CustomJars
+	globalCustomJars := config.Datadog.GetStringSlice("jmx_custom_jars")
 	if len(globalCustomJars) > 0 {
 		classpath = fmt.Sprintf("%s%s%s", strings.Join(globalCustomJars, string(os.PathListSeparator)), string(os.PathListSeparator), classpath)
 	}
@@ -205,13 +190,13 @@ func (j *JMXFetch) Start(manage bool) error {
 		reporter = "json"
 	default:
 		if common.DSD != nil && common.DSD.UdsListenerRunning {
-			reporter = fmt.Sprintf("statsd:unix://%s", config.C.Statsd.Socket)
+			reporter = fmt.Sprintf("statsd:unix://%s", config.Datadog.GetString("dogstatsd_socket"))
 		} else {
-			bindHost := config.C.GetBindHost()
+			bindHost := config.GetBindHost()
 			if bindHost == "" || bindHost == "0.0.0.0" {
 				bindHost = "localhost"
 			}
-			reporter = fmt.Sprintf("statsd:%s:%s", bindHost, config.C.Statsd.Port)
+			reporter = fmt.Sprintf("statsd:%s:%s", bindHost, config.Datadog.GetString("dogstatsd_port"))
 		}
 	}
 
@@ -222,8 +207,8 @@ func (j *JMXFetch) Start(manage bool) error {
 	// Specify a maximum memory allocation pool for the JVM
 	javaOptions := j.JavaOptions
 
-	useContainerSupport := cf.UseContainerSupport
-	useCgroupMemoryLimit := cf.UseCgroupMemoryLimit
+	useContainerSupport := config.Datadog.GetBool("jmx_use_container_support")
+	useCgroupMemoryLimit := config.Datadog.GetBool("jmx_use_cgroup_memory_limit")
 
 	if useContainerSupport && useCgroupMemoryLimit {
 		return fmt.Errorf("incompatible options %q and %q", jvmContainerSupport, jvmCgroupMemoryAwareness)
@@ -234,7 +219,7 @@ func (j *JMXFetch) Start(manage bool) error {
 		// This option is incompatible with the Xmx and Xms options, log a warning if there are found in the javaOptions
 		for _, option := range jvmCgroupMemoryIncompatOptions {
 			if strings.Contains(javaOptions, option) {
-				klog.Warningf("Java option %q is incompatible with cgroup_memory_limit, disabling cgroup mode", option)
+				log.Warnf("Java option %q is incompatible with cgroup_memory_limit, disabling cgroup mode", option)
 				passOption = false
 			}
 		}
@@ -259,10 +244,8 @@ func (j *JMXFetch) Start(manage bool) error {
 		jmxLogLevel = "INFO"
 	}
 
-	//ipcHost := config.C.CmdHost
-	//ipcPort := config.C.CmdPort
-	var ipcHost string
-	var ipcPort int
+	ipcHost := config.Datadog.GetString("cmd_host")
+	ipcPort := config.Datadog.GetInt("cmd_port")
 	if j.IPCHost != "" {
 		ipcHost = j.IPCHost
 	}
@@ -276,16 +259,16 @@ func (j *JMXFetch) Start(manage bool) error {
 		jmxMainClass,
 		"--ipc_host", ipcHost,
 		"--ipc_port", fmt.Sprintf("%v", ipcPort),
-		"--check_period", fmt.Sprintf("%v", cf.CheckPeriod), // Period of the main loop of jmxfetch in ms
-		"--thread_pool_size", fmt.Sprintf("%v", cf.ThreadPoolSize), // Size for the JMXFetch thread pool
-		"--collection_timeout", fmt.Sprintf("%v", cf.CollectionTimeout), // Timeout for metric collection in seconds
-		"--reconnection_timeout", fmt.Sprintf("%v", cf.ReconnectionTimeout), // Timeout for instance reconnection in seconds
-		"--reconnection_thread_pool_size", fmt.Sprintf("%v", cf.ReconnectionThreadPoolSize), // Size for the JMXFetch reconnection thread pool
+		"--check_period", fmt.Sprintf("%v", config.Datadog.GetInt("jmx_check_period")), // Period of the main loop of jmxfetch in ms
+		"--thread_pool_size", fmt.Sprintf("%v", config.Datadog.GetInt("jmx_thread_pool_size")), // Size for the JMXFetch thread pool
+		"--collection_timeout", fmt.Sprintf("%v", config.Datadog.GetInt("jmx_collection_timeout")), // Timeout for metric collection in seconds
+		"--reconnection_timeout", fmt.Sprintf("%v", config.Datadog.GetInt("jmx_reconnection_timeout")), // Timeout for instance reconnection in seconds
+		"--reconnection_thread_pool_size", fmt.Sprintf("%v", config.Datadog.GetInt("jmx_reconnection_thread_pool_size")), // Size for the JMXFetch reconnection thread pool
 		"--log_level", jmxLogLevel,
 		"--reporter", reporter, // Reporter to use
 	)
 
-	if config.C.LogFormatRfc3339 {
+	if config.Datadog.GetBool("log_format_rfc3339") {
 		subprocessArgs = append(subprocessArgs, "--log_format_rfc3339")
 	}
 
@@ -296,7 +279,7 @@ func (j *JMXFetch) Start(manage bool) error {
 	// set environment + token
 	j.cmd.Env = append(
 		os.Environ(),
-		fmt.Sprintf("SESSION_TOKEN=%s", auth.GetAuthToken()),
+		fmt.Sprintf("SESSION_TOKEN=%s", api.GetAuthToken()),
 	)
 
 	// forward the standard output to the Agent logger
@@ -325,14 +308,14 @@ func (j *JMXFetch) Start(manage bool) error {
 	scan:
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			klog.Error(in.Text())
+			log.JMXError(in.Text())
 		}
 		if in.Err() == bufio.ErrTooLong {
 			goto scan
 		}
 	}()
 
-	klog.V(5).Infof("Args: %v", subprocessArgs)
+	log.Debugf("Args: %v", subprocessArgs)
 
 	err = j.cmd.Start()
 
@@ -416,7 +399,7 @@ func (j *JMXFetch) ConfigureFromInitConfig(initConfig integration.Data) error {
 	return nil
 }
 
-// ConfigureFromInitConfig configures various options from the instance
+// ConfigureFromInstance configures various options from the instance
 // section of the configuration
 func (j *JMXFetch) ConfigureFromInstance(instance integration.Data) error {
 

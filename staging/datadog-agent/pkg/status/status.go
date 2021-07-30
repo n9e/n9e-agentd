@@ -6,6 +6,7 @@
 package status
 
 import (
+	"context"
 	"encoding/json"
 	"expvar"
 	"os"
@@ -14,22 +15,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/version"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/orchestrator"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/cmd/agent/common"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/orchestrator"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/logs"
+	"github.com/DataDog/datadog-agent/pkg/metadata/host"
+	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/flavor"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/version"
 
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
+	httputils "github.com/DataDog/datadog-agent/pkg/util/http"
 )
 
 var timeFormat = "2006-01-02 15:04:05.999 MST"
@@ -64,18 +67,28 @@ func GetStatus() (map[string]interface{}, error) {
 		stats["endpointsInfos"] = nil
 	}
 
-	if config.C.ClusterAgent.Enabled {
+	if config.Datadog.GetBool("cluster_agent.enabled") {
 		stats["clusterAgentStatus"] = getDCAStatus()
 	}
 
-	if config.C.SystemProbe.Enabled {
-		stats["systemProbeStats"] = GetSystemProbeStats(config.C.SystemProbe.SysprobeSocket)
+	if config.Datadog.GetBool("system_probe_config.enabled") {
+		stats["systemProbeStats"] = GetSystemProbeStats(config.Datadog.GetString("system_probe_config.sysprobe_socket"))
 	}
 
-	if !config.C.NoProxyNonexactMatch {
-		httputils.NoProxyWarningMapMutex.Lock()
-		stats["TransportWarnings"] = httputils.NoProxyWarningMap
-		httputils.NoProxyWarningMapMutex.Unlock()
+	if !config.Datadog.GetBool("no_proxy_nonexact_match") {
+		httputils.NoProxyMapMutex.Lock()
+		stats["TransportWarnings"] = len(httputils.NoProxyIgnoredWarningMap)+len(httputils.NoProxyUsedInFuture)+len(httputils.NoProxyChanged) > 0
+		stats["NoProxyIgnoredWarningMap"] = httputils.NoProxyIgnoredWarningMap
+		stats["NoProxyUsedInFuture"] = httputils.NoProxyUsedInFuture
+		stats["NoProxyChanged"] = httputils.NoProxyChanged
+		httputils.NoProxyMapMutex.Unlock()
+	}
+
+	if config.IsContainerized() {
+		if common.AC != nil {
+			stats["adConfigErrors"] = common.AC.GetAutodiscoveryErrors()
+		}
+		stats["filterErrors"] = containers.GetFilterErrors()
 	}
 
 	return stats, nil
@@ -162,20 +175,20 @@ func GetDCAStatus() (map[string]interface{}, error) {
 		stats["admissionWebhook"] = admission.GetStatus(apiCl.Cl)
 	}
 
-	if config.C.ClusterChecks.Enabled {
+	if config.Datadog.GetBool("cluster_checks.enabled") {
 		cchecks, err := clusterchecks.GetStats()
 		if err != nil {
-			klog.Errorf("Error grabbing clusterchecks stats: %s", err)
+			log.Errorf("Error grabbing clusterchecks stats: %s", err)
 		} else {
 			stats["clusterchecks"] = cchecks
 		}
 	}
 
-	if config.C.OrchestratorExplorer.Enabled {
+	if config.Datadog.GetBool("orchestrator_explorer.enabled") {
 		if apiErr != nil {
 			stats["orchestrator"] = map[string]string{"Error": apiErr.Error()}
 		} else {
-			orchestratorStats := orchestrator.GetStatus(apiCl.Cl)
+			orchestratorStats := orchestrator.GetStatus(context.TODO(), apiCl.Cl)
 			stats["orchestrator"] = orchestratorStats
 		}
 	}
@@ -187,17 +200,17 @@ func GetDCAStatus() (map[string]interface{}, error) {
 func GetAndFormatDCAStatus() ([]byte, error) {
 	s, err := GetDCAStatus()
 	if err != nil {
-		klog.Infof("Error while getting status %q", err)
+		log.Infof("Error while getting status %q", err)
 		return nil, err
 	}
 	statusJSON, err := json.Marshal(s)
 	if err != nil {
-		klog.Infof("Error while marshalling %q", err)
+		log.Infof("Error while marshalling %q", err)
 		return nil, err
 	}
 	st, err := FormatDCAStatus(statusJSON)
 	if err != nil {
-		klog.Infof("Error formatting the status %q", err)
+		log.Infof("Error formatting the status %q", err)
 		return nil, err
 	}
 	return []byte(st), nil
@@ -227,24 +240,40 @@ func GetAndFormatSecurityAgentStatus(runtimeStatus map[string]interface{}) ([]by
 // getDCAPartialConfig returns config parameters of interest for the status page.
 func getDCAPartialConfig() map[string]string {
 	conf := make(map[string]string)
-	conf["log_level"] = config.C.LogLevel
-	conf["confd_path"] = config.C.ConfdPath
+	conf["log_level"] = config.Datadog.GetString("log_level")
+	conf["confd_path"] = config.Datadog.GetString("confd_path")
 	return conf
 }
 
 // getPartialConfig returns config parameters of interest for the status page
 func getPartialConfig() map[string]string {
 	conf := make(map[string]string)
-	conf["log_file"] = config.C.LogFile
-	conf["log_level"] = config.C.LogLevel
-	conf["confd_path"] = config.C.ConfdPath
-	conf["additional_checksd"] = config.C.AdditionalChecksd
+	conf["log_file"] = config.Datadog.GetString("log_file")
+	conf["log_level"] = config.Datadog.GetString("log_level")
+	conf["confd_path"] = config.Datadog.GetString("confd_path")
+	conf["additional_checksd"] = config.Datadog.GetString("additional_checksd")
 	return conf
 }
 
 func getEndpointsInfos() (map[string]interface{}, error) {
-	//TODO:
-	return nil, nil
+	endpoints, err := config.GetMultipleEndpoints()
+	if err != nil {
+		return nil, err
+	}
+
+	endpointsInfos := make(map[string]interface{})
+
+	// obfuscate the api keys
+	for endpoint, keys := range endpoints {
+		for i, key := range keys {
+			if len(key) > 5 {
+				keys[i] = key[len(key)-5:]
+			}
+		}
+		endpointsInfos[endpoint] = keys
+	}
+
+	return endpointsInfos, nil
 }
 
 // getCommonStatus grabs the status from expvar and puts it into a map.
@@ -253,22 +282,21 @@ func getCommonStatus() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 	stats, err := expvarStats(stats)
 	if err != nil {
-		klog.Errorf("Error Getting ExpVar Stats: %v", err)
+		log.Errorf("Error Getting ExpVar Stats: %v", err)
 	}
 
 	stats["version"] = version.AgentVersion
 	stats["flavor"] = flavor.GetFlavor()
-	hostnameData, err := util.GetHostnameData()
+	hostnameData, err := util.GetHostnameData(context.TODO())
 
 	if err != nil {
-		klog.Errorf("Error grabbing hostname for status: %v", err)
-		stats["metadata"] = host.GetPayloadFromCache(util.HostnameData{Hostname: "unknown", Provider: "unknown"})
+		log.Errorf("Error grabbing hostname for status: %v", err)
+		stats["metadata"] = host.GetPayloadFromCache(context.TODO(), util.HostnameData{Hostname: "unknown", Provider: "unknown"})
 	} else {
-		stats["metadata"] = host.GetPayloadFromCache(hostnameData)
+		stats["metadata"] = host.GetPayloadFromCache(context.TODO(), hostnameData)
 	}
 
-	// TODO: add -f
-	stats["conf_file"] = config.Configfile
+	stats["conf_file"] = config.Datadog.ConfigFileUsed()
 	stats["pid"] = os.Getpid()
 	stats["go_version"] = runtime.Version()
 	stats["agent_start_nano"] = config.StartTime.UnixNano()
@@ -305,8 +333,13 @@ func expvarStats(stats map[string]interface{}) (map[string]interface{}, error) {
 	aggregatorStats := make(map[string]interface{})
 	json.Unmarshal(aggregatorStatsJSON, &aggregatorStats) //nolint:errcheck
 	stats["aggregatorStats"] = aggregatorStats
-
-	dogstatsdStatsJSON := []byte(expvar.Get("statsd").String())
+	s, err := check.TranslateEventPlatformEventTypes(stats["aggregatorStats"])
+	if err != nil {
+		log.Debug("failed to translate event platform event types in aggregatorStats: %s", err.Error())
+	} else {
+		stats["aggregatorStats"] = s
+	}
+	dogstatsdStatsJSON := []byte(expvar.Get("dogstatsd").String())
 	dogstatsdUdsStatsJSON := []byte(expvar.Get("dogstatsd-uds").String())
 	dogstatsdUDPStatsJSON := []byte(expvar.Get("dogstatsd-udp").String())
 	dogstatsdStats := make(map[string]interface{})

@@ -7,18 +7,18 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"io"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	coreconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/api"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
+	coreconfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/security/api"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // RuntimeSecurityAgent represents the main wrapper for the Runtime Security product
@@ -30,13 +30,15 @@ type RuntimeSecurityAgent struct {
 	wg            sync.WaitGroup
 	connected     atomic.Value
 	eventReceived uint64
+	telemetry     *telemetry
+	cancel        context.CancelFunc
 }
 
 // NewRuntimeSecurityAgent instantiates a new RuntimeSecurityAgent
 func NewRuntimeSecurityAgent(hostname string, reporter event.Reporter) (*RuntimeSecurityAgent, error) {
-	socketPath := coreconfig.C.RuntimeSecurity.Socket
+	socketPath := coreconfig.Datadog.GetString("runtime_security_config.socket")
 	if socketPath == "" {
-		return nil, errors.New("runtimeSecurity.socket must be set")
+		return nil, errors.New("runtime_security_config.socket must be set")
 	}
 
 	path := "unix://" + socketPath
@@ -45,21 +47,33 @@ func NewRuntimeSecurityAgent(hostname string, reporter event.Reporter) (*Runtime
 		return nil, err
 	}
 
+	tel, err := newTelemetry()
+	if err != nil {
+		return nil, errors.Errorf("failed to initialize the telemetry reporter")
+	}
+
 	return &RuntimeSecurityAgent{
-		conn:     conn,
-		reporter: reporter,
-		hostname: hostname,
+		conn:      conn,
+		reporter:  reporter,
+		hostname:  hostname,
+		telemetry: tel,
 	}, nil
 }
 
 // Start the runtime security agent
 func (rsa *RuntimeSecurityAgent) Start() {
+	ctx, cancel := context.WithCancel(context.Background())
+	rsa.cancel = cancel
+
 	// Start the system-probe events listener
 	go rsa.StartEventListener()
+	// Send Runtime Security Agent telemetry
+	go rsa.telemetry.run(ctx)
 }
 
 // Stop the runtime recurity agent
 func (rsa *RuntimeSecurityAgent) Stop() {
+	rsa.cancel()
 	rsa.running.Store(false)
 	rsa.wg.Wait()
 	rsa.conn.Close()
@@ -79,7 +93,7 @@ func (rsa *RuntimeSecurityAgent) StartEventListener() {
 		if err != nil {
 			rsa.connected.Store(false)
 
-			klog.Warningf("Error while connecting to the runtime security module: %v", err)
+			log.Warnf("Error while connecting to the runtime security module: %v", err)
 
 			// retry in 2 seconds
 			time.Sleep(2 * time.Second)
@@ -89,7 +103,7 @@ func (rsa *RuntimeSecurityAgent) StartEventListener() {
 		if rsa.connected.Load() != true {
 			rsa.connected.Store(true)
 
-			klog.Info("Successfully connected to the runtime security module")
+			log.Info("Successfully connected to the runtime security module")
 		}
 
 		for {
@@ -98,7 +112,7 @@ func (rsa *RuntimeSecurityAgent) StartEventListener() {
 			if err == io.EOF || in == nil {
 				break
 			}
-			klog.V(6).Infof("Got message from rule `%s` for event `%s`", in.RuleID, string(in.Data))
+			log.Tracef("Got message from rule `%s` for event `%s`", in.RuleID, string(in.Data))
 
 			atomic.AddUint64(&rsa.eventReceived, 1)
 
@@ -111,7 +125,7 @@ func (rsa *RuntimeSecurityAgent) StartEventListener() {
 // DispatchEvent dispatches a security event message to the subsytems of the runtime security agent
 func (rsa *RuntimeSecurityAgent) DispatchEvent(evt *api.SecurityEventMessage) {
 	// For now simply log to Datadog
-	rsa.reporter.ReportRaw(evt.GetData(), evt.GetTags()...)
+	rsa.reporter.ReportRaw(evt.GetData(), evt.Service, evt.GetTags()...)
 }
 
 // GetStatus returns the current status on the agent

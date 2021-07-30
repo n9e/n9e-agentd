@@ -8,12 +8,11 @@
 package file
 
 import (
-	"fmt"
 	"io"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // setup sets up the file tailer
@@ -27,7 +26,7 @@ func (t *Tailer) setup(offset int64, whence int) error {
 	// adds metadata to enable users to filter logs by filename
 	t.tags = t.buildTailerTags()
 
-	klog.Infof("Opening %s for tailer key %s", t.file.Path, t.file.GetScanKey())
+	log.Info("Opening", t.file.Path, "for tailer key", t.file.GetScanKey())
 	f, err := openFile(fullpath)
 	if err != nil {
 		return err
@@ -50,7 +49,7 @@ func (t *Tailer) read() (int, error) {
 	if err != nil && err != io.EOF {
 		// an unexpected error occurred, stop the tailor
 		t.file.Source.Status.Error(err)
-		return 0, fmt.Errorf("Unexpected error occurred while reading file: %s", err)
+		return 0, log.Error("Unexpected error occurred while reading file: ", err)
 	}
 	if n == 0 {
 		return 0, nil

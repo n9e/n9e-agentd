@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"go.uber.org/automaxprocs/maxprocs"
 )
@@ -19,19 +19,19 @@ const (
 func SetMaxProcs() {
 
 	defer func() {
-		klog.Infof("runtime: final GOMAXPROCS value is: %d", runtime.GOMAXPROCS(0))
+		log.Infof("runtime: final GOMAXPROCS value is: %d", runtime.GOMAXPROCS(0))
 	}()
 
 	// This call will cause GOMAXPROCS to be set to the number of vCPUs allocated to the process
 	// if the process is running in a Linux environment (including when its running in a docker / K8s setup).
-	_, err := maxprocs.Set(maxprocs.Logger(klog.V(5).Infof))
+	_, err := maxprocs.Set(maxprocs.Logger(log.Debugf))
 	if err != nil {
-		klog.Errorf("runtime: error auto-setting maxprocs: %v ", err)
+		log.Errorf("runtime: error auto-setting maxprocs: %v ", err)
 	}
 
 	if max, exists := os.LookupEnv(gomaxprocsKey); exists {
 		if max == "" {
-			klog.Errorf("runtime: GOMAXPROCS value was empty string")
+			log.Errorf("runtime: GOMAXPROCS value was empty string")
 			return
 		}
 
@@ -46,16 +46,16 @@ func SetMaxProcs() {
 			trimmed := strings.TrimSuffix(max, "m")
 			milliCPUs, err := strconv.Atoi(trimmed)
 			if err != nil {
-				klog.Errorf("runtime: error parsing GOMAXPROCS milliCPUs value: %v", max)
+				log.Errorf("runtime: error parsing GOMAXPROCS milliCPUs value: %v", max)
 				return
 			}
 
 			cpus := milliCPUs / 1000
 			if cpus > 0 {
-				klog.Infof("runtime: honoring GOMAXPROCS millicpu configuration: %v, setting GOMAXPROCS to: %d", max, cpus)
+				log.Infof("runtime: honoring GOMAXPROCS millicpu configuration: %v, setting GOMAXPROCS to: %d", max, cpus)
 				runtime.GOMAXPROCS(cpus)
 			} else {
-				klog.Infof(
+				log.Infof(
 					"runtime: GOMAXPROCS millicpu configuration: %s was less than 1, setting GOMAXPROCS to 1",
 					max)
 				runtime.GOMAXPROCS(1)
@@ -63,7 +63,7 @@ func SetMaxProcs() {
 			return
 		}
 
-		klog.Errorf(
+		log.Errorf(
 			"runtime: unhandled GOMAXPROCS value: %s", max)
 	}
 }

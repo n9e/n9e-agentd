@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const maxLength = 255
@@ -34,10 +34,10 @@ func ValidHostname(hostname string) error {
 	} else if isLocal(hostname) {
 		return fmt.Errorf("%s is a local hostname", hostname)
 	} else if len(hostname) > maxLength {
-		klog.Errorf("ValidHostname: name exceeded the maximum length of %d characters", maxLength)
+		log.Errorf("ValidHostname: name exceeded the maximum length of %d characters", maxLength)
 		return fmt.Errorf("name exceeded the maximum length of %d characters", maxLength)
 	} else if !validHostnameRfc1123.MatchString(hostname) {
-		klog.Errorf("ValidHostname: %s is not RFC1123 compliant", hostname)
+		log.Errorf("ValidHostname: %s is not RFC1123 compliant", hostname)
 		return fmt.Errorf("%s is not RFC1123 compliant", hostname)
 	}
 	return nil

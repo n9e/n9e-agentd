@@ -12,11 +12,11 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var status = expvar.NewMap("compliance")
@@ -49,7 +49,7 @@ func New(reporter event.Reporter, scheduler Scheduler, configDir string, options
 		return nil, err
 	}
 
-	telemetry, err := newTelemtry()
+	telemetry, err := newTelemetry()
 	if err != nil {
 		return nil, err
 	}
@@ -119,13 +119,13 @@ func (a *Agent) Run() error {
 
 	onCheck := func(rule *compliance.Rule, check compliance.Check, err error) bool {
 		if err != nil {
-			klog.Errorf("%s: check not scheduled: %v", rule.ID, err)
+			log.Errorf("%s: check not scheduled: %v", rule.ID, err)
 			return true
 		}
 
 		err = a.scheduler.Enter(check)
 		if err != nil {
-			klog.Errorf("%s: failed to schedule check: %v", rule.ID, err)
+			log.Errorf("%s: failed to schedule check: %v", rule.ID, err)
 			return false
 		}
 
@@ -136,14 +136,14 @@ func (a *Agent) Run() error {
 
 func runCheck(rule *compliance.Rule, check compliance.Check, err error) bool {
 	if err != nil {
-		klog.Infof("%s: Not running check: %v", rule.ID, err)
+		log.Infof("%s: Not running check: %v", rule.ID, err)
 		return true
 	}
 
-	klog.Infof("%s: Running check: %s [version=%s]", rule.ID, check.String(), check.Version())
+	log.Infof("%s: Running check: %s [version=%s]", rule.ID, check.String(), check.Version())
 	err = check.Run()
 	if err != nil {
-		klog.Errorf("%s: Check failed: %v", check.ID(), err)
+		log.Errorf("%s: Check failed: %v", check.ID(), err)
 	}
 	return true
 }
@@ -155,25 +155,25 @@ func (a *Agent) RunChecks() error {
 
 // RunChecksFromFile runs checks from the specified file with no scheduling
 func (a *Agent) RunChecksFromFile(file string) error {
-	klog.Infof("Loading compliance rules from %s", file)
+	log.Infof("Loading compliance rules from %s", file)
 	return a.builder.ChecksFromFile(file, runCheck)
 }
 
 // Stop stops the Compliance Agent
 func (a *Agent) Stop() {
 	if err := a.scheduler.Stop(); err != nil {
-		klog.Errorf("Scheduler failed to stop: %v", err)
+		log.Errorf("Scheduler failed to stop: %v", err)
 	}
 
 	if err := a.builder.Close(); err != nil {
-		klog.Errorf("Builder failed to close: %v", err)
+		log.Errorf("Builder failed to close: %v", err)
 	}
 
 	a.cancel()
 }
 
 func (a *Agent) buildChecks(onCheck compliance.CheckVisitor) error {
-	klog.Infof("Loading compliance rules from %s", a.configDir)
+	log.Infof("Loading compliance rules from %s", a.configDir)
 	pattern := path.Join(a.configDir, "*.yaml")
 	files, err := filepath.Glob(pattern)
 
@@ -184,7 +184,7 @@ func (a *Agent) buildChecks(onCheck compliance.CheckVisitor) error {
 	for _, file := range files {
 		err := a.builder.ChecksFromFile(file, onCheck)
 		if err != nil {
-			klog.Errorf("Failed to load rules from %s: %v", file, err)
+			log.Errorf("Failed to load rules from %s: %v", file, err)
 			continue
 		}
 	}

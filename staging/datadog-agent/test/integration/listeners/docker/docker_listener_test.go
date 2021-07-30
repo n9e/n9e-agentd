@@ -6,6 +6,7 @@
 package listeners
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -17,14 +18,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/listeners"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/local"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/listeners"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/local"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/test/integration/utils"
 )
 
 type DockerListenerTestSuite struct {
@@ -41,6 +42,7 @@ type DockerListenerTestSuite struct {
 func (suite *DockerListenerTestSuite) SetupSuite() {
 	config.Datadog.SetDefault("ac_include", []string{"name:.*redis.*"})
 	config.Datadog.SetDefault("ac_exclude", []string{"image:datadog/docker-library:redis.*"})
+	config.DetectFeatures()
 	containers.ResetSharedFilter()
 
 	tagger.SetDefaultTagger(local.NewTagger(collectors.DefaultCatalog))
@@ -92,7 +94,7 @@ func (suite *DockerListenerTestSuite) TearDownTest() {
 func (suite *DockerListenerTestSuite) startContainers() ([]string, error) {
 	output, err := suite.compose.Start()
 	if err != nil {
-		klog.Errorf("error starting containers:\n%s", string(output))
+		log.Errorf("error starting containers:\n%s", string(output))
 		return nil, err
 	}
 	return suite.compose.ListContainers()
@@ -101,7 +103,7 @@ func (suite *DockerListenerTestSuite) startContainers() ([]string, error) {
 func (suite *DockerListenerTestSuite) stopContainers() error {
 	output, err := suite.compose.Stop()
 	if err != nil {
-		klog.Errorf("error stopping containers:\n%s", string(output))
+		log.Errorf("error stopping containers:\n%s", string(output))
 	}
 	return err
 }
@@ -117,11 +119,11 @@ func (suite *DockerListenerTestSuite) getServices(targetIDs, excludedIDs []strin
 		case svc := <-channel:
 			for _, id := range targetIDs {
 				if strings.HasSuffix(svc.GetEntity(), id) {
-					klog.Infof("Service matches container %s, keeping", id)
+					log.Infof("Service matches container %s, keeping", id)
 					services[id] = svc
-					klog.Infof("Got services for %d containers so far, out of %d wanted", len(services), len(targetIDs))
+					log.Infof("Got services for %d containers so far, out of %d wanted", len(services), len(targetIDs))
 					if len(services) == len(targetIDs) {
-						klog.Infof("Got all %d services, returning", len(services))
+						log.Infof("Got all %d services, returning", len(services))
 						return services, nil
 					}
 				}
@@ -145,7 +147,7 @@ func (suite *DockerListenerTestSuite) TestListenAfterStart() {
 	containerIDs, err := suite.startContainers()
 	assert.Nil(suite.T(), err)
 	assert.Len(suite.T(), containerIDs, 3)
-	klog.Infof("got container IDs %s from compose", containerIDs)
+	log.Infof("got container IDs %s from compose", containerIDs)
 
 	// Start listening after the containers started, they'll be listed in the init
 	suite.listener.Listen(suite.newSvc, suite.delSvc)
@@ -164,19 +166,20 @@ func (suite *DockerListenerTestSuite) TestListenBeforeStart() {
 	containerIDs, err := suite.startContainers()
 	assert.Nil(suite.T(), err)
 	assert.Len(suite.T(), containerIDs, 3)
-	klog.Infof("got container IDs %s from compose", containerIDs)
+	log.Infof("got container IDs %s from compose", containerIDs)
 
 	suite.commonSection(containerIDs)
 }
 
 // Common section for both scenarios
 func (suite *DockerListenerTestSuite) commonSection(containerIDs []string) {
+	ctx := context.Background()
 	expectedADIDs := make(map[string][]string)
 	var includedIDs, excludedIDs []string
 	var excludedEntity string
 
 	for _, container := range containerIDs {
-		inspect, err := suite.dockerutil.Inspect(container, false)
+		inspect, err := suite.dockerutil.Inspect(ctx, container, false)
 		assert.Nil(suite.T(), err)
 		entity := fmt.Sprintf("docker://%s", container)
 		if strings.Contains(inspect.Name, "excluded") {
@@ -191,7 +194,8 @@ func (suite *DockerListenerTestSuite) commonSection(containerIDs []string) {
 			expectedADIDs[entity] = []string{
 				entity,
 				"datadog/docker-library",
-				"docker-library"}
+				"docker-library",
+			}
 		}
 	}
 
@@ -201,13 +205,13 @@ func (suite *DockerListenerTestSuite) commonSection(containerIDs []string) {
 	assert.Len(suite.T(), services, 2)
 
 	for _, service := range services {
-		pid, err := service.GetPid()
+		pid, err := service.GetPid(ctx)
 		assert.Nil(suite.T(), err)
 		assert.True(suite.T(), pid > 0)
-		hosts, err := service.GetHosts()
+		hosts, err := service.GetHosts(ctx)
 		assert.Nil(suite.T(), err)
 		assert.Len(suite.T(), hosts, 1)
-		ports, err := service.GetPorts()
+		ports, err := service.GetPorts(ctx)
 		assert.Nil(suite.T(), err)
 		assert.Len(suite.T(), ports, 1)
 
@@ -222,7 +226,7 @@ func (suite *DockerListenerTestSuite) commonSection(containerIDs []string) {
 		assert.Contains(suite.T(), tags, "image_name:datadog/docker-library")
 		assert.Contains(suite.T(), tags, "image_tag:redis_3_2_11-alpine")
 
-		adIDs, err := service.GetADIdentifiers()
+		adIDs, err := service.GetADIdentifiers(ctx)
 		assert.Nil(suite.T(), err)
 		assert.Equal(suite.T(), expectedTags, adIDs)
 	}

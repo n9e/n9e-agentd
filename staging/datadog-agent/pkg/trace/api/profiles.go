@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,13 +10,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/logutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/logutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/fargate"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -48,7 +51,7 @@ func profilingEndpoints(apiKey string) (urls []*url.URL, apiKeys []string, err e
 		for endpoint, keys := range extra {
 			u, err := url.Parse(endpoint)
 			if err != nil {
-				klog.Errorf("Error parsing additional profiling intake URL %s: %v", endpoint, err)
+				log.Errorf("Error parsing additional profiling intake URL %s: %v", endpoint, err)
 				continue
 			}
 			for _, key := range keys {
@@ -68,7 +71,17 @@ func (r *HTTPReceiver) profileProxyHandler() http.Handler {
 	if err != nil {
 		return errorHandler(err)
 	}
-	tags := fmt.Sprintf("host:%s,default_env:%s", r.conf.Hostname, r.conf.DefaultEnv)
+	tags := fmt.Sprintf("host:%s,default_env:%s,agent_version:%s", r.conf.Hostname, r.conf.DefaultEnv, info.Version)
+	if r.conf.IsFargate {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		orch := fargate.GetOrchestrator(ctx)
+		cancel()
+		if err := ctx.Err(); err != nil && err != context.Canceled {
+			log.Warnf("Failed to get Fargate orchestrator. This may cause issues with your profiles: %v", err)
+		}
+		tag := fmt.Sprintf("orchestrator:fargate_%s", strings.ToLower(string(orch)))
+		tags = tags + "," + tag
+	}
 	return newProfileProxy(r.conf.NewHTTPTransport(), targets, keys, tags)
 }
 
@@ -128,7 +141,7 @@ func (m *multiTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	setTarget := func(r *http.Request, u *url.URL, apiKey string) {
 		r.Host = u.Host
 		r.URL = u
-		r.Header.Set("Bearer", apiKey)
+		r.Header.Set("DD-API-KEY", apiKey)
 	}
 	if len(m.targets) == 1 {
 		setTarget(req, m.targets[0], m.keys[0])
@@ -158,7 +171,7 @@ func (m *multiTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Copy(ioutil.Discard, resp.Body)
 			resp.Body.Close()
 		} else {
-			klog.Error(err)
+			log.Error(err)
 		}
 	}
 	return rresp, rerr

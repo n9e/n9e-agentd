@@ -8,16 +8,18 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/errors"
-	taggerutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	ecsutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs"
-	ecsmeta "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata"
-	v2 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/errors"
+	taggerutil "github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	ecsutil "github.com/DataDog/datadog-agent/pkg/util/ecs"
+	ecsmeta "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata"
+	v2 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -36,16 +38,20 @@ type ECSFargateCollector struct {
 }
 
 // Detect tries to connect to the ECS metadata API
-func (c *ECSFargateCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) {
+func (c *ECSFargateCollector) Detect(ctx context.Context, out chan<- []*TagInfo) (CollectionMode, error) {
 	var err error
 
-	if !ecsutil.IsFargateInstance() {
+	if !config.IsFeaturePresent(config.ECSFargate) {
+		return NoCollection, nil
+	}
+
+	if !ecsutil.IsFargateInstance(ctx) {
 		return NoCollection, fmt.Errorf("Failed to connect to task metadata API, ECS tagging will not work")
 	}
 
 	client, err := ecsmeta.V2()
 	if err != nil {
-		klog.V(5).Infof("error while initializing ECS metadata V2 client: %s", err)
+		log.Debugf("error while initializing ECS metadata V2 client: %s", err)
 		return NoCollection, err
 	}
 
@@ -64,8 +70,8 @@ func (c *ECSFargateCollector) Detect(out chan<- []*TagInfo) (CollectionMode, err
 }
 
 // Pull looks for new containers and computes deletions
-func (c *ECSFargateCollector) Pull() error {
-	taskMeta, err := c.client.GetTask()
+func (c *ECSFargateCollector) Pull(ctx context.Context) error {
+	taskMeta, err := c.client.GetTask(ctx)
 	if err != nil {
 		return err
 	}
@@ -96,8 +102,8 @@ func (c *ECSFargateCollector) Pull() error {
 
 // Fetch parses tags for a container on cache miss. We avoid races with Pull,
 // we re-parse the whole list, but don't send updates on other containers.
-func (c *ECSFargateCollector) Fetch(container string) ([]string, []string, []string, error) {
-	taskMeta, err := c.client.GetTask()
+func (c *ECSFargateCollector) Fetch(ctx context.Context, container string) ([]string, []string, []string, error) {
+	taskMeta, err := c.client.GetTask(ctx)
 	if err != nil {
 		return []string{}, []string{}, []string{}, err
 	}

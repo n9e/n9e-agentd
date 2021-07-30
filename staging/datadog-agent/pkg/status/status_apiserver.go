@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/clusteragent"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
+	"github.com/DataDog/datadog-agent/pkg/util/clusteragent"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
 )
 
 func getLeaderElectionDetails() map[string]string {

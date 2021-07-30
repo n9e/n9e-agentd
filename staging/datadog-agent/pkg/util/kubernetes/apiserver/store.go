@@ -10,8 +10,8 @@ package apiserver
 import (
 	"sync"
 
-	agentcache "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	agentcache "github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/patrickmn/go-cache"
 )
@@ -48,7 +48,7 @@ func (m *metaBundleStore) get(nodeName string) (*metadataMapperBundle, bool) {
 
 	metaBundle, ok = v.(*metadataMapperBundle)
 	if !ok {
-		klog.Errorf("invalid cache format for the cacheKey: %s", cacheKey)
+		log.Errorf("invalid cache format for the cacheKey: %s", cacheKey)
 		return nil, false
 	}
 
@@ -67,7 +67,7 @@ func (m *metaBundleStore) getCopyOrNew(nodeName string) *metadataMapperBundle {
 	if ok {
 		oldMetaBundle, ok := v.(*metadataMapperBundle)
 		if !ok {
-			klog.Errorf("invalid cache format for the cacheKey: %s", cacheKey)
+			log.Errorf("invalid cache format for the cacheKey: %s", cacheKey)
 		} else {
 			metaBundle.DeepCopy(oldMetaBundle)
 		}

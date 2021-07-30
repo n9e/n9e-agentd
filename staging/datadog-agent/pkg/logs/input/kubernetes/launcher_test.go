@@ -8,6 +8,7 @@
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,10 +16,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/errors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/errors"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -549,7 +550,7 @@ func (d dummyKubeUtil) GetSpecForContainerName(pod *kubelet.Pod, containerName s
 	return spec, nil
 }
 
-func (d dummyKubeUtil) GetPodForEntityID(entityID string) (*kubelet.Pod, error) {
+func (d dummyKubeUtil) GetPodForEntityID(ctx context.Context, entityID string) (*kubelet.Pod, error) {
 	if d.shouldRetry {
 		return nil, errors.NewRetriable("dummy error", fmt.Errorf("retriable error"))
 	}

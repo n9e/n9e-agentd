@@ -13,8 +13,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/common"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/common"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -46,7 +46,7 @@ func Init(command string, arguments []string, timeout int, maxSize int, groupExe
 	SecretBackendOutputMaxSize = maxSize
 	secretBackendCommandAllowGroupExec = groupExecPerm
 	if secretBackendCommandAllowGroupExec {
-		klog.Warningf("Agent configuration relax permissions constraint on the secret backend cmd, Group can read and exec")
+		log.Warnf("Agent configuration relax permissions constraint on the secret backend cmd, Group can read and exec")
 	}
 }
 
@@ -147,7 +147,7 @@ func Decrypt(data []byte, origin string) ([]byte, error) {
 			haveSecret = true
 			// Check if we already know this secret
 			if secret, ok := secretCache[handle]; ok {
-				klog.V(5).Infof("Secret '%s' was retrieved from cache", handle)
+				log.Debugf("Secret '%s' was retrieved from cache", handle)
 				// keep track of place where a handle was found
 				secretOrigin[handle].Add(origin)
 				return secret, nil
@@ -176,7 +176,7 @@ func Decrypt(data []byte, origin string) ([]byte, error) {
 		err = walk(&config, func(str string) (string, error) {
 			if ok, handle := isEnc(str); ok {
 				if secret, ok := secrets[handle]; ok {
-					klog.V(5).Infof("Secret '%s' was retrieved from executable", handle)
+					log.Debugf("Secret '%s' was retrieved from executable", handle)
 					return secret, nil
 				}
 				// This should never happen since fetchSecret will return an error

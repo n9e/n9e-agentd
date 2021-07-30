@@ -8,7 +8,7 @@ package message
 import (
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 )
 
 // Message represents a log line sent to datadog, with its metadata

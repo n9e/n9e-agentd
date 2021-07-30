@@ -11,7 +11,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker/fake"
+	"github.com/DataDog/datadog-agent/pkg/util/docker/fake"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"

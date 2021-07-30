@@ -11,6 +11,7 @@ package windows
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"math"
 	"net"
@@ -21,17 +22,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil/iphelper"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil/iphelper"
 	"github.com/docker/docker/pkg/sysinfo"
 	"golang.org/x/sys/windows"
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type containerBundle struct {
@@ -67,7 +68,7 @@ func (mp *provider) Prefetch() error {
 	}
 
 	// We don't need exited/stopped containers
-	rawContainers, err := dockerUtil.RawContainerList(types.ContainerListOptions{})
+	rawContainers, err := dockerUtil.RawContainerList(context.TODO(), types.ContainerListOptions{})
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func (mp *provider) Prefetch() error {
 	for _, container := range rawContainers {
 		containerBundle := containerBundle{}
 
-		cjson, err := dockerUtil.Inspect(container.ID, false)
+		cjson, err := dockerUtil.Inspect(context.TODO(), container.ID, false)
 		if err == nil {
 			mp.fillContainerDetails(cjson, &containerBundle)
 
@@ -91,15 +92,15 @@ func (mp *provider) Prefetch() error {
 				mp.agentCID = &container.ID
 			}
 		} else {
-			klog.V(5).Infof("Impossible to inspect container %s: %v", container.ID, err)
+			log.Debugf("Impossible to inspect container %s: %v", container.ID, err)
 		}
 
-		stats, err := dockerUtil.GetContainerStats(container.ID)
+		stats, err := dockerUtil.GetContainerStats(context.TODO(), container.ID)
 		if err == nil && stats != nil {
 			mp.fillContainerMetrics(stats, &containerBundle)
 			mp.fillContainerNetworkMetrics(stats, &containerBundle)
 		} else {
-			klog.V(5).Infof("Impossible to get stats for container %s: %v", container.ID, err)
+			log.Debugf("Impossible to get stats for container %s: %v", container.ID, err)
 		}
 
 		containers[container.ID] = containerBundle
@@ -118,7 +119,7 @@ func (mp *provider) fillContainerDetails(cjson types.ContainerJSON, containerBun
 	if err == nil {
 		containerBundle.startTime = t.Unix()
 	} else {
-		klog.V(5).Infof("Impossible to get start time for container %s: %v", cjson.ID, err)
+		log.Debugf("Impossible to get start time for container %s: %v", cjson.ID, err)
 	}
 
 	// Parsing limits
@@ -252,7 +253,7 @@ func (mp *provider) GetAgentCID() (string, error) {
 	// GetAgentCID is working without Prefetch() on Linux
 	// Here we need Prefetch() to have run at least once
 	if mp.agentCID == nil {
-		klog.Infof("AgentCID is empty, forcing a prefetch")
+		log.Infof("AgentCID is empty, forcing a prefetch")
 		mp.Prefetch()
 	}
 

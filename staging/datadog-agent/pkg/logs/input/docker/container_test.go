@@ -14,7 +14,7 @@ import (
 	types_container "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 )
 
 func TestFindSourceWithSourceFiltersShouldSucceed(t *testing.T) {

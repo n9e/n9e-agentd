@@ -8,16 +8,14 @@ package pipeline
 import (
 	"context"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/http"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/tcp"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/diagnostic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/processor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/sender"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/client"
+	"github.com/DataDog/datadog-agent/pkg/logs/client/http"
+	"github.com/DataDog/datadog-agent/pkg/logs/client/tcp"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/processor"
+	"github.com/DataDog/datadog-agent/pkg/logs/sender"
 )
 
 // Pipeline processes and sends messages to the backend
@@ -28,7 +26,7 @@ type Pipeline struct {
 }
 
 // NewPipeline returns a new Pipeline
-func NewPipeline(outputChan chan *message.Message, processingRules []*types.ProcessingRule, endpoints *types.Endpoints, destinationsContext *client.DestinationsContext, diagnosticMessageReceiver diagnostic.MessageReceiver, serverless bool) *Pipeline {
+func NewPipeline(outputChan chan *message.Message, processingRules []*config.ProcessingRule, endpoints *config.Endpoints, destinationsContext *client.DestinationsContext, diagnosticMessageReceiver diagnostic.MessageReceiver, serverless bool) *Pipeline {
 	var destinations *client.Destinations
 	if endpoints.UseHTTP {
 		main := http.NewDestination(endpoints.Main, http.JSONContentType, destinationsContext, endpoints.BatchMaxConcurrentSend)
@@ -50,7 +48,7 @@ func NewPipeline(outputChan chan *message.Message, processingRules []*types.Proc
 
 	var strategy sender.Strategy
 	if endpoints.UseHTTP || serverless {
-		strategy = sender.NewBatchStrategy(sender.ArraySerializer, endpoints.BatchWait, endpoints.BatchMaxConcurrentSend)
+		strategy = sender.NewBatchStrategy(sender.ArraySerializer, endpoints.BatchWait, endpoints.BatchMaxConcurrentSend, endpoints.BatchMaxSize, endpoints.BatchMaxContentSize, "logs")
 	} else {
 		strategy = sender.StreamStrategy
 	}
@@ -91,7 +89,6 @@ func (p *Pipeline) Stop() {
 
 // Flush flushes synchronously the processor and sender managed by this pipeline.
 func (p *Pipeline) Flush(ctx context.Context) {
-	klog.V(6).Infof("pipeline flush entering")
 	p.processor.Flush(ctx) // flush messages in the processor into the sender
 	p.sender.Flush(ctx)    // flush the sender
 }

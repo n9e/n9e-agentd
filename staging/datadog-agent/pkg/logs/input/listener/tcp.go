@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/restart"
 )
 
 // defaultTimeout represents the time after which a connection is closed when no data is read
@@ -45,10 +45,10 @@ func NewTCPListener(pipelineProvider pipeline.Provider, source *config.LogSource
 
 // Start starts the listener to accepts new incoming connections.
 func (l *TCPListener) Start() {
-	klog.Infof("Starting TCP forwarder on port %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
+	log.Infof("Starting TCP forwarder on port %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
 	err := l.startListener()
 	if err != nil {
-		klog.Errorf("Can't start TCP forwarder on port %d: %v", l.source.Config.Port, err)
+		log.Errorf("Can't start TCP forwarder on port %d: %v", l.source.Config.Port, err)
 		l.source.Status.Error(err)
 		return
 	}
@@ -58,7 +58,7 @@ func (l *TCPListener) Start() {
 
 // Stop stops the listener from accepting new connections and all the activer tailers.
 func (l *TCPListener) Stop() {
-	klog.Infof("Stopping TCP forwarder on port %d", l.source.Config.Port)
+	log.Infof("Stopping TCP forwarder on port %d", l.source.Config.Port)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.stop <- struct{}{}
@@ -85,11 +85,11 @@ func (l *TCPListener) run() {
 				return
 			case err != nil:
 				// an error occurred, restart the listener.
-				klog.Warningf("Can't listen on port %d, restarting a listener: %v", l.source.Config.Port, err)
+				log.Warnf("Can't listen on port %d, restarting a listener: %v", l.source.Config.Port, err)
 				l.listener.Close()
 				err := l.startListener()
 				if err != nil {
-					klog.Errorf("Can't restart listener on port %d: %v", l.source.Config.Port, err)
+					log.Errorf("Can't restart listener on port %d: %v", l.source.Config.Port, err)
 					l.source.Status.Error(err)
 					return
 				}

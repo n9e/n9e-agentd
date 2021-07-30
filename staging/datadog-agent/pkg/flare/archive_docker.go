@@ -9,6 +9,7 @@ package flare
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,8 +18,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/docker/docker/api/types"
 )
@@ -31,7 +32,7 @@ func zipDockerSelfInspect(tempDir, hostname string) error {
 		return err
 	}
 
-	co, err := du.InspectSelf()
+	co, err := du.InspectSelf(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,7 @@ func zipDockerSelfInspect(tempDir, hostname string) error {
 		Regex: regexp.MustCompile(`\"Image\": \"sha256:\w+"`),
 		ReplFunc: func(s []byte) []byte {
 			m := string(s[10 : len(s)-1])
-			shaResolvedInspect, _ := du.ResolveImageName(m)
+			shaResolvedInspect, _ := du.ResolveImageName(context.TODO(), m)
 			return []byte(shaResolvedInspect)
 		},
 	})
@@ -79,11 +80,11 @@ func zipDockerPs(tempDir, hostname string) error {
 	du, err := docker.GetDockerUtil()
 	if err != nil {
 		// if we can't reach docker, let's do nothing
-		klog.V(5).Infof("Couldn't reach docker for getting `docker ps`: %s", err)
+		log.Debugf("Couldn't reach docker for getting `docker ps`: %s", err)
 		return nil
 	}
 	options := types.ContainerListOptions{All: true, Limit: 500}
-	containerList, err := du.RawContainerList(options)
+	containerList, err := du.RawContainerList(context.TODO(), options)
 	if err != nil {
 		return err
 	}

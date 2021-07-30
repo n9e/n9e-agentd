@@ -6,19 +6,20 @@
 package clustername
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/azure"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/clusteragent"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ec2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/gce"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/hostinfo"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/azure"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/clusteragent"
+	"github.com/DataDog/datadog-agent/pkg/util/ec2"
+	"github.com/DataDog/datadog-agent/pkg/util/gce"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/hostinfo"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -43,7 +44,7 @@ type clusterNameData struct {
 }
 
 // Provider is a generic function to grab the clustername and return it
-type Provider func() (string, error)
+type Provider func(context.Context) (string, error)
 
 // ProviderCatalog holds all the various kinds of clustername providers
 var ProviderCatalog map[string]Provider
@@ -63,22 +64,22 @@ func init() {
 	}
 }
 
-func getClusterName(data *clusterNameData, hostname string) string {
+func getClusterName(ctx context.Context, data *clusterNameData, hostname string) string {
 	data.mutex.Lock()
 	defer data.mutex.Unlock()
 
 	if !data.initDone {
-		data.clusterName = config.C.ClusterName
+		data.clusterName = config.Datadog.GetString("cluster_name")
 		if data.clusterName != "" {
-			klog.Infof("Got cluster name %s from config", data.clusterName)
+			log.Infof("Got cluster name %s from config", data.clusterName)
 			// the host alias "hostname-clustername" must not exceed 255 chars
 			hostAlias := hostname + "-" + data.clusterName
 			if !validClusterName.MatchString(data.clusterName) || len(hostAlias) > 255 {
-				klog.Errorf("\"%s\" isn’t a valid cluster name. It must be dot-separated tokens where tokens "+
+				log.Errorf("\"%s\" isn’t a valid cluster name. It must be dot-separated tokens where tokens "+
 					"start with a lowercase letter followed by lowercase letters, numbers, or "+
 					"hyphens, and cannot end with a hyphen nor have a dot adjacent to a hyphen and \"%s\" must not "+
 					"exceed 255 chars", data.clusterName, hostAlias)
-				klog.Errorf("As a consequence, the cluster name provided by the config will be ignored")
+				log.Errorf("As a consequence, the cluster name provided by the config will be ignored")
 				data.clusterName = ""
 			}
 		}
@@ -86,15 +87,15 @@ func getClusterName(data *clusterNameData, hostname string) string {
 		// autodiscover clustername through k8s providers' API
 		if data.clusterName == "" {
 			for cloudProvider, getClusterNameFunc := range ProviderCatalog {
-				klog.V(5).Infof("Trying to auto discover the cluster name from the %s API...", cloudProvider)
-				clusterName, err := getClusterNameFunc()
+				log.Debugf("Trying to auto discover the cluster name from the %s API...", cloudProvider)
+				clusterName, err := getClusterNameFunc(ctx)
 				if err != nil {
-					klog.V(5).Infof("Unable to auto discover the cluster name from the %s API: %s", cloudProvider, err)
+					log.Debugf("Unable to auto discover the cluster name from the %s API: %s", cloudProvider, err)
 					// try the next cloud provider
 					continue
 				}
 				if clusterName != "" {
-					klog.Infof("Using cluster name %s auto discovered from the %s API", clusterName, cloudProvider)
+					log.Infof("Using cluster name %s auto discovered from the %s API", clusterName, cloudProvider)
 					data.clusterName = clusterName
 					break
 				}
@@ -102,9 +103,9 @@ func getClusterName(data *clusterNameData, hostname string) string {
 		}
 
 		if data.clusterName == "" {
-			clusterName, err := hostinfo.GetNodeClusterNameLabel()
+			clusterName, err := hostinfo.GetNodeClusterNameLabel(ctx)
 			if err != nil {
-				klog.V(5).Infof("Unable to auto discover the cluster name from node label : %s", err)
+				log.Debugf("Unable to auto discover the cluster name from node label : %s", err)
 			} else {
 				data.clusterName = clusterName
 			}
@@ -115,8 +116,8 @@ func getClusterName(data *clusterNameData, hostname string) string {
 }
 
 // GetClusterName returns a k8s cluster name if it exists, either directly specified or autodiscovered
-func GetClusterName(hostname string) string {
-	return getClusterName(defaultClusterNameData, hostname)
+func GetClusterName(ctx context.Context, hostname string) string {
+	return getClusterName(ctx, defaultClusterNameData, hostname)
 }
 
 func resetClusterName(data *clusterNameData) {
@@ -142,7 +143,7 @@ func GetClusterID() (string, error) {
 	// in older setups the cluster ID was exposed as an env var from a configmap created by the cluster agent
 	clusterID, found := os.LookupEnv(clusterIDEnv)
 	if !found {
-		klog.V(5).Infof("Cluster ID env variable %s is missing, calling the Cluster Agent", clusterIDEnv)
+		log.Debugf("Cluster ID env variable %s is missing, calling the Cluster Agent", clusterIDEnv)
 
 		dcaClient, err := clusteragent.GetClusterAgentClient()
 		if err != nil {
@@ -152,7 +153,7 @@ func GetClusterID() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		klog.V(5).Infof("Cluster ID retrieved from the Cluster Agent, set to %s", clusterID)
+		log.Debugf("Cluster ID retrieved from the Cluster Agent, set to %s", clusterID)
 	}
 
 	if len(clusterID) != 36 {

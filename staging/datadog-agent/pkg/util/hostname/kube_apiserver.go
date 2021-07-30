@@ -13,7 +13,7 @@
 package hostname
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/hostname/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/apiserver"
 )
 
 func init() {

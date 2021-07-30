@@ -6,9 +6,9 @@
 package agent
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/traceutil"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Truncate checks that the span resource, meta and metrics are within the max length
@@ -16,7 +16,7 @@ import (
 func Truncate(s *pb.Span) {
 	r, ok := traceutil.TruncateResource(s.Resource)
 	if !ok {
-		klog.V(5).Infof("span.truncate: truncated `Resource` (max %d chars): %s", traceutil.MaxResourceLen, s.Resource)
+		log.Debugf("span.truncate: truncated `Resource` (max %d chars): %s", traceutil.MaxResourceLen, s.Resource)
 	}
 	s.Resource = r
 
@@ -27,7 +27,7 @@ func Truncate(s *pb.Span) {
 		modified := false
 
 		if len(k) > traceutil.MaxMetaKeyLen {
-			klog.V(5).Infof("span.truncate: truncating `Meta` key (max %d chars): %s", traceutil.MaxMetaKeyLen, k)
+			log.Debugf("span.truncate: truncating `Meta` key (max %d chars): %s", traceutil.MaxMetaKeyLen, k)
 			delete(s.Meta, k)
 			k = traceutil.TruncateUTF8(k, traceutil.MaxMetaKeyLen) + "..."
 			modified = true
@@ -44,7 +44,7 @@ func Truncate(s *pb.Span) {
 	}
 	for k, v := range s.Metrics {
 		if len(k) > traceutil.MaxMetricsKeyLen {
-			klog.V(5).Infof("span.truncate: truncating `Metrics` key (max %d chars): %s", traceutil.MaxMetricsKeyLen, k)
+			log.Debugf("span.truncate: truncating `Metrics` key (max %d chars): %s", traceutil.MaxMetricsKeyLen, k)
 			delete(s.Metrics, k)
 			k = traceutil.TruncateUTF8(k, traceutil.MaxMetricsKeyLen) + "..."
 

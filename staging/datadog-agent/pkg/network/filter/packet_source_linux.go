@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/ebpf/manager"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/afpacket"
@@ -47,11 +47,9 @@ func NewPacketSource(filter *manager.Probe) (*AFPacketSource, error) {
 	// The underlying socket file descriptor is private, hence the use of reflection
 	socketFD := int(reflect.ValueOf(rawSocket).Elem().FieldByName("fd").Int())
 
-	// Attaches DNS socket filter to the RAW_SOCKET
+	// Point socket filter program to the RAW_SOCKET file descriptor
+	// Note the filter attachment itself is triggered by the ebpf.Manager
 	filter.SocketFD = socketFD
-	if err := filter.Attach(); err != nil {
-		return nil, fmt.Errorf("error attaching filter to socket: %s", err)
-	}
 
 	ps := &AFPacketSource{
 		TPacket:      rawSocket,
@@ -109,10 +107,6 @@ func (p *AFPacketSource) PacketType() gopacket.LayerType {
 
 func (p *AFPacketSource) Close() {
 	close(p.exit)
-	if err := p.socketFilter.Detach(); err != nil {
-		klog.Errorf("error detaching socket filter: %s", err)
-	}
-
 	p.TPacket.Close()
 }
 
@@ -133,7 +127,7 @@ func (p *AFPacketSource) pollStats() {
 			sourceStats, _ := p.TPacket.Stats()            // off TPacket
 			_, socketStats, err := p.TPacket.SocketStats() // off TPacket
 			if err != nil {
-				klog.Errorf("error polling socket stats: %s", err)
+				log.Errorf("error polling socket stats: %s", err)
 				continue
 			}
 

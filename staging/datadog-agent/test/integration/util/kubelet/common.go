@@ -13,7 +13,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"
+	"github.com/DataDog/datadog-agent/test/integration/utils"
 )
 
 const (

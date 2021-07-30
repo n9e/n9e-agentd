@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/DataDog/datadog-agent/pkg/api/security"
+	"github.com/DataDog/datadog-agent/pkg/api/util"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 /*
@@ -72,7 +72,7 @@ func (c *CLCRunnerClient) init() {
 	c.clcRunnerAPIClient.Timeout = 2 * time.Second
 
 	// Set http port used by the CLC Runners
-	c.clcRunnerPort = config.C.ClusterChecks.ClcRunnersPort
+	c.clcRunnerPort = config.Datadog.GetInt("cluster_checks.clc_runners_port")
 }
 
 // GetVersion fetches the version of the CLC Runner

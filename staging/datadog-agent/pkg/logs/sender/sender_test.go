@@ -10,11 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/mock"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/client/tcp"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/client"
+	"github.com/DataDog/datadog-agent/pkg/logs/client/mock"
+	"github.com/DataDog/datadog-agent/pkg/logs/client/tcp"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 func newMessage(content []byte, source *config.LogSource, status string) *message.Message {

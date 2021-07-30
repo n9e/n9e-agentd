@@ -12,8 +12,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // connectionInfo contains potential kubelet's ips and hostnames
@@ -31,13 +31,13 @@ func getPotentialKubeletHosts(kubeletHost string) *connectionInfo {
 		configIps, configHostnames := getKubeletHostFromConfig(ctx, kubeletHost)
 		hosts.ips = append(hosts.ips, configIps...)
 		hosts.hostnames = append(hosts.hostnames, configHostnames...)
-		klog.V(5).Infof("Got potential kubelet connection info from config, ips: %v, hostnames: %v", configIps, configHostnames)
+		log.Debugf("Got potential kubelet connection info from config, ips: %v, hostnames: %v", configIps, configHostnames)
 	}
 
 	dockerIps, dockerHostnames := getKubeletHostFromDocker(ctx)
 	hosts.ips = append(hosts.ips, dockerIps...)
 	hosts.hostnames = append(hosts.hostnames, dockerHostnames...)
-	klog.V(5).Infof("Got potential kubelet connection info from docker, ips: %v, hostnames: %v", dockerIps, dockerHostnames)
+	log.Debugf("Got potential kubelet connection info from docker, ips: %v, hostnames: %v", dockerIps, dockerHostnames)
 
 	dedupeConnectionInfo(&hosts)
 
@@ -48,32 +48,32 @@ func getKubeletHostFromConfig(ctx context.Context, kubeletHost string) ([]string
 	var ips []string
 	var hostnames []string
 	if kubeletHost == "" {
-		klog.V(5).Info("kubernetes_kubelet_host is not set")
+		log.Debug("kubernetes_kubelet_host is not set")
 		return ips, hostnames
 	}
 
-	klog.V(5).Infof("Trying to parse kubernetes_kubelet_host: %s", kubeletHost)
+	log.Debugf("Trying to parse kubernetes_kubelet_host: %s", kubeletHost)
 	kubeletIP := net.ParseIP(kubeletHost)
 	if kubeletIP == nil {
-		klog.V(5).Infof("Parsing kubernetes_kubelet_host: %s is a hostname, cached, trying to resolve it to ip...", kubeletHost)
+		log.Debugf("Parsing kubernetes_kubelet_host: %s is a hostname, cached, trying to resolve it to ip...", kubeletHost)
 		hostnames = append(hostnames, kubeletHost)
 		ipAddrs, err := net.DefaultResolver.LookupIPAddr(ctx, kubeletHost)
 		if err != nil {
-			klog.V(5).Infof("Cannot LookupIP hostname %s: %v", kubeletHost, err)
+			log.Debugf("Cannot LookupIP hostname %s: %v", kubeletHost, err)
 		} else {
-			klog.V(5).Infof("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, ipAddrs)
+			log.Debugf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, ipAddrs)
 			for _, ipAddr := range ipAddrs {
 				ips = append(ips, ipAddr.IP.String())
 			}
 		}
 	} else {
-		klog.V(5).Infof("Parsed kubernetes_kubelet_host: %s is an address: %v, cached, trying to resolve it to hostname", kubeletHost, kubeletIP)
+		log.Debugf("Parsed kubernetes_kubelet_host: %s is an address: %v, cached, trying to resolve it to hostname", kubeletHost, kubeletIP)
 		ips = append(ips, kubeletIP.String())
 		addrs, err := net.DefaultResolver.LookupAddr(ctx, kubeletHost)
 		if err != nil {
-			klog.V(5).Infof("Cannot LookupHost ip %s: %v", kubeletHost, err)
+			log.Debugf("Cannot LookupHost ip %s: %v", kubeletHost, err)
 		} else {
-			klog.V(5).Infof("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, addrs)
+			log.Debugf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, addrs)
 			for _, addr := range addrs {
 				hostnames = append(hostnames, addr)
 			}
@@ -86,19 +86,19 @@ func getKubeletHostFromConfig(ctx context.Context, kubeletHost string) ([]string
 func getKubeletHostFromDocker(ctx context.Context) ([]string, []string) {
 	var ips []string
 	var hostnames []string
-	dockerHost, err := docker.HostnameProvider()
+	dockerHost, err := docker.HostnameProvider(ctx, nil)
 	if err != nil {
-		klog.V(5).Infof("unable to get hostname from docker, make sure to set the kubernetes_kubelet_host option: %s", err)
+		log.Debugf("unable to get hostname from docker, make sure to set the kubernetes_kubelet_host option: %s", err)
 		return ips, hostnames
 	}
 
-	klog.V(5).Infof("Trying to resolve host name %s provided by docker to ip...", dockerHost)
+	log.Debugf("Trying to resolve host name %s provided by docker to ip...", dockerHost)
 	hostnames = append(hostnames, dockerHost)
 	ipAddrs, err := net.DefaultResolver.LookupIPAddr(ctx, dockerHost)
 	if err != nil {
-		klog.V(5).Infof("Cannot resolve host name %s, cached, provided by docker to ip: %s", dockerHost, err)
+		log.Debugf("Cannot resolve host name %s, cached, provided by docker to ip: %s", dockerHost, err)
 	} else {
-		klog.V(5).Infof("Resolved host name %s provided by docker to %v", dockerHost, ipAddrs)
+		log.Debugf("Resolved host name %s provided by docker to %v", dockerHost, ipAddrs)
 		for _, ipAddr := range ipAddrs {
 			ips = append(ips, ipAddr.IP.String())
 		}

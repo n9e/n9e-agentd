@@ -6,6 +6,7 @@
 package test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/DataDog/viper"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // ErrNotInstalled is returned when the trace-agent can not be found in $PATH.
@@ -43,7 +47,7 @@ func newAgentRunner(ddAddr string, verbose bool) (*agentRunner, error) {
 	}
 	// TODO(gbbr): find a way to re-use the same binary within a whole run
 	// instead of creating new ones on each test creating a new runner.
-	err = exec.Command("go", "build", "-o", binpath, "github.com/n9e/n9e-agentd/cmd/trace-agent").Run()
+	err = exec.Command("go", "build", "-o", binpath, "github.com/DataDog/datadog-agent/cmd/trace-agent").Run()
 	if err != nil {
 		if verbose {
 			log.Printf("error installing trace-agent: %v", err)
@@ -152,43 +156,40 @@ func (s *agentRunner) runAgentConfig(path string) <-chan error {
 // createConfigFile creates a config file from the given config, altering the
 // apm_config.apm_dd_url and log_level values and returns the full path.
 func (s *agentRunner) createConfigFile(conf []byte) (string, error) {
-	/*
-		v := viper.New()
-		v.SetConfigType("yaml")
-		if err := v.ReadConfig(bytes.NewReader(conf)); err != nil {
-			return "", err
-		}
-		s.port = 8126
-		if v.IsSet("apm_config.receiver_port") {
-			s.port = v.GetInt("apm_config.receiver_port")
-		}
-		v.Set("apm_config.apm_dd_url", "http://"+s.ddAddr)
-		if !v.IsSet("api_key") {
-			v.Set("api_key", "testing123")
-		}
-		if !v.IsSet("apm_config.trace_writer.flush_period_seconds") {
-			v.Set("apm_config.trace_writer.flush_period_seconds", 0.1)
-		}
-		v.Set("log_level", "debug")
-		out, err := yaml.Marshal(v.AllSettings())
-		if err != nil {
-			return "", err
-		}
-		dir, err := ioutil.TempDir("", "agent-conf-")
-		if err != nil {
-			return "", err
-		}
-		f, err := os.Create(filepath.Join(dir, "datadog.yaml"))
-		if err != nil {
-			return "", err
-		}
-		if _, err := f.Write(out); err != nil {
-			return "", err
-		}
-		if err := f.Close(); err != nil {
-			return "", err
-		}
-		return f.Name(), nil
-	*/
-	return "", nil
+	v := viper.New()
+	v.SetConfigType("yaml")
+	if err := v.ReadConfig(bytes.NewReader(conf)); err != nil {
+		return "", err
+	}
+	s.port = 8126
+	if v.IsSet("apm_config.receiver_port") {
+		s.port = v.GetInt("apm_config.receiver_port")
+	}
+	v.Set("apm_config.apm_dd_url", "http://"+s.ddAddr)
+	if !v.IsSet("api_key") {
+		v.Set("api_key", "testing123")
+	}
+	if !v.IsSet("apm_config.trace_writer.flush_period_seconds") {
+		v.Set("apm_config.trace_writer.flush_period_seconds", 0.1)
+	}
+	v.Set("log_level", "debug")
+	out, err := yaml.Marshal(v.AllSettings())
+	if err != nil {
+		return "", err
+	}
+	dir, err := ioutil.TempDir("", "agent-conf-")
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Create(filepath.Join(dir, "datadog.yaml"))
+	if err != nil {
+		return "", err
+	}
+	if _, err := f.Write(out); err != nil {
+		return "", err
+	}
+	if err := f.Close(); err != nil {
+		return "", err
+	}
+	return f.Name(), nil
 }

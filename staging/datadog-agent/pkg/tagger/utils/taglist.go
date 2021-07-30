@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 // TagList allows collector to incremental build a tag list
@@ -29,7 +29,7 @@ func NewTagList() *TagList {
 		orchestratorCardTags: make(map[string]bool),
 		highCardTags:         make(map[string]bool),
 		standardTags:         make(map[string]bool),
-		splitList:            config.C.TagValueSplitSeparator,
+		splitList:            config.Datadog.GetStringMapString("tag_value_split_separator"),
 	}
 }
 

@@ -8,15 +8,17 @@
 package ecs
 
 import (
+	"context"
+	"fmt"
 	"net"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/ecs/metadata"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	v2 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v2"
+	v2 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v2"
 )
 
 const (
@@ -34,25 +36,29 @@ func ListContainersInCurrentTask() ([]*containers.Container, error) {
 
 	client, err := metadata.V2()
 	if err != nil {
-		klog.V(5).Infof("error while initializing ECS metadata V2 client: %s", err)
+		log.Debugf("error while initializing ECS metadata V2 client: %s", err)
 		return cList, err
 	}
 
-	task, err := client.GetTask()
+	task, err := client.GetTask(context.TODO())
 	if err != nil || len(task.Containers) == 0 {
-		klog.Error("Unable to get the container list from ecs")
+		log.Error("Unable to get the container list from ecs")
 		return cList, err
 	}
 
 	filter, err := containers.GetSharedMetricFilter()
 	if err != nil {
-		klog.Warningf("Unable to get container filter. All containers in ECS Task will be processed, err: %v", err)
+		log.Warnf("Unable to get container filter. All containers in ECS Task will be processed, err: %v", err)
 	}
 
 	for _, c := range task.Containers {
 		// Not using c.DockerName as it's generated with ecs task name, thus probably not easy to match
 		if filter == nil || !filter.IsExcluded(c.Name, c.Image, "") {
-			cList = append(cList, convertMetaV2Container(c, task.Limits))
+			c, e := convertMetaV2Container(c, task.Limits)
+			cList = append(cList, c)
+			if e != nil {
+				log.Error(e)
+			}
 		}
 	}
 
@@ -66,13 +72,13 @@ func UpdateContainerMetrics(cList []*containers.Container) error {
 	for _, ctr := range cList {
 		client, err := metadata.V2()
 		if err != nil {
-			klog.V(5).Infof("error while initializing ECS metadata V2 client: %s", err)
+			log.Debugf("error while initializing ECS metadata V2 client: %s", err)
 			return err
 		}
 
-		stats, err := client.GetContainerStats(ctr.ID)
+		stats, err := client.GetContainerStats(context.TODO(), ctr.ID)
 		if err != nil {
-			klog.V(5).Infof("Unable to get stats from ECS for container %s: %s", ctr.ID, err)
+			log.Debugf("Unable to get stats from ECS for container %s: %s", ctr.ID, err)
 			continue
 		}
 
@@ -93,7 +99,7 @@ func UpdateContainerMetrics(cList []*containers.Container) error {
 
 // convertMetaV2Container returns an internal container representation from an
 // ECS metadata v2 container object.
-func convertMetaV2Container(c v2.Container, taskLimits map[string]float64) *containers.Container {
+func convertMetaV2Container(c v2.Container, taskLimits map[string]float64) (*containers.Container, error) {
 	container := &containers.Container{
 		Type:        "ECS",
 		ID:          c.DockerID,
@@ -104,22 +110,31 @@ func convertMetaV2Container(c v2.Container, taskLimits map[string]float64) *cont
 		AddressList: parseContainerNetworkAddresses(c.Ports, c.Networks, c.DockerName),
 	}
 
-	createdAt, err := time.Parse(time.RFC3339, c.CreatedAt)
-	if err != nil {
-		klog.Errorf("Unable to determine creation time for container %s - %s", c.DockerID, err)
-	} else {
-		container.Created = createdAt.Unix()
+	var dateError error
+	// enum of the status is here: https://github.com/awslabs/amazon-ecs-local-container-endpoints/blob/mainline/vendor/github.com/aws/amazon-ecs-agent/agent/api/container/status/containerstatus.go#L55-L65
+	// explanation of the status is here: https://github.com/awslabs/amazon-ecs-local-container-endpoints/blob/mainline/vendor/github.com/aws/amazon-ecs-agent/agent/api/container/status/containerstatus.go#L21-L41
+	// based on this code and comments and based on my testing, the PULLED state doesn't have any dates.
+	if c.KnownStatus != "PULLED" {
+		createdAt, err := time.Parse(time.RFC3339, c.CreatedAt)
+		if err != nil {
+			dateError = fmt.Errorf("Unable to determine creation time for container %s - %w", c.DockerID, err)
+		} else {
+			container.Created = createdAt.Unix()
+		}
 	}
-	startedAt, err := time.Parse(time.RFC3339, c.StartedAt)
-	if err != nil {
-		klog.Errorf("Unable to determine creation time for container %s - %s", c.DockerID, err)
-	} else {
-		container.StartedAt = startedAt.Unix()
+	// the CREATED status have a created date but no started date
+	if c.KnownStatus != "PULLED" && c.KnownStatus != "CREATED" {
+		startedAt, err := time.Parse(time.RFC3339, c.StartedAt)
+		if err != nil {
+			dateError = fmt.Errorf("Unable to determine start time for container %s - %w", c.DockerID, err)
+		} else {
+			container.StartedAt = startedAt.Unix()
+		}
 	}
 
-	if l, found := c.Limits[cpuKey]; found && l > 0 {
-		container.Limits.CPULimit = formatContainerCPULimit(float64(l))
-	} else if l, found := taskLimits[cpuKey]; found && l > 0 {
+	// The task limit is required in Fargate (so this should always exist). Use this as the basis for the CPU limit
+	// because the container limits configured are treated as CPU shares, rather than a fixed limit to adhere to.
+	if l, found := taskLimits[cpuKey]; found && l > 0 {
 		container.Limits.CPULimit = formatTaskCPULimit(l)
 	} else {
 		container.Limits.CPULimit = 100
@@ -131,18 +146,11 @@ func convertMetaV2Container(c v2.Container, taskLimits map[string]float64) *cont
 		container.Limits.MemLimit = formatMemoryLimit(uint64(l))
 	}
 
-	return container
-}
-
-func formatContainerCPULimit(val float64) float64 {
-	// The ECS API exposes the container CPU limit in CPU units
-	// Value is reported in Hz
-	return val / 1024 * 100
+	return container, dateError
 }
 
 func formatTaskCPULimit(val float64) float64 {
 	// The ECS API exposes the task CPU limit with the format: 0.25, 0.5, 1, 2, 4
-	// Value is reported in Hz
 	return val * 100
 }
 
@@ -178,14 +186,14 @@ func convertMetaV2ContainerStats(s *v2.ContainerStats) (metrics.ContainerMetrics
 func parseContainerNetworkAddresses(ports []v2.Port, networks []v2.Network, container string) []containers.NetworkAddress {
 	addrList := []containers.NetworkAddress{}
 	if networks == nil {
-		klog.V(5).Infof("No network settings available in ECS metadata")
+		log.Debugf("No network settings available in ECS metadata")
 		return addrList
 	}
 	for _, network := range networks {
 		for _, addr := range network.IPv4Addresses { // one-element list
 			IP := net.ParseIP(addr)
 			if IP == nil {
-				klog.Warningf("Unable to parse IP: %v for container: %s", addr, container)
+				log.Warnf("Unable to parse IP: %v for container: %s", addr, container)
 				continue
 			}
 			if len(ports) > 0 {

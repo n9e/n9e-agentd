@@ -6,7 +6,7 @@
 package sender
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // MessageBuffer accumulates messages to a buffer until the max capacity is reached.
@@ -56,4 +56,9 @@ func (p *MessageBuffer) IsFull() bool {
 // IsEmpty returns true if the buffer is empty.
 func (p *MessageBuffer) IsEmpty() bool {
 	return len(p.messageBuffer) == 0
+}
+
+// ContentSizeLimit returns the configured content size limit. Messages above this limit are not accepted.
+func (p *MessageBuffer) ContentSizeLimit() int {
+	return p.contentSizeLimit
 }

@@ -9,8 +9,8 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/parser"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/parser"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // LineParser e
@@ -65,7 +65,7 @@ func (p *SingleLineParser) process(input *DecodedInput) {
 	// Just parse an pass to the next step
 	content, status, timestamp, _, err := p.parser.Parse(input.content)
 	if err != nil {
-		klog.V(5).Info(err)
+		log.Debug(err)
 	}
 	p.lineHandler.Handle(NewMessage(content, status, input.rawDataLen, timestamp))
 }
@@ -153,7 +153,7 @@ func (p *MultiLineParser) run() {
 func (p *MultiLineParser) process(input *DecodedInput) {
 	content, status, timestamp, partial, err := p.parser.Parse(input.content)
 	if err != nil {
-		klog.V(5).Info(err)
+		log.Debug(err)
 	}
 	// track the raw data length and the timestamp so that the agent tails
 	// from the right place at restart

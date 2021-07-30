@@ -11,10 +11,14 @@ import (
 	"bytes"
 	"expvar"
 	"sync"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -85,138 +89,138 @@ func NewJSONPayloadBuilder(shareAndLockBuffers bool) *JSONPayloadBuilder {
 type OnErrItemTooBigPolicy int
 
 const (
-	// DropItemOnErrItemTooBig:  when ErrItemTooBig is encountered, skips the error and continue
+	// DropItemOnErrItemTooBig skips the error and continues when ErrItemTooBig is encountered
 	DropItemOnErrItemTooBig OnErrItemTooBigPolicy = iota
 
-	// FailOnErrItemTooBig: when ErrItemTooBig is encountered, returns the error and stop
+	// FailOnErrItemTooBig returns the error and stop when ErrItemTooBig is encountered
 	FailOnErrItemTooBig
 )
 
 // Build serializes a metadata payload and sends it to the forwarder
-//func (b *JSONPayloadBuilder) Build(m marshaler.StreamJSONMarshaler) (forwarder.Payloads, error) {
-//	return b.BuildWithOnErrItemTooBigPolicy(m, DropItemOnErrItemTooBig)
-//}
+func (b *JSONPayloadBuilder) Build(m marshaler.StreamJSONMarshaler) (forwarder.Payloads, error) {
+	return b.BuildWithOnErrItemTooBigPolicy(m, DropItemOnErrItemTooBig)
+}
 
 // BuildWithOnErrItemTooBigPolicy serializes a metadata payload and sends it to the forwarder
-//func (b *JSONPayloadBuilder) BuildWithOnErrItemTooBigPolicy(
-//	m marshaler.StreamJSONMarshaler,
-//	policy OnErrItemTooBigPolicy) (forwarder.Payloads, error) {
-//
-//	var input, output *bytes.Buffer
-//	if b.shareAndLockBuffers {
-//		defer b.mu.Unlock()
-//
-//		tlmCompressorLocks.Inc()
-//		expvarsCompressorLocks.Add(1)
-//		start := time.Now()
-//		b.mu.Lock()
-//		elapsed := time.Since(start)
-//		expvarsTotalLockTime.Add(int64(elapsed))
-//		tlmTotalLockTime.Add(float64(elapsed))
-//		tlmCompressorLocks.Dec()
-//		expvarsCompressorLocks.Add(-1)
-//
-//		input = b.input
-//		output = b.output
-//		input.Reset()
-//		output.Reset()
-//	} else {
-//		input = bytes.NewBuffer(make([]byte, 0, b.inputSizeHint))
-//		output = bytes.NewBuffer(make([]byte, 0, b.outputSizeHint))
-//	}
-//
-//	var payloads forwarder.Payloads
-//	var i int
-//	itemCount := m.Len()
-//	expvarsTotalCalls.Add(1)
-//	tlmTotalCalls.Inc()
-//	start := time.Now()
-//
-//	// Temporary buffers
-//	var header, footer bytes.Buffer
-//	jsonStream := jsoniter.NewStream(jsonConfig, &header, 4096)
-//
-//	err := m.WriteHeader(jsonStream)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	jsonStream.Reset(&footer)
-//	err = m.WriteFooter(jsonStream)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	compressor, err := NewCompressor(input, output, header.Bytes(), footer.Bytes(), []byte(","))
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	for i < itemCount {
-//		// We keep reusing the same small buffer in the jsoniter stream. Note that we can do so
-//		// because compressor.addItem copies given buffer.
-//		jsonStream.Reset(nil)
-//		err := m.WriteItem(jsonStream, i)
-//		if err != nil {
-//			klog.Warningf("error marshalling an item, skipping: %s", err)
-//			i++
-//			expvarsWriteItemErrors.Add(1)
-//			tlmWriteItemErrors.Inc()
-//			continue
-//		}
-//
-//		switch compressor.AddItem(jsonStream.Buffer()) {
-//		case ErrPayloadFull:
-//			expvarsPayloadFulls.Add(1)
-//			tlmPayloadFull.Inc()
-//			// payload is full, we need to create a new one
-//			payload, err := compressor.Close()
-//			if err != nil {
-//				return payloads, err
-//			}
-//			payloads = append(payloads, &payload)
-//			input.Reset()
-//			output.Reset()
-//			compressor, err = NewCompressor(input, output, header.Bytes(), footer.Bytes(), []byte(","))
-//			if err != nil {
-//				return nil, err
-//			}
-//		case nil:
-//			// All good, continue to next item
-//			i++
-//			expvarsTotalItems.Add(1)
-//			tlmTotalItems.Inc()
-//			continue
-//		case ErrItemTooBig:
-//			if policy == FailOnErrItemTooBig {
-//				return nil, ErrItemTooBig
-//			}
-//			fallthrough
-//		default:
-//			// Unexpected error, drop the item
-//			i++
-//			klog.Warningf("Dropping an item, %s: %s", m.DescribeItem(i), err)
-//			expvarsItemDrops.Add(1)
-//			tlmItemDrops.Inc()
-//			continue
-//		}
-//	}
-//
-//	// Close last payload
-//	payload, err := compressor.Close()
-//	if err != nil {
-//		return payloads, err
-//	}
-//	payloads = append(payloads, &payload)
-//
-//	if !b.shareAndLockBuffers {
-//		b.inputSizeHint = input.Cap()
-//		b.outputSizeHint = output.Cap()
-//	}
-//
-//	elapsed := time.Since(start)
-//	expvarsSerializationTime.Add(int64(elapsed))
-//	tlmTotalSerializationTime.Add(float64(elapsed))
-//
-//	return payloads, nil
-//}
+func (b *JSONPayloadBuilder) BuildWithOnErrItemTooBigPolicy(
+	m marshaler.StreamJSONMarshaler,
+	policy OnErrItemTooBigPolicy) (forwarder.Payloads, error) {
+
+	var input, output *bytes.Buffer
+	if b.shareAndLockBuffers {
+		defer b.mu.Unlock()
+
+		tlmCompressorLocks.Inc()
+		expvarsCompressorLocks.Add(1)
+		start := time.Now()
+		b.mu.Lock()
+		elapsed := time.Since(start)
+		expvarsTotalLockTime.Add(int64(elapsed))
+		tlmTotalLockTime.Add(float64(elapsed))
+		tlmCompressorLocks.Dec()
+		expvarsCompressorLocks.Add(-1)
+
+		input = b.input
+		output = b.output
+		input.Reset()
+		output.Reset()
+	} else {
+		input = bytes.NewBuffer(make([]byte, 0, b.inputSizeHint))
+		output = bytes.NewBuffer(make([]byte, 0, b.outputSizeHint))
+	}
+
+	var payloads forwarder.Payloads
+	var i int
+	itemCount := m.Len()
+	expvarsTotalCalls.Add(1)
+	tlmTotalCalls.Inc()
+	start := time.Now()
+
+	// Temporary buffers
+	var header, footer bytes.Buffer
+	jsonStream := jsoniter.NewStream(jsonConfig, &header, 4096)
+
+	err := m.WriteHeader(jsonStream)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonStream.Reset(&footer)
+	err = m.WriteFooter(jsonStream)
+	if err != nil {
+		return nil, err
+	}
+
+	compressor, err := NewCompressor(input, output, header.Bytes(), footer.Bytes(), []byte(","))
+	if err != nil {
+		return nil, err
+	}
+
+	for i < itemCount {
+		// We keep reusing the same small buffer in the jsoniter stream. Note that we can do so
+		// because compressor.addItem copies given buffer.
+		jsonStream.Reset(nil)
+		err := m.WriteItem(jsonStream, i)
+		if err != nil {
+			log.Warnf("error marshalling an item, skipping: %s", err)
+			i++
+			expvarsWriteItemErrors.Add(1)
+			tlmWriteItemErrors.Inc()
+			continue
+		}
+
+		switch compressor.AddItem(jsonStream.Buffer()) {
+		case ErrPayloadFull:
+			expvarsPayloadFulls.Add(1)
+			tlmPayloadFull.Inc()
+			// payload is full, we need to create a new one
+			payload, err := compressor.Close()
+			if err != nil {
+				return payloads, err
+			}
+			payloads = append(payloads, &payload)
+			input.Reset()
+			output.Reset()
+			compressor, err = NewCompressor(input, output, header.Bytes(), footer.Bytes(), []byte(","))
+			if err != nil {
+				return nil, err
+			}
+		case nil:
+			// All good, continue to next item
+			i++
+			expvarsTotalItems.Add(1)
+			tlmTotalItems.Inc()
+			continue
+		case ErrItemTooBig:
+			if policy == FailOnErrItemTooBig {
+				return nil, ErrItemTooBig
+			}
+			fallthrough
+		default:
+			// Unexpected error, drop the item
+			i++
+			log.Warnf("Dropping an item, %s: %s", m.DescribeItem(i), err)
+			expvarsItemDrops.Add(1)
+			tlmItemDrops.Inc()
+			continue
+		}
+	}
+
+	// Close last payload
+	payload, err := compressor.Close()
+	if err != nil {
+		return payloads, err
+	}
+	payloads = append(payloads, &payload)
+
+	if !b.shareAndLockBuffers {
+		b.inputSizeHint = input.Cap()
+		b.outputSizeHint = output.Cap()
+	}
+
+	elapsed := time.Since(start)
+	expvarsSerializationTime.Add(int64(elapsed))
+	tlmTotalSerializationTime.Add(float64(elapsed))
+
+	return payloads, nil
+}

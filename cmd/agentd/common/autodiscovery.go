@@ -8,9 +8,9 @@ package common
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/providers"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/scheduler"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"k8s.io/klog/v2"
 )

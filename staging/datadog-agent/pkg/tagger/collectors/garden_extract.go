@@ -3,8 +3,8 @@ package collectors
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cloudfoundry"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/cloudfoundry"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func (c *GardenCollector) extractTags(nodename string) (tagsByInstanceGUID map[string][]string, err error) {
@@ -14,7 +14,7 @@ func (c *GardenCollector) extractTags(nodename string) (tagsByInstanceGUID map[s
 			return tagsByInstanceGUID, err
 		}
 	} else {
-		klog.V(5).Info("Cluster agent not enabled or misconfigured, tagging CF app with container id only")
+		log.Debug("Cluster agent not enabled or misconfigured, tagging CF app with container id only")
 		gardenContainers, err := c.gardenUtil.GetGardenContainers()
 		if err != nil {
 			return tagsByInstanceGUID, fmt.Errorf("cannot get container list from local garden API: %v", err)

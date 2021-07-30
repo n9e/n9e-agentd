@@ -24,7 +24,7 @@ type Meta struct {
 	SocketFqdn     string   `json:"socket-fqdn"`
 	EC2Hostname    string   `json:"ec2-hostname"`
 	Hostname       string   `json:"hostname"`
-	HostAliases    []string `json:"hostAliases"`
+	HostAliases    []string `json:"host_aliases"`
 	InstanceID     string   `json:"instance-id"`
 	AgentHostname  string   `json:"agent-hostname,omitempty"`
 }
@@ -49,8 +49,8 @@ type Tags struct {
 // InstallMethod is metadata about the agent's installation
 type InstallMethod struct {
 	Tool             *string `json:"tool"`
-	ToolVersion      string  `json:"toolVersion"`
-	InstallerVersion *string `json:"installerVersion"`
+	ToolVersion      string  `json:"tool_version"`
+	InstallerVersion *string `json:"installer_version"`
 }
 
 // ProxyMeta is metatdata about the proxy configuration
@@ -66,10 +66,10 @@ type Payload struct {
 	PythonVersion string            `json:"python"`
 	SystemStats   *systemStats      `json:"systemStats"`
 	Meta          *Meta             `json:"meta"`
-	HostTags      *Tags             `json:"hostTags"`
-	ContainerMeta map[string]string `json:"containerMeta,omitempty"`
+	HostTags      *Tags             `json:"host-tags"`
+	ContainerMeta map[string]string `json:"container-meta,omitempty"`
 	NetworkMeta   *NetworkMeta      `json:"network"`
 	LogsMeta      *LogsMeta         `json:"logs"`
-	InstallMethod *InstallMethod    `json:"installMethod"`
-	ProxyMeta     *ProxyMeta        `json:"proxyInfo"`
+	InstallMethod *InstallMethod    `json:"install-method"`
+	ProxyMeta     *ProxyMeta        `json:"proxy-info"`
 }

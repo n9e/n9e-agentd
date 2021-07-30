@@ -10,10 +10,11 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/cmd/agent/common/signals"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
 )
 
 // Catalog keeps track of metadata collectors by name
@@ -49,7 +50,7 @@ func NewScheduler(s *serializer.Serializer) *Scheduler {
 	if enableFirstRunCollection {
 		err := scheduler.firstRun()
 		if err != nil {
-			klog.Errorf("Unable to send host metadata at first run: %v", err)
+			log.Errorf("Unable to send host metadata at first run: %v", err)
 		}
 	}
 
@@ -80,24 +81,25 @@ func (c *Scheduler) AddCollector(name string, interval time.Duration) error {
 
 	sc := &scheduledCollector{
 		sendTimer:    newTimer(interval),
-		healthHandle: health.RegisterReadiness("metadata-" + name),
+		healthHandle: health.RegisterLiveness("metadata-" + name),
 	}
 
 	go func() {
-		ctx, cancelCtxFunc := context.WithCancel(c.context)
-		defer cancelCtxFunc()
+		ctx, cancel := context.WithCancel(context.Background())
 		for {
 			select {
-			case <-ctx.Done():
+			case <-c.context.Done():
+				cancel()
 				return
-			case <-sc.healthHandle.C:
-				// Purposely empty
+			case healthDeadline := <-sc.healthHandle.C:
+				cancel()
+				ctx, cancel = context.WithDeadline(context.Background(), healthDeadline)
 			case <-sc.sendTimer.C:
 				sc.sendTimer.Reset(interval) // Reset the timer, so it fires again after `interval`.
 				// Note we call `p.Send` on the collector *after* resetting the Timer, so
 				// the time spent by `p.Send` is not added to the total time between runs.
-				if err := p.Send(c.srl); err != nil {
-					klog.Errorf("Unable to send '%s' metadata: %v", name, err)
+				if err := p.Send(ctx, c.srl); err != nil {
+					log.Errorf("Unable to send '%s' metadata: %v", name, err)
 				}
 			}
 		}
@@ -127,7 +129,7 @@ func (c *Scheduler) TriggerAndResetCollectorTimer(name string, delay time.Durati
 	sc, found := c.collectors[name]
 
 	if !found {
-		klog.Errorf("Unable to find '" + name + "' in the running metadata collectors!")
+		log.Errorf("Unable to find '" + name + "' in the running metadata collectors!")
 	}
 
 	if !sc.sendTimer.Stop() {
@@ -146,12 +148,10 @@ func (c *Scheduler) TriggerAndResetCollectorTimer(name string, delay time.Durati
 func (c *Scheduler) firstRun() error {
 	p, found := catalog["host"]
 	if !found {
-		return fmt.Errorf("Unable to find 'host' metadata collector in the catalog!")
+		log.Error("Unable to find 'host' metadata collector in the catalog!")
+		signals.ErrorStopper <- true
 	}
-	if err := p.Send(c.srl); err != nil {
-		klog.Errorf("Unable to send host metadata at first run: %v", err)
-	}
-	return nil
+	return p.Send(context.TODO(), c.srl)
 }
 
 // RegisterCollector adds a Metadata Collector to the catalog

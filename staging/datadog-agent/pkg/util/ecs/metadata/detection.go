@@ -8,21 +8,23 @@
 package metadata
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	v1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v1"
-	v3 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v3"
+	v1 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v1"
+	v3 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v3"
 )
 
 func detectAgentV1URL() (string, error) {
@@ -34,16 +36,16 @@ func detectAgentV1URL() (string, error) {
 
 	if config.IsContainerized() {
 		// List all interfaces for the ecs-agent container
-		agentURLS, err := getAgentV1ContainerURLs()
+		agentURLS, err := getAgentV1ContainerURLs(context.TODO())
 		if err != nil {
-			klog.V(5).Infof("Could not inspect ecs-agent container: %s", err)
+			log.Debugf("Could not inspect ecs-agent container: %s", err)
 		} else {
 			urls = append(urls, agentURLS...)
 		}
 		// Try the default gateway
 		gw, err := providers.ContainerImpl().GetDefaultGateway()
 		if err != nil {
-			klog.V(5).Infof("Could not get docker default gateway: %s", err)
+			log.Debugf("Could not get docker default gateway: %s", err)
 		}
 		if gw != nil {
 			urls = append(urls, fmt.Sprintf("http://%s:%d/", gw.String(), v1.DefaultAgentPort))
@@ -64,14 +66,18 @@ func detectAgentV1URL() (string, error) {
 	return "", fmt.Errorf("could not detect ECS agent, tried URLs: %s", urls)
 }
 
-func getAgentV1ContainerURLs() ([]string, error) {
+func getAgentV1ContainerURLs(ctx context.Context) ([]string, error) {
 	var urls []string
+
+	if !config.IsFeaturePresent(config.Docker) {
+		return nil, errors.New("Docker feature not activated")
+	}
 
 	du, err := docker.GetDockerUtil()
 	if err != nil {
 		return nil, err
 	}
-	ecsConfig, err := du.Inspect(config.Datadog.GetString("ecs_agent_container_name"), false)
+	ecsConfig, err := du.Inspect(ctx, config.Datadog.GetString("ecs_agent_container_name"), false)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +112,7 @@ func testURLs(urls []string, timeout time.Duration) string {
 		}
 		var resp v1.Commands
 		if err := json.NewDecoder(r.Body).Decode(&resp); err != nil {
-			klog.V(5).Infof("Error decoding JSON response from '%s': %s", url, err)
+			log.Debugf("Error decoding JSON response from '%s': %s", url, err)
 			continue
 		}
 		if len(resp.AvailableCommands) > 0 {
@@ -124,13 +130,13 @@ func getAgentV3URLFromEnv() (string, error) {
 	return agentURL, nil
 }
 
-func getAgentV3URLFromDocker(containerID string) (string, error) {
+func getAgentV3URLFromDocker(ctx context.Context, containerID string) (string, error) {
 	du, err := docker.GetDockerUtil()
 	if err != nil {
 		return "", err
 	}
 
-	container, err := du.Inspect(containerID, false)
+	container, err := du.Inspect(ctx, containerID, false)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +144,7 @@ func getAgentV3URLFromDocker(containerID string) (string, error) {
 	for _, env := range container.Config.Env {
 		substrings := strings.Split(env, "=")
 		if len(substrings) != 2 {
-			klog.V(6).Infof("invalid container env format: %s", env)
+			log.Tracef("invalid container env format: %s", env)
 		}
 
 		k := substrings[0]

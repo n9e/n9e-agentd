@@ -3,12 +3,14 @@
 package tracer
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/netlink"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/network/netlink"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	ct "github.com/florianl/go-conntrack"
 	"github.com/golang/groupcache/lru"
 	"golang.org/x/sys/unix"
@@ -45,10 +47,22 @@ func (cache *cachedConntrack) Close() error {
 	return nil
 }
 
+func (cache *cachedConntrack) ExistsInRootNS(c *ConnTuple) (bool, error) {
+	return cache.exists(c, 0, 1)
+}
+
 func (cache *cachedConntrack) Exists(c *ConnTuple) (bool, error) {
-	ctrk, err := cache.ensureConntrack(c.NetNS(), int(c.Pid()))
+	return cache.exists(c, c.NetNS(), int(c.Pid()))
+}
+
+func (cache *cachedConntrack) exists(c *ConnTuple, netns uint64, pid int) (bool, error) {
+	ctrk, err := cache.ensureConntrack(netns, pid)
 	if err != nil {
 		return false, err
+	}
+
+	if ctrk == nil {
+		return false, nil
 	}
 
 	var protoNumber uint8 = unix.IPPROTO_UDP
@@ -75,8 +89,8 @@ func (cache *cachedConntrack) Exists(c *ConnTuple) (bool, error) {
 
 	ok, err := ctrk.Exists(&conn)
 	if err != nil {
-		klog.V(5).Infof("error while checking conntrack for connection %#v: %s", conn, err)
-		cache.removeConntrack(c.NetNS())
+		log.Debugf("error while checking conntrack for connection %#v: %s", conn, err)
+		cache.removeConntrack(netns)
 		return false, err
 	}
 
@@ -88,8 +102,8 @@ func (cache *cachedConntrack) Exists(c *ConnTuple) (bool, error) {
 	conn.Origin = nil
 	ok, err = ctrk.Exists(&conn)
 	if err != nil {
-		klog.V(5).Infof("error while checking conntrack for connection %#v: %s", conn, err)
-		cache.removeConntrack(c.NetNS())
+		log.Debugf("error while checking conntrack for connection %#v: %s", conn, err)
+		cache.removeConntrack(netns)
 		return false, err
 	}
 
@@ -118,14 +132,18 @@ func (cache *cachedConntrack) ensureConntrack(ino uint64, pid int) (netlink.Conn
 
 	ns, err := util.GetNetNamespaceFromPid(cache.procRoot, pid)
 	if err != nil {
-		klog.Errorf("could not get net ns for pid %d: %s", pid, err)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+
+		log.Errorf("could not get net ns for pid %d: %s", pid, err)
 		return nil, err
 	}
 	defer ns.Close()
 
 	ctrk, err := cache.conntrackCreator(int(ns))
 	if err != nil {
-		klog.Errorf("could not create conntrack object for net ns %d: %s", ino, err)
+		log.Errorf("could not create conntrack object for net ns %d: %s", ino, err)
 		return nil, err
 	}
 

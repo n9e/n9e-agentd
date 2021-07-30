@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
 	"github.com/stretchr/testify/assert"
 )
 

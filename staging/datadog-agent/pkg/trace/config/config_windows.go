@@ -8,8 +8,8 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/executable"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/util/executable"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 )
 
 // DefaultLogFilePath is where the agent will write logs if not overridden in the conf

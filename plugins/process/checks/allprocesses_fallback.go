@@ -3,7 +3,7 @@
 package checks
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/process/procutil"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
 	"github.com/DataDog/gopsutil/process"
 )
 

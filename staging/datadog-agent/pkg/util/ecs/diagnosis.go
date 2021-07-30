@@ -8,10 +8,12 @@
 package ecs
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/diagnose/diagnosis"
-	"k8s.io/klog/v2"
+	"context"
 
-	ecsmeta "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata"
+	"github.com/DataDog/datadog-agent/pkg/diagnose/diagnosis"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+
+	ecsmeta "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata"
 )
 
 func init() {
@@ -24,16 +26,16 @@ func init() {
 func diagnoseECS() error {
 	client, err := ecsmeta.V1()
 	if err != nil {
-		klog.Error(err)
+		log.Error(err)
 		return err
 	}
-	klog.Info("successfully detected ECS metadata server endpoint")
+	log.Info("successfully detected ECS metadata server endpoint")
 
-	if _, err = client.GetTasks(); err != nil {
-		klog.Error(err)
+	if _, err = client.GetTasks(context.TODO()); err != nil {
+		log.Error(err)
 		return err
 	}
-	klog.Info("successfully retrieved task list from ECS metadata server")
+	log.Info("successfully retrieved task list from ECS metadata server")
 
 	return nil
 }
@@ -42,16 +44,16 @@ func diagnoseECS() error {
 func diagnoseECSTags() error {
 	client, err := ecsmeta.V3FromCurrentTask()
 	if err != nil {
-		klog.Error(err)
+		log.Error(err)
 		return err
 	}
-	klog.Info("successfully detected ECS metadata server endpoint for resource tags")
+	log.Info("successfully detected ECS metadata server endpoint for resource tags")
 
-	if _, err = client.GetTaskWithTags(); err != nil {
-		klog.Error(err)
+	if _, err = client.GetTaskWithTags(context.TODO()); err != nil {
+		log.Error(err)
 		return err
 	}
-	klog.Info("successfully retrieved task with potential tags from ECS metadata server")
+	log.Info("successfully retrieved task with potential tags from ECS metadata server")
 
 	return nil
 }
@@ -60,15 +62,15 @@ func diagnoseECSTags() error {
 func diagnoseFargate() error {
 	client, err := ecsmeta.V2()
 	if err != nil {
-		klog.V(5).Infof("error while initializing ECS metadata V2 client: %s", err)
+		log.Debugf("error while initializing ECS metadata V2 client: %s", err)
 		return err
 	}
 
-	if _, err := client.GetTask(); err != nil {
-		klog.Error(err)
+	if _, err := client.GetTask(context.TODO()); err != nil {
+		log.Error(err)
 		return err
 	}
-	klog.Info("successfully retrieved task from Fargate metadata endpoint")
+	log.Info("successfully retrieved task from Fargate metadata endpoint")
 
 	return nil
 }

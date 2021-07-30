@@ -8,8 +8,8 @@ package message
 import (
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
 )
 
 func TestSetTagsEmpty(t *testing.T) {
@@ -31,7 +31,7 @@ func TestTagsWithConfigTagsOnly(t *testing.T) {
 	source := config.NewLogSource("", cfg)
 	origin := NewOrigin(source)
 	assert.Equal(t, []string{"sourcecategory:b", "c:d", "e"}, origin.Tags())
-	assert.Equal(t, "[dd source=\"a\"][dd sourcecategory=\"b\"][dd tags=\"c:d,e\"]", string(origin.TagsPayload()))
+	assert.Equal(t, "[dd ddsource=\"a\"][dd ddsourcecategory=\"b\"][dd ddtags=\"c:d,e\"]", string(origin.TagsPayload()))
 	assert.Equal(t, "sourcecategory:b,c:d,e", origin.TagsToString())
 }
 
@@ -45,7 +45,7 @@ func TestSetTagsWithNoConfigTags(t *testing.T) {
 	origin.SetTags([]string{"foo:bar", "baz"})
 	assert.Equal(t, []string{"foo:bar", "baz", "sourcecategory:b"}, origin.Tags())
 	assert.Equal(t, "foo:bar,baz,sourcecategory:b", origin.TagsToString())
-	assert.Equal(t, "[dd source=\"a\"][dd sourcecategory=\"b\"][dd tags=\"foo:bar,baz\"]", string(origin.TagsPayload()))
+	assert.Equal(t, "[dd ddsource=\"a\"][dd ddsourcecategory=\"b\"][dd ddtags=\"foo:bar,baz\"]", string(origin.TagsPayload()))
 }
 
 func TestSetTagsWithConfigTags(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSetTagsWithConfigTags(t *testing.T) {
 	origin.SetTags([]string{"foo:bar", "baz"})
 	assert.Equal(t, []string{"foo:bar", "baz", "sourcecategory:b", "c:d", "e"}, origin.Tags())
 	assert.Equal(t, "foo:bar,baz,sourcecategory:b,c:d,e", origin.TagsToString())
-	assert.Equal(t, "[dd source=\"a\"][dd sourcecategory=\"b\"][dd tags=\"c:d,e,foo:bar,baz\"]", string(origin.TagsPayload()))
+	assert.Equal(t, "[dd ddsource=\"a\"][dd ddsourcecategory=\"b\"][dd ddtags=\"c:d,e,foo:bar,baz\"]", string(origin.TagsPayload()))
 }
 
 func TestDefaultSourceValueIsSourceFromConfig(t *testing.T) {

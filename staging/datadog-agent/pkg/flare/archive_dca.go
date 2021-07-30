@@ -8,6 +8,7 @@ package flare
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,21 +17,20 @@ import (
 
 	"github.com/mholt/archiver/v3"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
-	"k8s.io/klog/v2"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // CreateDCAArchive packages up the files
 func CreateDCAArchive(local bool, distPath, logFilePath string) (string, error) {
 	zipFilePath := getArchivePath()
 	confSearchPaths := SearchPaths{
-		"":     config.C.ConfdPath,
+		"":     config.Datadog.GetString("confd_path"),
 		"dist": filepath.Join(distPath, "conf.d"),
 	}
 	return createDCAArchive(zipFilePath, local, confSearchPaths, logFilePath)
@@ -45,7 +45,7 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 
 	// Get hostname, if there's an error in getting the hostname,
 	// set the hostname to unknown
-	hostname, err := util.GetHostname()
+	hostname, err := util.GetHostname(context.TODO())
 	if err != nil {
 		hostname = "unknown"
 	}
@@ -61,7 +61,7 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 		// Only zip it up if the agent is running
 		err = zipDCAStatusFile(tempDir, hostname)
 		if err != nil {
-			klog.Infof("Error getting the status of the DCA, %q", err)
+			log.Infof("Error getting the status of the DCA, %q", err)
 			return "", err
 		}
 	}
@@ -80,7 +80,7 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 
 	err = zipClusterAgentConfigCheck(tempDir, hostname)
 	if err != nil {
-		klog.Errorf("Could not zip config check: %s", err)
+		log.Errorf("Could not zip config check: %s", err)
 	}
 
 	err = zipExpVar(tempDir, hostname)
@@ -100,15 +100,15 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 
 	err = zipClusterAgentClusterChecks(tempDir, hostname)
 	if err != nil {
-		klog.Errorf("Could not zip clustercheck status: %s", err)
+		log.Errorf("Could not zip clustercheck status: %s", err)
 	}
 
 	err = zipClusterAgentDiagnose(tempDir, hostname)
 	if err != nil {
-		klog.Errorf("Could not zip diagnose: %s", err)
+		log.Errorf("Could not zip diagnose: %s", err)
 	}
 
-	if config.C.ExternalMetricsProvider.Enabled {
+	if config.Datadog.GetBool("external_metrics_provider.enabled") {
 		err = zipHPAStatus(tempDir, hostname)
 		if err != nil {
 			return "", err
@@ -117,12 +117,12 @@ func createDCAArchive(zipFilePath string, local bool, confSearchPaths SearchPath
 
 	err = zipClusterAgentTelemetry(tempDir, hostname)
 	if err != nil {
-		klog.Errorf("Could not zip telemetry payload: %v", err)
+		log.Errorf("Could not zip telemetry payload: %v", err)
 	}
 
 	err = permsInfos.commit(tempDir, hostname, os.ModePerm)
 	if err != nil {
-		klog.Infof("Error while creating permissions.log infos file: %s", err)
+		log.Infof("Error while creating permissions.log infos file: %s", err)
 	}
 
 	// File format is determined based on `zipFilePath` extension
@@ -145,22 +145,22 @@ func writeLocal(tempDir, hostname string) error {
 
 func zipDCAStatusFile(tempDir, hostname string) error {
 	// Grab the status
-	klog.Infof("Zipping the status at %s for %s", tempDir, hostname)
+	log.Infof("Zipping the status at %s for %s", tempDir, hostname)
 	s, err := status.GetAndFormatDCAStatus()
 	if err != nil {
-		klog.Infof("Error zipping the status: %q", err)
+		log.Infof("Error zipping the status: %q", err)
 		return err
 	}
 
 	// Clean it up
 	cleaned, err := log.CredentialsCleanerBytes(s)
 	if err != nil {
-		klog.Infof("Error redacting the log files: %q", err)
+		log.Infof("Error redacting the log files: %q", err)
 		return err
 	}
 
 	f := filepath.Join(tempDir, hostname, "cluster-agent-status.log")
-	klog.Infof("Flare status made at %s", tempDir)
+	log.Infof("Flare status made at %s", tempDir)
 	err = ensureParentDirsExist(f)
 	if err != nil {
 		return err
@@ -179,25 +179,25 @@ func zipMetadataMap(tempDir, hostname string) error {
 		// Grab the metadata map for all nodes.
 		metaList, err = apiserver.GetMetadataMapBundleOnAllNodes(cl)
 		if err != nil {
-			klog.Infof("Error while collecting the cluster level metadata: %q", err)
+			log.Infof("Error while collecting the cluster level metadata: %q", err)
 		}
 	}
 
 	metaBytes, err := json.Marshal(metaList)
 	if err != nil {
-		klog.Infof("Error while marshalling the cluster level metadata: %q", err)
+		log.Infof("Error while marshalling the cluster level metadata: %q", err)
 		return err
 	}
 
 	str, err := status.FormatMetadataMapCLI(metaBytes)
 	if err != nil {
-		klog.Infof("Error while rendering the cluster level metadata: %q", err)
+		log.Infof("Error while rendering the cluster level metadata: %q", err)
 		return err
 	}
 
 	sByte := []byte(str)
 	f := filepath.Join(tempDir, hostname, "cluster-agent-metadatamapper.log")
-	klog.Infof("Flare metadata mapper made at %s", tempDir)
+	log.Infof("Flare metadata mapper made at %s", tempDir)
 	err = ensureParentDirsExist(f)
 	if err != nil {
 		return err
@@ -239,7 +239,7 @@ func zipHPAStatus(tempDir, hostname string) error {
 	}
 	statsBytes, err := json.Marshal(stats)
 	if err != nil {
-		klog.Infof("Error while marshalling the cluster level metadata: %q", err)
+		log.Infof("Error while marshalling the cluster level metadata: %q", err)
 		return err
 	}
 
@@ -250,7 +250,7 @@ func zipHPAStatus(tempDir, hostname string) error {
 	sByte := []byte(str)
 
 	f := filepath.Join(tempDir, hostname, "custommetricsprovider.log")
-	klog.Infof("Flare hpa status made at %s", tempDir)
+	log.Infof("Flare hpa status made at %s", tempDir)
 
 	err = ensureParentDirsExist(f)
 	if err != nil {

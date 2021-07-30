@@ -8,9 +8,10 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
 )
 
 // configPath refers to the configuration that can be passed over a docker label or a pod annotation,
@@ -33,7 +34,7 @@ func ContainsADIdentifier(c *Container) bool {
 		return false
 	}
 	entityID := c.service.GetEntityID()
-	pod, err := kubeutil.GetPodForEntityID(entityID)
+	pod, err := kubeutil.GetPodForEntityID(context.TODO(), entityID)
 	if err != nil {
 		return false
 	}

@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
 )
 
 // provider is a Cgroup implementation of the ContainerImplementation interface
@@ -141,7 +141,7 @@ func (mp *provider) GetNetworkMetrics(containerID string, networks map[string]st
 		return nil, errors.New("no pid for this container")
 	}
 
-	metrics, err := collectNetworkStats(int(cg.Pids[0]), networks)
+	metrics, err := collectNetworkStats(int(cg.Pids[len(cg.Pids)-1]), networks)
 	if err != nil {
 		return nil, fmt.Errorf("Could not collect network stats for container %s: %s", containerID[:12], err)
 	}
@@ -151,7 +151,7 @@ func (mp *provider) GetNetworkMetrics(containerID string, networks map[string]st
 
 // GetAgentCID returns the container ID where the current agent is running
 func (mp *provider) GetAgentCID() (string, error) {
-	prefix := config.C.ContainerCgroupPrefix
+	prefix := config.Datadog.GetString("container_cgroup_prefix")
 	cID, _, err := readCgroupsForPath("/proc/self/cgroup", prefix)
 	if err != nil {
 		return "", err
@@ -177,7 +177,7 @@ func (mp *provider) GetPIDs(containerID string) ([]int32, error) {
 // containerd / cri-o default Kubernetes cgroups
 func (mp *provider) ContainerIDForPID(pid int) (string, error) {
 	cgPath := hostProc(strconv.Itoa(pid), "cgroup")
-	prefix := config.C.ContainerCgroupPrefix
+	prefix := config.Datadog.GetString("container_cgroup_prefix")
 
 	containerID, _, err := readCgroupsForPath(cgPath, prefix)
 

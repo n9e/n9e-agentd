@@ -8,7 +8,7 @@ package containers
 import (
 	"net"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
 )
 
 // Known container runtimes

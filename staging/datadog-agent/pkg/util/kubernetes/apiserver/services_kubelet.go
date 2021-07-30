@@ -14,14 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
-	"k8s.io/klog/v2"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type serviceMapper apiv1.NamespacesPodsStringsSet
 
-func ConvertToServiceMapper(m apiv1.NamespacesPodsStringsSet) serviceMapper {
+func ConvertToServiceMapper(m apiv1.NamespacesPodsStringsSet) serviceMapper { //nolint:revive
 	return serviceMapper(m)
 }
 
@@ -45,12 +45,12 @@ func (m serviceMapper) MapOnIP(nodeName string, pods []*kubelet.Pod, endpointLis
 		return fmt.Errorf("empty podlist received for nodeName %q", nodeName)
 	}
 	if nodeName == "" {
-		klog.V(5).Infof("Service mapper was given an empty node name. Mapping might be incorrect.")
+		log.Debugf("Service mapper was given an empty node name. Mapping might be incorrect.")
 	}
 
 	for _, pod := range pods {
 		if pod.Status.PodIP == "" {
-			klog.V(5).Infof("PodIP is empty, ignoring pod %s in namespace %s", pod.Metadata.Name, pod.Metadata.Namespace)
+			log.Debugf("PodIP is empty, ignoring pod %s in namespace %s", pod.Metadata.Name, pod.Metadata.Namespace)
 			continue
 		}
 		if _, ok := podToIP[pod.Metadata.Namespace]; !ok {
@@ -61,7 +61,7 @@ func (m serviceMapper) MapOnIP(nodeName string, pods []*kubelet.Pod, endpointLis
 	for _, svc := range endpointList.Items {
 		for _, endpointsSubsets := range svc.Subsets {
 			if endpointsSubsets.Addresses == nil {
-				klog.V(6).Infof("A subset of endpoints from %s could not be evaluated", svc.Name)
+				log.Tracef("A subset of endpoints from %s could not be evaluated", svc.Name)
 				continue
 			}
 			for _, edpt := range endpointsSubsets.Addresses {
@@ -95,7 +95,7 @@ func (m serviceMapper) MapOnRef(_ string, pods []*kubelet.Pod, endpointList v1.E
 		for _, endpointsSubsets := range svc.Subsets {
 			for _, edpt := range endpointsSubsets.Addresses {
 				if edpt.TargetRef == nil {
-					klog.V(5).Infof("Empty TargetRef on endpoint %s of service %s, skipping", edpt.IP, svc.Name)
+					log.Debugf("Empty TargetRef on endpoint %s of service %s, skipping", edpt.IP, svc.Name)
 					continue
 				}
 				ref := *edpt.TargetRef
@@ -103,7 +103,7 @@ func (m serviceMapper) MapOnRef(_ string, pods []*kubelet.Pod, endpointList v1.E
 					continue
 				}
 				if ref.Name == "" || ref.Namespace == "" {
-					klog.V(5).Infof("Incomplete reference for object %s on service %s, skipping", ref.UID, svc.Name)
+					log.Debugf("Incomplete reference for object %s on service %s, skipping", ref.UID, svc.Name)
 					continue
 				}
 
@@ -140,6 +140,6 @@ func (metaBundle *metadataMapperBundle) mapServices(nodeName string, pods []*kub
 	if err != nil {
 		return err
 	}
-	klog.V(6).Infof("The services matched %q", fmt.Sprintf("%s", metaBundle.Services))
+	log.Tracef("The services matched %q", fmt.Sprintf("%s", metaBundle.Services))
 	return nil
 }

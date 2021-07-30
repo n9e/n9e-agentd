@@ -6,8 +6,8 @@
 package event
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/sampler"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/sampler"
 )
 
 // metricBasedExtractor is an event extractor that decides whether to extract APM events from spans based on

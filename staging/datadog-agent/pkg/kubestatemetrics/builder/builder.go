@@ -12,17 +12,17 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/kubestatemetrics/store"
+	"github.com/DataDog/datadog-agent/pkg/kubestatemetrics/store"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vpaclientset "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	ksmbuild "k8s.io/kube-state-metrics/pkg/builder"
-	ksmtypes "k8s.io/kube-state-metrics/pkg/builder/types"
-	"k8s.io/kube-state-metrics/pkg/metric_generator"
-	"k8s.io/kube-state-metrics/pkg/options"
-	"k8s.io/kube-state-metrics/pkg/watch"
+	ksmbuild "k8s.io/kube-state-metrics/v2/pkg/builder"
+	ksmtypes "k8s.io/kube-state-metrics/v2/pkg/builder/types"
+	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"k8s.io/kube-state-metrics/v2/pkg/options"
+	"k8s.io/kube-state-metrics/v2/pkg/watch"
 )
 
 // Builder struct represents the metric store generator
@@ -82,7 +82,7 @@ func (b *Builder) WithVPAClient(c vpaclientset.Interface) {
 }
 
 // WithMetrics sets the metrics property of a Builder.
-func (b *Builder) WithMetrics(r *prometheus.Registry) {
+func (b *Builder) WithMetrics(r prometheus.Registerer) {
 	b.ksmBuilder.WithMetrics(r)
 	b.metrics = watch.NewListWatchMetrics(r)
 }
@@ -103,9 +103,14 @@ func (b *Builder) DefaultGenerateStoreFunc() ksmtypes.BuildStoreFunc {
 	return b.GenerateStore
 }
 
-// WithCustomGenerateStoreFunc configures a constom generate store function
+// WithGenerateStoreFunc configures a constom generate store function
 func (b *Builder) WithGenerateStoreFunc(f ksmtypes.BuildStoreFunc) {
 	b.ksmBuilder.WithGenerateStoreFunc(f)
+}
+
+// WithAllowLabels configures which labels can be returned for metrics
+func (b *Builder) WithAllowLabels(l map[string][]string) {
+	b.ksmBuilder.WithAllowLabels(l)
 }
 
 // Build initializes and registers all enabled stores.

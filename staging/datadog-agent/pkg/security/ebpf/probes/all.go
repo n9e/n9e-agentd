@@ -7,7 +7,9 @@
 
 package probes
 
-import "github.com/DataDog/ebpf/manager"
+import (
+	"github.com/DataDog/ebpf/manager"
+)
 
 // allProbes contain the list of all the probes of the runtime security module
 var allProbes []*manager.Probe
@@ -30,6 +32,7 @@ func AllProbes() []*manager.Probe {
 	allProbes = append(allProbes, getUnlinkProbes()...)
 	allProbes = append(allProbes, getXattrProbes()...)
 	allProbes = append(allProbes, getIoctlProbes()...)
+	allProbes = append(allProbes, getSELinuxProbes()...)
 
 	allProbes = append(allProbes,
 		// Syscall monitor
@@ -48,7 +51,7 @@ func AllProbes() []*manager.Probe {
 		// Snapshot probe
 		&manager.Probe{
 			UID:     SecurityAgentUID,
-			Section: "kretprobe/get_task_exe_file",
+			Section: "kprobe/security_inode_getattr",
 		},
 	)
 
@@ -67,13 +70,16 @@ func AllMaps() []*manager.Map {
 		// Dentry resolver table
 		{Name: "pathnames"},
 		// Snapshot table
-		{Name: "inode_info_cache"},
+		{Name: "exec_file_cache"},
 		// Open tables
 		{Name: "open_flags_approvers"},
 		// Exec tables
 		{Name: "proc_cache"},
 		{Name: "pid_cache"},
 		{Name: "str_array_buffers"},
+		// SELinux tables
+		{Name: "selinux_write_buffer"},
+		{Name: "selinux_enforce_status"},
 		// Syscall monitor tables
 		{Name: "buffer_selector"},
 		{Name: "noisy_processes_fb"},
@@ -82,6 +88,20 @@ func AllMaps() []*manager.Map {
 		{Name: "flushing_discarders"},
 		// Enabled event mask
 		{Name: "enabled_events"},
+	}
+}
+
+// AllMapSpecEditors returns the list of map editors
+func AllMapSpecEditors(numCPU int) map[string]manager.MapSpecEditor {
+	return map[string]manager.MapSpecEditor{
+		"proc_cache": {
+			MaxEntries: uint32(4096 * numCPU),
+			EditorFlag: manager.EditMaxEntries,
+		},
+		"pid_cache": {
+			MaxEntries: uint32(4096 * numCPU),
+			EditorFlag: manager.EditMaxEntries,
+		},
 	}
 }
 
@@ -99,6 +119,8 @@ func AllTailRoutes() []manager.TailCallRoute {
 	var routes []manager.TailCallRoute
 
 	routes = append(routes, getExecTailCallRoutes()...)
+	routes = append(routes, getDentryResolverTailCallRoutes()...)
+	routes = append(routes, getSysExitTailCallRoutes()...)
 
 	return routes
 }

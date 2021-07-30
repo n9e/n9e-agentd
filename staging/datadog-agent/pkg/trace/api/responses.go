@@ -12,9 +12,10 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/sampler"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/api/apiutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/sampler"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -25,12 +26,12 @@ const (
 // should we add another fied.
 type traceResponse struct {
 	// All the sampling rates recommended, by service
-	Rates map[string]float64 `json:"rateByService"`
+	Rates map[string]float64 `json:"rate_by_service"`
 }
 
 // httpFormatError is used for payload format errors
 func httpFormatError(w http.ResponseWriter, v Version, err error) {
-	klog.Errorf("Rejecting client request: %v", err)
+	log.Errorf("Rejecting client request: %v", err)
 	tags := []string{"error:format-error", "version:" + string(v)}
 	metrics.Count(receiverErrorKey, 1, tags, 1)
 	http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
@@ -43,7 +44,7 @@ func httpDecodingError(err error, tags []string, w http.ResponseWriter) {
 	msg := err.Error()
 
 	switch err {
-	case ErrLimitedReaderLimitReached:
+	case apiutil.ErrLimitedReaderLimitReached:
 		status = http.StatusRequestEntityTooLarge
 		errtag = "payload-too-large"
 		msg = errtag

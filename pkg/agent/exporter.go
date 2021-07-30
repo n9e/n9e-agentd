@@ -10,7 +10,7 @@ import (
 	"time"
 
 	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/telemetry"
 	"k8s.io/klog/v2"
 )
 

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/util/kernel"
 	"github.com/stretchr/testify/require"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
 )
 
 var (
@@ -24,11 +24,11 @@ var (
 )
 
 type bpftoolStats struct {
-	RunTimeNS float64 `json:"runTimeNs"`
-	RunCnt    float64 `json:"runCnt"`
+	RunTimeNS float64 `json:"run_time_ns"`
+	RunCnt    float64 `json:"run_cnt"`
 
-	XlatedBytes float64 `json:"bytesXlated"`
-	JITedBytes  float64 `json:"bytesJited"`
+	XlatedBytes float64 `json:"bytes_xlated"`
+	JITedBytes  float64 `json:"bytes_jited"`
 }
 
 func readGlobalVars() {

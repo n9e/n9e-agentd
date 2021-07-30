@@ -14,10 +14,10 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/clbanning/mxj"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -82,7 +82,7 @@ func (t *Tailer) Identifier() string {
 // toMessage converts an XML message into json
 func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) { //nolint:unused
 	event := re.xmlEvent
-	klog.V(5).Info("Rendered XML:", event)
+	log.Debug("Rendered XML:", event)
 	mxj.PrependAttrWithHyphen(false)
 	mv, err := mxj.NewMapXml([]byte(event))
 	if err != nil {
@@ -92,22 +92,22 @@ func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) { //nolint:u
 	// extract then modify the Event.EventData.Data field to have a key value mapping
 	dataField, err := extractDataField(mv)
 	if err != nil {
-		klog.V(5).Infof("Error extracting data field: %s", err)
+		log.Debugf("Error extracting data field: %s", err)
 	} else {
 		err = mv.SetValueForPath(dataField, dataPath)
 		if err != nil {
-			klog.V(5).Infof("Error formatting %s: %s", dataPath, err)
+			log.Debugf("Error formatting %s: %s", dataPath, err)
 		}
 	}
 
 	// extract, parse then modify the Event.EventData.Binary data field
 	binaryData, err := extractParsedBinaryData(mv)
 	if err != nil {
-		klog.V(5).Infof("Error extracting binary data: %s", err)
+		log.Debugf("Error extracting binary data: %s", err)
 	} else {
 		_, err = mv.UpdateValuesForPath("Binary:"+binaryData, binaryPath)
 		if err != nil {
-			klog.V(5).Infof("Error formatting %s: %s", binaryPath, err)
+			log.Debugf("Error formatting %s: %s", binaryPath, err)
 		}
 	}
 
@@ -131,7 +131,7 @@ func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) { //nolint:u
 		return &message.Message{}, err
 	}
 	jsonEvent = replaceTextKeyToValue(jsonEvent)
-	klog.V(5).Info("Sending JSON:", string(jsonEvent))
+	log.Debug("Sending JSON:", string(jsonEvent))
 	return message.NewMessageWithSource(jsonEvent, message.StatusInfo, t.source, time.Now().UnixNano()), nil
 }
 

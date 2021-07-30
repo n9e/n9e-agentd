@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types"
 	"github.com/containerd/containerd/containers"
@@ -67,7 +67,7 @@ func GetContainerdUtil() (ContainerdItf, error) {
 			namespace:         config.Datadog.GetString("containerd_namespace"),
 		}
 		if globalContainerdUtil.socketPath == "" {
-			klog.Info("No socket path was specified, defaulting to /var/run/containerd/containerd.sock")
+			log.Info("No socket path was specified, defaulting to /var/run/containerd/containerd.sock")
 			globalContainerdUtil.socketPath = containerdDefaultSocketPath
 		}
 		// Initialize the client in the connect method
@@ -80,7 +80,7 @@ func GetContainerdUtil() (ContainerdItf, error) {
 		})
 	})
 	if err := globalContainerdUtil.initRetry.TriggerRetry(); err != nil {
-		klog.Errorf("Containerd init error: %s", err.Error())
+		log.Errorf("Containerd init error: %s", err.Error())
 		return nil, err
 	}
 	return globalContainerdUtil, nil
@@ -101,7 +101,7 @@ func (c *ContainerdUtil) Metadata() (containerd.Version, error) {
 // Close is used when done with a ContainerdUtil
 func (c *ContainerdUtil) Close() error {
 	if c.cl == nil {
-		return klog.Errorf("Containerd Client not initialized")
+		return log.Errorf("Containerd Client not initialized")
 	}
 	return c.cl.Close()
 }
@@ -112,7 +112,7 @@ func (c *ContainerdUtil) connect() error {
 	if c.cl != nil {
 		err = c.cl.Reconnect()
 		if err != nil {
-			klog.Errorf("Could not reconnect to the containerd daemon: %v", err)
+			log.Errorf("Could not reconnect to the containerd daemon: %v", err)
 			return c.cl.Close() // Attempt to close connections to avoid overloading the GRPC
 		}
 		return nil
@@ -124,7 +124,7 @@ func (c *ContainerdUtil) connect() error {
 	}
 	ver, err := c.Metadata()
 	if err == nil {
-		klog.Infof("Connected to containerd - Version %s/%s", ver.Version, ver.Revision)
+		log.Infof("Connected to containerd - Version %s/%s", ver.Version, ver.Revision)
 	}
 	return err
 }

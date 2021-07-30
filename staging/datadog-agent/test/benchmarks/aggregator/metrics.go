@@ -14,8 +14,8 @@ import (
 	log "github.com/cihub/seelog"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 )
 
 type senderFunc func(string, float64, string, []string)
@@ -73,7 +73,7 @@ func benchmarkMetrics(numberOfSeries []int, nbPoints []int, sender aggregator.Se
 	t := time.Now().Unix()
 	results := []datadog.Metric{}
 	for _, nbSerie := range numberOfSeries {
-		klog.Infof("-- Series of %d points ---\n", nbSerie)
+		log.Infof("-- Series of %d points ---\n", nbSerie)
 		for _, name := range metricTypes {
 			for _, nbPoint := range nbPoints {
 				tags := []string{
@@ -95,7 +95,7 @@ func benchmarkMetrics(numberOfSeries []int, nbPoints []int, sender aggregator.Se
 				commitRes := createMetric(commitTime, tags, "benchmark.aggregator.commit", t)
 				flushRes := createMetric(flushTime, tags, "benchmark.aggregator.flush", t)
 
-				klog.Infof("[%d %s] [%d point] sent %f | commit time: %f | flush time: %f", nbSerie, name, nbPoint, genTime, commitTime, flushTime)
+				log.Infof("[%d %s] [%d point] sent %f | commit time: %f | flush time: %f", nbSerie, name, nbPoint, genTime, commitTime, flushTime)
 
 				results = append(results, genRes)
 				results = append(results, commitRes)
@@ -104,7 +104,7 @@ func benchmarkMetrics(numberOfSeries []int, nbPoints []int, sender aggregator.Se
 		}
 	}
 
-	klog.Infof("-- Events ---")
+	log.Infof("-- Events ---")
 	for _, nbSerie := range numberOfSeries {
 		tags := []string{fmt.Sprintf("nb_serie:%d", nbSerie), fmt.Sprintf("branch:%s", branchName), "type:event"}
 
@@ -123,10 +123,10 @@ func benchmarkMetrics(numberOfSeries []int, nbPoints []int, sender aggregator.Se
 		results = append(results, genRes)
 		results = append(results, commitRes)
 		results = append(results, flushRes)
-		klog.Infof("[%d Event] sent %f | commit time: %f | flush time: %f", nbSerie, genTime, commitTime, flushTime)
+		log.Infof("[%d Event] sent %f | commit time: %f | flush time: %f", nbSerie, genTime, commitTime, flushTime)
 	}
 
-	klog.Infof("-- ServiceChecks ---")
+	log.Infof("-- ServiceChecks ---")
 	for _, nbSerie := range numberOfSeries {
 		tags := []string{fmt.Sprintf("nb_serie:%d", nbSerie), fmt.Sprintf("branch:%s", branchName), "type:service_check"}
 
@@ -145,7 +145,7 @@ func benchmarkMetrics(numberOfSeries []int, nbPoints []int, sender aggregator.Se
 		results = append(results, genRes)
 		results = append(results, commitRes)
 		results = append(results, flushRes)
-		klog.Infof("[%d ServiceCheck] sent %f | commit time: %f | flush time: %f", nbSerie, genTime, commitTime, flushTime)
+		log.Infof("[%d ServiceCheck] sent %f | commit time: %f | flush time: %f", nbSerie, genTime, commitTime, flushTime)
 	}
 
 	return results

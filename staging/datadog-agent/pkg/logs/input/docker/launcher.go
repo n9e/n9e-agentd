@@ -8,19 +8,22 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
-	dockerutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	coreConfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/input"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/restart"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
+	dockerutil "github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 const (
@@ -58,12 +61,26 @@ type Launcher struct {
 	sources                *config.LogSources        // To schedule file source when taileing container from file
 }
 
+// IsAvailable retrues true if the launcher is available and a retrier otherwise
+func IsAvailable() (bool, *retry.Retrier) {
+	if !coreConfig.IsFeaturePresent(coreConfig.Docker) {
+		return false, nil
+	}
+
+	util, retrier := dockerutil.GetDockerUtilWithRetrier()
+	if util != nil {
+		log.Info("Docker launcher is available")
+		return true, nil
+	}
+
+	return false, retrier
+}
+
 // NewLauncher returns a new launcher
-func NewLauncher(readTimeout time.Duration, sources *config.LogSources, services *service.Services, pipelineProvider pipeline.Provider, registry auditor.Registry, shouldRetry, tailFromFile, forceTailingFromFile bool) (*Launcher, error) {
-	if !shouldRetry {
-		if _, err := dockerutil.GetDockerUtil(); err != nil {
-			return nil, err
-		}
+func NewLauncher(readTimeout time.Duration, sources *config.LogSources, services *service.Services, pipelineProvider pipeline.Provider, registry auditor.Registry, tailFromFile, forceTailingFromFile bool) *Launcher {
+	if _, err := dockerutil.GetDockerUtil(); err != nil {
+		log.Errorf("DockerUtil not available, failed to create launcher", err)
+		return nil
 	}
 
 	launcher := &Launcher{
@@ -85,7 +102,7 @@ func NewLauncher(readTimeout time.Duration, sources *config.LogSources, services
 
 	if tailFromFile {
 		if err := checkReadAccess(); err != nil {
-			klog.Errorf("Error accessing %s, %v, falling back on tailing from Docker socket", basePath, err)
+			log.Errorf("Error accessing %s, %v, falling back on tailing from Docker socket", basePath, err)
 			launcher.tailFromFile = false
 		}
 	}
@@ -96,19 +113,19 @@ func NewLauncher(readTimeout time.Duration, sources *config.LogSources, services
 	launcher.removedSources = sources.GetRemovedForType(config.DockerType)
 	launcher.addedServices = services.GetAddedServicesForType(config.DockerType)
 	launcher.removedServices = services.GetRemovedServicesForType(config.DockerType)
-	return launcher, nil
+	return launcher
 }
 
 // Start starts the Launcher
 func (l *Launcher) Start() {
-	klog.Info("Starting Docker launcher")
+	log.Info("Starting Docker launcher")
 	go l.run()
 }
 
 // Stop stops the Launcher and its tailers in parallel,
 // this call returns only when all the tailers are stopped.
 func (l *Launcher) Stop() {
-	klog.Info("Stopping Docker launcher")
+	log.Info("Stopping Docker launcher")
 	l.stop <- struct{}{}
 	stopper := restart.NewParallelStopper()
 	l.lock.Lock()
@@ -133,12 +150,12 @@ func (l *Launcher) run() {
 			// detected a new container running on the host,
 			dockerutil, err := dockerutil.GetDockerUtil()
 			if err != nil {
-				klog.Warningf("Could not use docker client, logs for container %s won’t be collected: %v", service.Identifier, err)
+				log.Warnf("Could not use docker client, logs for container %s won’t be collected: %v", service.Identifier, err)
 				continue
 			}
-			dockerContainer, err := dockerutil.Inspect(service.Identifier, false)
+			dockerContainer, err := dockerutil.Inspect(context.TODO(), service.Identifier, false)
 			if err != nil {
-				klog.Warningf("Could not find container with id: %v", err)
+				log.Warnf("Could not find container with id: %v", err)
 				continue
 			}
 			container := NewContainer(dockerContainer, service)
@@ -207,10 +224,10 @@ func (l *Launcher) overrideSource(container *Container, source *config.LogSource
 		l.collectAllSource.RegisterInfo(l.collectAllInfo)
 	}
 
-	shortName, err := container.getShortImageName()
+	shortName, err := container.getShortImageName(context.TODO())
 	containerID := container.service.Identifier
 	if err != nil {
-		klog.Warningf("Could not get short image name for container %v: %v", ShortContainerID(containerID), err)
+		log.Warnf("Could not get short image name for container %v: %v", ShortContainerID(containerID), err)
 		return source
 	}
 
@@ -239,15 +256,17 @@ func (l *Launcher) getFileSource(container *Container, source *config.LogSource)
 	}
 
 	standardService := l.serviceNameFunc(container.container.Name, dockerutil.ContainerIDToTaggerEntityName(containerID))
-	shortName, err := container.getShortImageName()
-
+	shortName, err := container.getShortImageName(context.TODO())
 	if err != nil {
-		klog.Warningf("Could not get short image name for container %v: %v", ShortContainerID(containerID), err)
+		log.Warnf("Could not get short image name for container %v: %v", ShortContainerID(containerID), err)
 	}
 
 	// Update parent source with additional information
 	sourceInfo.SetMessage(containerID, fmt.Sprintf("Container ID: %s, Image: %s, Created: %s, Tailing from file: %s", ShortContainerID(containerID), shortName, container.container.Created, l.getPath(containerID)))
 
+	// When ContainerCollectAll is not enabled, we try to derive the service and source names from container labels
+	// provided by AD (in this case, the parent source config). Otherwise we use the standard service or short image
+	// name for the service name and always use the short image name for the source name.
 	var serviceName string
 	if source.Name != config.ContainerCollectAll && source.Config.Service != "" {
 		serviceName = source.Config.Service
@@ -257,13 +276,18 @@ func (l *Launcher) getFileSource(container *Container, source *config.LogSource)
 		serviceName = shortName
 	}
 
+	sourceName := shortName
+	if source.Name != config.ContainerCollectAll && source.Config.Source != "" {
+		sourceName = source.Config.Source
+	}
+
 	// New file source that inherit most of its parent properties
 	fileSource := config.NewLogSource(source.Name, &config.LogsConfig{
 		Type:            config.FileType,
 		Identifier:      containerID,
 		Path:            l.getPath(containerID),
 		Service:         serviceName,
-		Source:          shortName,
+		Source:          sourceName,
 		Tags:            source.Config.Tags,
 		ProcessingRules: source.Config.ProcessingRules,
 	})
@@ -325,7 +349,7 @@ func (l *Launcher) shouldTailFromFile(container *Container) bool {
 func (l *Launcher) scheduleFileSource(container *Container, source *config.LogSource) {
 	containerID := container.service.Identifier
 	if _, isTailed := l.fileSourcesByContainer[containerID]; isTailed {
-		klog.Warningf("Can't tail twice the same container: %v", ShortContainerID(containerID))
+		log.Warnf("Can't tail twice the same container: %v", ShortContainerID(containerID))
 		return
 	}
 	// fileSource is a new source using the original source as its parent
@@ -346,12 +370,12 @@ func (l *Launcher) unscheduleFileSource(containerID string) {
 func (l *Launcher) startSocketTailer(container *Container, source *config.LogSource) {
 	containerID := container.service.Identifier
 	if _, isTailed := l.getTailer(containerID); isTailed {
-		klog.Warningf("Can't tail twice the same container: %v", ShortContainerID(containerID))
+		log.Warnf("Can't tail twice the same container: %v", ShortContainerID(containerID))
 		return
 	}
 	dockerutil, err := dockerutil.GetDockerUtil()
 	if err != nil {
-		klog.Warningf("Could not use docker client, logs for container %s won’t be collected: %v", containerID, err)
+		log.Warnf("Could not use docker client, logs for container %s won’t be collected: %v", containerID, err)
 		return
 	}
 	// overridenSource == source if the containerCollectAll option is not activated or the container has AD labels
@@ -361,13 +385,13 @@ func (l *Launcher) startSocketTailer(container *Container, source *config.LogSou
 	// compute the offset to prevent from missing or duplicating logs
 	since, err := Since(l.registry, tailer.Identifier(), container.service.CreationTime)
 	if err != nil {
-		klog.Warningf("Could not recover tailing from last committed offset %v: %v", ShortContainerID(containerID), err)
+		log.Warnf("Could not recover tailing from last committed offset %v: %v", ShortContainerID(containerID), err)
 	}
 
 	// start the tailer
 	err = tailer.Start(since)
 	if err != nil {
-		klog.Warningf("Could not start tailer %s: %v", containerID, err)
+		log.Warnf("Could not start tailer %s: %v", containerID, err)
 		return
 	}
 	source.AddInput(containerID)
@@ -415,7 +439,7 @@ func (l *Launcher) restartTailer(containerID string) {
 		oldTailer.Stop()
 		l.removeTailer(containerID)
 	} else {
-		klog.Warningf("Unable to restart tailer, old source not found, keeping previous one, container: %s", containerID)
+		log.Warnf("Unable to restart tailer, old source not found, keeping previous one, container: %s", containerID)
 		return
 	}
 
@@ -423,7 +447,7 @@ func (l *Launcher) restartTailer(containerID string) {
 	if err != nil {
 		// This cannot happen since, if we have a tailer to restart, it means that we created
 		// it earlier and we couldn't have created it if the docker client wasn't initialized.
-		klog.Warningf("Could not use docker client, logs for container %s won’t be collected: %v", containerID, err)
+		log.Warnf("Could not use docker client, logs for container %s won’t be collected: %v", containerID, err)
 		return
 	}
 	tailer := NewTailer(dockerutil, containerID, source, l.pipelineProvider.NextPipelineChan(), l.erroredContainerID, l.readTimeout)
@@ -431,19 +455,19 @@ func (l *Launcher) restartTailer(containerID string) {
 	// compute the offset to prevent from missing or duplicating logs
 	since, err := Since(l.registry, tailer.Identifier(), service.Before)
 	if err != nil {
-		klog.Warningf("Could not recover last committed offset for container %v: %v", ShortContainerID(containerID), err)
+		log.Warnf("Could not recover last committed offset for container %v: %v", ShortContainerID(containerID), err)
 	}
 
 	for {
 		if backoffDuration > backoffMaxDuration {
-			klog.Warningf("Could not resume tailing container %v", ShortContainerID(containerID))
+			log.Warnf("Could not resume tailing container %v", ShortContainerID(containerID))
 			return
 		}
 
 		// start the tailer
 		err = tailer.Start(since)
 		if err != nil {
-			klog.Warningf("Could not start tailer for container %v: %v", ShortContainerID(containerID), err)
+			log.Warnf("Could not start tailer for container %v: %v", ShortContainerID(containerID), err)
 			time.Sleep(backoffDuration)
 			cumulatedBackoff += backoffDuration
 			backoffDuration *= 2

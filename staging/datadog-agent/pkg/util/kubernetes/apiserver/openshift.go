@@ -10,7 +10,7 @@ package apiserver
 import (
 	"context"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // DetectOpenShiftAPILevel looks at known endpoints to detect if OpenShift
@@ -20,17 +20,17 @@ import (
 func (c *APIClient) DetectOpenShiftAPILevel() OpenShiftAPILevel {
 	err := c.Cl.CoreV1().RESTClient().Get().AbsPath("/apis/quota.openshift.io").Do(context.TODO()).Error()
 	if err == nil {
-		klog.V(5).Infof("Found %s", OpenShiftAPIGroup)
+		log.Debugf("Found %s", OpenShiftAPIGroup)
 		return OpenShiftAPIGroup
 	}
-	klog.V(5).Infof("Cannot access %s: %s", OpenShiftAPIGroup, err)
+	log.Debugf("Cannot access %s: %s", OpenShiftAPIGroup, err)
 
 	err = c.Cl.CoreV1().RESTClient().Get().AbsPath("/oapi").Do(context.TODO()).Error()
 	if err == nil {
-		klog.V(5).Infof("Found %s", OpenShiftOAPI)
+		log.Debugf("Found %s", OpenShiftOAPI)
 		return OpenShiftOAPI
 	}
-	klog.V(5).Infof("Cannot access %s: %s", OpenShiftOAPI, err)
+	log.Debugf("Cannot access %s: %s", OpenShiftOAPI, err)
 
 	// Fallback to NotOpenShift
 	return NotOpenShift

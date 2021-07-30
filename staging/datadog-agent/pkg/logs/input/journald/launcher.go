@@ -8,11 +8,11 @@
 package journald
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/restart"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/restart"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Launcher is in charge of starting and stopping new journald tailers
@@ -24,7 +24,7 @@ type Launcher struct {
 	stop             chan struct{}
 }
 
-// New returns a new Launcher.
+// NewLauncher returns a new Launcher.
 func NewLauncher(sources *config.LogSources, pipelineProvider pipeline.Provider, registry auditor.Registry) *Launcher {
 	return &Launcher{
 		sources:          sources.GetAddedForType(config.JournaldType),
@@ -52,7 +52,7 @@ func (l *Launcher) run() {
 			}
 			tailer, err := l.setupTailer(source)
 			if err != nil {
-				klog.Warning("Could not set up journald tailer: ", err)
+				log.Warn("Could not set up journald tailer: ", err)
 			} else {
 				l.tailers[identifier] = tailer
 			}

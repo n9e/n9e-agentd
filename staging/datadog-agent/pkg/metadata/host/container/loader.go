@@ -5,7 +5,7 @@
 
 package container
 
-import "k8s.io/klog/v2"
+import "github.com/DataDog/datadog-agent/pkg/util/log"
 
 // Catalog holds available metadata providers
 type Catalog map[string]MetadataProvider
@@ -16,7 +16,7 @@ var DefaultCatalog = make(Catalog)
 // RegisterMetadataProvider a container metadata provider
 func RegisterMetadataProvider(name string, m MetadataProvider) {
 	if _, ok := DefaultCatalog[name]; ok {
-		klog.Warningf("Container metadata provider %s already registered, overriding it", name)
+		log.Warnf("Container metadata provider %s already registered, overriding it", name)
 	}
 	DefaultCatalog[name] = m
 }

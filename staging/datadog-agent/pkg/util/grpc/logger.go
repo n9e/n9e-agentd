@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"google.golang.org/grpc/grpclog"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -37,15 +37,15 @@ func (l redirectLogger) Write(b []byte) (int, error) {
 
 	switch b[0] {
 	case 'I':
-		klog.InfoDepth(stackDepth, msg)
+		log.InfoStackDepth(stackDepth, msg)
 	case 'W':
-		klog.WarningDepth(stackDepth, msg)
+		log.WarnStackDepth(stackDepth, msg)
 	case 'E':
-		klog.ErrorDepth(stackDepth, msg)
+		log.ErrorStackDepth(stackDepth, msg)
 	case 'F':
-		klog.WarningDepth(stackDepth, msg)
+		log.CriticalStackDepth(stackDepth, msg)
 	default:
-		klog.InfoDepth(stackDepth, msg)
+		log.InfoStackDepth(stackDepth, msg)
 	}
 
 	return 0, nil

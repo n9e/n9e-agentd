@@ -9,7 +9,7 @@ package pdhutil
 import (
 	"fmt"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // For testing
@@ -17,6 +17,7 @@ var (
 	pfnMakeCounterSetInstances          = makeCounterSetIndexes
 	pfnPdhOpenQuery                     = PdhOpenQuery
 	pfnPdhAddCounter                    = PdhAddCounter
+	pfnPdhAddEnglishCounter             = PdhAddEnglishCounter
 	pfnPdhCollectQueryData              = PdhCollectQueryData
 	pfnPdhEnumObjectItems               = pdhEnumObjectItems
 	pfnPdhRemoveCounter                 = PdhRemoveCounter
@@ -64,18 +65,18 @@ func (p *PdhCounterSet) Initialize(className string) error {
 		return err
 	}
 	if ndxlist == nil || len(ndxlist) == 0 {
-		klog.Warningf("Didn't find counter index for class %s, attempting english counter", className)
+		log.Warnf("Didn't find counter index for class %s, attempting english counter", className)
 		p.className = className
 	} else {
 		if len(ndxlist) > 1 {
-			klog.Warningf("Class %s had multiple (%d) indices, using first", className, len(ndxlist))
+			log.Warnf("Class %s had multiple (%d) indices, using first", className, len(ndxlist))
 		}
 		ndx := ndxlist[0]
 		p.className, err = pfnPdhLookupPerfNameByIndex(ndx)
 		if err != nil {
 			return fmt.Errorf("Class name not found: %s", className)
 		}
-		klog.V(5).Infof("Found class name for %s %s", className, p.className)
+		log.Debugf("Found class name for %s %s", className, p.className)
 	}
 
 	winerror := pfnPdhOpenQuery(uintptr(0), uintptr(0), &p.query)
@@ -86,7 +87,30 @@ func (p *PdhCounterSet) Initialize(className string) error {
 	return nil
 }
 
+// GetUnlocalizedCounter wraps the PdhAddEnglishCounter call that takes unlocalized counter names (as opposed to the other functions which use PdhAddCounter)
+func GetUnlocalizedCounter(className, counterName, instance string) (PdhSingleInstanceCounterSet, error) {
+	var p PdhSingleInstanceCounterSet
+	winerror := pfnPdhOpenQuery(uintptr(0), uintptr(0), &p.query)
+	if ERROR_SUCCESS != winerror {
+		return p, fmt.Errorf("Failed to open PDH query handle %d", winerror)
+	}
+	path, err := pfnPdhMakeCounterPath("", className, instance, counterName)
+	if err != nil {
+		return p, fmt.Errorf("Failed tomake counter path %s: %v", counterName, err)
+	}
+	winerror = pfnPdhAddEnglishCounter(p.query, path, uintptr(0), &p.singleCounter)
+	if ERROR_SUCCESS != winerror {
+		return p, fmt.Errorf("Failed to add english counter %d", winerror)
+	}
+	winerror = pfnPdhCollectQueryData(p.query)
+	if ERROR_SUCCESS != winerror {
+		return p, fmt.Errorf("Failed to collect query data %d", winerror)
+	}
+	return p, nil
+}
+
 // GetSingleInstanceCounter returns a single instance counter object for the given counter class
+// TODO: Replace usages of this with GetUnlocalizedCounter using an empty string as instance
 func GetSingleInstanceCounter(className, counterName string) (*PdhSingleInstanceCounterSet, error) {
 	var p PdhSingleInstanceCounterSet
 	if err := p.Initialize(className); err != nil {
@@ -99,7 +123,7 @@ func GetSingleInstanceCounter(className, counterName string) (*PdhSingleInstance
 	}
 	path, err := p.MakeCounterPath("", counterName, "", allcounters)
 	if err != nil {
-		klog.Warningf("Failed pdhEnumObjectItems %v", err)
+		log.Warnf("Failed pdhEnumObjectItems %v", err)
 		return nil, err
 	}
 	winerror := pfnPdhAddCounter(p.query, path, uintptr(0), &p.singleCounter)
@@ -113,6 +137,7 @@ func GetSingleInstanceCounter(className, counterName string) (*PdhSingleInstance
 }
 
 // GetMultiInstanceCounter returns a multi-instance counter object for the given counter class
+// TODO: Replace usages of this with a function similar to GetUnlocalizedCounter for multi-instance counters, that uses PdhAddEnglishCounter
 func GetMultiInstanceCounter(className, counterName string, requestedInstances *[]string, verifyfn CounterInstanceVerify) (*PdhMultiInstanceCounterSet, error) {
 	var p PdhMultiInstanceCounterSet
 	if err := p.Initialize(className); err != nil {
@@ -160,7 +185,7 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 			// ok.  it was requested.  If it's not in our map
 			// of counters, we have to add it
 			if p.countermap[actualInstance] == PDH_HCOUNTER(0) {
-				klog.V(5).Infof("Adding requested instance %s", actualInstance)
+				log.Debugf("Adding requested instance %s", actualInstance)
 				instToMake = append(instToMake, actualInstance)
 			}
 		} else {
@@ -181,16 +206,16 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 		}
 		path, err := p.MakeCounterPath("", p.requestedCounterName, inst, allcounters)
 		if err != nil {
-			klog.V(5).Infof("Failed tomake counter path %s %s", p.counterName, inst)
+			log.Debugf("Failed tomake counter path %s %s", p.counterName, inst)
 			continue
 		}
 		var hc PDH_HCOUNTER
 		winerror := pfnPdhAddCounter(p.query, path, uintptr(0), &hc)
 		if ERROR_SUCCESS != winerror {
-			klog.V(5).Infof("Failed to add counter path %s", path)
+			log.Debugf("Failed to add counter path %s", path)
 			continue
 		}
-		klog.V(5).Infof("Adding missing counter instance %s", inst)
+		log.Debugf("Adding missing counter instance %s", inst)
 		p.countermap[inst] = hc
 		added = true
 	}
@@ -205,11 +230,11 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 func (p *PdhMultiInstanceCounterSet) RemoveInvalidInstance(badInstance string) {
 	hc := p.countermap[badInstance]
 	if hc != PDH_HCOUNTER(0) {
-		klog.V(5).Infof("Removing non-existent counter instance %s", badInstance)
+		log.Debugf("Removing non-existent counter instance %s", badInstance)
 		pfnPdhRemoveCounter(hc)
 		delete(p.countermap, badInstance)
 	} else {
-		klog.V(5).Infof("Instance handle not found")
+		log.Debugf("Instance handle not found")
 	}
 }
 
@@ -234,27 +259,27 @@ func (p *PdhCounterSet) MakeCounterPath(machine, counterName, instanceName strin
 	for _, ndx := range idxList {
 		counter, e := pfnPdhLookupPerfNameByIndex(ndx)
 		if e != nil {
-			klog.V(5).Infof("Counter index %d not found, skipping", ndx)
+			log.Debugf("Counter index %d not found, skipping", ndx)
 			continue
 		}
 		// see if the counter we got back is in the list of counters
 		if !stringInSlice(counter, counters) {
-			klog.V(5).Infof("counter %s not in counter list", counter)
+			log.Debugf("counter %s not in counter list", counter)
 			continue
 		}
 		// check to see if we can create the counter
 		path, err := pfnPdhMakeCounterPath(machine, p.className, instanceName, counter)
 		if err == nil {
-			klog.V(5).Infof("Successfully created counter path %s", path)
+			log.Debugf("Successfully created counter path %s", path)
 			p.counterName = counter
 			return path, nil
 		}
 		// else
-		klog.V(5).Infof("Unable to create path with %s, trying again", counter)
+		log.Debugf("Unable to create path with %s, trying again", counter)
 	}
 	// if we get here, was never able to find a counter path or create a valid
 	// path.  Return failure.
-	klog.Warningf("Unable to create counter path for %s %s", counterName, instanceName)
+	log.Warnf("Unable to create counter path for %s %s", counterName, instanceName)
 	return "", fmt.Errorf("Unable to create counter path %s %s", counterName, instanceName)
 }
 
@@ -271,11 +296,11 @@ func (p *PdhMultiInstanceCounterSet) GetAllValues() (values map[string]float64, 
 			switch err.(type) {
 			case *ErrPdhInvalidInstance:
 				removeList = append(removeList, inst)
-				klog.V(5).Infof("Got invalid instance for %s %s", p.requestedCounterName, inst)
+				log.Debugf("Got invalid instance for %s %s", p.requestedCounterName, inst)
 				err = nil
 				continue
 			default:
-				klog.V(5).Infof("Other Error getting all values %s %s %v", p.requestedCounterName, inst, err)
+				log.Debugf("Other Error getting all values %s %s %v", p.requestedCounterName, inst, err)
 				return
 			}
 		}

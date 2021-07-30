@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // ResetClient wraps (http.Client).Do and resets the underlying connections at the
@@ -60,7 +60,7 @@ func (c *ResetClient) checkReset() {
 		return
 	}
 
-	klog.V(5).Info("Resetting HTTP client's connections")
+	log.Debug("Resetting HTTP client's connections")
 	c.lastReset = time.Now()
 	// Close idle connections on underlying client. Safe to do while other goroutines use the client.
 	// This is a best effort: if other goroutine(s) are currently using the client,

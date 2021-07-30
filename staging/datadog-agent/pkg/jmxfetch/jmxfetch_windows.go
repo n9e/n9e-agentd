@@ -10,7 +10,7 @@ package jmxfetch
 import (
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Stop stops the JMXFetch process
@@ -36,7 +36,7 @@ func (j *JMXFetch) Stop() error {
 
 	select {
 	case <-time.After(time.Millisecond * 1000):
-		klog.Warningf("Jmxfetch was still running 1 second after trying to kill it")
+		log.Warnf("Jmxfetch was still running 1 second after trying to kill it")
 	case <-stopChan:
 	}
 	return nil

@@ -9,8 +9,8 @@
 package kubelet
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/diagnose/diagnosis"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/diagnose/diagnosis"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func init() {
@@ -21,7 +21,7 @@ func init() {
 func diagnose() error {
 	_, err := GetKubeUtil()
 	if err != nil {
-		klog.Error(err)
+		log.Error(err)
 	}
 	return err
 }

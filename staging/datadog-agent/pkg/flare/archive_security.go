@@ -6,17 +6,17 @@
 package flare
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/mholt/archiver/v3"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // CreateSecurityAgentArchive packages up the files
@@ -31,7 +31,7 @@ func CreateSecurityAgentArchive(local bool, logFilePath string, runtimeStatus ma
 
 	// Get hostname, if there's an error in getting the hostname,
 	// set the hostname to unknown
-	hostname, err := util.GetHostname()
+	hostname, err := util.GetHostname(context.TODO())
 	if err != nil {
 		hostname = "unknown"
 	}
@@ -47,7 +47,7 @@ func CreateSecurityAgentArchive(local bool, logFilePath string, runtimeStatus ma
 		// Only zip it up if the agent is running
 		err = zipSecurityAgentStatusFile(tempDir, hostname, runtimeStatus)
 		if err != nil {
-			klog.Infof("Error getting the status of the Security Agent, %q", err)
+			log.Infof("Error getting the status of the Security Agent, %q", err)
 			return "", err
 		}
 	}
@@ -84,9 +84,34 @@ func CreateSecurityAgentArchive(local bool, logFilePath string, runtimeStatus ma
 		return "", err
 	}
 
+	err = zipLinuxKernelSymbols(tempDir, hostname)
+	if err != nil {
+		return "", err
+	}
+
+	err = zipLinuxPid1MountInfo(tempDir, hostname)
+	if err != nil {
+		return "", err
+	}
+
+	err = zipLinuxKrobeEvents(tempDir, hostname)
+	if err != nil {
+		log.Infof("Error while getting kprobe_events: %s", err)
+	}
+
+	err = zipLinuxTracingAvailableEvents(tempDir, hostname)
+	if err != nil {
+		log.Infof("Error while getting kprobe_events: %s", err)
+	}
+
+	err = zipLinuxTracingAvailableFilterFunctions(tempDir, hostname)
+	if err != nil {
+		log.Infof("Error while getting kprobe_events: %s", err)
+	}
+
 	err = permsInfos.commit(tempDir, hostname, os.ModePerm)
 	if err != nil {
-		klog.Infof("Error while creating permissions.log infos file: %s", err)
+		log.Infof("Error while creating permissions.log infos file: %s", err)
 	}
 
 	// File format is determined based on `zipFilePath` extension
@@ -100,22 +125,22 @@ func CreateSecurityAgentArchive(local bool, logFilePath string, runtimeStatus ma
 
 func zipSecurityAgentStatusFile(tempDir, hostname string, runtimeStatus map[string]interface{}) error {
 	// Grab the status
-	klog.Infof("Zipping the status at %s for %s", tempDir, hostname)
+	log.Infof("Zipping the status at %s for %s", tempDir, hostname)
 	s, err := status.GetAndFormatSecurityAgentStatus(runtimeStatus)
 	if err != nil {
-		klog.Infof("Error zipping the status: %q", err)
+		log.Infof("Error zipping the status: %q", err)
 		return err
 	}
 
 	// Clean it up
 	cleaned, err := log.CredentialsCleanerBytes(s)
 	if err != nil {
-		klog.Infof("Error redacting the log files: %q", err)
+		log.Infof("Error redacting the log files: %q", err)
 		return err
 	}
 
 	f := filepath.Join(tempDir, hostname, "security-agent-status.log")
-	klog.Infof("Flare status made at %s", tempDir)
+	log.Infof("Flare status made at %s", tempDir)
 	err = ensureParentDirsExist(f)
 	if err != nil {
 		return err
@@ -126,7 +151,7 @@ func zipSecurityAgentStatusFile(tempDir, hostname string, runtimeStatus map[stri
 }
 
 func zipComplianceFiles(tempDir, hostname string, permsInfos permissionsInfos) error {
-	compDir := config.C.ComplianceConfigDir
+	compDir := config.Datadog.GetString("compliance_config.dir")
 
 	if permsInfos != nil {
 		addParentPerms(compDir, permsInfos)
@@ -153,7 +178,7 @@ func zipComplianceFiles(tempDir, hostname string, permsInfos permissionsInfos) e
 }
 
 func zipRuntimeFiles(tempDir, hostname string, permsInfos permissionsInfos) error {
-	runtimeDir := config.C.RuntimeSecurity.PoliciesDir
+	runtimeDir := config.Datadog.GetString("runtime_security_config.policies.dir")
 
 	if permsInfos != nil {
 		addParentPerms(runtimeDir, permsInfos)

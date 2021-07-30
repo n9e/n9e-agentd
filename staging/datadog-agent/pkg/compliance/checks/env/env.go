@@ -6,8 +6,8 @@
 package env
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
 )
 
 // Env provides environment methods for compliance checks execution
@@ -27,6 +27,7 @@ type Clients interface {
 // Configuration provides an abstraction for various environment methods used by checks
 type Configuration interface {
 	Hostname() string
+	MaxEventsPerRun() int
 	EtcGroupPath() string
 	NormalizeToHostRoot(path string) string
 	RelativeToHostRoot(path string) string

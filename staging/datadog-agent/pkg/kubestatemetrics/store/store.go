@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"sync"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kube-state-metrics/pkg/metric"
+	"k8s.io/kube-state-metrics/v2/pkg/metric"
 )
 
 // MetricsStore implements the k8s.io/client-go/tools/cache.Store
@@ -65,16 +65,16 @@ func (d *DDMetricsFam) extract(f metric.Family) {
 		s.Labels, err = buildTags(m)
 		if err != nil {
 			// TODO test how verbose that could be.
-			klog.Errorf("Could not retrieve the labels for %s: %v", f.Name, err)
+			log.Errorf("Could not retrieve the labels for %s: %v", f.Name, err)
 			continue
 		}
 		d.ListMetrics = append(d.ListMetrics, s)
 	}
 }
 
-// Implementing k8s.io/client-go/tools/cache.Store interface
 // Add inserts adds to the MetricsStore by calling the metrics generator functions and
 // adding the generated metrics to the metrics map that underlies the MetricStore.
+// Implementing k8s.io/client-go/tools/cache.Store interface
 func (s *MetricsStore) Add(obj interface{}) error {
 	o, err := meta.Accessor(obj)
 	if err != nil {

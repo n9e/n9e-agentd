@@ -20,8 +20,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/watchdog"
 )
 
 var (
@@ -272,8 +272,8 @@ type StatusInfo struct {
 	Version       infoVersion        `json:"version"`
 	Receiver      []TagStats         `json:"receiver"`
 	RateByService map[string]float64 `json:"ratebyservice"`
-	TraceWriter   TraceWriterInfo    `json:"traceWriter"`
-	StatsWriter   StatsWriterInfo    `json:"statsWriter"`
+	TraceWriter   TraceWriterInfo    `json:"trace_writer"`
+	StatsWriter   StatsWriterInfo    `json:"stats_writer"`
 	Watchdog      watchdog.Info      `json:"watchdog"`
 	RateLimiter   RateLimiterStats   `json:"ratelimiter"`
 	Config        config.AgentConfig `json:"config"`

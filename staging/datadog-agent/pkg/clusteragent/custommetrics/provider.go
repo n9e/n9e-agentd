@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubernetes-incubator/custom-metrics-apiserver/pkg/provider"
+	"github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/provider"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,12 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog/v2"
 	"k8s.io/metrics/pkg/apis/custom_metrics"
 	"k8s.io/metrics/pkg/apis/external_metrics"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const externalMetricsMaxBackoff = 32 * time.Second
@@ -62,7 +61,7 @@ func NewDatadogProvider(ctx context.Context, client dynamic.Interface, mapper ap
 }
 
 func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
-	klog.Infof("Starting async loop to collect External Metrics")
+	log.Infof("Starting async loop to collect External Metrics")
 	ctxCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -73,9 +72,9 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 		rawMetrics, err := p.store.ListAllExternalMetricValues()
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
-				klog.Errorf("ConfigMap for external metrics not found: %s", err.Error())
+				log.Errorf("ConfigMap for external metrics not found: %s", err.Error())
 			} else {
-				klog.Errorf("Could not list the external metrics in the store: %s", err.Error())
+				log.Errorf("Could not list the external metrics in the store: %s", err.Error())
 			}
 			p.isServing = false
 		} else {
@@ -91,7 +90,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 				// Avoid overflowing when trying to get a 10^3 precision
 				q, err := resource.ParseQuantity(fmt.Sprintf("%v", metric.Value))
 				if err != nil {
-					klog.Errorf("Could not parse the metric value: %v into the exponential format", metric.Value)
+					log.Errorf("Could not parse the metric value: %v into the exponential format", metric.Value)
 					continue
 				}
 				extMetric.value = external_metrics.ExternalMetricValue{
@@ -107,7 +106,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 		}
 		select {
 		case <-ctxCancel.Done():
-			klog.Infof("Received instruction to terminate collection of External Metrics, stopping async loop")
+			log.Infof("Received instruction to terminate collection of External Metrics, stopping async loop")
 			return
 		default:
 			if p.isServing == true {
@@ -117,7 +116,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 				if currentBackoff > externalMetricsMaxBackoff {
 					currentBackoff = externalMetricsMaxBackoff
 				}
-				klog.Infof("Retrying externalMetricsSetter with backoff %.0f seconds", currentBackoff.Seconds())
+				log.Infof("Retrying externalMetricsSetter with backoff %.0f seconds", currentBackoff.Seconds())
 			}
 			time.Sleep(currentBackoff)
 			continue
@@ -147,7 +146,7 @@ func (p *datadogProvider) ListAllExternalMetrics() []provider.ExternalMetricInfo
 		return nil
 	}
 	var externalMetricsInfoList []provider.ExternalMetricInfo
-	klog.V(6).Infof("Listing available metrics as of %s", time.Unix(p.timestamp, 0).Format(time.RFC850))
+	log.Tracef("Listing available metrics as of %s", time.Unix(p.timestamp, 0).Format(time.RFC850))
 	for _, metric := range p.externalMetrics {
 		externalMetricsInfoList = append(externalMetricsInfoList, metric.info)
 	}
@@ -179,7 +178,7 @@ func (p *datadogProvider) GetExternalMetric(namespace string, metricSelector lab
 			matchingMetrics = append(matchingMetrics, metricValue)
 		}
 	}
-	klog.V(5).Infof("External metrics returned: %#v", matchingMetrics)
+	log.Debugf("External metrics returned: %#v", matchingMetrics)
 	return &external_metrics.ExternalMetricValueList{
 		Items: matchingMetrics,
 	}, nil

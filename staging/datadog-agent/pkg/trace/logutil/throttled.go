@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // NewThrottled returns a new throttled logger. The returned logger will allow up to n calls in

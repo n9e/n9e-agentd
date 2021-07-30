@@ -3,9 +3,9 @@ package subscriber
 import (
 	"sync"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/tagger/types"
 )
 
 // Subscriber allows processes to subscribe to entity events generated from a

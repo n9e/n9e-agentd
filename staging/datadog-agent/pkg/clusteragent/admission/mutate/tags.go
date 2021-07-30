@@ -15,20 +15,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission/common"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission/metrics"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	admiv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog/v2"
 )
 
 var ownerCacheTTL = config.Datadog.GetDuration("admission_controller.pod_owners_cache_validity") * time.Minute
@@ -52,8 +50,8 @@ func (o *ownerInfo) buildID(ns string) string {
 
 // InjectTags adds the DD_ENV, DD_VERSION, DD_SERVICE env vars to
 // the pod template from pod and higher-level resource labels
-func InjectTags(req *admiv1beta1.AdmissionRequest, dc dynamic.Interface) (*admiv1beta1.AdmissionResponse, error) {
-	return mutate(req, injectTags, dc)
+func InjectTags(rawPod []byte, ns string, dc dynamic.Interface) ([]byte, error) {
+	return mutate(rawPod, ns, injectTags, dc)
 }
 
 // injectTags injects DD_ENV, DD_VERSION, DD_SERVICE
@@ -102,7 +100,7 @@ func injectTags(pod *corev1.Pod, ns string, dc dynamic.Interface) error {
 		return err
 	}
 
-	klog.V(5).Infof("Looking for standard labels on '%s/%s' - kind '%s' owner of pod %s", owner.GetNamespace(), owner.GetName(), owner.GetKind(), podString(pod))
+	log.Debugf("Looking for standard labels on '%s/%s' - kind '%s' owner of pod %s", owner.GetNamespace(), owner.GetName(), owner.GetKind(), podString(pod))
 	_, injected = injectTagsFromLabels(owner.GetLabels(), pod)
 
 	return nil
@@ -110,7 +108,7 @@ func injectTags(pod *corev1.Pod, ns string, dc dynamic.Interface) error {
 
 // shouldInjectConf returns whether we should try to inject standard tags
 func shouldInjectTags(pod *corev1.Pod) bool {
-	if val := pod.GetLabels()[admission.EnabledLabelKey]; val == "false" {
+	if val := pod.GetLabels()[common.EnabledLabelKey]; val == "false" {
 		return false
 	}
 	return true
@@ -184,13 +182,13 @@ func getAndCacheOwner(info *ownerInfo, ns string, dc dynamic.Interface) (*unstru
 		var valid bool
 		ownerObj, valid = cachedObj.(*unstructured.Unstructured)
 		if !valid {
-			klog.V(5).Infof("Invalid owner object for '%s', forcing a cache miss", infoID)
+			log.Debugf("Invalid owner object for '%s', forcing a cache miss", infoID)
 		} else {
 			return ownerObj, nil
 		}
 	}
 
-	klog.V(6).Infof("Cache miss while getting owner '%s'", infoID)
+	log.Tracef("Cache miss while getting owner '%s'", infoID)
 	metrics.GetOwnerCacheMiss.Inc(info.gvr.Resource)
 	ownerObj, err := dc.Resource(info.gvr).Namespace(ns).Get(context.TODO(), info.name, metav1.GetOptions{})
 	if err != nil {

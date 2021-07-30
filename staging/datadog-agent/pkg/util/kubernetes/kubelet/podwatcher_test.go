@@ -8,11 +8,12 @@
 package kubelet
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -419,6 +420,7 @@ func (suite *PodwatcherTestSuite) TestPodWatcherExpireWholePod() {
 }
 
 func (suite *PodwatcherTestSuite) TestPullChanges() {
+	ctx := context.Background()
 	mockConfig := config.Mock()
 
 	kubelet, err := newDummyKubelet("./testdata/podlist_1.8-2.json")
@@ -437,7 +439,7 @@ func (suite *PodwatcherTestSuite) TestPullChanges() {
 	<-kubelet.Requests // Throwing away the first /spec GET
 
 	ResetCache() // If we want to be sure to get a /pods request after
-	pods, err := watcher.PullChanges()
+	pods, err := watcher.PullChanges(ctx)
 	require.Nil(suite.T(), err)
 	<-kubelet.Requests // Throwing away /pods GET
 	require.Len(suite.T(), pods, 7)

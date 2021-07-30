@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -42,7 +42,7 @@ func (d *DockerUtil) openEventChannel(ctx context.Context, since, until time.Tim
 
 // processContainerEvent formats the events from a channel.
 // It can return nil, nil if the event is filtered out, one should check for nil pointers before using the event.
-func (d *DockerUtil) processContainerEvent(msg events.Message) (*ContainerEvent, error) {
+func (d *DockerUtil) processContainerEvent(ctx context.Context, msg events.Message) (*ContainerEvent, error) {
 	// Type filtering
 	if msg.Type != "container" {
 		return nil, nil
@@ -63,13 +63,13 @@ func (d *DockerUtil) processContainerEvent(msg events.Message) (*ContainerEvent,
 	}
 	if strings.HasPrefix(imageName, "sha256") {
 		var err error
-		imageName, err = d.ResolveImageName(imageName)
+		imageName, err = d.ResolveImageName(ctx, imageName)
 		if err != nil {
-			klog.Warningf("can't resolve image name %s: %s", imageName, err)
+			log.Warnf("can't resolve image name %s: %s", imageName, err)
 		}
 	}
 	if d.cfg.filter.IsExcluded(containerName, imageName, "") {
-		klog.V(6).Infof("events from %s are skipped as the image is excluded for the event collection", containerName)
+		log.Tracef("events from %s are skipped as the image is excluded for the event collection", containerName)
 		return nil, nil
 	}
 
@@ -83,19 +83,20 @@ func (d *DockerUtil) processContainerEvent(msg events.Message) (*ContainerEvent,
 		ns = ns - msg.Time*1e9
 	}
 
-	// Not filtered, return event
+	action := msg.Action
+
+	// Fix the "exec_start: /bin/sh -c true" case
+	if strings.Contains(action, ":") {
+		action = strings.SplitN(action, ":", 2)[0]
+	}
+
 	event := &ContainerEvent{
 		ContainerID:   msg.Actor.ID,
 		ContainerName: containerName,
 		ImageName:     imageName,
-		Action:        msg.Action,
+		Action:        action,
 		Timestamp:     time.Unix(msg.Time, ns),
 		Attributes:    msg.Actor.Attributes,
-	}
-
-	// Fix the "exec_start: /bin/sh -c true" case
-	if strings.Contains(event.Action, ":") {
-		event.Action = strings.SplitN(event.Action, ":", 2)[0]
 	}
 
 	return event, nil
@@ -103,11 +104,11 @@ func (d *DockerUtil) processContainerEvent(msg events.Message) (*ContainerEvent,
 
 // LatestContainerEvents returns events matching the filter that occurred after the time passed.
 // It returns the latest event timestamp in the slice for the user to store and pass again in the next call.
-func (d *DockerUtil) LatestContainerEvents(since time.Time) ([]*ContainerEvent, time.Time, error) {
+func (d *DockerUtil) LatestContainerEvents(ctx context.Context, since time.Time) ([]*ContainerEvent, time.Time, error) {
 	var events []*ContainerEvent
 	filters := map[string]string{"type": "container"}
 
-	ctx, cancel := context.WithTimeout(context.Background(), d.queryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, d.queryTimeout)
 	defer cancel()
 	msgChan, errorChan := d.openEventChannel(ctx, since, time.Now(), filters)
 
@@ -116,9 +117,9 @@ func (d *DockerUtil) LatestContainerEvents(since time.Time) ([]*ContainerEvent, 
 	for {
 		select {
 		case msg := <-msgChan:
-			event, err := d.processContainerEvent(msg)
+			event, err := d.processContainerEvent(ctx, msg)
 			if err != nil {
-				klog.Warningf("error parsing docker message: %s", err)
+				log.Warnf("error parsing docker message: %s", err)
 				continue
 			} else if event == nil {
 				continue

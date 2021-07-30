@@ -12,14 +12,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/clusteragent"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/clustername"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/clusteragent"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/clustername"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const firstRunnerStatsMinutes = 2  // collect runner stats after the first 2 minutes
@@ -42,13 +41,13 @@ func newDispatcher() *dispatcher {
 	d.nodeExpirationSeconds = config.Datadog.GetInt64("cluster_checks.node_expiration_timeout")
 	d.extraTags = config.Datadog.GetStringSlice("cluster_checks.extra_tags")
 
-	hostname, _ := util.GetHostname()
-	clusterTagValue := clustername.GetClusterName(hostname)
+	hostname, _ := util.GetHostname(context.TODO())
+	clusterTagValue := clustername.GetClusterName(context.TODO(), hostname)
 	clusterTagName := config.Datadog.GetString("cluster_checks.cluster_tag_name")
 	if clusterTagValue != "" {
 		if clusterTagName != "" && !config.Datadog.GetBool("disable_cluster_name_tag_key") {
 			d.extraTags = append(d.extraTags, fmt.Sprintf("%s:%s", clusterTagName, clusterTagValue))
-			klog.Info("Adding both tags cluster_name and kube_cluster_name. You can use 'disable_cluster_name_tag_key' in the Agent config to keep the kube_cluster_name tag only")
+			log.Info("Adding both tags cluster_name and kube_cluster_name. You can use 'disable_cluster_name_tag_key' in the Agent config to keep the kube_cluster_name tag only")
 		}
 		d.extraTags = append(d.extraTags, fmt.Sprintf("kube_cluster_name:%s", clusterTagValue))
 	}
@@ -61,7 +60,7 @@ func newDispatcher() *dispatcher {
 	var err error
 	d.clcRunnersClient, err = clusteragent.GetCLCRunnerClient()
 	if err != nil {
-		klog.Warningf("Cannot create CLC runners client, advanced dispatching will be disabled: %v", err)
+		log.Warnf("Cannot create CLC runners client, advanced dispatching will be disabled: %v", err)
 		d.advancedDispatching = false
 	}
 	return d
@@ -82,7 +81,7 @@ func (d *dispatcher) Schedule(configs []integration.Config) {
 			// An endpoint check backed by a pod
 			patched, err := d.patchEndpointsConfiguration(c)
 			if err != nil {
-				klog.Warningf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
+				log.Warnf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
 				continue
 			}
 			d.addEndpointConfig(patched, c.NodeName)
@@ -90,7 +89,7 @@ func (d *dispatcher) Schedule(configs []integration.Config) {
 		}
 		patched, err := d.patchConfiguration(c)
 		if err != nil {
-			klog.Warningf("Cannot patch configuration %s: %s", c.Digest(), err)
+			log.Warnf("Cannot patch configuration %s: %s", c.Digest(), err)
 			continue
 		}
 		d.add(patched)
@@ -106,7 +105,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 		if c.NodeName != "" {
 			patched, err := d.patchEndpointsConfiguration(c)
 			if err != nil {
-				klog.Warningf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
+				log.Warnf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
 				continue
 			}
 			d.removeEndpointConfig(patched, c.NodeName)
@@ -114,7 +113,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 		}
 		patched, err := d.patchConfiguration(c)
 		if err != nil {
-			klog.Warningf("Cannot patch configuration %s: %s", c.Digest(), err)
+			log.Warnf("Cannot patch configuration %s: %s", c.Digest(), err)
 			continue
 		}
 		d.remove(patched)
@@ -124,7 +123,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 // reschdule sends configurations to dispatching without checking or patching them as Schedule does.
 func (d *dispatcher) reschedule(configs []integration.Config) {
 	for _, c := range configs {
-		klog.V(5).Infof("Rescheduling the check %s:%s", c.Name, c.Digest())
+		log.Debugf("Rescheduling the check %s:%s", c.Name, c.Digest())
 		d.add(c)
 	}
 }
@@ -134,9 +133,9 @@ func (d *dispatcher) add(config integration.Config) {
 	target := d.getLeastBusyNode()
 	if target == "" {
 		// If no node is found, store it in the danglingConfigs map for retrying later.
-		klog.Warningf("No available node to dispatch %s:%s on, will retry later", config.Name, config.Digest())
+		log.Warnf("No available node to dispatch %s:%s on, will retry later", config.Name, config.Digest())
 	} else {
-		klog.Infof("Dispatching configuration %s:%s to node %s", config.Name, config.Digest(), target)
+		log.Infof("Dispatching configuration %s:%s to node %s", config.Name, config.Digest(), target)
 	}
 
 	d.addConfig(config, target)
@@ -145,7 +144,7 @@ func (d *dispatcher) add(config integration.Config) {
 // remove deletes a given configuration
 func (d *dispatcher) remove(config integration.Config) {
 	digest := config.Digest()
-	klog.V(5).Infof("Removing configuration %s:%s", config.Name, digest)
+	log.Debugf("Removing configuration %s:%s", config.Name, digest)
 	d.removeConfig(digest)
 }
 

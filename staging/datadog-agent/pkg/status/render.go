@@ -15,7 +15,10 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var fmap = Textfmap()
@@ -24,44 +27,51 @@ var fmap = Textfmap()
 func FormatStatus(data []byte) (string, error) {
 	var b = new(bytes.Buffer)
 
-	/*
-		stats := make(map[string]interface{})
-		json.Unmarshal(data, &stats) //nolint:errcheck
-		forwarderStats := stats["forwarderStats"]
-		runnerStats := stats["runnerStats"]
-		pyLoaderStats := stats["pyLoaderStats"]
-		pythonInit := stats["pythonInit"]
-		autoConfigStats := stats["autoConfigStats"]
-		checkSchedulerStats := stats["checkSchedulerStats"]
-		aggregatorStats := stats["aggregatorStats"]
-		dogstatsdStats := stats["dogstatsdStats"]
-		logsStats := stats["logsStats"]
-		dcaStats := stats["clusterAgentStatus"]
-		endpointsInfos := stats["endpointsInfos"]
-		inventoriesStats := stats["inventories"]
-		systemProbeStats := stats["systemProbeStats"]
-		snmpTrapsStats := stats["snmpTrapsStats"]
-		title := fmt.Sprintf("Agent (v%s)", stats["version"])
-		stats["title"] = title
-		renderStatusTemplate(b, "/header.tmpl", stats)
-		renderChecksStats(b, runnerStats, pyLoaderStats, pythonInit, autoConfigStats, checkSchedulerStats, inventoriesStats, "")
-		renderStatusTemplate(b, "/jmxfetch.tmpl", stats)
-		renderStatusTemplate(b, "/forwarder.tmpl", forwarderStats)
-		renderStatusTemplate(b, "/endpoints.tmpl", endpointsInfos)
-		renderStatusTemplate(b, "/logsagent.tmpl", logsStats)
-		if config.C.SystemProbeConfigEnabled {
-			renderStatusTemplate(b, "/systemprobe.tmpl", systemProbeStats)
-		}
-		renderStatusTemplate(b, "/trace-agent.tmpl", stats["apmStats"])
-		renderStatusTemplate(b, "/aggregator.tmpl", aggregatorStats)
-		renderStatusTemplate(b, "/dogstatsd.tmpl", dogstatsdStats)
-		if config.C.ClusterAgent.Enabled || config.C.ClusterChecks.Enabled {
-			renderStatusTemplate(b, "/clusteragent.tmpl", dcaStats)
-		}
-		if config.C.SnmpTraps.Enabled {
-			renderStatusTemplate(b, "/snmp-traps.tmpl", snmpTrapsStats)
-		}
-	*/
+	stats := make(map[string]interface{})
+	json.Unmarshal(data, &stats) //nolint:errcheck
+	forwarderStats := stats["forwarderStats"]
+	runnerStats := stats["runnerStats"]
+	pyLoaderStats := stats["pyLoaderStats"]
+	pythonInit := stats["pythonInit"]
+	autoConfigStats := stats["autoConfigStats"]
+	checkSchedulerStats := stats["checkSchedulerStats"]
+	aggregatorStats := stats["aggregatorStats"]
+	s, err := check.TranslateEventPlatformEventTypes(aggregatorStats)
+	if err != nil {
+		log.Debug("failed to translate event platform event types in aggregatorStats: %s", err.Error())
+	} else {
+		aggregatorStats = s
+	}
+	dogstatsdStats := stats["dogstatsdStats"]
+	logsStats := stats["logsStats"]
+	dcaStats := stats["clusterAgentStatus"]
+	endpointsInfos := stats["endpointsInfos"]
+	inventoriesStats := stats["inventories"]
+	systemProbeStats := stats["systemProbeStats"]
+	snmpTrapsStats := stats["snmpTrapsStats"]
+	title := fmt.Sprintf("Agent (v%s)", stats["version"])
+	stats["title"] = title
+	renderStatusTemplate(b, "/header.tmpl", stats)
+	renderChecksStats(b, runnerStats, pyLoaderStats, pythonInit, autoConfigStats, checkSchedulerStats, inventoriesStats, "")
+	renderStatusTemplate(b, "/jmxfetch.tmpl", stats)
+	renderStatusTemplate(b, "/forwarder.tmpl", forwarderStats)
+	renderStatusTemplate(b, "/endpoints.tmpl", endpointsInfos)
+	renderStatusTemplate(b, "/logsagent.tmpl", logsStats)
+	if config.Datadog.GetBool("system_probe_config.enabled") {
+		renderStatusTemplate(b, "/systemprobe.tmpl", systemProbeStats)
+	}
+	renderStatusTemplate(b, "/trace-agent.tmpl", stats["apmStats"])
+	renderStatusTemplate(b, "/aggregator.tmpl", aggregatorStats)
+	renderStatusTemplate(b, "/dogstatsd.tmpl", dogstatsdStats)
+	if config.Datadog.GetBool("cluster_agent.enabled") || config.Datadog.GetBool("cluster_checks.enabled") {
+		renderStatusTemplate(b, "/clusteragent.tmpl", dcaStats)
+	}
+	if traps.IsEnabled() {
+		renderStatusTemplate(b, "/snmp-traps.tmpl", snmpTrapsStats)
+	}
+	if config.IsContainerized() {
+		renderAutodiscoveryStats(b, stats["adConfigErrors"], stats["filterErrors"])
+	}
 
 	return b.String(), nil
 }
@@ -85,10 +95,10 @@ func FormatDCAStatus(data []byte) (string, error) {
 	renderChecksStats(b, runnerStats, nil, nil, autoConfigStats, checkSchedulerStats, nil, "")
 	renderStatusTemplate(b, "/forwarder.tmpl", forwarderStats)
 	renderStatusTemplate(b, "/endpoints.tmpl", endpointsInfos)
-	if config.C.ComplianceConfigEnabled {
+	if config.Datadog.GetBool("compliance_config.enabled") {
 		renderStatusTemplate(b, "/logsagent.tmpl", logsStats)
 	}
-	if config.C.OrchestratorExplorer.Enabled {
+	if config.Datadog.GetBool("orchestrator_explorer.enabled") {
 		renderStatusTemplate(b, "/orchestrator.tmpl", orchestratorStats)
 	}
 
@@ -174,6 +184,13 @@ func renderRuntimeSecurityStats(w io.Writer, runtimeSecurityStatus interface{}) 
 	status := make(map[string]interface{})
 	status["RuntimeSecurityStatus"] = runtimeSecurityStatus
 	renderStatusTemplate(w, "/runtimesecurity.tmpl", status)
+}
+
+func renderAutodiscoveryStats(w io.Writer, adConfigErrors interface{}, filterErrors interface{}) {
+	autodiscoveryStats := make(map[string]interface{})
+	autodiscoveryStats["adConfigErrors"] = adConfigErrors
+	autodiscoveryStats["filterErrors"] = filterErrors
+	renderStatusTemplate(w, "/autodiscovery.tmpl", autodiscoveryStats)
 }
 
 func renderStatusTemplate(w io.Writer, templateName string, stats interface{}) {

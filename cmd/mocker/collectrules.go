@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/api"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/providers"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )

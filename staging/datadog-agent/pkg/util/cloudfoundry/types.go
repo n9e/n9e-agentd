@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"sort"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/cloudfoundry-community/go-cfclient"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -190,19 +190,19 @@ func DesiredLRPFromBBSModel(bbsLRP *models.DesiredLRP, includeList, excludeList 
 			if ev.Name == EnvAdVariableName {
 				err = json.Unmarshal([]byte(ev.Value), &envAD)
 				if err != nil {
-					_ = klog.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
+					_ = log.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
 						EnvAdVariableName, bbsLRP.ProcessGuid, err.Error())
 				}
 			} else if ev.Name == EnvVcapServicesVariableName {
 				envVS, err = getVcapServicesMap(ev.Value, bbsLRP.ProcessGuid)
 				if err != nil {
-					_ = klog.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
+					_ = log.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
 						EnvVcapServicesVariableName, bbsLRP.ProcessGuid, err.Error())
 				}
 			} else if ev.Name == EnvVcapApplicationName {
 				envVA, err = getVcapApplicationMap(ev.Value)
 				if err != nil {
-					_ = klog.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
+					_ = log.Errorf("Failed unmarshalling %s env variable for LRP %s: %s",
 						EnvVcapApplicationName, bbsLRP.ProcessGuid, err.Error())
 				}
 			}
@@ -228,7 +228,7 @@ func DesiredLRPFromBBSModel(bbsLRP *models.DesiredLRP, includeList, excludeList 
 		var ok bool
 		extractVA[key], ok = envVA[key]
 		if !ok || extractVA[key] == "" {
-			_ = klog.Errorf("Couldn't extract %s from LRP %s", key, bbsLRP.ProcessGuid)
+			log.Tracef("Couldn't extract %s from LRP %s", key, bbsLRP.ProcessGuid)
 		}
 	}
 	appName := extractVA[ApplicationNameKey]
@@ -238,12 +238,12 @@ func DesiredLRPFromBBSModel(bbsLRP *models.DesiredLRP, includeList, excludeList 
 	ccCache, err := GetGlobalCCCache()
 	if err == nil {
 		if ccApp, err := ccCache.GetApp(appGUID); err != nil {
-			klog.V(5).Infof("Could not find app %s in cc cache", appGUID)
+			log.Debugf("Could not find app %s in cc cache", appGUID)
 		} else {
 			appName = ccApp.Name
 		}
 	} else {
-		klog.V(5).Infof("Could not get Cloud Foundry CCAPI cache: %v", err)
+		log.Debugf("Could not get Cloud Foundry CCAPI cache: %v", err)
 	}
 
 	d := DesiredLRP{
@@ -332,12 +332,12 @@ func getVcapServicesMap(vcap, processGUID string) (map[string][]byte, error) {
 			if name, ok := inst["name"]; ok {
 				nameStr, success := name.(string)
 				if !success {
-					_ = klog.Errorf("Failed converting name of instance %v of LRP %s to string", name, processGUID)
+					_ = log.Errorf("Failed converting name of instance %v of LRP %s to string", name, processGUID)
 					continue
 				}
 				serializedInst, err := json.Marshal(inst)
 				if err != nil {
-					_ = klog.Errorf("Failed serializing instance %s of LRP %s to JSON", nameStr, processGUID)
+					_ = log.Errorf("Failed serializing instance %s of LRP %s to JSON", nameStr, processGUID)
 					continue
 				}
 				ret[nameStr] = serializedInst
@@ -362,15 +362,17 @@ func getVcapApplicationMap(vcap string) (map[string]string, error) {
 		return res, err
 	}
 
-	// Keep only needed keys
+	// Keep only needed keys, if they are present
 	for _, key := range envVcapApplicationKeys {
 		val, ok := vcMap[key]
 		if !ok {
-			return res, fmt.Errorf("could not find key %s in VCAP_APPLICATION env var", key)
+			log.Tracef("Could not find key %s in VCAP_APPLICATION env var", key)
+			continue
 		}
 		valString, ok := val.(string)
 		if !ok {
-			return res, fmt.Errorf("could not parse the value of %s as a string", key)
+			log.Debugf("Could not parse the value of %s as a string", key)
+			continue
 		}
 		res[key] = valString
 	}

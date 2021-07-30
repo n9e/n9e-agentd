@@ -9,8 +9,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 // JSONServerlessEncoder is a shared json encoder sending a struct message field
@@ -27,11 +26,9 @@ type jsonServerlessPayload struct {
 	Status    string                `json:"status"`
 	Timestamp int64                 `json:"timestamp"`
 	Hostname  string                `json:"hostname"`
-	Service   string                `json:"service"`
-	Source    string                `json:"source"`
-	Tags      string                `json:"tags"`
-	Ident     string                `json:"ident"`
-	Alias     string                `json:"alias"`
+	Service   string                `json:"service,omitempty"`
+	Source    string                `json:"ddsource"`
+	Tags      string                `json:"ddtags"`
 }
 
 type jsonServerlessMessage struct {
@@ -41,7 +38,7 @@ type jsonServerlessMessage struct {
 
 type jsonServerlessLambda struct {
 	ARN       string `json:"arn"`
-	RequestID string `json:"requestID,omitempty"`
+	RequestID string `json:"request_id,omitempty"`
 }
 
 // Encode encodes a message into a JSON byte array.
@@ -71,7 +68,5 @@ func (j *jsonServerlessEncoder) Encode(msg *message.Message, redactedMsg []byte)
 		Service:   msg.Origin.Service(),
 		Source:    msg.Origin.Source(),
 		Tags:      msg.Origin.TagsToString(),
-		Ident:     config.C.Ident,
-		Alias:     config.C.Alias,
 	})
 }

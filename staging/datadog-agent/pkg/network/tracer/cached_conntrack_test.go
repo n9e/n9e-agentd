@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/netlink"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/network"
+	"github.com/DataDog/datadog-agent/pkg/network/netlink"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,6 +57,18 @@ func TestEnsureConntrack(t *testing.T) {
 	ctrk, err = cache.ensureConntrack(1235, os.Getpid())
 	require.NoError(t, err)
 	require.Equal(t, 2, n)
+}
+
+func TestCachedConntrackIgnoreErrExists(t *testing.T) {
+	cache := newCachedConntrack("/proc", func(_ int) (netlink.Conntrack, error) {
+		require.FailNow(t, "unexpected call to conntrack creator")
+		return nil, nil
+	}, 1)
+	defer cache.Close()
+
+	ctrk, err := cache.ensureConntrack(0, 0)
+	require.Nil(t, ctrk)
+	require.NoError(t, err)
 }
 
 func TestCachedConntrackExists(t *testing.T) {

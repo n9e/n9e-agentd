@@ -9,13 +9,13 @@ import (
 	"time"
 
 	model "github.com/n9e/agent-payload/process"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/dockerproxy"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net/resolver"
+	procutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
-	"github.com/n9e/n9e-agentd/pkg/process/dockerproxy"
-	"github.com/n9e/n9e-agentd/pkg/process/net"
-	"github.com/n9e/n9e-agentd/pkg/process/net/resolver"
-	procutil "github.com/n9e/n9e-agentd/pkg/process/util"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 )

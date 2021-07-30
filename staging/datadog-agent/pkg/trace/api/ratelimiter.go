@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // rateLimiter keeps track of the number of traces passing through the API. It
@@ -150,7 +150,7 @@ func (ps *rateLimiter) Permits(n int64) bool {
 	ps.mu.Unlock()
 
 	if !keep {
-		klog.V(5).Infof("Rate limiting at rate %.2f dropped payload with %d traces", ps.TargetRate(), n)
+		log.Debugf("Rate limiting at rate %.2f dropped payload with %d traces", ps.TargetRate(), n)
 	}
 	return keep
 }

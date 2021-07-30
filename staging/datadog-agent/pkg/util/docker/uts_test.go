@@ -5,7 +5,7 @@ package docker
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
 	"github.com/docker/docker/api/types/container"
 )
 

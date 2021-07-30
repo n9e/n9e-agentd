@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
 	"k8s.io/klog/v2"
 )
 

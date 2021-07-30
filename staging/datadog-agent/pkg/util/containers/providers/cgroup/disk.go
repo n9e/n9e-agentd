@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
 )
 
 type diskDeviceMapping struct {

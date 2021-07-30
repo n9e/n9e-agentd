@@ -8,13 +8,14 @@
 package gce
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -42,20 +43,20 @@ type gceProjectMetadata struct {
 
 func getCachedTags(err error) ([]string, error) {
 	if gceTags, found := cache.Cache.Get(tagsCacheKey); found {
-		klog.Infof("unable to get tags from gce, returning cached tags: %s", err)
+		log.Infof("unable to get tags from gce, returning cached tags: %s", err)
 		return gceTags.([]string), nil
 	}
-	return nil, klog.Warningf("unable to get tags from gce and cache is empty: %s", err)
+	return nil, log.Warnf("unable to get tags from gce and cache is empty: %s", err)
 }
 
 // GetTags gets the tags from the GCE api
-func GetTags() ([]string, error) {
+func GetTags(ctx context.Context) ([]string, error) {
 
 	if !config.IsCloudProviderEnabled(CloudProviderName) {
 		return nil, fmt.Errorf("cloud provider is disabled by configuration")
 	}
 
-	metadataResponse, err := getResponse(metadataURL + "/?recursive=true")
+	metadataResponse, err := getResponse(ctx, metadataURL+"/?recursive=true")
 	if err != nil {
 		return getCachedTags(err)
 	}

@@ -8,14 +8,15 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
-	"k8s.io/klog/v2"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
@@ -27,14 +28,14 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 	var metadataByNsPods apiv1.NamespacesPodsStringsSet
 	if c.isClusterAgentEnabled() && c.dcaClient.Version().Major >= 1 && c.dcaClient.Version().Minor >= 3 {
 		var nodeName string
-		nodeName, err = c.kubeUtil.GetNodename()
+		nodeName, err = c.kubeUtil.GetNodename(context.TODO())
 		if err != nil {
-			klog.Errorf("Could not retrieve the Nodename, err: %v", err)
+			log.Errorf("Could not retrieve the Nodename, err: %v", err)
 			return nil
 		}
 		metadataByNsPods, err = c.dcaClient.GetPodsMetadataForNode(nodeName)
 		if err != nil {
-			klog.V(5).Infof("Could not pull the metadata map of pods on node %s from the Datadog Cluster Agent: %s", nodeName, err.Error())
+			log.Debugf("Could not pull the metadata map of pods on node %s from the Datadog Cluster Agent: %s", nodeName, err.Error())
 			return nil
 		}
 	}
@@ -44,33 +45,35 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 
 	lruNamespaceTags, err := simplelru.NewLRU(maxNamespacesInLRU, nil)
 	if err != nil {
-		klog.V(5).Infof("Failed to create LRU for namespace tags: %v", err)
+		log.Debugf("Failed to create LRU for namespace tags: %v", err)
 		return nil
 	}
 
 	for _, po := range pods {
-		if kubelet.IsPodReady(po) == false {
-			klog.V(5).Infof("pod %q is not ready, skipping", po.Metadata.Name)
-			continue
-		}
-
-		// We cannot define if a hostNetwork Pod is a member of a service
-		if po.Spec.HostNetwork == true {
+		// Generate empty tagInfos for pods and their containers if pod
+		// uses hostNetwork (we cannot define if a hostNetwork Pod is a
+		// member of a service) or is not ready (it would not be an
+		// endpoint of a service). This allows the tagger to cache the
+		// result and avoid repeated calls to the DCA.
+		if po.Spec.HostNetwork == true || !kubelet.IsPodReady(po) {
 			for _, container := range po.Status.Containers {
 				entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 				if err != nil {
-					klog.Warningf("Unable to parse container: %s", err)
+					log.Warnf("Unable to parse container: %s", err)
 					continue
 				}
-				info := &TagInfo{
-					Source:               kubeMetadataCollectorName,
-					Entity:               entityID,
-					HighCardTags:         []string{},
-					OrchestratorCardTags: []string{},
-					LowCardTags:          []string{},
-				}
-				tagInfo = append(tagInfo, info)
+
+				tagInfo = append(tagInfo, &TagInfo{
+					Source: kubeMetadataCollectorName,
+					Entity: entityID,
+				})
 			}
+
+			tagInfo = append(tagInfo, &TagInfo{
+				Source: kubeMetadataCollectorName,
+				Entity: kubelet.PodUIDToTaggerEntityName(po.Metadata.UID),
+			})
+
 			continue
 		}
 
@@ -85,10 +88,10 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 
 		metadataNames, err = c.getMetadaNames(apiserver.GetPodMetadataNames, metadataByNsPods, po)
 		if err != nil {
-			klog.Errorf("Could not fetch tags, %v", err)
+			log.Errorf("Could not fetch tags, %v", err)
 		}
 		for _, tagDCA := range metadataNames {
-			klog.V(6).Infof("Tagging %s with %s", po.Metadata.Name, tagDCA)
+			log.Tracef("Tagging %s with %s", po.Metadata.Name, tagDCA)
 			tag = strings.Split(tagDCA, ":")
 			switch len(tag) {
 			case 1:
@@ -118,7 +121,7 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 		for _, container := range po.Status.Containers {
 			entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 			if err != nil {
-				klog.Warningf("Unable to parse container: %s", err)
+				log.Warnf("Unable to parse container: %s", err)
 				continue
 			}
 			info := &TagInfo{
@@ -181,7 +184,7 @@ func (c *KubeMetadataCollector) getNamespaceTags(getNamespaceLabelsFromAPIServer
 	}
 	labels, err := getNamespaceLabelsFromAPIServerFunc(ns)
 	if err != nil {
-		_ = klog.Warningf("Could not fetch labels for namespace: %s, %v", ns, err)
+		_ = log.Warnf("Could not fetch labels for namespace: %s, %v", ns, err)
 		return nil
 	}
 
@@ -195,7 +198,7 @@ func (c *KubeMetadataCollector) getNamespaceTags(getNamespaceLabelsFromAPIServer
 // addToCacheMetadataMapping is acting like the DCA at the node level.
 func (c *KubeMetadataCollector) addToCacheMetadataMapping(kubeletPodList []*kubelet.Pod) error {
 	if len(kubeletPodList) == 0 {
-		klog.V(5).Infof("Empty kubelet pod list")
+		log.Debugf("Empty kubelet pod list")
 		return nil
 	}
 

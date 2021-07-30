@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	core "github.com/n9e/n9e-agentd/pkg/collector/corechecks"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )

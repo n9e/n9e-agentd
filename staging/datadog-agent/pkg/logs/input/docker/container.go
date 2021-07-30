@@ -8,16 +8,17 @@
 package docker
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	dockerUtil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	dockerUtil "github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/docker/docker/api/types"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/service"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/service"
 )
 
 // configPath refers to the configuration that can be passed over a docker label,
@@ -38,7 +39,7 @@ func NewContainer(container types.ContainerJSON, service *service.Service) *Cont
 	}
 }
 
-// findSource returns the source that most likely matches the container,
+// FindSource returns the source that most likely matches the container,
 // if no source is found return nil
 func (c *Container) FindSource(sources []*config.LogSource) *config.LogSource {
 	var bestMatch *config.LogSource
@@ -62,7 +63,7 @@ func (c *Container) FindSource(sources []*config.LogSource) *config.LogSource {
 
 // getShortImageName resolves the short image name of a container by calling the docker daemon
 // This call is blocking
-func (c *Container) getShortImageName() (string, error) {
+func (c *Container) getShortImageName(ctx context.Context) (string, error) {
 	var (
 		err       error
 		shortName string
@@ -70,18 +71,18 @@ func (c *Container) getShortImageName() (string, error) {
 
 	du, err := dockerUtil.GetDockerUtil()
 	if err != nil {
-		klog.V(5).Infof("Cannot get DockerUtil: %v", err)
+		log.Debugf("Cannot get DockerUtil: %v", err)
 		return shortName, err
 	}
 	imageName := c.container.Image
-	imageName, err = du.ResolveImageName(imageName)
+	imageName, err = du.ResolveImageName(ctx, imageName)
 	if err != nil {
-		klog.V(5).Infof("Could not resolve image name %s: %s", imageName, err)
+		log.Debugf("Could not resolve image name %s: %s", imageName, err)
 		return shortName, err
 	}
 	_, shortName, _, err = containers.SplitImageName(imageName)
 	if err != nil {
-		klog.V(5).Infof("Cannot parse image name: %v", err)
+		log.Debugf("Cannot parse image name: %v", err)
 	}
 	return shortName, err
 }
@@ -154,7 +155,7 @@ func (c *Container) isImageMatch(imageFilter string) bool {
 func (c *Container) isNameMatch(nameFilter string) bool {
 	re, err := regexp.Compile(nameFilter)
 	if err != nil {
-		klog.Warning("used invalid name to filter containers: ", nameFilter)
+		log.Warn("used invalid name to filter containers: ", nameFilter)
 		return false
 	}
 	if name := c.container.Name; name != "" {

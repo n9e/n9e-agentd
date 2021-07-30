@@ -6,14 +6,15 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cloudfoundry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/clusteragent"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cloudfoundry"
+	"github.com/DataDog/datadog-agent/pkg/util/clusteragent"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
 )
 
 const (
@@ -29,7 +30,10 @@ type GardenCollector struct {
 }
 
 // Detect tries to connect to the Garden API and the cluster agent
-func (c *GardenCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) {
+func (c *GardenCollector) Detect(ctx context.Context, out chan<- []*TagInfo) (CollectionMode, error) {
+	if !config.IsFeaturePresent(config.CloudFoundry) {
+		return NoCollection, nil
+	}
 
 	// Detect if we're on a compute VM by trying to connect to the local garden API
 	var err error
@@ -43,14 +47,14 @@ func (c *GardenCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) 
 
 	// if DCA is enabled and can't communicate with the DCA, let the tagger retry.
 	var errDCA error
-	if config.C.ClusterAgent.Enabled {
+	if config.Datadog.GetBool("cluster_agent.enabled") {
 		c.clusterAgentEnabled = false
 		c.dcaClient, errDCA = clusteragent.GetClusterAgentClient()
 		if errDCA != nil {
-			klog.Errorf("Could not initialise the communication with the cluster agent: %s", errDCA.Error())
+			log.Errorf("Could not initialise the communication with the cluster agent: %s", errDCA.Error())
 			// continue to retry while we can
 			if retry.IsErrPermaFail(errDCA) {
-				klog.Error("Permanent failure in communication with the cluster agent")
+				log.Error("Permanent failure in communication with the cluster agent")
 			}
 			return NoCollection, errDCA
 		}
@@ -62,10 +66,10 @@ func (c *GardenCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) 
 }
 
 // Pull gets the list of containers
-func (c *GardenCollector) Pull() error {
+func (c *GardenCollector) Pull(ctx context.Context) error {
 	var tagsByInstanceGUID map[string][]string
 	var tagInfo []*TagInfo
-	tagsByInstanceGUID, err := c.extractTags(config.C.BoshID)
+	tagsByInstanceGUID, err := c.extractTags(config.Datadog.GetString("bosh_id"))
 	if err != nil {
 		return err
 	}
@@ -82,9 +86,9 @@ func (c *GardenCollector) Pull() error {
 }
 
 // Fetch gets the tags for a specific entity
-func (c *GardenCollector) Fetch(entity string) ([]string, []string, []string, error) {
+func (c *GardenCollector) Fetch(ctx context.Context, entity string) ([]string, []string, []string, error) {
 	_, cid := containers.SplitEntityName(entity)
-	tagsByInstanceGUID, err := c.extractTags(config.C.BoshID)
+	tagsByInstanceGUID, err := c.extractTags(config.Datadog.GetString("bosh_id"))
 	if err != nil {
 		return []string{}, []string{}, []string{}, err
 	}

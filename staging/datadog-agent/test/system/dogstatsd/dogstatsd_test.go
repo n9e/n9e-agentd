@@ -82,10 +82,10 @@ func (d *dogstatsdTest) setup(t *testing.T) {
 		in := bufio.NewScanner(stdout)
 
 		for in.Scan() {
-			klog.Infof(in.Text())
+			log.Infof(in.Text())
 		}
 		if err := in.Err(); err != nil {
-			klog.Errorf("error: %s", err)
+			log.Errorf("error: %s", err)
 		}
 	}()
 

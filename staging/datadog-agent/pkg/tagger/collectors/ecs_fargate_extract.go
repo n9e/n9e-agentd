@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	v2 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	v2 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // parseMetadata parses the task metadata and its container list, and returns a list of TagInfo for the new ones.
@@ -79,7 +79,7 @@ func (c *ECSFargateCollector) parseMetadata(meta *v2.Task, parseAll bool) ([]*Ta
 			tags.AddLow("docker_image", ctr.Image)
 			imageName, shortImage, imageTag, err := containers.SplitImageName(ctr.Image)
 			if err != nil {
-				klog.V(5).Infof("Cannot split %s: %s", ctr.Image, err)
+				log.Debugf("Cannot split %s: %s", ctr.Image, err)
 			} else {
 				tags.AddLow("image_name", imageName)
 				tags.AddLow("short_image", shortImage)

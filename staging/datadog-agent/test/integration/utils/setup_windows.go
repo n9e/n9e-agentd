@@ -7,4 +7,4 @@
 
 package utils
 
-import _ "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers/windows"
+import _ "github.com/DataDog/datadog-agent/pkg/util/containers/providers/windows"

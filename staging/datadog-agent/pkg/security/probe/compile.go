@@ -3,9 +3,9 @@
 package probe
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode/runtime"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/config"
+	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode"
+	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode/runtime"
+	"github.com/DataDog/datadog-agent/pkg/security/config"
 )
 
 // TODO change probe.c path to runtime-compilation specific version

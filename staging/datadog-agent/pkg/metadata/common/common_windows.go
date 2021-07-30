@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"golang.org/x/sys/windows"
 )
 
@@ -21,7 +21,7 @@ func GetUUID() string {
 	var h windows.Handle
 	err := windows.RegOpenKeyEx(windows.HKEY_LOCAL_MACHINE, windows.StringToUTF16Ptr(`SOFTWARE\Microsoft\Cryptography`), 0, windows.KEY_READ|windows.KEY_WOW64_64KEY, &h)
 	if err != nil {
-		klog.Warningf("Failed to open registry key Cryptography: %v", err)
+		log.Warnf("Failed to open registry key Cryptography: %v", err)
 		return ""
 	}
 	defer windows.RegCloseKey(h)
@@ -34,14 +34,14 @@ func GetUUID() string {
 	var valType uint32
 	err = windows.RegQueryValueEx(h, windows.StringToUTF16Ptr(`MachineGuid`), nil, &valType, (*byte)(unsafe.Pointer(&regBuf[0])), &bufLen)
 	if err != nil {
-		klog.Warningf("Could not find machineguid in the registry %v", err)
+		log.Warnf("Could not find machineguid in the registry %v", err)
 		return ""
 	}
 
 	hostID := windows.UTF16ToString(regBuf[:])
 	hostIDLen := len(hostID)
 	if hostIDLen != uuidLen {
-		klog.Warningf("the hostid was unexpected length (%d != %d)", hostIDLen, uuidLen)
+		log.Warnf("the hostid was unexpected length (%d != %d)", hostIDLen, uuidLen)
 		return ""
 	}
 

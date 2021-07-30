@@ -8,8 +8,8 @@ package input
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // taggerFunc purpose is to ease testing ServiceNameFromTags
@@ -20,7 +20,7 @@ var taggerFunc = tagger.StandardTags
 func ServiceNameFromTags(ctrName, taggerEntity string) string {
 	standardTags, err := taggerFunc(taggerEntity)
 	if err != nil {
-		klog.V(5).Infof("Couldn't get standard tags for container '%s': %v", ctrName, err)
+		log.Debugf("Couldn't get standard tags for container '%s': %v", ctrName, err)
 		return ""
 	}
 	prefix := "service:"

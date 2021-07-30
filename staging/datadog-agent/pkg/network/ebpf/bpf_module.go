@@ -5,7 +5,7 @@ package ebpf
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode"
+	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode"
 )
 
 // ReadBPFModule from the asset file
@@ -13,6 +13,36 @@ func ReadBPFModule(bpfDir string, debug bool) (bytecode.AssetReader, error) {
 	file := "tracer.o"
 	if debug {
 		file = "tracer-debug.o"
+	}
+
+	ebpfReader, err := bytecode.GetReader(bpfDir, file)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't find asset: %s", err)
+	}
+
+	return ebpfReader, nil
+}
+
+// ReadHTTPModule from the asset file
+func ReadHTTPModule(bpfDir string, debug bool) (bytecode.AssetReader, error) {
+	file := "http.o"
+	if debug {
+		file = "http-debug.o"
+	}
+
+	ebpfReader, err := bytecode.GetReader(bpfDir, file)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't find asset: %s", err)
+	}
+
+	return ebpfReader, nil
+}
+
+// ReadDNSModule from the asset file
+func ReadDNSModule(bpfDir string, debug bool) (bytecode.AssetReader, error) {
+	file := "dns.o"
+	if debug {
+		file = "dns-debug.o"
 	}
 
 	ebpfReader, err := bytecode.GetReader(bpfDir, file)

@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"net"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
 )
 
 // The UDP listener is limited by the size of its read buffer,
@@ -45,10 +45,10 @@ func NewUDPListener(pipelineProvider pipeline.Provider, source *config.LogSource
 
 // Start opens a new UDP connection and starts a tailer.
 func (l *UDPListener) Start() {
-	klog.Infof("Starting UDP forwarder on port: %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
+	log.Infof("Starting UDP forwarder on port: %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
 	err := l.startNewTailer()
 	if err != nil {
-		klog.Errorf("Can't start UDP forwarder on port %d: %v", l.source.Config.Port, err)
+		log.Errorf("Can't start UDP forwarder on port %d: %v", l.source.Config.Port, err)
 		l.source.Status.Error(err)
 		return
 	}
@@ -57,7 +57,7 @@ func (l *UDPListener) Start() {
 
 // Stop stops the tailer.
 func (l *UDPListener) Stop() {
-	klog.Infof("Stopping UDP forwarder on port: %d", l.source.Config.Port)
+	log.Infof("Stopping UDP forwarder on port: %d", l.source.Config.Port)
 	l.tailer.Stop()
 }
 
@@ -108,11 +108,11 @@ func (l *UDPListener) read(tailer *Tailer) ([]byte, error) {
 
 // resetTailer creates a new tailer.
 func (l *UDPListener) resetTailer() {
-	klog.Infof("Resetting the UDP connection on port: %d", l.source.Config.Port)
+	log.Infof("Resetting the UDP connection on port: %d", l.source.Config.Port)
 	l.tailer.Stop()
 	err := l.startNewTailer()
 	if err != nil {
-		klog.Errorf("Could not reset the UDP connection on port %d: %v", l.source.Config.Port, err)
+		log.Errorf("Could not reset the UDP connection on port %d: %v", l.source.Config.Port, err)
 		l.source.Status.Error(err)
 		return
 	}

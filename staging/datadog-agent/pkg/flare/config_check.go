@@ -12,11 +12,11 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
+	"github.com/DataDog/datadog-agent/pkg/api/util"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 // configCheckURL contains the Agent API endpoint URL exposing the loaded checks
@@ -30,12 +30,17 @@ func GetConfigCheck(w io.Writer, withDebug bool) error {
 
 	c := util.GetClient(false) // FIX: get certificates right then make this true
 
+	// Set session token
+	err := util.SetAuthToken()
+	if err != nil {
+		return err
+	}
 	ipcAddress, err := config.GetIPCAddress()
 	if err != nil {
 		return err
 	}
 	if configCheckURL == "" {
-		configCheckURL = fmt.Sprintf("https://%v/agent/config-check", ipcAddress)
+		configCheckURL = fmt.Sprintf("https://%v:%v/agent/config-check", ipcAddress, config.Datadog.GetInt("cmd_port"))
 	}
 	r, err := util.DoGet(c, configCheckURL)
 	if err != nil {
@@ -89,7 +94,7 @@ func GetConfigCheck(w io.Writer, withDebug bool) error {
 
 // GetClusterAgentConfigCheck proxies GetConfigCheck overidding the URL
 func GetClusterAgentConfigCheck(w io.Writer, withDebug bool) error {
-	configCheckURL = fmt.Sprintf("https://localhost:%v/config-check", config.C.ClusterAgent.CmdPort)
+	configCheckURL = fmt.Sprintf("https://localhost:%v/config-check", config.Datadog.GetInt("cluster_agent.cmd_port"))
 	return GetConfigCheck(w, withDebug)
 }
 

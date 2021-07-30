@@ -8,8 +8,8 @@ package stats
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,27 +17,39 @@ import (
 func TestGrain(t *testing.T) {
 	assert := assert.New(t)
 	s := pb.Span{Service: "thing", Name: "other", Resource: "yo"}
-	aggr := NewAggregationFromSpan(&s, "default", "default")
+	aggr := NewAggregationFromSpan(&s, "default", "default", "cid")
 	assert.Equal(Aggregation{
-		Env:      "default",
-		Hostname: "default",
-		Service:  "thing",
-		Resource: "yo",
+		PayloadAggregationKey: PayloadAggregationKey{
+			Env:         "default",
+			Hostname:    "default",
+			ContainerID: "cid",
+		},
+		BucketsAggregationKey: BucketsAggregationKey{
+			Service:  "thing",
+			Name:     "other",
+			Resource: "yo",
+		},
 	}, aggr)
 }
 
 func TestGrainWithExtraTags(t *testing.T) {
 	assert := assert.New(t)
 	s := pb.Span{Service: "thing", Name: "other", Resource: "yo", Meta: map[string]string{tagHostname: "host-id", tagVersion: "v0", tagStatusCode: "418", tagOrigin: "synthetics-browser"}}
-	aggr := NewAggregationFromSpan(&s, "default", "default")
+	aggr := NewAggregationFromSpan(&s, "default", "default", "cid")
 	assert.Equal(Aggregation{
-		Env:        "default",
-		Service:    "thing",
-		Resource:   "yo",
-		Hostname:   "host-id",
-		StatusCode: 418,
-		Version:    "v0",
-		Synthetics: true,
+		PayloadAggregationKey: PayloadAggregationKey{
+			Hostname:    "host-id",
+			Version:     "v0",
+			Env:         "default",
+			ContainerID: "cid",
+		},
+		BucketsAggregationKey: BucketsAggregationKey{
+			Service:    "thing",
+			Resource:   "yo",
+			Name:       "other",
+			StatusCode: 418,
+			Synthetics: true,
+		},
 	}, aggr)
 }
 
@@ -50,7 +62,7 @@ func BenchmarkHandleSpanRandom(b *testing.B) {
 		traceutil.ComputeTopLevel(benchTrace)
 		wt := NewWeightedTrace(benchTrace, root)
 		for _, span := range wt {
-			sb.HandleSpan(span, "dev", "hostname")
+			sb.HandleSpan(span, "dev", "hostname", "cid")
 		}
 	}
 }

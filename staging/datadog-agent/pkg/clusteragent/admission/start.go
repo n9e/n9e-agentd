@@ -10,13 +10,14 @@ package admission
 import (
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission/controllers/secret"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/admission/controllers/webhook"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission/controllers/secret"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/admission/controllers/webhook"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -28,13 +29,14 @@ type ControllerContext struct {
 	SecretInformers  informers.SharedInformerFactory
 	WebhookInformers informers.SharedInformerFactory
 	Client           kubernetes.Interface
+	DiscoveryClient  discovery.DiscoveryInterface
 	StopCh           chan struct{}
 }
 
 // StartControllers starts the secret and webhook controllers
 func StartControllers(ctx ControllerContext) error {
 	if !config.Datadog.GetBool("admission_controller.enabled") {
-		klog.Info("Admission controller is disabled")
+		log.Info("Admission controller is disabled")
 		return nil
 	}
 
@@ -52,27 +54,41 @@ func StartControllers(ctx ControllerContext) error {
 		ctx.IsLeaderFunc,
 		secretConfig,
 	)
-	go secretController.Run(ctx.StopCh)
 
-	webhookConfig := webhook.NewConfig(
-		config.Datadog.GetString("admission_controller.webhook_name"),
-		config.Datadog.GetString("admission_controller.certificate.secret_name"),
-		common.GetResourcesNamespace(),
-		generateWebhooks())
+	nsSelectorEnabled, err := useNamespaceSelector(ctx.DiscoveryClient)
+	if err != nil {
+		return err
+	}
+
+	v1Enabled, err := useAdmissionV1(ctx.DiscoveryClient)
+	if err != nil {
+		return err
+	}
+
+	webhookConfig := webhook.NewConfig(v1Enabled, nsSelectorEnabled)
 	webhookController := webhook.NewController(
 		ctx.Client,
 		ctx.SecretInformers.Core().V1().Secrets(),
-		ctx.WebhookInformers.Admissionregistration().V1beta1().MutatingWebhookConfigurations(),
+		ctx.WebhookInformers.Admissionregistration(),
 		ctx.IsLeaderFunc,
 		webhookConfig,
 	)
+
+	go secretController.Run(ctx.StopCh)
 	go webhookController.Run(ctx.StopCh)
 
 	ctx.SecretInformers.Start(ctx.StopCh)
 	ctx.WebhookInformers.Start(ctx.StopCh)
 
-	return apiserver.SyncInformers(map[apiserver.InformerName]cache.SharedInformer{
-		apiserver.SecretsInformer:  ctx.SecretInformers.Core().V1().Secrets().Informer(),
-		apiserver.WebhooksInformer: ctx.WebhookInformers.Admissionregistration().V1beta1().MutatingWebhookConfigurations().Informer(),
-	})
+	informers := map[apiserver.InformerName]cache.SharedInformer{
+		apiserver.SecretsInformer: ctx.SecretInformers.Core().V1().Secrets().Informer(),
+	}
+
+	if v1Enabled {
+		informers[apiserver.WebhooksInformer] = ctx.WebhookInformers.Admissionregistration().V1().MutatingWebhookConfigurations().Informer()
+	} else {
+		informers[apiserver.WebhooksInformer] = ctx.WebhookInformers.Admissionregistration().V1beta1().MutatingWebhookConfigurations().Informer()
+	}
+
+	return apiserver.SyncInformers(informers)
 }

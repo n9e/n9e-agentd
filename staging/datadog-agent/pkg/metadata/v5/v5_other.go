@@ -8,8 +8,8 @@
 package v5
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
+	"github.com/DataDog/datadog-agent/pkg/metadata/common"
+	"github.com/DataDog/datadog-agent/pkg/metadata/host"
 )
 
 // GetPayload returns the complete metadata payload as seen in Agent v5.

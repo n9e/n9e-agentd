@@ -6,16 +6,18 @@
 package tencent
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetInstanceID(t *testing.T) {
+	ctx := context.Background()
 	holdValue := config.Datadog.Get("cloud_provider_metadata")
 	defer config.Datadog.Set("cloud_provider_metadata", holdValue)
 	config.Datadog.Set("cloud_provider_metadata", []string{"tencent"})
@@ -30,13 +32,14 @@ func TestGetInstanceID(t *testing.T) {
 	defer ts.Close()
 	metadataURL = ts.URL
 
-	val, err := GetInstanceID()
+	val, err := GetInstanceID(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, val)
 	assert.Equal(t, lastRequest.URL.Path, "/meta-data/instance-id")
 }
 
 func TestGetNTPHosts(t *testing.T) {
+	ctx := context.Background()
 	expectedHosts := []string{"ntpupdate.tencentyun.com"}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +50,7 @@ func TestGetNTPHosts(t *testing.T) {
 
 	metadataURL = ts.URL
 	config.Datadog.Set("cloud_provider_metadata", []string{"tencent"})
-	actualHosts := GetNTPHosts()
+	actualHosts := GetNTPHosts(ctx)
 
 	assert.Equal(t, expectedHosts, actualHosts)
 }

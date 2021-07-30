@@ -10,7 +10,7 @@ package v5
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 )
 
 // Payload handles the JSON unmarshalling of the metadata payload

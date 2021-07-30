@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/stats"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/test/testutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/test/testutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tinylib/msgp/msgp"
@@ -33,7 +33,7 @@ func assertPayload(assert *assert.Assertions, testSets []pb.StatsPayload, payloa
 		"X-Datadog-Reported-Languages": strings.Join(info.Languages(), "|"),
 		"Content-Type":                 "application/msgpack",
 		"Content-Encoding":             "gzip",
-		"bearer":                       "123",
+		"Dd-Api-Key":                   "123",
 	}
 	var decoded []pb.StatsPayload
 	for _, p := range payloads {
@@ -109,8 +109,15 @@ func TestStatsWriter(t *testing.T) {
 			AgentEnv:      "agentenv",
 			AgentVersion:  "agent-version",
 			Stats: []pb.ClientStatsPayload{{
-				Hostname: testHostname,
-				Env:      testEnv,
+				Hostname:         testHostname,
+				Env:              testEnv,
+				Version:          "version",
+				Lang:             "lang",
+				TracerVersion:    "tracer-version",
+				RuntimeID:        "runtime-id",
+				Sequence:         34,
+				AgentAggregation: "aggregation",
+				Service:          "service",
 				Stats: []pb.ClientStatsBucket{
 					testutil.RandomBucket(5),
 					testutil.RandomBucket(5),
@@ -118,6 +125,8 @@ func TestStatsWriter(t *testing.T) {
 				}},
 			},
 		}
+		baseClientPayload := stats.Stats[0]
+		baseClientPayload.Stats = nil
 		expectedNbEntries := 15
 		expectedNbPayloads := int(math.Ceil(float64(expectedNbEntries) / 12))
 		// Compute our expected number of entries by payload
@@ -133,6 +142,9 @@ func TestStatsWriter(t *testing.T) {
 			assert.Equal(1, len(payloads[i].Stats))
 			assert.Equal(1, len(payloads[i].Stats[0].Stats))
 			assert.Equal(expectedNbEntriesByPayload[i], len(payloads[i].Stats[0].Stats[0].Stats))
+			actual := payloads[i].Stats[0]
+			actual.Stats = nil
+			assert.Equal(baseClientPayload, actual)
 		}
 		assert.Equal(extractCounts([]pb.StatsPayload{stats}), extractCounts(payloads))
 		for _, p := range payloads {
@@ -280,11 +292,13 @@ func getKey(b pb.ClientGroupedStats, start, duration uint64) key {
 		start:    start,
 		duration: duration,
 		Aggregation: stats.Aggregation{
-			Resource:   b.Resource,
-			Service:    b.Service,
-			Type:       b.Type,
-			StatusCode: b.HTTPStatusCode,
-			Synthetics: b.Synthetics,
+			BucketsAggregationKey: stats.BucketsAggregationKey{
+				Resource:   b.Resource,
+				Service:    b.Service,
+				Type:       b.Type,
+				StatusCode: b.HTTPStatusCode,
+				Synthetics: b.Synthetics,
+			},
 		},
 	}
 }

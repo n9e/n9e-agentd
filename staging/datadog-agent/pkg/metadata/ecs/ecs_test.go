@@ -10,10 +10,10 @@ package ecs
 import (
 	"testing"
 
-	payload "github.com/n9e/agent-payload/gogen"
+	payload "github.com/DataDog/agent-payload/gogen"
 	"github.com/stretchr/testify/assert"
 
-	v1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v1"
+	v1 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v1"
 )
 
 var nextTestTasks []v1.Task

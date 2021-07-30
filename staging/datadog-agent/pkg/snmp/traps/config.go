@@ -8,38 +8,36 @@ package traps
 import (
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/soniah/gosnmp"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/gosnmp/gosnmp"
 )
 
 // IsEnabled returns whether SNMP trap collection is enabled in the Agent configuration.
-//func IsEnabled() bool {
-//	return config.C.SnmpTraps.Enabled
-//}
+func IsEnabled() bool {
+	return config.Datadog.GetBool("snmp_traps_enabled")
+}
 
 // Config contains configuration for SNMP trap listeners.
 // YAML field tags provided for test marshalling purposes.
 type Config struct {
-	Enabled          bool          `json:"enabled"`                                                                                             // snmp_traps_enabled
-	Port             uint16        `json:"port" default:"162"`                                                                                  // snmp_traps_config.port
-	CommunityStrings []string      `json:"communityStrings"`                                                                                    // snmp_traps_config.community_strings
-	BindHost         string        `json:"bindHost" default:"localhost"`                                                                        // snmp_traps_config.bind_host
-	StopTimeout      time.Duration `json:"-"`                                                                                                   // snmp_traps_config.stop_timeout
-	StopTimeout_     int           `json:"stopTimeout" flag:"snmptraps-stop-tiemout" default:"5" description:"snmp traps stop timeout(Second)"` // snmp_traps_config.stop_timeout
+	Port             uint16   `mapstructure:"port" yaml:"port"`
+	CommunityStrings []string `mapstructure:"community_strings" yaml:"community_strings"`
+	BindHost         string   `mapstructure:"bind_host" yaml:"bind_host"`
+	StopTimeout      int      `mapstructure:"stop_timeout" yaml:"stop_timeout"`
 }
 
 // ReadConfig builds and returns configuration from Agent configuration.
-func (c *Config) Validate(bindhost string) error {
-	if !c.Enabled {
-		return nil
+func ReadConfig() (*Config, error) {
+	var c Config
+	err := config.Datadog.UnmarshalKey("snmp_traps_config", &c)
+	if err != nil {
+		return nil, err
 	}
-
-	c.StopTimeout = time.Second * time.Duration(c.StopTimeout_)
 
 	// Validate required fields.
 	if c.CommunityStrings == nil || len(c.CommunityStrings) == 0 {
-		return errors.New("`community_strings` is required and must be non-empty")
+		return nil, errors.New("`community_strings` is required and must be non-empty")
 	}
 
 	// Set defaults.
@@ -48,13 +46,13 @@ func (c *Config) Validate(bindhost string) error {
 	}
 	if c.BindHost == "" {
 		// Default to global bind_host option.
-		c.BindHost = bindhost
+		c.BindHost = config.GetBindHost()
 	}
 	if c.StopTimeout == 0 {
 		c.StopTimeout = defaultStopTimeout
 	}
 
-	return nil
+	return &c, nil
 }
 
 // Addr returns the host:port address to listen on.
@@ -68,6 +66,6 @@ func (c *Config) BuildV2Params() *gosnmp.GoSNMP {
 		Port:      c.Port,
 		Transport: "udp",
 		Version:   gosnmp.Version2c,
-		Logger:    &trapLogger{},
+		Logger:    gosnmp.NewLogger(&trapLogger{}),
 	}
 }

@@ -20,11 +20,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/osutil"
-	httputils "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/http"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/osutil"
+	httputils "github.com/DataDog/datadog-agent/pkg/util/http"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // newSenders returns a list of senders based on the given agent configuration, using climit
@@ -232,7 +232,7 @@ func (s *sender) Push(p *payload) {
 func (s *sender) sendPayload(p *payload) {
 	req, err := p.httpRequest(s.cfg.url)
 	if err != nil {
-		klog.Errorf("http.Request: %s", err)
+		log.Errorf("http.Request: %s", err)
 		return
 	}
 	start := time.Now()
@@ -254,8 +254,11 @@ func (s *sender) sendPayload(p *payload) {
 		}
 		atomic.AddInt32(&s.attempt, 1)
 
-		if r := atomic.AddInt32(&p.retries, 1); shouldWarnRetry(r) {
-			klog.Warningf("Retried payload %d times: %s", r, err.Error())
+		if r := atomic.AddInt32(&p.retries, 1); (r&(r-1)) == 0 && r > 3 {
+			// Only log a warning if the retry attempt is a power of 2
+			// and larger than 3, to avoid alerting the user unnecessarily.
+			// e.g. attempts 4, 8, 16, etc.
+			log.Warnf("Retried payload %d times: %s", r, err.Error())
 		}
 		select {
 		case s.queue <- p:
@@ -295,15 +298,6 @@ func waitForSenders(senders []*sender) {
 	wg.Wait()
 }
 
-// shouldWarnRetry determines whether a warning should be emitted
-// after it has been retried n times.
-func shouldWarnRetry(n int32) bool {
-	if (n != 0) && (n != 2) && ((n & (n - 1)) == 0) {
-		return true
-	}
-	return false
-}
-
 // releasePayload releases the payload p and records the specified event. The payload
 // should not be used again after a release.
 func (s *sender) releasePayload(p *payload, t eventType, data *eventData) {
@@ -334,7 +328,7 @@ type retriableError struct{ err error }
 func (e retriableError) Error() string { return e.err.Error() }
 
 const (
-	headerAPIKey    = "Bearer"
+	headerAPIKey    = "DD-Api-Key"
 	headerUserAgent = "User-Agent"
 )
 
@@ -353,8 +347,7 @@ func (s *sender) do(req *http.Request) error {
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	if resp.StatusCode/100 == 5 {
-		// 5xx errors can be retried
+	if isRetriable(resp.StatusCode) {
 		return &retriableError{
 			fmt.Errorf("server responded with %q", resp.Status),
 		}
@@ -365,6 +358,15 @@ func (s *sender) do(req *http.Request) error {
 		return errors.New(resp.Status)
 	}
 	return nil
+}
+
+// isRetriable reports whether the give HTTP status code should be retried.
+func isRetriable(code int) bool {
+	if code == http.StatusRequestTimeout {
+		return true
+	}
+	// 5xx errors can be retried
+	return code/100 == 5
 }
 
 // payloads specifies a payload to be sent by the sender.

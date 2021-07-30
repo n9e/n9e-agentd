@@ -8,8 +8,8 @@ package filters
 import (
 	"regexp"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Blacklister holds a list of regular expressions which will match resources
@@ -50,7 +50,7 @@ func compileRules(exprs []string) []*regexp.Regexp {
 	for _, entry := range exprs {
 		rule, err := regexp.Compile(entry)
 		if err != nil {
-			klog.Errorf("Invalid resource filter: %q", entry)
+			log.Errorf("Invalid resource filter: %q", entry)
 			continue
 		}
 		list = append(list, rule)

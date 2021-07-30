@@ -8,8 +8,9 @@ package secl
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/ast"
 	"github.com/alecthomas/participle/lexer"
+
+	"github.com/DataDog/datadog-agent/pkg/security/secl/ast"
 )
 
 func TestExprAt(t *testing.T) {

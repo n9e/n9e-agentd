@@ -11,7 +11,7 @@ package clusterchecks
 import (
 	"errors"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
 )
 
 func getLeaderIPCallback() (types.LeaderIPCallback, error) {

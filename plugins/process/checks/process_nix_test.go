@@ -11,8 +11,8 @@ import (
 
 	"github.com/DataDog/gopsutil/cpu"
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/pkg/process/config"
-	"github.com/n9e/n9e-agentd/pkg/process/procutil"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
 )
 

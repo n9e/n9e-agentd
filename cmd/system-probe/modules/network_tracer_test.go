@@ -8,7 +8,7 @@ import (
 
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/encoding"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

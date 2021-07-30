@@ -54,31 +54,31 @@ type Port struct {
 // ContainerStats represents the statistics of a container as returned by the
 // ECS metadata API v2.
 type ContainerStats struct {
-	CPU     CPUStats `json:"cpuStats"`
-	Memory  MemStats `json:"memoryStats"`
-	IO      IOStats  `json:"blkioStats"`
+	CPU     CPUStats `json:"cpu_stats"`
+	Memory  MemStats `json:"memory_stats"`
+	IO      IOStats  `json:"blkio_stats"`
 	Network NetStats `json:"network"`
-	//Pids    []int32  `json:"pidsStats"` // seems to be always empty
+	//Pids    []int32  `json:"pids_stats"` // seems to be always empty
 }
 
 // CPUStats represents an ECS container CPU usage
 type CPUStats struct {
-	Usage  CPUUsage `json:"cpuUsage"`
-	System uint64   `json:"systemCpuUsage"`
+	Usage  CPUUsage `json:"cpu_usage"`
+	System uint64   `json:"system_cpu_usage"`
 }
 
 // CPUUsage represents the details of ECS container CPU usage
 type CPUUsage struct {
-	Total      uint64 `json:"totalUsage"`
-	Usermode   uint64 `json:"usageInUsermode"`
-	Kernelmode uint64 `json:"usageInKernelmode"`
+	Total      uint64 `json:"total_usage"`
+	Usermode   uint64 `json:"usage_in_usermode"`
+	Kernelmode uint64 `json:"usage_in_kernelmode"`
 }
 
 // MemStats represents an ECS container memory usage
 type MemStats struct {
 	Details  DetailedMem `json:"stats"`
 	Limit    uint64      `json:"limit"`
-	MaxUsage uint64      `json:"maxUsage"`
+	MaxUsage uint64      `json:"max_usage"`
 	Usage    uint64      `json:"usage"`
 }
 
@@ -91,8 +91,8 @@ type DetailedMem struct {
 
 // IOStats represents an ECS container IO throughput
 type IOStats struct {
-	BytesPerDeviceAndKind []OPStat `json:"ioServiceBytesRecursive"`
-	OPPerDeviceAndKind    []OPStat `json:"ioServicedRecursive"`
+	BytesPerDeviceAndKind []OPStat `json:"io_service_bytes_recursive"`
+	OPPerDeviceAndKind    []OPStat `json:"io_serviced_recursive"`
 	ReadBytes             uint64   // calculated by aggregating OPStats
 	WriteBytes            uint64   // calculated by aggregating OPStats
 }
@@ -107,8 +107,8 @@ type OPStat struct {
 
 // NetStats represents an ECS container network usage
 type NetStats struct {
-	RxBytes   uint64 `json:"rxBytes"`
-	RxPackets uint64 `json:"rxPackets"`
-	TxBytes   uint64 `json:"txBytes"`
-	TxPackets uint64 `json:"txPackets"`
+	RxBytes   uint64 `json:"rx_bytes"`
+	RxPackets uint64 `json:"rx_packets"`
+	TxBytes   uint64 `json:"tx_bytes"`
+	TxPackets uint64 `json:"tx_packets"`
 }

@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"testing"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/stretchr/testify/assert"
 )
 

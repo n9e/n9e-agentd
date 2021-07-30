@@ -3,8 +3,11 @@
 package config
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/ebpf/probes"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
+	"path/filepath"
+
+	"github.com/DataDog/datadog-agent/pkg/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/network/ebpf/probes"
+	"github.com/DataDog/datadog-agent/pkg/util/kernel"
 )
 
 // EnabledProbes returns a map of probes that are enabled per config settings.
@@ -19,7 +22,7 @@ func (c *Config) EnabledProbes(runtimeTracer bool) (map[probes.ProbeName]struct{
 	pre410Kernel := kv < kernel.VersionCode(4, 1, 0)
 
 	if c.CollectTCPConns {
-		if pre410Kernel {
+		if !runtimeTracer && pre410Kernel {
 			enabled[probes.TCPSendMsgPre410] = struct{}{}
 		} else {
 			enabled[probes.TCPSendMsg] = struct{}{}
@@ -37,8 +40,12 @@ func (c *Config) EnabledProbes(runtimeTracer bool) (map[probes.ProbeName]struct{
 			enabled[probes.TCPRetransmit] = struct{}{}
 		}
 
-		if c.BPFDebug || c.EnableHTTPMonitoring {
-			enabled[probes.TCPSendMsgReturn] = struct{}{}
+		missing, err := ebpf.VerifyKernelFuncs(filepath.Join(c.ProcRoot, "kallsyms"), []string{"sockfd_lookup_light"})
+		if err == nil && len(missing) == 0 {
+			enabled[probes.SockFDLookup] = struct{}{}
+			enabled[probes.SockFDLookupRet] = struct{}{}
+			enabled[probes.DoSendfile] = struct{}{}
+			enabled[probes.DoSendfileRet] = struct{}{}
 		}
 	}
 
@@ -61,7 +68,7 @@ func (c *Config) EnabledProbes(runtimeTracer bool) (map[probes.ProbeName]struct{
 			enabled[probes.Inet6BindRet] = struct{}{}
 		}
 
-		if pre410Kernel {
+		if !runtimeTracer && pre410Kernel {
 			enabled[probes.UDPRecvMsgPre410] = struct{}{}
 		} else {
 			enabled[probes.UDPRecvMsg] = struct{}{}

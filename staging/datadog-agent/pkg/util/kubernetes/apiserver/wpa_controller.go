@@ -12,7 +12,6 @@ import (
 	"math"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamic_client "k8s.io/client-go/dynamic"
 	dynamic_informer "k8s.io/client-go/dynamic/dynamicinformer"
 
@@ -27,10 +26,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/errors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/errors"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -40,11 +39,7 @@ const (
 	crdCheckMaxElapsedTime  = 0
 )
 
-var gvr = &schema.GroupVersionResource{
-	Group:    "datadoghq.com",
-	Version:  "v1alpha1",
-	Resource: "watermarkpodautoscalers",
-}
+var gvrWPA = apis_v1alpha1.GroupVersion.WithResource("watermarkpodautoscalers")
 
 // RunWPA starts the controller to process events about Watermark Pod Autoscalers
 func (h *AutoscalersController) RunWPA(stopCh <-chan struct{}, wpaClient dynamic_client.Interface, wpaInformerFactory dynamic_informer.DynamicSharedInformerFactory) {
@@ -54,8 +49,8 @@ func (h *AutoscalersController) RunWPA(stopCh <-chan struct{}, wpaClient dynamic
 	h.enableWPA(wpaInformerFactory)
 	defer h.WPAqueue.ShutDown()
 
-	klog.Infof("Starting WPA Controller ... ")
-	defer klog.Infof("Stopping WPA Controller")
+	log.Infof("Starting WPA Controller ... ")
+	defer log.Infof("Stopping WPA Controller")
 
 	wpaInformerFactory.Start(stopCh)
 
@@ -76,10 +71,10 @@ func tryCheckWPACRD(check checkAPI) error {
 			return err
 		}
 		// In all other cases return a permanent error to prevent from retrying
-		klog.Errorf("WPA CRD check failed: not retryable: %s", err)
+		log.Errorf("WPA CRD check failed: not retryable: %s", err)
 		return backoff.Permanent(err)
 	}
-	klog.Info("WPA CRD check successful")
+	log.Info("WPA CRD check successful")
 	return nil
 }
 
@@ -89,7 +84,7 @@ func notifyCheckWPACRD() backoff.Notify {
 		attempt++
 		mins := int(delay.Minutes())
 		secs := int(math.Mod(delay.Seconds(), 60))
-		klog.Warningf("WPA CRD missing (attempt=%d): will retry in %dm%ds", attempt, mins, secs)
+		log.Warnf("WPA CRD missing (attempt=%d): will retry in %dm%ds", attempt, mins, secs)
 	}
 }
 
@@ -107,7 +102,7 @@ func isWPACRDNotFoundError(err error) bool {
 
 func checkWPACRD(wpaClient dynamic_client.Interface) backoff.Operation {
 	check := func() error {
-		_, err := wpaClient.Resource(*gvr).List(context.TODO(), v1.ListOptions{})
+		_, err := wpaClient.Resource(gvrWPA).List(context.TODO(), v1.ListOptions{})
 		return err
 	}
 	return func() error {
@@ -130,9 +125,9 @@ func waitForWPACRD(wpaClient dynamic_client.Interface) {
 
 // enableWPA adds the handlers to the AutoscalersController to support WPAs
 func (h *AutoscalersController) enableWPA(wpaInformerFactory dynamic_informer.DynamicSharedInformerFactory) {
-	klog.Info("Enabling WPA controller")
+	log.Info("Enabling WPA controller")
 
-	genericInformer := wpaInformerFactory.ForResource(*gvr)
+	genericInformer := wpaInformerFactory.ForResource(gvrWPA)
 
 	h.WPAqueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter(), "wpa-autoscalers")
 	h.wpaLister = genericInformer.Lister()
@@ -163,10 +158,10 @@ func (h *AutoscalersController) workerWPA() {
 func (h *AutoscalersController) processNextWPA() bool {
 	key, quit := h.WPAqueue.Get()
 	if quit {
-		klog.Error("WPA controller HPAqueue is shutting down, stopping processing")
+		log.Error("WPA controller HPAqueue is shutting down, stopping processing")
 		return false
 	}
-	klog.V(6).Infof("Processing %s", key)
+	log.Tracef("Processing %s", key)
 	defer h.WPAqueue.Done(key)
 
 	err := h.syncWPA(key)
@@ -185,29 +180,29 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key.(string))
 	if err != nil {
-		klog.Errorf("Could not split the key: %v", err)
+		log.Errorf("Could not split the key: %v", err)
 		return err
 	}
 
 	wpaCachedObj, err := h.wpaLister.ByNamespace(ns).Get(name)
 	if err != nil {
-		klog.Errorf("Could not retrieve key %s from cache: %v", key, err)
+		log.Errorf("Could not retrieve key %s from cache: %v", key, err)
 		return err
 	}
 	wpaCached := &apis_v1alpha1.WatermarkPodAutoscaler{}
-	err = StructureIntoWPA(wpaCachedObj, wpaCached)
+	err = UnstructuredIntoWPA(wpaCachedObj, wpaCached)
 	if err != nil {
-		klog.Errorf("Could not cast wpa %s retrieved from cache to wpa structure: %v", key, err)
+		log.Errorf("Could not cast wpa %s retrieved from cache to wpa structure: %v", key, err)
 		return err
 	}
 	switch {
 	case errors.IsNotFound(err):
-		klog.Infof("WatermarkPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
+		log.Infof("WatermarkPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
 	case err != nil:
-		klog.Errorf("Unable to retrieve WatermarkPodAutoscaler %v from store: %v", key, err)
+		log.Errorf("Unable to retrieve WatermarkPodAutoscaler %v from store: %v", key, err)
 	default:
 		if wpaCached == nil {
-			klog.Errorf("Could not parse empty wpa %s/%s from local store", ns, name)
+			log.Errorf("Could not parse empty wpa %s/%s from local store", ns, name)
 			return ErrIsEmpty
 		}
 		emList := autoscalers.InspectWPA(wpaCached)
@@ -222,7 +217,7 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 		}
 		h.toStore.m.Unlock()
 
-		klog.V(6).Infof("Local batch cache of WPA is %v", h.toStore.data)
+		log.Tracef("Local batch cache of WPA is %v", h.toStore.data)
 	}
 
 	return err
@@ -230,36 +225,36 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 
 func (h *AutoscalersController) addWPAutoscaler(obj interface{}) {
 	newAutoscaler := &apis_v1alpha1.WatermarkPodAutoscaler{}
-	if err := StructureIntoWPA(obj, newAutoscaler); err != nil {
-		klog.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
+	if err := UnstructuredIntoWPA(obj, newAutoscaler); err != nil {
+		log.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
 		return
 	}
-	klog.V(5).Infof("Adding WPA %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
+	log.Debugf("Adding WPA %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
 	h.EventRecorder.Event(newAutoscaler.DeepCopyObject(), corev1.EventTypeNormal, autoscalerNowHandleMsgEvent, "")
 	h.enqueueWPA(newAutoscaler)
 }
 
 func (h *AutoscalersController) updateWPAutoscaler(old, obj interface{}) {
 	newAutoscaler := &apis_v1alpha1.WatermarkPodAutoscaler{}
-	if err := StructureIntoWPA(obj, newAutoscaler); err != nil {
-		klog.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
+	if err := UnstructuredIntoWPA(obj, newAutoscaler); err != nil {
+		log.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
 		return
 	}
 	oldAutoscaler := &apis_v1alpha1.WatermarkPodAutoscaler{}
-	if err := StructureIntoWPA(obj, oldAutoscaler); err != nil {
-		klog.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
+	if err := UnstructuredIntoWPA(obj, oldAutoscaler); err != nil {
+		log.Errorf("Unable to cast obj %s to a WPA: %v", obj, err)
 		h.enqueueWPA(newAutoscaler) // We still want to enqueue the newAutoscaler to get the new change
 		return
 	}
 
 	if !autoscalers.WPAutoscalerMetricsUpdate(newAutoscaler, oldAutoscaler) {
-		klog.V(6).Infof("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
+		log.Tracef("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
 		return
 	}
 	// Need to delete the old object from the local cache. If the labels have changed, the syncAutoscaler would not override the old key.
 	toDelete := autoscalers.InspectWPA(oldAutoscaler)
 	h.deleteFromLocalStore(toDelete)
-	klog.V(6).Infof("Processing update event for wpa %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
+	log.Tracef("Processing update event for wpa %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
 	h.enqueueWPA(newAutoscaler)
 }
 
@@ -272,14 +267,14 @@ func (h *AutoscalersController) deleteWPAutoscaler(obj interface{}) {
 	defer h.mu.Unlock()
 	toDelete := &custommetrics.MetricsBundle{}
 	deletedWPA := &apis_v1alpha1.WatermarkPodAutoscaler{}
-	if err := StructureIntoWPA(obj, deletedWPA); err == nil {
+	if err := UnstructuredIntoWPA(obj, deletedWPA); err == nil {
 		toDelete.External = autoscalers.InspectWPA(deletedWPA)
 		h.deleteFromLocalStore(toDelete.External)
-		klog.V(5).Infof("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
+		log.Debugf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
 		if !h.isLeaderFunc() {
 			return
 		}
-		klog.Infof("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedWPA.Namespace, deletedWPA.Name)
+		log.Infof("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedWPA.Namespace, deletedWPA.Name)
 		if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 			h.enqueueWPA(deletedWPA)
 		}
@@ -288,16 +283,16 @@ func (h *AutoscalersController) deleteWPAutoscaler(obj interface{}) {
 
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if !ok {
-		klog.Errorf("Could not get object from tombstone %#v", obj)
+		log.Errorf("Could not get object from tombstone %#v", obj)
 		return
 	}
-	if err := StructureIntoWPA(tombstone, deletedWPA); err != nil {
-		klog.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
+	if err := UnstructuredIntoWPA(tombstone, deletedWPA); err != nil {
+		log.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
 		return
 	}
-	klog.V(5).Infof("Deleting Metrics from WPA %s/%s", deletedWPA.Namespace, deletedWPA.Name)
+	log.Debugf("Deleting Metrics from WPA %s/%s", deletedWPA.Namespace, deletedWPA.Name)
 	toDelete.External = autoscalers.InspectWPA(deletedWPA)
-	klog.V(5).Infof("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
+	log.Debugf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
 	h.deleteFromLocalStore(toDelete.External)
 	if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 		h.enqueueWPA(deletedWPA)

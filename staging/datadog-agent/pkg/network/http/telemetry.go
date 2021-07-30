@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type telemetry struct {
@@ -61,7 +61,7 @@ func (t *telemetry) report() {
 		totalRequests += n
 	}
 
-	klog.V(5).Infof(
+	log.Debugf(
 		"http stats summary: requests_processed=%d(%.2f/s) requests_missed=%d(%.2f/s) requests_dropped=%d(%.2f/s) aggregations=%d",
 		totalRequests,
 		float64(totalRequests)/float64(t.elapsed),

@@ -14,9 +14,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/pkg/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 )
 
 func TestSplitPayloadsSeries(t *testing.T) {

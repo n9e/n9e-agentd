@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/common/types"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/common/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

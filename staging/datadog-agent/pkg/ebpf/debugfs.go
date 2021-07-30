@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +29,7 @@ const KprobeProfile = "/sys/kernel/debug/tracing/kprobe_profile"
 func GetProbeStats() map[string]int64 {
 	m, err := readKprobeProfile(KprobeProfile)
 	if err != nil {
-		klog.V(5).Infof("error retrieving probe stats: %s", err)
+		log.Debugf("error retrieving probe stats: %s", err)
 		return map[string]int64{}
 	}
 
@@ -53,7 +53,7 @@ func GetProbeTotals() KprobeStats {
 	stats := KprobeStats{}
 	m, err := readKprobeProfile(KprobeProfile)
 	if err != nil {
-		klog.V(5).Infof("error retrieving probe stats: %s", err)
+		log.Debugf("error retrieving probe stats: %s", err)
 		return stats
 	}
 
@@ -84,13 +84,13 @@ func readKprobeProfile(path string) (map[string]KprobeStats, error) {
 
 		hits, err := strconv.ParseInt(fields[1], 10, 64)
 		if err != nil {
-			klog.V(5).Infof("error parsing kprobe_profile output for hits (%s): %s", fields[1], err)
+			log.Debugf("error parsing kprobe_profile output for hits (%s): %s", fields[1], err)
 			continue
 		}
 
 		misses, err := strconv.ParseInt(fields[2], 10, 64)
 		if err != nil {
-			klog.V(5).Infof("error parsing kprobe_profile output for miss (%s): %s", fields[2], err)
+			log.Debugf("error parsing kprobe_profile output for miss (%s): %s", fields[2], err)
 			continue
 		}
 

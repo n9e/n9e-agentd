@@ -9,12 +9,12 @@ import (
 	"io"
 	"net"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/parser"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/parser"
 )
 
 // Tailer reads data from a connection
@@ -87,7 +87,7 @@ func (t *Tailer) readForever() {
 			}
 			if err != nil {
 				// an error occurred, stop from reading new data
-				klog.Warningf("Couldn't read message from connection: %v", err)
+				log.Warnf("Couldn't read message from connection: %v", err)
 				return
 			}
 			t.source.BytesRead.Add(int64(len(data)))

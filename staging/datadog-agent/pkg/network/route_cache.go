@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/golang/groupcache/lru"
 	"github.com/vishvananda/netlink"
 )
@@ -151,12 +151,12 @@ func (n *netlinkRouter) Route(source, dest util.Address, netns uint32) (Route, b
 		})
 
 	if err != nil || len(routes) != 1 {
-		klog.V(6).Infof("could not get route for src=%s dest=%s err=%s routes=%+v", source, dest, err, routes)
+		log.Tracef("could not get route for src=%s dest=%s err=%s routes=%+v", source, dest, err, routes)
 		return Route{}, false
 	}
 
 	r := routes[0]
-	klog.V(6).Infof("route for src=%s dst=%s: scope=%s gw=%+v if=%d", source, dest, r.Scope, r.Gw, r.LinkIndex)
+	log.Tracef("route for src=%s dst=%s: scope=%s gw=%+v if=%d", source, dest, r.Scope, r.Gw, r.LinkIndex)
 	return Route{
 		Gateway: util.AddressFromNetIP(r.Gw),
 		IfIndex: r.LinkIndex,

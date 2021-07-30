@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -60,7 +60,7 @@ func readProcNetWithStatus(path string, status int64) ([]uint16, error) {
 
 			state, err := strconv.ParseInt(string(rawState), 16, 0)
 			if err != nil {
-				klog.Errorf("error parsing tcp state [%s] as hex: %s", rawState, err)
+				log.Errorf("error parsing tcp state [%s] as hex: %s", rawState, err)
 				continue
 			}
 
@@ -75,7 +75,7 @@ func readProcNetWithStatus(path string, status int64) ([]uint16, error) {
 
 			port, err := strconv.ParseInt(string(rawLocal[idx+1:]), 16, 0)
 			if err != nil {
-				klog.Errorf("error parsing port [%s] as hex: %s", rawLocal[idx+1:], err)
+				log.Errorf("error parsing port [%s] as hex: %s", rawLocal[idx+1:], err)
 				continue
 			}
 

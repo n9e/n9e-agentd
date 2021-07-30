@@ -8,7 +8,7 @@ package rules
 import (
 	"reflect"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 )
 
 type truthEntry struct {

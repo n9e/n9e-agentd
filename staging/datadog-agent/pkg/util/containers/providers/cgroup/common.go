@@ -11,8 +11,10 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 // ContainerCgroup is a structure that stores paths and mounts for a cgroup.
@@ -44,7 +46,7 @@ func readLines(filename string) ([]string, error) {
 // hostProc returns the location of a host's procfs. This can and will be
 // overridden when running inside a container.
 func hostProc(combineWith ...string) string {
-	parts := append([]string{config.C.ContainerProcRoot}, combineWith...)
+	parts := append([]string{config.Datadog.GetString("container_proc_root")}, combineWith...)
 	return filepath.Join(parts...)
 }
 
@@ -54,4 +56,31 @@ func pathExists(filename string) bool {
 		return true
 	}
 	return false
+}
+
+func parseCPUSetFile(lines []string) int {
+	numCPUs := 0
+	if len(lines) == 0 {
+		return numCPUs
+	}
+	// File contents should be only one line so assume this is the case.
+	line := lines[0]
+
+	// Examples of List Format:
+	//		0-5
+	//		0-4,9
+	//		0-2,7,12-14
+	lineSlice := strings.Split(line, ",")
+	for _, l := range lineSlice {
+		lineParts := strings.Split(l, "-")
+		if len(lineParts) == 2 {
+			p0, _ := strconv.Atoi(lineParts[0])
+			p1, _ := strconv.Atoi(lineParts[1])
+			numCPUs += p1 - p0 + 1
+		} else if len(lineParts) == 1 {
+			numCPUs++
+		}
+	}
+
+	return numCPUs
 }

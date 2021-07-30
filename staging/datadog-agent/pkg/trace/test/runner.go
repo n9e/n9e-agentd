@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/tinylib/msgp/msgp"
 )
 

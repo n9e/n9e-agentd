@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
+	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
 )
 
 type ProviderTestSuite struct {
@@ -30,7 +30,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 		numberOfPipelines: 3,
 		auditor:           suite.a,
 		pipelines:         []*Pipeline{},
-		endpoints:         config.NewEndpoints(config.Endpoint{}, nil, true, false, 0, 0),
+		endpoints:         config.NewEndpoints(config.Endpoint{}, nil, true, false),
 	}
 }
 

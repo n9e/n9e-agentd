@@ -8,8 +8,8 @@
 package clusterchecks
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers/names"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/providers/names"
 )
 
 // getEndpointsConfigs provides configs templates of endpoints checks queried by node name.

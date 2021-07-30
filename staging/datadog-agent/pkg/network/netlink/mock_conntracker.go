@@ -5,7 +5,7 @@
 package netlink
 
 import (
-	network "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
+	network "github.com/DataDog/datadog-agent/pkg/network"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

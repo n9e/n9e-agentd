@@ -5,9 +5,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 	"golang.org/x/time/rate"
 )
 
@@ -148,9 +148,9 @@ func (e *ExceptionSampler) loadSeenSpans(shardSig Signature) *seenSpans {
 }
 
 func (e *ExceptionSampler) report() {
-	metrics.Count("trace_agent.sampler.exception.hits", atomic.SwapInt64(&e.hits, 0), nil, 1)
-	metrics.Count("trace_agent.sampler.exception.misses", atomic.SwapInt64(&e.misses, 0), nil, 1)
-	metrics.Gauge("trace_agent.sampler.exception.shrinks", float64(atomic.LoadInt64(&e.shrinks)), nil, 1)
+	metrics.Count("datadog.trace_agent.sampler.exception.hits", atomic.SwapInt64(&e.hits, 0), nil, 1)
+	metrics.Count("datadog.trace_agent.sampler.exception.misses", atomic.SwapInt64(&e.misses, 0), nil, 1)
+	metrics.Gauge("datadog.trace_agent.sampler.exception.shrinks", float64(atomic.LoadInt64(&e.shrinks)), nil, 1)
 }
 
 // seenSpans keeps record of a set of spans.

@@ -10,8 +10,8 @@ package custommetrics
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/telemetry"
-	le "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
+	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	le "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection/metrics"
 )
 
 const (

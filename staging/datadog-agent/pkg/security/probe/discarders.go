@@ -22,11 +22,12 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/pkg/errors"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf"
+	seclog "github.com/DataDog/datadog-agent/pkg/security/log"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -34,6 +35,10 @@ const (
 	DiscardInodeOp = iota + 1
 	// DiscardPidOp discards a pid
 	DiscardPidOp
+	// ResolveSegmentOp resolves the requested segment
+	ResolveSegmentOp
+	// ResolvePathOp resolves the requested path
+	ResolvePathOp
 )
 
 const (
@@ -139,9 +144,9 @@ func newPidDiscarders(m *lib.Map, erpc *ERPC) *pidDiscarders {
 }
 
 type inodeDiscarder struct {
-	PathKey  PathKey
-	Revision uint32
-	Padding  uint32
+	PathKey PathKey
+	IsLeaf  uint32
+	Padding uint32
 }
 
 type inodeDiscarders struct {
@@ -202,9 +207,13 @@ func (id *inodeDiscarders) initRevision(mountEvent *model.MountEvent) {
 	id.revisionCache[key] = revision
 
 	if err := id.revisions.Put(ebpf.Uint32MapItem(key), ebpf.Uint32MapItem(revision)); err != nil {
-		klog.Errorf("unable to initialize discarder revisions: %s", err)
+		log.Errorf("unable to initialize discarder revisions: %s", err)
 	}
 }
+
+var (
+	discarderEvent = NewEvent(nil, nil)
+)
 
 // Important should always be called after having checked that the file is not a discarder itself otherwise it can report incorrect
 // parent discarder
@@ -218,7 +227,11 @@ func isParentPathDiscarder(rs *rules.RuleSet, regexCache *simplelru.LRU, eventTy
 
 	basenameField := strings.Replace(filenameField, ".path", ".name", 1)
 
-	event := NewEvent(nil, nil)
+	event := discarderEvent
+	defer func() {
+		*discarderEvent = eventZero
+	}()
+
 	if _, err := event.GetFieldType(filenameField); err != nil {
 		return false, nil
 	}
@@ -244,7 +257,7 @@ func isParentPathDiscarder(rs *rules.RuleSet, regexCache *simplelru.LRU, eventTy
 		if values := rule.GetFieldValues(filenameField); len(values) > 0 {
 			for _, value := range values {
 				if value.Type == eval.PatternValueType {
-					if value.Regex.MatchString(dirname) {
+					if value.Regexp.MatchString(dirname) {
 						return false, nil
 					}
 
@@ -294,7 +307,7 @@ func isParentPathDiscarder(rs *rules.RuleSet, regexCache *simplelru.LRU, eventTy
 		}
 	}
 
-	klog.V(6).Infof("`%s` discovered as parent discarder", dirname)
+	seclog.Tracef("`%s` discovered as parent discarder", dirname)
 
 	return true, nil
 }
@@ -342,13 +355,13 @@ func filenameDiscarderWrapper(eventType model.EventType, handler onDiscarderHand
 			isDiscarded, _, parentInode, err := probe.inodeDiscarders.discardParentInode(rs, eventType, field, filename, mountID, inode, pathID)
 			if !isDiscarded && !isDeleted {
 				if _, ok := err.(*ErrInvalidKeyPath); !ok {
-					klog.V(6).Infof("Apply `%s.file.path` inode discarder for event `%s`, inode: %d", eventType, eventType, inode)
+					seclog.Tracef("Apply `%s.file.path` inode discarder for event `%s`, inode: %d(%s)", eventType, eventType, inode, filename)
 
 					// not able to discard the parent then only discard the filename
 					err = probe.inodeDiscarders.discardInode(eventType, mountID, inode, true)
 				}
 			} else {
-				klog.V(6).Infof("Apply `%s.file.path` parent inode discarder for event `%s` with value `%s`", eventType, eventType, filename)
+				seclog.Tracef("Apply `%s.file.path` parent inode discarder for event `%s`, inode: %d(%s)", eventType, eventType, parentInode, filename)
 			}
 
 			if err != nil {
@@ -399,7 +412,7 @@ func createInvalidDiscardersCache() map[eval.Field]map[interface{}]bool {
 func processDiscarderWrapper(eventType model.EventType, fnc onDiscarderHandler) onDiscarderHandler {
 	return func(rs *rules.RuleSet, event *Event, probe *Probe, discarder Discarder) error {
 		if discarder.Field == "process.file.path" {
-			klog.V(6).Infof("Apply process.file.path discarder for event `%s`, inode: %d, pid: %d", eventType, event.ProcessContext.FileFields.Inode, event.ProcessContext.Pid)
+			seclog.Tracef("Apply process.file.path discarder for event `%s`, inode: %d, pid: %d", eventType, event.ProcessContext.FileFields.Inode, event.ProcessContext.Pid)
 
 			// discard by PID for long running process
 			if err := probe.pidDiscarders.discard(eventType, event.ProcessContext.Pid); err != nil {

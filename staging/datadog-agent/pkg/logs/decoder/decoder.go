@@ -7,11 +7,11 @@ package decoder
 
 import (
 	"bytes"
+	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/parser"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/parser"
 )
 
 // defaultContentLenLimit represents the max size for a line,
@@ -68,6 +68,10 @@ func NewMessage(content []byte, status string, rawDataLen int, timestamp string)
 // a lineHandler that emits outputs
 // Input->[decoder]->[parser]->[handler]->Message
 type Decoder struct {
+	// The number of raw lines decoded from the input before they are processed.
+	// Needs to be first to ensure 64 bit alignment
+	linesDecoded int64
+
 	InputChan       chan *Input
 	OutputChan      chan *Message
 	matcher         EndLineMatcher
@@ -91,7 +95,7 @@ func NewDecoderWithEndLineMatcher(source *config.LogSource, parser parser.Parser
 	var lineParser LineParser
 
 	for _, rule := range source.Config.ProcessingRules {
-		if rule.Type == types.MultiLine {
+		if rule.Type == config.MultiLine {
 			lh := NewMultiLineHandler(outputChan, rule.Regex, config.AggregationTimeout(), lineLimit)
 
 			// Since a single source can have multiple file tailers - each with their own decoder instance,
@@ -144,6 +148,11 @@ func (d *Decoder) Stop() {
 	close(d.InputChan)
 }
 
+// GetLineCount returns the number of decoded lines
+func (d *Decoder) GetLineCount() int64 {
+	return atomic.LoadInt64(&d.linesDecoded)
+}
+
 // run lets the Decoder handle data coming from InputChan
 func (d *Decoder) run() {
 	for data := range d.InputChan {
@@ -188,4 +197,5 @@ func (d *Decoder) sendLine() {
 	d.lineBuffer.Reset()
 	d.lineParser.Handle(NewDecodedInput(content, d.rawDataLen))
 	d.rawDataLen = 0
+	atomic.AddInt64(&d.linesDecoded, 1)
 }

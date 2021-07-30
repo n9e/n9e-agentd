@@ -6,6 +6,7 @@
 package clusteragent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,15 +17,15 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/security"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
-	apiv1 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/api/v1"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/retry"
-	"github.com/n9e/n9e-agentd/pkg/version"
+	"github.com/DataDog/datadog-agent/pkg/api/security"
+	"github.com/DataDog/datadog-agent/pkg/api/util"
+	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/retry"
+	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 /*
@@ -53,9 +54,9 @@ type DCAClientInterface interface {
 	GetKubernetesMetadataNames(nodeName, ns, podName string) ([]string, error)
 	GetCFAppsMetadataForNode(nodename string) (map[string][]string, error)
 
-	PostClusterCheckStatus(nodeName string, status types.NodeStatus) (types.StatusResponse, error)
-	GetClusterCheckConfigs(nodeName string) (types.ConfigResponse, error)
-	GetEndpointsCheckConfigs(nodeName string) (types.ConfigResponse, error)
+	PostClusterCheckStatus(ctx context.Context, nodeName string, status types.NodeStatus) (types.StatusResponse, error)
+	GetClusterCheckConfigs(ctx context.Context, nodeName string) (types.ConfigResponse, error)
+	GetEndpointsCheckConfigs(ctx context.Context, nodeName string) (types.ConfigResponse, error)
 	GetKubernetesClusterID() (string, error)
 }
 
@@ -90,7 +91,7 @@ func GetClusterAgentClient() (DCAClientInterface, error) {
 		})
 	}
 	if err := globalClusterAgentClient.initRetry.TriggerRetry(); err != nil {
-		klog.V(5).Infof("Cluster Agent init error: %v", err)
+		log.Debugf("Cluster Agent init error: %v", err)
 		return nil, err
 	}
 	return globalClusterAgentClient, nil
@@ -111,7 +112,7 @@ func (c *DCAClient) init() error {
 
 	c.clusterAgentAPIRequestHeaders = http.Header{}
 	c.clusterAgentAPIRequestHeaders.Set(authorizationHeaderKey, fmt.Sprintf("Bearer %s", authToken))
-	podIP := config.C.CLCRunnerHost
+	podIP := config.Datadog.GetString("clc_runner_host")
 	c.clusterAgentAPIRequestHeaders.Set(RealIPHeader, podIP)
 
 	// TODO remove insecure
@@ -123,7 +124,7 @@ func (c *DCAClient) init() error {
 	if err != nil {
 		return err
 	}
-	klog.Infof("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String())
+	log.Infof("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String())
 
 	// Clone the http client in a new client with built-in redirect handler
 	c.leaderClient = newLeaderClient(c.clusterAgentAPIClient, c.clusterAgentAPIEndpoint)
@@ -147,17 +148,16 @@ func (c *DCAClient) ClusterAgentAPIEndpoint() string {
 // 2nd. environment variables associated with "cluster_agent.kubernetes_service_name"
 //      ${dcaServiceName}_SERVICE_HOST and ${dcaServiceName}_SERVICE_PORT
 func getClusterAgentEndpoint() (string, error) {
-	cf := config.C
 	const configDcaURL = "cluster_agent.url"
-	const configDcaSvcName = "clusterAgent.kubServiceName"
+	const configDcaSvcName = "cluster_agent.kubernetes_service_name"
 
-	dcaURL := cf.ClusterAgent.Url
+	dcaURL := config.Datadog.GetString(configDcaURL)
 	if dcaURL != "" {
 		if strings.HasPrefix(dcaURL, "http://") {
 			return "", fmt.Errorf("cannot get cluster agent endpoint, not a https scheme: %s", dcaURL)
 		}
 		if strings.Contains(dcaURL, "://") == false {
-			klog.V(6).Infof("Adding https scheme to %s: https://%s", dcaURL, dcaURL)
+			log.Tracef("Adding https scheme to %s: https://%s", dcaURL, dcaURL)
 			dcaURL = fmt.Sprintf("https://%s", dcaURL)
 		}
 		u, err := url.Parse(dcaURL)
@@ -167,14 +167,14 @@ func getClusterAgentEndpoint() (string, error) {
 		if u.Scheme != "https" {
 			return "", fmt.Errorf("cannot get cluster agent endpoint, not a https scheme: %s", u.Scheme)
 		}
-		klog.V(5).Infof("Connecting to the configured URL for the Datadog Cluster Agent: %s", dcaURL)
+		log.Debugf("Connecting to the configured URL for the Datadog Cluster Agent: %s", dcaURL)
 		return u.String(), nil
 	}
 
 	// Construct the URL with the Kubernetes service environment variables
 	// *_SERVICE_HOST and *_SERVICE_PORT
-	dcaSvc := cf.ClusterAgent.KubernetesServiceName
-	klog.V(5).Infof("Identified service for the Datadog Cluster Agent: %s", dcaSvc)
+	dcaSvc := config.Datadog.GetString(configDcaSvcName)
+	log.Debugf("Identified service for the Datadog Cluster Agent: %s", dcaSvc)
 	if dcaSvc == "" {
 		return "", fmt.Errorf("cannot get a cluster agent endpoint, both %s and %s are empty", configDcaURL, configDcaSvcName)
 	}

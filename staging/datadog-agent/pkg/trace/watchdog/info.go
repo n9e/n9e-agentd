@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -66,7 +66,7 @@ func init() {
 	var err error
 	globalCurrentInfo, err = NewCurrentInfo()
 	if err != nil {
-		klog.Errorf("Unable to create global Process: %v", err)
+		log.Errorf("Unable to create global Process: %v", err)
 	}
 }
 
@@ -91,7 +91,7 @@ func (pi *CurrentInfo) CPU(now time.Time) CPUInfo {
 
 	userTime, err := cpuTimeUser(pi.pid)
 	if err != nil {
-		klog.V(5).Infof("Unable to get CPU times: %v", err)
+		log.Debugf("Unable to get CPU times: %v", err)
 		return pi.lastCPU
 	}
 

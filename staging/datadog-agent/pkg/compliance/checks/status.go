@@ -8,9 +8,9 @@ package checks
 import (
 	"sync"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // status maintains status updates for all configured checks
@@ -40,11 +40,11 @@ func (s *status) updateCheck(ruleID string, event *event.Event) {
 
 	stats, ok := s.checks[ruleID]
 	if !ok {
-		klog.Errorf("Check with ruleID=%s is not registered in check state", ruleID)
+		log.Errorf("Check with ruleID=%s is not registered in check state", ruleID)
 		return
 	}
 	if stats == nil {
-		klog.Errorf("Check with ruleID=%s has nil stats", ruleID)
+		log.Errorf("Check with ruleID=%s has nil stats", ruleID)
 		return
 	}
 	stats.LastEvent = event

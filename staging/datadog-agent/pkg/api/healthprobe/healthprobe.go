@@ -14,8 +14,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gorilla/mux"
 )
 
@@ -69,12 +70,15 @@ func healthHandler(getStatusNonBlocking func() (health.Status, error), w http.Re
 
 	if len(health.Unhealthy) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
-		klog.Infof("Healthcheck failed on: %v", health.Unhealthy)
+		log.Infof("Healthcheck failed on: %v", health.Unhealthy)
+		if config.Datadog.GetBool("log_all_goroutines_when_unhealthy") {
+			log.Infof("Goroutines stack: \n%s\n", allStack())
+		}
 	}
 
 	jsonHealth, err := json.Marshal(health)
 	if err != nil {
-		klog.Errorf("Error marshalling status. Error: %v", err)
+		log.Errorf("Error marshalling status. Error: %v", err)
 		body, _ := json.Marshal(map[string]string{"error": err.Error()})
 		http.Error(w, string(body), 500)
 		return

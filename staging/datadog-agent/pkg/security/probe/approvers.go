@@ -10,10 +10,10 @@ package probe
 import (
 	"path"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/secl/eval"
+	"github.com/DataDog/datadog-agent/pkg/security/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/security/model"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/secl/eval"
 )
 
 type onApproverHandler func(probe *Probe, approvers rules.Approvers) (activeApprovers, error)

@@ -13,10 +13,10 @@ import (
 
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/pb"
 	"github.com/stretchr/testify/assert"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pb"
 )
 
 func TestRawEncoder(t *testing.T) {
@@ -51,7 +51,7 @@ func TestRawEncoder(t *testing.T) {
 	assert.Equal(t, "-", parts[4])
 	assert.Equal(t, "-", parts[5])
 	extra := content[strings.Index(content, "[") : strings.LastIndex(content, "]")+1]
-	assert.Equal(t, "[dd source=\"Source\"][dd sourcecategory=\"SourceCategory\"][dd tags=\"foo:bar,baz,a,b:c\"]", extra)
+	assert.Equal(t, "[dd ddsource=\"Source\"][dd ddsourcecategory=\"SourceCategory\"][dd ddtags=\"foo:bar,baz,a,b:c\"]", extra)
 	assert.Equal(t, "redacted", content[strings.LastIndex(content, " ")+1:])
 
 }

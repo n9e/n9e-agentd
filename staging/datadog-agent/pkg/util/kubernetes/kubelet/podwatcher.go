@@ -8,13 +8,14 @@
 package kubelet
 
 import (
+	"context"
 	"hash/fnv"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const unreadinessTimeout = 30 * time.Second
@@ -61,9 +62,9 @@ func (w *PodWatcher) isWatchingTags() bool {
 // PullChanges pulls a new podList from the kubelet and returns Pod objects for
 // new / updated pods. Updated pods will be sent entirely, user must replace
 // previous info for these pods.
-func (w *PodWatcher) PullChanges() ([]*Pod, error) {
+func (w *PodWatcher) PullChanges(ctx context.Context) ([]*Pod, error) {
 	var podList []*Pod
-	podList, err := w.kubeUtil.GetLocalPodList()
+	podList, err := w.kubeUtil.GetLocalPodList(ctx)
 	if err != nil {
 		return podList, err
 	}
@@ -146,7 +147,7 @@ func (w *PodWatcher) computeChanges(podList []*Pod) ([]*Pod, error) {
 			updatedPods = append(updatedPods, pod)
 		}
 	}
-	klog.V(5).Infof("Found %d changed pods out of %d", len(updatedPods), len(podList))
+	log.Debugf("Found %d changed pods out of %d", len(updatedPods), len(podList))
 	return updatedPods, nil
 }
 
@@ -187,8 +188,8 @@ func (w *PodWatcher) Expire() ([]string, error) {
 // GetPodForEntityID finds the pod corresponding to an entity.
 // EntityIDs can be Docker container IDs or pod UIDs (prefixed).
 // Returns a nil pointer if not found.
-func (w *PodWatcher) GetPodForEntityID(entityID string) (*Pod, error) {
-	return w.kubeUtil.GetPodForEntityID(entityID)
+func (w *PodWatcher) GetPodForEntityID(ctx context.Context, entityID string) (*Pod, error) {
+	return w.kubeUtil.GetPodForEntityID(ctx, entityID)
 }
 
 // digestPodMeta returns a unique hash of pod labels

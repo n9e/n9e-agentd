@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"syscall"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	acl "github.com/hectane/go-acl"
 	"golang.org/x/sys/windows"
 )
@@ -49,27 +49,27 @@ func lookupUsernameAndDomain(usid *syscall.SID) (username, domain string, e erro
 func saveAuthToken(token, tokenPath string) error {
 	// get the current user
 	var sidString string
-	klog.Infof("Getting sidstring from user")
+	log.Infof("Getting sidstring from user")
 	tok, e := syscall.OpenCurrentProcessToken()
 	if e != nil {
-		klog.Warningf("Couldn't get process token %v", e)
+		log.Warnf("Couldn't get process token %v", e)
 		return e
 	}
 	defer tok.Close()
 	user, e := tok.GetTokenUser()
 	if e != nil {
-		klog.Warningf("Couldn't get  token user %v", e)
+		log.Warnf("Couldn't get  token user %v", e)
 		return e
 	}
 	sidString, e = user.User.Sid.String()
 	if e != nil {
-		klog.Warningf("Couldn't get  user sid string %v", e)
+		log.Warnf("Couldn't get  user sid string %v", e)
 		return e
 	}
-	klog.Infof("Getting sidstring from current user")
+	log.Infof("Getting sidstring from current user")
 	currUserSid, err := windows.StringToSid(sidString)
 	if err != nil {
-		klog.Warningf("Unable to get current user sid %v", err)
+		log.Warnf("Unable to get current user sid %v", err)
 		return err
 	}
 	err = ioutil.WriteFile(tokenPath, []byte(token), 0755)
@@ -81,7 +81,7 @@ func saveAuthToken(token, tokenPath string) error {
 			acl.GrantSid(windows.GENERIC_ALL, wellKnownSids["Administrators"]),
 			acl.GrantSid(windows.GENERIC_ALL, wellKnownSids["System"]),
 			acl.GrantSid(windows.GENERIC_ALL, currUserSid))
-		klog.Infof("Wrote auth token acl %v", err)
+		log.Infof("Wrote auth token acl %v", err)
 	}
 	return err
 }

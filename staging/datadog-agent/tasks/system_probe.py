@@ -11,7 +11,7 @@ from invoke import task
 from invoke.exceptions import Exit
 
 from .build_tags import get_default_build_tags
-from .utils import REPO_PATH, bin_name, get_build_flags, get_version_numeric_only
+from .utils import REPO_PATH, bin_name, bundle_files, get_build_flags, get_version_numeric_only
 
 BIN_DIR = os.path.join(".", "bin", "system-probe")
 BIN_PATH = os.path.join(BIN_DIR, bin_name("system-probe", android=False))
@@ -22,6 +22,7 @@ EBPF_BUILDER_FILE = os.path.join(".", "tools", "ebpf", "Dockerfiles", "Dockerfil
 BPF_TAG = "linux_bpf"
 BUNDLE_TAG = "ebpf_bindata"
 BCC_TAG = "bcc"
+NPM_TAG = "npm"
 GIMME_ENV_VARS = ['GOROOT', 'PATH']
 
 CLANG_CMD = "clang {flags} -c '{c_file}' -o '{bc_file}'"
@@ -29,7 +30,7 @@ LLC_CMD = "llc -march=bpf -filetype=obj -o '{obj_file}' '{bc_file}'"
 
 DATADOG_AGENT_EMBEDDED_PATH = '/opt/datadog-agent/embedded'
 
-KITCHEN_DIR = os.path.join("test", "kitchen")
+KITCHEN_DIR = os.getenv('DD_AGENT_TESTING_DIR') or os.path.normpath(os.path.join(os.getcwd(), "test", "kitchen"))
 KITCHEN_ARTIFACT_DIR = os.path.join(KITCHEN_DIR, "site-cookbooks", "dd-system-probe-check", "files", "default", "tests")
 TEST_PACKAGES_LIST = ["./pkg/ebpf/...", "./pkg/network/..."]
 TEST_PACKAGES = " ".join(TEST_PACKAGES_LIST)
@@ -49,6 +50,7 @@ def build(
     windows=is_windows,
     arch="x64",
     embedded_path=DATADOG_AGENT_EMBEDDED_PATH,
+    compile_ebpf=True,
     bundle_ebpf=False,
 ):
     """
@@ -84,9 +86,11 @@ def build(
             )
         )
     else:
-        # Only build ebpf files on unix
-        build_object_files(ctx, bundle_ebpf=bundle_ebpf)
+        if compile_ebpf:
+            # Only build ebpf files on unix
+            build_object_files(ctx, bundle_ebpf=bundle_ebpf)
 
+    generate_cgo_types(ctx, windows=windows)
     ldflags, gcflags, env = get_build_flags(
         ctx, major_version=major_version, python_runtimes=python_runtimes, embedded_path=embedded_path
     )
@@ -158,6 +162,7 @@ def test(
     runtime_compiled=False,
     skip_linters=False,
     run=None,
+    windows=is_windows,
 ):
     """
     Run tests on eBPF parts
@@ -172,16 +177,18 @@ def test(
             "preserve your environment",
         )
 
-    if not skip_linters:
+    if not skip_linters and not windows:
         clang_format(ctx)
         clang_tidy(ctx)
 
-    if not skip_object_files:
+    if not skip_object_files and not windows:
         build_object_files(ctx, bundle_ebpf=bundle_ebpf)
 
-    build_tags = [BPF_TAG]
-    if bundle_ebpf:
-        build_tags.append(BUNDLE_TAG)
+    build_tags = [NPM_TAG]
+    if not windows:
+        build_tags.append(BPF_TAG)
+        if bundle_ebpf:
+            build_tags.append(BUNDLE_TAG)
 
     args = {
         "build_tags": ",".join(build_tags),
@@ -195,15 +202,15 @@ def test(
     if runtime_compiled:
         env['DD_TESTS_RUNTIME_COMPILED'] = "1"
 
-    cmd = 'go test -mod=mod -v -tags {build_tags} {output_params} {pkgs} {run}'
-    if not is_root():
+    cmd = 'go test -mod=mod -v -tags "{build_tags}" {output_params} {pkgs} {run}'
+    if not windows and not is_root():
         cmd = 'sudo -E ' + cmd
 
     ctx.run(cmd.format(**args), env=env)
 
 
 @task
-def kitchen_prepare(ctx):
+def kitchen_prepare(ctx, windows=is_windows):
     """
     Compile test suite for kitchen
     """
@@ -212,12 +219,19 @@ def kitchen_prepare(ctx):
     if os.path.exists(KITCHEN_ARTIFACT_DIR):
         shutil.rmtree(KITCHEN_ARTIFACT_DIR)
 
+    build_tags = [NPM_TAG]
+    if not windows:
+        build_tags.append(BPF_TAG)
+
     # Retrieve a list of all packages we want to test
     # This handles the elipsis notation (eg. ./pkg/ebpf/...)
     target_packages = []
     for pkg in TEST_PACKAGES_LIST:
         target_packages += (
-            check_output("go list -f '{{{{ .Dir }}}}' -tags {tags} {pkg}".format(tags=BPF_TAG, pkg=pkg), shell=True)
+            check_output(
+                'go list -f "{{{{ .Dir }}}}" -mod=mod -tags "{tags}" {pkg}'.format(tags=",".join(build_tags), pkg=pkg),
+                shell=True,
+            )
             .decode('utf-8')
             .strip()
             .split("\n")
@@ -250,7 +264,7 @@ def kitchen_prepare(ctx):
 
 
 @task
-def kitchen_test(ctx, target=None):
+def kitchen_test(ctx, target=None, arch="x86_64"):
     """
     Run tests (locally) using chef kitchen against an array of different platforms.
     * Make sure to run `inv -e system-probe.kitchen-prepare` using the agent-development VM;
@@ -262,7 +276,7 @@ def kitchen_test(ctx, target=None):
     with open(os.path.join(KITCHEN_DIR, "platforms.json"), 'r') as f:
         for platform, by_provider in json.load(f).items():
             if "vagrant" in by_provider:
-                for image in by_provider["vagrant"]:
+                for image in by_provider["vagrant"][arch]:
                     images[image] = platform
 
     if not (target in images):
@@ -294,7 +308,7 @@ def nettop(ctx, incremental_build=False, go_mod="mod"):
     # Build
     ctx.run(
         cmd.format(
-            path=os.path.join(REPO_PATH, "pkg", "ebpf", "nettop"),
+            path=os.path.join(REPO_PATH, "pkg", "network", "nettop"),
             bin_path=bin_path,
             go_mod=go_mod,
             build_type="" if incremental_build else "-a",
@@ -494,7 +508,7 @@ def get_ebpf_build_flags():
         '-D__KERNEL__',
         '-DCONFIG_64BIT',
         '-D__BPF_TRACING__',
-        '-DKBUILD_MODNAME=\'"ddsysprobe"\'',
+        '-DKBUILD_MODNAME=\\"ddsysprobe\\"',
         '-Wno-unused-value',
         '-Wno-pointer-sign',
         '-Wno-compare-distinct-pointer-types',
@@ -529,6 +543,8 @@ def build_network_ebpf_files(ctx, build_dir):
     compiled_programs = [
         "tracer",
         "offset-guess",
+        "http",
+        "dns",
     ]
 
     network_flags = get_ebpf_build_flags()
@@ -630,7 +646,7 @@ def build_object_files(ctx, bundle_ebpf=False):
 
     if bundle_ebpf:
         go_dir = os.path.join(bpf_dir, "bytecode", "bindata")
-        bundle_files(ctx, bindata_files, "pkg/.*/", go_dir)
+        bundle_files(ctx, bindata_files, "pkg/.*/", go_dir, "bindata", BUNDLE_TAG)
 
 
 @task
@@ -643,17 +659,25 @@ def generate_runtime_files(ctx):
         ctx.run("go generate -mod=mod -tags {tags} {file}".format(file=f, tags=BPF_TAG))
 
 
-def bundle_files(ctx, bindata_files, dir_prefix, go_dir):
-    assets_cmd = (
-        "go run github.com/shuLhan/go-bindata/cmd/go-bindata -tags {bundle_tag} -split"
-        + " -pkg bindata -prefix '{dir_prefix}' -modtime 1 -o '{go_dir}' '{bindata_files}'"
-    )
-    ctx.run(
-        assets_cmd.format(
-            dir_prefix=dir_prefix, go_dir=go_dir, bundle_tag=BUNDLE_TAG, bindata_files="' '".join(bindata_files)
-        )
-    )
-    ctx.run("gofmt -w -s {go_dir}".format(go_dir=go_dir))
+@task
+def generate_cgo_types(ctx, windows=is_windows):
+    if windows:
+        platform = "windows"
+        def_files = [
+            "./pkg/network/driver/types.go",
+        ]
+    else:
+        platform = "linux"
+        def_files = []
+
+    for f in def_files:
+        fdir, file = os.path.split(f)
+        base, _ = os.path.splitext(file)
+        with ctx.cd(fdir):
+            ctx.run(
+                "go tool cgo -godefs -- {file} > {base}_{platform}.go".format(file=file, base=base, platform=platform)
+            )
+            ctx.run("gofmt -w -s {base}_{platform}.go".format(base=base, platform=platform))
 
 
 def build_ebpf_builder(ctx):

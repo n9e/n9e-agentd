@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Provider returns a list of up-to-date tags for a given entity.
@@ -51,7 +51,7 @@ func (p *provider) GetTags() []string {
 
 	tags, err := tagger.Tag(p.entityID, collectors.HighCardinality)
 	if err != nil {
-		klog.Warningf("Cannot tag container %s: %v", p.entityID, err)
+		log.Warnf("Cannot tag container %s: %v", p.entityID, err)
 		return []string{}
 	}
 

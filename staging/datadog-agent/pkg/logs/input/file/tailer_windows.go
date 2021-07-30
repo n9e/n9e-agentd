@@ -8,13 +8,12 @@
 package file
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // setup sets up the file tailer
@@ -28,7 +27,7 @@ func (t *Tailer) setup(offset int64, whence int) error {
 	// adds metadata to enable users to filter logs by filename
 	t.tags = t.buildTailerTags()
 
-	klog.Info("Opening ", t.fullpath)
+	log.Info("Opening ", t.fullpath)
 	f, err := openFile(t.fullpath)
 	if err != nil {
 		return err
@@ -51,19 +50,18 @@ func (t *Tailer) readAvailable() (int, error) {
 
 	st, err := f.Stat()
 	if err != nil {
-		klog.V(5).Infof("Error stat()ing file %v", err)
+		log.Debugf("Error stat()ing file %v", err)
 		return 0, err
 	}
 
 	sz := st.Size()
 	offset := t.GetReadOffset()
-	klog.V(5).Infof("Size is %d, offset is %d", sz, offset)
 	if sz == 0 {
-		klog.V(5).Info("File size now zero, resetting offset")
+		log.Debug("File size now zero, resetting offset")
 		t.SetReadOffset(0)
 		t.SetDecodedOffset(0)
 	} else if sz < offset {
-		klog.V(5).Info("Offset off end of file, resetting")
+		log.Debug("Offset off end of file, resetting")
 		t.SetReadOffset(0)
 		t.SetDecodedOffset(0)
 	}
@@ -75,10 +73,8 @@ func (t *Tailer) readAvailable() (int, error) {
 		n, err := f.Read(inBuf)
 		bytes += n
 		if n == 0 || err != nil {
-			klog.V(5).Infof("Done reading")
 			return bytes, err
 		}
-		klog.V(5).Infof("Sending %d bytes to input channel", n)
 		t.decoder.InputChan <- decoder.NewInput(inBuf[:n])
 		t.incrementReadOffset(n)
 	}
@@ -93,7 +89,7 @@ func (t *Tailer) read() (int, error) {
 		return n, nil
 	} else if err != nil {
 		t.file.Source.Status.Error(err)
-		return n, fmt.Errorf("Err: %s", err)
+		return n, log.Error("Err: ", err)
 	}
 	return n, nil
 }

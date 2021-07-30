@@ -8,7 +8,7 @@ package docker
 import (
 	"testing"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator/mocksender"
+	"github.com/DataDog/datadog-agent/pkg/aggregator/mocksender"
 )
 
 func init() {

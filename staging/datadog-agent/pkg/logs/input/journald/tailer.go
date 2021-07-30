@@ -15,9 +15,9 @@ import (
 
 	"github.com/coreos/go-systemd/sdjournal"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // defaultWaitDuration represents the delay before which we try to collect a new log from the journal
@@ -58,14 +58,14 @@ func (t *Tailer) Start(cursor string) error {
 	}
 	t.source.Status.Success()
 	t.source.AddInput(t.journalPath())
-	klog.Info("Start tailing journal ", t.journalPath())
+	log.Info("Start tailing journal ", t.journalPath())
 	go t.tail()
 	return nil
 }
 
 // Stop stops the tailer
 func (t *Tailer) Stop() {
-	klog.Info("Stop tailing journal ", t.journalPath())
+	log.Info("Stop tailing journal ", t.journalPath())
 	t.stop <- struct{}{}
 	t.source.RemoveInput(t.journalPath())
 	<-t.done
@@ -139,7 +139,7 @@ func (t *Tailer) tail() {
 			if err != nil && err != io.EOF {
 				err := fmt.Errorf("cant't tail journal %s: %s", t.journalPath(), err)
 				t.source.Status.Error(err)
-				klog.Error(err)
+				log.Error(err)
 				return
 			}
 			if n < 1 {
@@ -149,7 +149,7 @@ func (t *Tailer) tail() {
 			}
 			entry, err := t.journal.GetEntry()
 			if err != nil {
-				klog.Warningf("Could not retrieve journal entry: %s", err)
+				log.Warnf("Could not retrieve journal entry: %s", err)
 				continue
 			}
 			if t.shouldDrop(entry) {

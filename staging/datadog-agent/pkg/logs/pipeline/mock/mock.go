@@ -8,8 +8,8 @@ package mock
 import (
 	"context"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
 )
 
 // mockProvider mocks pipeline providing logic

@@ -14,12 +14,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/ebpf/probes"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/netlink"
-	"github.com/n9e/n9e-agentd/pkg/process/util"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/network"
+	"github.com/DataDog/datadog-agent/pkg/network/config"
+	"github.com/DataDog/datadog-agent/pkg/network/ebpf/probes"
+	"github.com/DataDog/datadog-agent/pkg/network/netlink"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/ebpf"
 	"github.com/DataDog/ebpf/manager"
 	ct "github.com/florianl/go-conntrack"
@@ -30,10 +30,6 @@ import (
 #include "../ebpf/c/runtime/conntrack-types.h"
 */
 import "C"
-
-const (
-	initializationTimeout = time.Second * 10
-)
 
 var tuplePool = sync.Pool{
 	New: func() interface{} {
@@ -49,6 +45,7 @@ type ebpfConntracker struct {
 	telemetryMap *ebpf.Map
 	// only kept around for stats purposes from initial dump
 	consumer *netlink.Consumer
+	decoder  *netlink.Decoder
 
 	stats struct {
 		gets                 int64
@@ -94,22 +91,23 @@ func NewEBPFConntracker(cfg *config.Config) (netlink.Conntracker, error) {
 		telemetryMap: telemetryMap,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), initializationTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.ConntrackInitTimeout)
 	defer cancel()
 
 	err = e.dumpInitialTables(ctx, cfg)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("could not initialize conntrack after %s", initializationTimeout)
+			return nil, fmt.Errorf("could not initialize conntrack after %s", cfg.ConntrackInitTimeout)
 		}
 		return nil, err
 	}
-	klog.Infof("initialized ebpf conntrack")
+	log.Infof("initialized ebpf conntrack")
 	return e, nil
 }
 
 func (e *ebpfConntracker) dumpInitialTables(ctx context.Context, cfg *config.Config) error {
 	e.consumer = netlink.NewConsumer(cfg.ProcRoot, cfg.ConntrackRateLimit, true)
+	e.decoder = netlink.NewDecoder()
 	defer e.consumer.Stop()
 
 	for _, family := range []uint8{unix.AF_INET, unix.AF_INET6} {
@@ -139,18 +137,18 @@ func (e *ebpfConntracker) loadInitialState(ctx context.Context, events <-chan ne
 }
 
 func (e *ebpfConntracker) processEvent(ev netlink.Event) {
-	conns := netlink.DecodeAndReleaseEvent(ev)
+	conns := e.decoder.DecodeAndReleaseEvent(ev)
 	for _, c := range conns {
 		if netlink.IsNAT(c) {
-			klog.V(6).Infof("initial conntrack %s", c)
+			log.Tracef("initial conntrack %s", c)
 			src := formatKey(uint32(c.NetNS), c.Origin)
 			dst := formatKey(uint32(c.NetNS), c.Reply)
 			if src != nil && dst != nil {
 				if err := e.addTranslation(src, dst); err != nil {
-					klog.Warningf("error adding initial conntrack entry to ebpf map: %s", err)
+					log.Warnf("error adding initial conntrack entry to ebpf map: %s", err)
 				}
 				if err := e.addTranslation(dst, src); err != nil {
-					klog.Warningf("error adding initial conntrack entry to ebpf map: %s", err)
+					log.Warnf("error adding initial conntrack entry to ebpf map: %s", err)
 				}
 			}
 		}
@@ -193,7 +191,7 @@ func (e *ebpfConntracker) GetTranslationForConn(stats network.ConnectionStats) *
 		return nil
 	}
 	src.pid = 0
-	klog.V(6).Infof("looking up in conntrack: %s", src)
+	log.Tracef("looking up in conntrack: %s", src)
 
 	dst := e.get(src)
 	if dst == nil {
@@ -215,7 +213,7 @@ func (e *ebpfConntracker) get(src *ConnTuple) *ConnTuple {
 	dst := tuplePool.Get().(*ConnTuple)
 	if err := e.ctMap.Lookup(unsafe.Pointer(src), unsafe.Pointer(dst)); err != nil {
 		if !errors.Is(err, ebpf.ErrKeyNotExist) {
-			klog.Warningf("error looking up connection in ebpf conntrack map: %s", err)
+			log.Warnf("error looking up connection in ebpf conntrack map: %s", err)
 		}
 		tuplePool.Put(dst)
 		return nil
@@ -226,10 +224,10 @@ func (e *ebpfConntracker) get(src *ConnTuple) *ConnTuple {
 func (e *ebpfConntracker) delete(key *ConnTuple) {
 	if err := e.ctMap.Delete(unsafe.Pointer(key)); err != nil {
 		if errors.Is(err, ebpf.ErrKeyNotExist) {
-			klog.V(6).Infof("connection does not exist in ebpf conntrack map: %s", key)
+			log.Tracef("connection does not exist in ebpf conntrack map: %s", key)
 			return
 		}
-		klog.Warningf("unable to delete conntrack entry from eBPF map: %s", err)
+		log.Warnf("unable to delete conntrack entry from eBPF map: %s", err)
 	}
 }
 
@@ -259,7 +257,7 @@ func (e *ebpfConntracker) GetStats() map[string]int64 {
 	}
 	telemetry := &conntrackTelemetry{}
 	if err := e.telemetryMap.Lookup(unsafe.Pointer(&zero), unsafe.Pointer(telemetry)); err != nil {
-		klog.V(6).Infof("error retrieving the telemetry struct: %s", err)
+		log.Tracef("error retrieving the telemetry struct: %s", err)
 	} else {
 		m["registers_total"] = int64(telemetry.registers)
 		m["registers_dropped"] = int64(telemetry.registers_dropped)
@@ -290,7 +288,7 @@ func (e *ebpfConntracker) GetStats() map[string]int64 {
 func (e *ebpfConntracker) Close() {
 	err := e.m.Stop(manager.CleanAll)
 	if err != nil {
-		klog.Warningf("error cleaning up ebpf conntrack: %s", err)
+		log.Warnf("error cleaning up ebpf conntrack: %s", err)
 	}
 }
 

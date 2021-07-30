@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/flags"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/flags"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Configure creates a statsd client for the given agent's configuration, using the specified global tags.
@@ -25,7 +25,7 @@ func Configure(cfg *config.AgentConfig, tags []string) error {
 	if err != nil {
 		return err
 	}
-	klog.Infof("Outputting metrics to %q", flags.StatsOut)
+	log.Infof("Outputting metrics to %q", flags.StatsOut)
 	Client = &captureClient{
 		f:    f,
 		cfg:  cfg,
@@ -65,7 +65,7 @@ func (c *captureClient) Timing(name string, value time.Duration, tags []string, 
 
 // Flush closes the file. It should be called only once at the end of the program.
 func (c *captureClient) Flush() error {
-	klog.Infof("Successfully wrote %d metrics to %q", c.lines, c.f.Name())
+	log.Infof("Successfully wrote %d metrics to %q", c.lines, c.f.Name())
 	return c.f.Close()
 }
 

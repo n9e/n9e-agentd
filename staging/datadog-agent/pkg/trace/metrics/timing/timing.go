@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/atomic"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/atomic"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
 )
 
 // AutoreportInterval specifies the interval at which the default set reports.

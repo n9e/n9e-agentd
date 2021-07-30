@@ -15,13 +15,13 @@ import (
 	"sync"
 	"time"
 
-	dockerutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	dockerutil "github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/decoder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/tag"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/decoder"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/tag"
 
 	"github.com/docker/docker/api/types"
 )
@@ -81,7 +81,7 @@ func (t *Tailer) Identifier() string {
 // Stop stops the tailer from reading new container logs,
 // this call blocks until the decoder is completely flushed
 func (t *Tailer) Stop() {
-	klog.Infof("Stop tailing container: %v", ShortContainerID(t.ContainerID))
+	log.Infof("Stop tailing container: %v", ShortContainerID(t.ContainerID))
 	t.stop <- struct{}{}
 
 	t.reader.Close()
@@ -97,7 +97,7 @@ func (t *Tailer) Stop() {
 // start from now if the container has been created before the agent started
 // start from oldest log otherwise
 func (t *Tailer) Start(since time.Time) error {
-	klog.V(5).Infof("Start tailing container: %v", ShortContainerID(t.ContainerID))
+	log.Debugf("Start tailing container: %v", ShortContainerID(t.ContainerID))
 	return t.tail(since.Format(config.DateFormat))
 }
 
@@ -141,11 +141,11 @@ func (t *Tailer) setupReader() error {
 }
 
 func (t *Tailer) tryRestartReader(reason string) error {
-	klog.V(5).Infof("%s for container %v", reason, ShortContainerID(t.ContainerID))
+	log.Debugf("%s for container %v", reason, ShortContainerID(t.ContainerID))
 	t.wait()
 	err := t.setupReader()
 	if err != nil {
-		klog.Warningf("Could not restart the docker reader for container %v: %v:", ShortContainerID(t.ContainerID), err)
+		log.Warnf("Could not restart the docker reader for container %v: %v:", ShortContainerID(t.ContainerID), err)
 		t.erroredContainerID <- t.ContainerID
 	}
 	return err
@@ -225,7 +225,7 @@ func (t *Tailer) readForever() {
 					continue
 				default:
 					t.source.Status.Error(err)
-					klog.Errorf("Could not tail logs for container %v: %v", ShortContainerID(t.ContainerID), err)
+					log.Errorf("Could not tail logs for container %v: %v", ShortContainerID(t.ContainerID), err)
 					t.erroredContainerID <- t.ContainerID
 					return
 				}

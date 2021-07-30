@@ -8,19 +8,20 @@
 package kubelet
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // ListContainers lists all non-excluded running containers, and retrieves their performance metrics
-func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
-	pods, err := ku.GetLocalPodList()
+func (ku *KubeUtil) ListContainers(ctx context.Context) ([]*containers.Container, error) {
+	pods, err := ku.GetLocalPodList(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not get pod list: %s", err)
 	}
@@ -39,7 +40,7 @@ func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
 			}
 			container, err := parseContainerInPod(c, pod)
 			if err != nil {
-				klog.V(5).Infof("Cannot parse container %s in pod %s: %s", c.ID, pod.Metadata.Name, err)
+				log.Debugf("Cannot parse container %s in pod %s: %s", c.ID, pod.Metadata.Name, err)
 				continue
 			}
 			if container == nil {
@@ -47,7 +48,7 @@ func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
 				continue
 			}
 			if !providers.ContainerImpl().ContainerExists(container.ID) {
-				klog.V(5).Infof("No ContainerImplementation found for container %s in pod %s, skipping", container.ID, pod.Metadata.Name)
+				log.Debugf("No ContainerImplementation found for container %s in pod %s, skipping", container.ID, pod.Metadata.Name)
 				continue
 			}
 			ctrList = append(ctrList, container)
@@ -79,14 +80,14 @@ func (ku *KubeUtil) getContainerDetails(ctn *containers.Container) {
 	var err error
 	ctn.StartedAt, err = providers.ContainerImpl().GetContainerStartTime(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get StartTime for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get StartTime for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 
 	var limits *metrics.ContainerLimits
 	limits, err = providers.ContainerImpl().GetContainerLimits(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get limits for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get limits for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.SetLimits(limits)
@@ -96,21 +97,21 @@ func (ku *KubeUtil) getContainerDetails(ctn *containers.Container) {
 func (ku *KubeUtil) getContainerMetrics(ctn *containers.Container) {
 	metrics, err := providers.ContainerImpl().GetContainerMetrics(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("MetricsProvider cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("MetricsProvider cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.SetMetrics(metrics)
 
 	pids, err := providers.ContainerImpl().GetPIDs(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.Pids = pids
 
 	networkMetrics, err := providers.ContainerImpl().GetNetworkMetrics(ctn.ID, nil)
 	if err != nil {
-		klog.V(5).Infof("Cannot get network stats for container %s: %s", ctn.ID, err)
+		log.Debugf("Cannot get network stats for container %s: %s", ctn.ID, err)
 		return
 	}
 	ctn.Network = networkMetrics
@@ -132,7 +133,7 @@ func parseContainerInPod(status ContainerStatus, pod *Pod) (*containers.Containe
 	switch {
 	case status.State.Waiting != nil:
 		// We don't display waiting containers
-		klog.V(6).Infof("Skipping waiting container %s", c.ID)
+		log.Tracef("Skipping waiting container %s", c.ID)
 		return nil, nil
 	case status.State.Running != nil:
 		c.State = containers.ContainerRunningState
@@ -157,12 +158,12 @@ func parseContainerNetworkAddresses(status ContainerStatus, pod *Pod) []containe
 	addrList := []containers.NetworkAddress{}
 	podIP := net.ParseIP(pod.Status.PodIP)
 	if podIP == nil {
-		klog.Warningf("Unable to parse pod IP: %v for pod: %s", pod.Status.PodIP, pod.Metadata.Name)
+		log.Warnf("Unable to parse pod IP: %v for pod: %s", pod.Status.PodIP, pod.Metadata.Name)
 		return addrList
 	}
 	hostIP := net.ParseIP(pod.Status.HostIP)
 	if hostIP == nil {
-		klog.Warningf("Unable to parse host IP: %v for pod: %s", pod.Status.HostIP, pod.Metadata.Name)
+		log.Warnf("Unable to parse host IP: %v for pod: %s", pod.Status.HostIP, pod.Metadata.Name)
 		return addrList
 	}
 	// Look for the ports in container spec

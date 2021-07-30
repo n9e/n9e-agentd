@@ -3,7 +3,7 @@
 package processor
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serverless/aws"
+	"github.com/DataDog/datadog-agent/pkg/serverless/aws"
 )
 
 // getHostname returns the ARN of the executed function.

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	log "github.com/cihub/seelog"
 
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -99,7 +99,7 @@ func benchmarkMemory(agg *aggregator.BufferedAggregator, sender aggregator.Sende
 	// Get raw sender
 	rawSender, ok := sender.(aggregator.RawSender)
 	if !ok {
-		klog.Error("[aggregator] sender not RawSender - cannot continue with benchmark")
+		log.Error("[aggregator] sender not RawSender - cannot continue with benchmark")
 		return results
 	}
 
@@ -161,7 +161,7 @@ func benchmarkMemory(agg *aggregator.BufferedAggregator, sender aggregator.Sende
 
 			wg.Add(1)
 			go func() {
-				klog.Infof("[aggregator] starting memory statter (%d points per series, %d series)", p, s)
+				log.Infof("[aggregator] starting memory statter (%d points per series, %d series)", p, s)
 				tickChan := time.NewTicker(time.Second).C
 				defer wg.Done()
 
@@ -188,13 +188,13 @@ func benchmarkMemory(agg *aggregator.BufferedAggregator, sender aggregator.Sende
 					results = append(results, mDeltaMalloc)
 					results = append(results, mLive)
 
-					klog.Infof("[aggregator] allocated: %10d\tdelta: %11.f mallocs: %11.f live objects:%11.f", current.Alloc, delta, mallocDelta, live)
+					log.Infof("[aggregator] allocated: %10d\tdelta: %11.f mallocs: %11.f live objects:%11.f", current.Alloc, delta, mallocDelta, live)
 					prev = current
 					if secs == dur {
 						t := time.Now().Unix()
 						delta = float64(current.Alloc) - float64(initial.Alloc)
-						klog.Infof("[aggregator] total memory delta %11.f bytes", delta)
-						klog.Infof("[aggregator] benchmark concluded at a rate of %v pps (avg over %v secs)", sent/dur, dur)
+						log.Infof("[aggregator] total memory delta %11.f bytes", delta)
+						log.Infof("[aggregator] benchmark concluded at a rate of %v pps (avg over %v secs)", sent/dur, dur)
 						results = append(results, createMetric(delta, tags, "benchmark.aggregator.mem.total_delta", t))
 						results = append(results, createMetric(float64(sent/dur), tags, "benchmark.aggregator.mem.rate", t))
 						quitGenerator <- true

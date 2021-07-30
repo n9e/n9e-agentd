@@ -14,7 +14,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
 )
 
 type commandRunnerFunc func(context.Context, string, []string, bool) (int, []byte, error)

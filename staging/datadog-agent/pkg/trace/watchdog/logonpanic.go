@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const shortErrMsgLen = 17 // 20 char max with tailing "..."
@@ -36,11 +36,11 @@ func LogOnPanic() {
 		errMsg := fmt.Sprintf("%v", err)
 		logMsg := "Unexpected panic: " + errMsg + "\n" + stacktrace
 
-		metrics.Gauge("trace_agent.panic", 1, []string{
+		metrics.Gauge("datadog.trace_agent.panic", 1, []string{
 			"err:" + shortErrMsg(errMsg),
 		}, 1)
 
-		klog.Error(logMsg)
+		log.Error(logMsg)
 		log.Flush()
 
 		panic(err)

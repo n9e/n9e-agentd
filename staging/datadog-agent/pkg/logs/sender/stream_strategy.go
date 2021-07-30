@@ -8,10 +8,10 @@ package sender
 import (
 	"context"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/metrics"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/metrics"
 )
 
 // StreamStrategy is a shared stream strategy.
@@ -35,11 +35,10 @@ func (s *streamStrategy) Send(inputChan chan *message.Message, outputChan chan *
 			if shouldStopSending(err) {
 				return
 			}
-			klog.Warningf("Could not send payload: %v", err)
+			log.Warnf("Could not send payload: %v", err)
 		}
 		metrics.LogsSent.Add(1)
 		metrics.TlmLogsSent.Inc()
 		outputChan <- message
-		//klog.V(11).Infof("outputChan %p <- %s", outputChan, string(message.Content))
 	}
 }

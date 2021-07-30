@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -160,13 +160,13 @@ func compileStringsToRegex(words []string) []*regexp.Regexp {
 
 	for _, word := range words {
 		if forbiddenSymbols.MatchString(word) {
-			klog.Warningf("data scrubber: %s skipped. The sensitive word must "+
+			log.Warnf("data scrubber: %s skipped. The sensitive word must "+
 				"contain only alphanumeric characters, underscores or wildcards ('*')", word)
 			continue
 		}
 
 		if word == "*" {
-			klog.Warning("data scrubber: ignoring wildcard-only ('*') sensitive word as it is not supported")
+			log.Warn("data scrubber: ignoring wildcard-only ('*') sensitive word as it is not supported")
 			continue
 		}
 
@@ -178,7 +178,7 @@ func compileStringsToRegex(words []string) []*regexp.Regexp {
 				if i == len(originalRunes)-1 {
 					enhancedWord.WriteString("[^ =:]*")
 				} else if originalRunes[i+1] == '*' {
-					klog.Warningf("data scrubber: %s skipped. The sensitive word "+
+					log.Warnf("data scrubber: %s skipped. The sensitive word "+
 						"must not contain two consecutives '*'", word)
 					valid = false
 					break
@@ -199,7 +199,7 @@ func compileStringsToRegex(words []string) []*regexp.Regexp {
 		if err == nil {
 			compiledRegexps = append(compiledRegexps, r)
 		} else {
-			klog.Warningf("data scrubber: %s skipped. It couldn't be compiled into a regex expression", word)
+			log.Warnf("data scrubber: %s skipped. It couldn't be compiled into a regex expression", word)
 		}
 	}
 

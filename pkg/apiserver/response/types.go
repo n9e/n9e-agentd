@@ -6,7 +6,7 @@
 package response
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
 )
 
 // ConfigCheckResponse holds the config check response

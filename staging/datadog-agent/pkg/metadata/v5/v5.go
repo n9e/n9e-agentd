@@ -8,18 +8,20 @@
 package v5
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/gohai"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/resources"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	"context"
+
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/metadata/common"
+	"github.com/DataDog/datadog-agent/pkg/metadata/gohai"
+	"github.com/DataDog/datadog-agent/pkg/metadata/host"
+	"github.com/DataDog/datadog-agent/pkg/metadata/resources"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // GetPayload returns the complete metadata payload as seen in Agent v5
-func GetPayload(hostnameData util.HostnameData) *Payload {
+func GetPayload(ctx context.Context, hostnameData util.HostnameData) *Payload {
 	cp := common.GetPayload(hostnameData.Hostname)
-	hp := host.GetPayload(hostnameData)
+	hp := host.GetPayload(ctx, hostnameData)
 	rp := resources.GetPayload(hostnameData.Hostname)
 
 	p := &Payload{
@@ -31,7 +33,7 @@ func GetPayload(hostnameData util.HostnameData) *Payload {
 		p.ResourcesPayload = ResourcesPayload{*rp}
 	}
 
-	if config.C.EnableGohai {
+	if config.Datadog.GetBool("enable_gohai") {
 		p.GohaiPayload = GohaiPayload{MarshalledGohaiPayload{*gohai.GetPayload()}}
 	}
 

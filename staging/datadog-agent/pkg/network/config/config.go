@@ -4,13 +4,16 @@ import (
 	"strings"
 	"time"
 
-	ddconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kernel"
-	"k8s.io/klog/v2"
+	ddconfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/util/kernel"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
+	spNS  = "system_probe_config"
+	netNS = "network_config"
+
 	defaultUDPTimeoutSeconds       = 30
 	defaultUDPStreamTimeoutSeconds = 120
 
@@ -112,6 +115,9 @@ type Config struct {
 	// Setting it to -1 disables the limit and can result in a high CPU usage.
 	ConntrackRateLimit int
 
+	// ConntrackInitTimeout specifies how long we wait for conntrack to initialize before failing
+	ConntrackInitTimeout time.Duration
+
 	// EnableConntrackAllNamespaces enables network address translation via netlink for all namespaces that are peers of the root namespace.
 	// default is true
 	EnableConntrackAllNamespaces bool
@@ -136,6 +142,9 @@ type Config struct {
 
 	// EnableGatewayLookup enables looking up gateway information for connection destinations
 	EnableGatewayLookup bool
+
+	// RecordedQueryTypes enables specific DNS query types to be recorded
+	RecordedQueryTypes []string
 }
 
 func join(pieces ...string) string {
@@ -144,74 +153,77 @@ func join(pieces ...string) string {
 
 // New creates a config for the network tracer
 func New() *Config {
-	sp := ddconfig.C.SystemProbe
-	net := ddconfig.C.Network
+	cfg := ddconfig.Datadog
+	ddconfig.InitSystemProbeConfig(cfg)
 
 	c := &Config{
 		Config: *ebpf.NewConfig(),
 
-		CollectTCPConns:  !sp.DisableTcp,
+		CollectTCPConns:  !cfg.GetBool(join(spNS, "disable_tcp")),
 		TCPConnTimeout:   2 * time.Minute,
 		TCPClosedTimeout: 1 * time.Second,
 
-		CollectUDPConns:  !sp.DisableUdp,
+		CollectUDPConns:  !cfg.GetBool(join(spNS, "disable_udp")),
 		UDPConnTimeout:   defaultUDPTimeoutSeconds * time.Second,
 		UDPStreamTimeout: defaultUDPStreamTimeoutSeconds * time.Second,
 
-		CollectIPv6Conns:               !sp.DisableIpv6,
-		OffsetGuessThreshold:           uint64(sp.OffsetGuessThreshold),
-		ExcludedSourceConnections:      sp.SourceExcludes,
-		ExcludedDestinationConnections: sp.DestExcludes,
+		CollectIPv6Conns:               !cfg.GetBool(join(spNS, "disable_ipv6")),
+		OffsetGuessThreshold:           uint64(cfg.GetInt64(join(spNS, "offset_guess_threshold"))),
+		ExcludedSourceConnections:      cfg.GetStringMapStringSlice(join(spNS, "source_excludes")),
+		ExcludedDestinationConnections: cfg.GetStringMapStringSlice(join(spNS, "dest_excludes")),
 
-		MaxTrackedConnections:        uint(sp.MaxTrackedConnections),
-		MaxClosedConnectionsBuffered: sp.MaxClosedConnectionsBuffered,
-		ClosedChannelSize:            sp.ClosedChannelSize,
-		MaxConnectionsStateBuffered:  sp.MaxConnectionStateBuffered,
+		MaxTrackedConnections:        uint(cfg.GetInt(join(spNS, "max_tracked_connections"))),
+		MaxClosedConnectionsBuffered: cfg.GetInt(join(spNS, "max_closed_connections_buffered")),
+		ClosedChannelSize:            cfg.GetInt(join(spNS, "closed_channel_size")),
+		MaxConnectionsStateBuffered:  cfg.GetInt(join(spNS, "max_connection_state_buffered")),
 		ClientStateExpiry:            2 * time.Minute,
 
-		DNSInspection:       !sp.DisableDnsInspection,
-		CollectDNSStats:     sp.CollectDnsStats,
-		CollectLocalDNS:     sp.CollectLocalDns,
-		CollectDNSDomains:   sp.CollectDnsDomains,
-		MaxDNSStats:         sp.MaxDnsStats,
+		DNSInspection:       !cfg.GetBool(join(spNS, "disable_dns_inspection")),
+		CollectDNSStats:     cfg.GetBool(join(spNS, "collect_dns_stats")),
+		CollectLocalDNS:     cfg.GetBool(join(spNS, "collect_local_dns")),
+		CollectDNSDomains:   cfg.GetBool(join(spNS, "collect_dns_domains")),
+		MaxDNSStats:         cfg.GetInt(join(spNS, "max_dns_stats")),
 		MaxDNSStatsBuffered: 75000,
-		DNSTimeout:          sp.DnsTimeout,
+		DNSTimeout:          time.Duration(cfg.GetInt(join(spNS, "dns_timeout_in_s"))) * time.Second,
 
-		EnableHTTPMonitoring: net.EnableHttpMonitoring,
+		EnableHTTPMonitoring: cfg.GetBool(join(netNS, "enable_http_monitoring")),
 		MaxHTTPStatsBuffered: 100000,
 
-		EnableConntrack:              sp.EnableConntrack,
-		ConntrackMaxStateSize:        sp.ConntrackMaxStateSize,
-		ConntrackRateLimit:           sp.ConntrackRateLimit,
-		EnableConntrackAllNamespaces: sp.EnableConntrackAllNamespaces,
-		IgnoreConntrackInitFailure:   net.IgnoreConntrackInitFailure,
+		EnableConntrack:              cfg.GetBool(join(spNS, "enable_conntrack")),
+		ConntrackMaxStateSize:        cfg.GetInt(join(spNS, "conntrack_max_state_size")),
+		ConntrackRateLimit:           cfg.GetInt(join(spNS, "conntrack_rate_limit")),
+		EnableConntrackAllNamespaces: cfg.GetBool(join(spNS, "enable_conntrack_all_namespaces")),
+		IgnoreConntrackInitFailure:   cfg.GetBool(join(netNS, "ignore_conntrack_init_failure")),
+		ConntrackInitTimeout:         cfg.GetDuration(join(netNS, "conntrack_init_timeout")),
 
-		EnableGatewayLookup: net.EnableGatewayLookup,
+		EnableGatewayLookup: cfg.GetBool(join(netNS, "enable_gateway_lookup")),
 
-		EnableMonotonicCount: sp.WindowsEnableMonotonicCount,
-		DriverBufferSize:     sp.WindowsDriverBufferSize,
+		EnableMonotonicCount: cfg.GetBool(join(spNS, "windows.enable_monotonic_count")),
+		DriverBufferSize:     cfg.GetInt(join(spNS, "windows.driver_buffer_size")),
+
+		RecordedQueryTypes: cfg.GetStringSlice(join(netNS, "dns_recorded_query_types")),
 	}
 
 	if c.OffsetGuessThreshold > maxOffsetThreshold {
-		klog.Warning("offset_guess_threshold exceeds maximum of 3000. Setting it to the default of 400")
+		log.Warn("offset_guess_threshold exceeds maximum of 3000. Setting it to the default of 400")
 		c.OffsetGuessThreshold = defaultOffsetThreshold
 	}
 
 	if !kernel.IsIPv6Enabled() {
 		c.CollectIPv6Conns = false
-		klog.Info("network tracer IPv6 tracing disabled by system")
+		log.Info("network tracer IPv6 tracing disabled by system")
 	} else if !c.CollectIPv6Conns {
-		klog.Info("network tracer IPv6 tracing disabled by configuration")
+		log.Info("network tracer IPv6 tracing disabled by configuration")
 	}
 
 	if !c.CollectUDPConns {
-		klog.Info("network tracer UDP tracing disabled by configuration")
+		log.Info("network tracer UDP tracing disabled by configuration")
 	}
 	if !c.CollectTCPConns {
-		klog.Info("network tracer TCP tracing disabled by configuration")
+		log.Info("network tracer TCP tracing disabled by configuration")
 	}
 	if !c.DNSInspection {
-		klog.Info("network tracer DNS inspection disabled by configuration")
+		log.Info("network tracer DNS inspection disabled by configuration")
 	}
 
 	return c

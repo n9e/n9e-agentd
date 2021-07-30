@@ -9,8 +9,8 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/golang/protobuf/proto"
@@ -49,7 +49,7 @@ func round(f float64) uint64 {
 	return i
 }
 
-func (s *groupedStats) export(k statsKey) (pb.ClientGroupedStats, error) {
+func (s *groupedStats) export(a Aggregation) (pb.ClientGroupedStats, error) {
 	msg := s.okDistribution.ToProto()
 	okSummary, err := proto.Marshal(msg)
 	if err != nil {
@@ -61,39 +61,34 @@ func (s *groupedStats) export(k statsKey) (pb.ClientGroupedStats, error) {
 		return pb.ClientGroupedStats{}, err
 	}
 	return pb.ClientGroupedStats{
-		Service:        k.aggr.Service,
-		Name:           k.name,
-		Resource:       k.aggr.Resource,
-		HTTPStatusCode: k.aggr.StatusCode,
-		Type:           k.aggr.Type,
+		Service:        a.Service,
+		Name:           a.Name,
+		Resource:       a.Resource,
+		HTTPStatusCode: a.StatusCode,
+		Type:           a.Type,
 		Hits:           round(s.hits),
 		Errors:         round(s.errors),
 		Duration:       round(s.duration),
 		TopLevelHits:   round(s.topLevelHits),
 		OkSummary:      okSummary,
 		ErrorSummary:   errSummary,
-		Synthetics:     k.aggr.Synthetics,
+		Synthetics:     a.Synthetics,
 	}, nil
 }
 
 func newGroupedStats() *groupedStats {
 	okSketch, err := ddsketch.LogCollapsingLowestDenseDDSketch(relativeAccuracy, maxNumBins)
 	if err != nil {
-		klog.Errorf("Error when creating ddsketch: %v", err)
+		log.Errorf("Error when creating ddsketch: %v", err)
 	}
 	errSketch, err := ddsketch.LogCollapsingLowestDenseDDSketch(relativeAccuracy, maxNumBins)
 	if err != nil {
-		klog.Errorf("Error when creating ddsketch: %v", err)
+		log.Errorf("Error when creating ddsketch: %v", err)
 	}
 	return &groupedStats{
 		okDistribution:  okSketch,
 		errDistribution: errSketch,
 	}
-}
-
-type statsKey struct {
-	name string
-	aggr Aggregation
 }
 
 // RawBucket is used to compute span data and aggregate it
@@ -106,17 +101,10 @@ type RawBucket struct {
 	duration uint64 // duration of a bucket in nanoseconds
 
 	// this should really remain private as it's subject to refactoring
-	data map[statsKey]*groupedStats
+	data map[Aggregation]*groupedStats
 
 	// internal buffer for aggregate strings - not threadsafe
 	keyBuf strings.Builder
-}
-
-// PayloadKey uniquely identifies a ClientStatsPayload inside a StatsPayload
-type PayloadKey struct {
-	hostname string
-	version  string
-	env      string
 }
 
 // NewRawBucket opens a new calculation bucket for time ts and initializes it properly
@@ -125,25 +113,26 @@ func NewRawBucket(ts, d uint64) *RawBucket {
 	return &RawBucket{
 		start:    ts,
 		duration: d,
-		data:     make(map[statsKey]*groupedStats),
+		data:     make(map[Aggregation]*groupedStats),
 	}
 }
 
 // Export transforms a RawBucket into a ClientStatsBucket, typically used
 // before communicating data to the API, as RawBucket is the internal
 // type while ClientStatsBucket is the public, shared one.
-func (sb *RawBucket) Export() map[PayloadKey]pb.ClientStatsBucket {
-	m := make(map[PayloadKey]pb.ClientStatsBucket)
+func (sb *RawBucket) Export() map[PayloadAggregationKey]pb.ClientStatsBucket {
+	m := make(map[PayloadAggregationKey]pb.ClientStatsBucket)
 	for k, v := range sb.data {
 		b, err := v.export(k)
 		if err != nil {
-			klog.Errorf("Dropping stats bucket due to encoding error: %v.", err)
+			log.Errorf("Dropping stats bucket due to encoding error: %v.", err)
 			continue
 		}
-		key := PayloadKey{
-			hostname: k.aggr.Hostname,
-			version:  k.aggr.Version,
-			env:      k.aggr.Env,
+		key := PayloadAggregationKey{
+			Hostname:    k.Hostname,
+			Version:     k.Version,
+			Env:         k.Env,
+			ContainerID: k.ContainerID,
 		}
 		s, ok := m[key]
 		if !ok {
@@ -159,11 +148,11 @@ func (sb *RawBucket) Export() map[PayloadKey]pb.ClientStatsBucket {
 }
 
 // HandleSpan adds the span to this bucket stats, aggregated with the finest grain matching given aggregators
-func (sb *RawBucket) HandleSpan(s *WeightedSpan, env string, agentHostname string) {
+func (sb *RawBucket) HandleSpan(s *WeightedSpan, env string, agentHostname, containerID string) {
 	if env == "" {
 		panic("env should never be empty")
 	}
-	aggr := NewAggregationFromSpan(s.Span, env, agentHostname)
+	aggr := NewAggregationFromSpan(s.Span, env, agentHostname, containerID)
 	sb.add(s, aggr)
 }
 
@@ -171,10 +160,9 @@ func (sb *RawBucket) add(s *WeightedSpan, aggr Aggregation) {
 	var gs *groupedStats
 	var ok bool
 
-	key := statsKey{name: s.Name, aggr: aggr}
-	if gs, ok = sb.data[key]; !ok {
+	if gs, ok = sb.data[aggr]; !ok {
 		gs = newGroupedStats()
-		sb.data[key] = gs
+		sb.data[aggr] = gs
 	}
 	if s.TopLevel {
 		gs.topLevelHits += s.Weight

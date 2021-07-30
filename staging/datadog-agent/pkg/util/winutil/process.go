@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -91,9 +91,9 @@ func ReadProcessMemory(h windows.Handle, from, to uintptr, count uint32) (bytesR
 
 	if r == 0 {
 		if e == windows.ERROR_ACCESS_DENIED {
-			klog.V(5).Infof("Access denied error getting process memory")
+			log.Debugf("Access denied error getting process memory")
 		} else {
-			klog.Warningf("Unexpected error getting process memory for handle (h) %v (err) %v", h, e)
+			log.Warnf("Unexpected error getting process memory for handle (h) %v (err) %v", h, e)
 		}
 		return 0, e
 	}

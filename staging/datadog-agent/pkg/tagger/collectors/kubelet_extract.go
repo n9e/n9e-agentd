@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/kubelet"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/kubelet"
 
 	"k8s.io/kubernetes/third_party/forked/golang/expansion"
 )
@@ -30,13 +30,6 @@ const (
 	podStandardLabelPrefix           = "tags.datadoghq.com/"
 )
 
-// KubeAllowedEncodeStringAlphaNums holds the charactes allowed in replicaset names from as parent deployment
-// Taken from https://github.com/kow3ns/kubernetes/blob/96067e6d7b24a05a6a68a0d94db622957448b5ab/staging/src/k8s.io/apimachinery/pkg/util/rand/rand.go#L76
-const KubeAllowedEncodeStringAlphaNums = "bcdfghjklmnpqrstvwxz2456789"
-
-// Digits holds the digits used for naming replicasets in kubenetes < 1.8
-const Digits = "1234567890"
-
 // parsePods convert Pods from the PodWatcher to TagInfo objects
 func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 	var output []*TagInfo
@@ -45,8 +38,8 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 		tags := utils.NewTagList()
 
 		// Pod name
-		tags.AddOrchestrator("pod_name", pod.Metadata.Name)
-		tags.AddLow("kube_namespace", pod.Metadata.Namespace)
+		tags.AddOrchestrator(kubernetes.PodTagName, pod.Metadata.Name)
+		tags.AddLow(kubernetes.NamespaceTagName, pod.Metadata.Namespace)
 
 		// Pod labels
 		for name, value := range pod.Metadata.Labels {
@@ -102,8 +95,8 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 
 		// Creator
 		for _, owner := range pod.Owners() {
-			tags.AddLow("kube_ownerref_kind", strings.ToLower(owner.Kind))
-			tags.AddOrchestrator("kube_ownerref_name", owner.Name)
+			tags.AddLow(kubernetes.OwnerRefKindTagName, strings.ToLower(owner.Kind))
+			tags.AddOrchestrator(kubernetes.OwnerRefNameTagName, owner.Name)
 
 			switch owner.Kind {
 			case "":
@@ -124,7 +117,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 				}
 
 			case kubernetes.JobKind:
-				cronjob := parseCronJobForJob(owner.Name)
+				cronjob := kubernetes.ParseCronJobForJob(owner.Name)
 				if cronjob != "" {
 					tags.AddOrchestrator(kubernetes.JobTagName, owner.Name)
 					tags.AddLow(kubernetes.CronJobTagName, cronjob)
@@ -132,13 +125,13 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 					tags.AddLow(kubernetes.JobTagName, owner.Name)
 				}
 			case kubernetes.ReplicaSetKind:
-				deployment := parseDeploymentForReplicaSet(owner.Name)
+				deployment := kubernetes.ParseDeploymentForReplicaSet(owner.Name)
 				if len(deployment) > 0 {
 					tags.AddLow(kubernetes.DeploymentTagName, deployment)
 				}
 				tags.AddLow(kubernetes.ReplicaSetTagName, owner.Name)
 			default:
-				klog.V(5).Infof("unknown owner kind %s for pod %s", owner.Kind, pod.Metadata.Name)
+				log.Debugf("unknown owner kind %s for pod %s", owner.Kind, pod.Metadata.Name)
 			}
 		}
 
@@ -158,7 +151,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 		// container tags
 		for _, container := range pod.Status.GetAllContainers() {
 			if container.ID == "" {
-				klog.V(5).Infof("Cannot collect container tags for container '%s' in pod '%s': Empty container ID", container.Name, pod.Metadata.Name)
+				log.Debugf("Cannot collect container tags for container '%s' in pod '%s': Empty container ID", container.Name, pod.Metadata.Name)
 				// This can happen due to kubelet latency
 				// Ignore the container as early as possible to avoid unnecessary processing and warn logging
 				// The container will be detected once again when container.ID is set
@@ -221,12 +214,12 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 								cTags.AddStandard(tagKeyService, runtimeVal)
 							}
 						} else if env.Name == envVarEnv || env.Name == envVarVersion || env.Name == envVarService {
-							klog.Warningf("Reading %s from a ConfigMap, Secret or anything but a literal value is not implemented yet.", env.Name)
+							log.Warnf("Reading %s from a ConfigMap, Secret or anything but a literal value is not implemented yet.", env.Name)
 						}
 					}
 					imageName, shortImage, imageTag, err := containers.SplitImageName(containerSpec.Image)
 					if err != nil {
-						klog.V(5).Infof("Cannot split %s: %s", containerSpec.Image, err)
+						log.Debugf("Cannot split %s: %s", containerSpec.Image, err)
 						break
 					}
 					cTags.AddLow("image_name", imageName)
@@ -243,7 +236,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 			cLow, cOrch, cHigh, standard := cTags.Compute()
 			entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 			if err != nil {
-				klog.Warningf("Unable to parse container pName: %s / cName: %s / cId: %s / err: %s", pod.Metadata.Name, container.Name, container.ID, err)
+				log.Warnf("Unable to parse container pName: %s / cName: %s / cId: %s / err: %s", pod.Metadata.Name, container.Name, container.ID, err)
 				continue
 			}
 			info := &TagInfo{
@@ -260,51 +253,6 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 	return output, nil
 }
 
-// parseDeploymentForReplicaSet gets the deployment name from a replicaset,
-// or returns an empty string if no parent deployment is found.
-func parseDeploymentForReplicaSet(name string) string {
-	lastDash := strings.LastIndexAny(name, "-")
-	if lastDash == -1 {
-		// No dash
-		return ""
-	}
-	suffix := name[lastDash+1:]
-	if len(suffix) < 3 {
-		// Suffix is variable length but we cutoff at 3+ characters
-		return ""
-	}
-
-	if !utils.StringInRuneset(suffix, Digits) && !utils.StringInRuneset(suffix, KubeAllowedEncodeStringAlphaNums) {
-		// Invalid suffix
-		return ""
-	}
-
-	return name[:lastDash]
-}
-
-// parseCronJobForJob gets the cronjob name from a job,
-// or returns an empty string if no parent cronjob is found.
-// https://github.com/kubernetes/kubernetes/blob/b4e3bd381bd4d7c0db1959341b39558b45187345/pkg/controller/cronjob/utils.go#L156
-func parseCronJobForJob(name string) string {
-	lastDash := strings.LastIndexAny(name, "-")
-	if lastDash == -1 {
-		// No dash
-		return ""
-	}
-	suffix := name[lastDash+1:]
-	if len(suffix) < 3 {
-		// Suffix is variable length but we cutoff at 3+ characters
-		return ""
-	}
-
-	if !utils.StringInRuneset(suffix, Digits) {
-		// Invalid suffix
-		return ""
-	}
-
-	return name[:lastDash]
-}
-
 // extractTagsFromMap extracts tags contained in a JSON string stored at the
 // given key. If no valid tag definition is found at this key, it will return
 // false. Otherwise it returns a map containing extracted tags.
@@ -317,7 +265,7 @@ func extractTagsFromMap(key string, input map[string]string) (map[string][]strin
 
 	tags, err := parseJSONValue(jsonTags)
 	if err != nil {
-		klog.Errorf("can't parse value for annotation %s: %s", key, err)
+		log.Errorf("can't parse value for annotation %s: %s", key, err)
 		return nil, false
 	}
 
@@ -345,7 +293,7 @@ func parseJSONValue(value string) (map[string][]string, error) {
 				tags[key] = append(tags[key], fmt.Sprint(tag))
 			}
 		default:
-			klog.V(5).Infof("Tag value %s is not valid, must be a string or an array, skipping", v)
+			log.Debugf("Tag value %s is not valid, must be a string or an array, skipping", v)
 		}
 	}
 

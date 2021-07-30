@@ -8,7 +8,7 @@ package sender
 import (
 	"bytes"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
 )
 
 var (

@@ -8,15 +8,15 @@
 package status
 
 import (
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func getLeaderElectionDetails() map[string]string {
-	klog.Info("Not implemented")
+	log.Info("Not implemented")
 	return nil
 }
 
 func getDCAStatus() map[string]string {
-	klog.Info("Not implemented")
+	log.Info("Not implemented")
 	return nil
 }

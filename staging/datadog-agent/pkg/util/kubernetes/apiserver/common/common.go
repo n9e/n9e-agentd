@@ -16,9 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -31,7 +31,7 @@ func GetResourcesNamespace() string {
 	if namespace != "" {
 		return namespace
 	}
-	klog.V(5).Infof("No configured namespace for the resource, fetching from the current context")
+	log.Debugf("No configured namespace for the resource, fetching from the current context")
 	return GetMyNamespace()
 }
 
@@ -42,7 +42,7 @@ func GetMyNamespace() string {
 	if e == nil && val != nil {
 		return string(val)
 	}
-	klog.Warningf("There was an error fetching the namespace from the context, using default")
+	log.Warnf("There was an error fetching the namespace from the context, using default")
 	return "default"
 }
 
@@ -72,13 +72,13 @@ func GetOrCreateClusterID(coreClient corev1.CoreV1Interface) (string, error) {
 	cm, err := coreClient.ConfigMaps(myNS).Get(context.TODO(), defaultClusterIDMap, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			klog.Errorf("Cannot retrieve ConfigMap %s/%s: %s", myNS, defaultClusterIDMap, err)
+			log.Errorf("Cannot retrieve ConfigMap %s/%s: %s", myNS, defaultClusterIDMap, err)
 			return "", err
 		}
 		// the config map doesn't exist yet, generate a UUID and persist it
 		clusterID, err := GetKubeSystemUID(coreClient)
 		if err != nil {
-			klog.Errorf("Failed getting the kube-system namespace: %v", err)
+			log.Errorf("Failed getting the kube-system namespace: %v", err)
 			return "", err
 		}
 		cm = &v1.ConfigMap{
@@ -92,7 +92,7 @@ func GetOrCreateClusterID(coreClient corev1.CoreV1Interface) (string, error) {
 		}
 		cm, err = coreClient.ConfigMaps(myNS).Create(context.TODO(), cm, metav1.CreateOptions{})
 		if err != nil {
-			klog.Errorf("Cannot create ConfigMap %s/%s: %s", myNS, defaultClusterIDMap, err)
+			log.Errorf("Cannot create ConfigMap %s/%s: %s", myNS, defaultClusterIDMap, err)
 			return "", err
 		}
 		cache.Cache.Set(cacheClusterIDKey, clusterID, cache.NoExpiration)
@@ -106,16 +106,16 @@ func GetOrCreateClusterID(coreClient corev1.CoreV1Interface) (string, error) {
 		return clusterID, nil
 	}
 
-	klog.Warningf("Content of ConfigMap %s/%s doesn't look like a cluster ID, updating it", myNS, defaultClusterIDMap)
+	log.Warnf("Content of ConfigMap %s/%s doesn't look like a cluster ID, updating it", myNS, defaultClusterIDMap)
 	clusterID, err = GetKubeSystemUID(coreClient)
 	if err != nil {
-		klog.Errorf("Failed getting the kube-system namespace: %v", err)
+		log.Errorf("Failed getting the kube-system namespace: %v", err)
 		return "", err
 	}
 	cm.Data["id"] = clusterID
 	_, err = coreClient.ConfigMaps(myNS).Update(context.TODO(), cm, metav1.UpdateOptions{})
 	if err != nil {
-		klog.Errorf("Failed to update ConfigMap %s/%s with correct cluster ID: %s", myNS, defaultClusterIDMap, err)
+		log.Errorf("Failed to update ConfigMap %s/%s with correct cluster ID: %s", myNS, defaultClusterIDMap, err)
 		return "", err
 	}
 	cache.Cache.Set(cacheClusterIDKey, clusterID, cache.NoExpiration)

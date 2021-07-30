@@ -7,7 +7,7 @@ package persistentcache
 
 import (
 	"fmt"
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 	"io/ioutil"
 	"os"
 	"path/filepath"

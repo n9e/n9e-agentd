@@ -8,6 +8,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,7 +16,7 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
 )
 
 type ComposeConf struct {
@@ -58,13 +59,13 @@ func (c *ComposeConf) Start() ([]byte, error) {
 	pullCmd.Env = customEnv
 	output, err := pullCmd.CombinedOutput()
 	if err != nil {
-		klog.Errorf("fail to pull: %s %s", err, string(output))
+		log.Errorf("fail to pull: %s %s", err, string(output))
 		/*
 			We retry once if we cannot pull the images, example:
 			Pulling etcd (quay.io/coreos/etcd:latest)...
 			ERROR: Get https://quay.io/v2/: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
 		*/
-		klog.Infof("retrying pull...")
+		log.Infof("retrying pull...")
 		// We need to rebuild a new command because the file-descriptors of stdout/err are already set
 		retryPull := exec.Command("docker-compose", append(args, "pull", "--parallel")...)
 		retryPull.Env = customEnv
@@ -129,7 +130,7 @@ func getNetworkMode() (string, error) {
 	}
 
 	// Get container id if containerized
-	co, err := du.InspectSelf()
+	co, err := du.InspectSelf(context.TODO())
 	if err != nil {
 		return "host", nil
 	}

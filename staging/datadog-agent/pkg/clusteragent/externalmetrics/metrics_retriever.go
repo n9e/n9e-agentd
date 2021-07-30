@@ -11,10 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/externalmetrics/model"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/externalmetrics/model"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -44,7 +43,7 @@ func NewMetricsRetriever(refreshPeriod, metricsMaxAge int64, processor autoscale
 }
 
 func (mr *MetricsRetriever) Run(stopCh <-chan struct{}) {
-	klog.Infof("Starting MetricsRetriever")
+	log.Infof("Starting MetricsRetriever")
 	tickerRefreshProcess := time.NewTicker(time.Duration(mr.refreshPeriod) * time.Second)
 	for {
 		select {
@@ -53,7 +52,7 @@ func (mr *MetricsRetriever) Run(stopCh <-chan struct{}) {
 				mr.retrieveMetricsValues()
 			}
 		case <-stopCh:
-			klog.Infof("Stopping MetricsRetriever")
+			log.Infof("Stopping MetricsRetriever")
 			return
 		}
 	}
@@ -63,19 +62,19 @@ func (mr *MetricsRetriever) retrieveMetricsValues() {
 	// We only update active DatadogMetrics
 	datadogMetrics := mr.store.GetFiltered(func(datadogMetric model.DatadogMetricInternal) bool { return datadogMetric.Active })
 	if len(datadogMetrics) == 0 {
-		klog.V(5).Infof("No active DatadogMetric, nothing to refresh")
+		log.Debugf("No active DatadogMetric, nothing to refresh")
 		return
 	}
 
 	queries := getUniqueQueries(datadogMetrics)
-	klog.V(5).Infof("Starting refreshing external metrics with: %d queries", len(queries))
+	log.Debugf("Starting refreshing external metrics with: %d queries", len(queries))
 
 	results, err := mr.processor.QueryExternalMetric(queries)
 	globalError := false
 	// Check for global failure
 	if len(results) == 0 && err != nil {
 		globalError = true
-		klog.Errorf("Unable to fetch external metrics: %v", err)
+		log.Errorf("Unable to fetch external metrics: %v", err)
 	}
 
 	// Update store with current results
@@ -84,13 +83,13 @@ func (mr *MetricsRetriever) retrieveMetricsValues() {
 		datadogMetricFromStore := mr.store.LockRead(datadogMetric.ID, false)
 		if datadogMetricFromStore == nil {
 			// This metric is not in the store anymore, discard it
-			klog.Infof("Discarding results for DatadogMetric: %s as not present in store anymore", datadogMetric.ID)
+			log.Infof("Discarding results for DatadogMetric: %s as not present in store anymore", datadogMetric.ID)
 			continue
 		}
 
 		query := datadogMetric.Query()
 		if queryResult, found := results[query]; found {
-			klog.V(5).Infof("QueryResult from DD for %q: %v", query, queryResult)
+			log.Debugf("QueryResult from DD for %q: %v", query, queryResult)
 
 			if queryResult.Valid {
 				datadogMetricFromStore.Value = queryResult.Value

@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/v5"
-	"github.com/n9e/n9e-agentd/pkg/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
+	"github.com/DataDog/datadog-agent/pkg/metadata/v5"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 )
 
 func testMetadata(t *testing.T, d *dogstatsdTest) {

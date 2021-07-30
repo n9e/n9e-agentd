@@ -3,26 +3,27 @@
 package util
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/docker"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/docker"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // GetAgentNetworkMode retrieves from Docker the network mode of the Agent container
-func GetAgentNetworkMode() (string, error) {
+func GetAgentNetworkMode(ctx context.Context) (string, error) {
 	cacheNetworkModeKey := cache.BuildAgentKey("networkMode")
 	if cacheNetworkMode, found := cache.Cache.Get(cacheNetworkModeKey); found {
 		return cacheNetworkMode.(string), nil
 	}
 
-	klog.V(5).Infof("GetAgentNetworkMode trying Docker")
-	networkMode, err := docker.GetAgentContainerNetworkMode()
+	log.Debugf("GetAgentNetworkMode trying Docker")
+	networkMode, err := docker.GetAgentContainerNetworkMode(ctx)
 	cache.Cache.Set(cacheNetworkModeKey, networkMode, cache.NoExpiration)
 	if err != nil {
 		return networkMode, fmt.Errorf("could not detect agent network mode: %v", err)
 	}
-	klog.V(5).Infof("GetAgentNetworkMode: using network mode from Docker: %s", networkMode)
+	log.Debugf("GetAgentNetworkMode: using network mode from Docker: %s", networkMode)
 	return networkMode, nil
 }

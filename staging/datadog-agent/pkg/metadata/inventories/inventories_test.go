@@ -7,13 +7,14 @@
 package inventories
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,6 +87,7 @@ func waitForCalledSignal(calledSignal chan interface{}) bool {
 }
 
 func TestGetPayload(t *testing.T) {
+	ctx := context.Background()
 	defer func() { clearMetadata() }()
 
 	startNow := time.Now()
@@ -97,7 +99,7 @@ func TestGetPayload(t *testing.T) {
 	SetCheckMetadata("check1_instance1", "check_provided_key2", "Hi")
 	SetCheckMetadata("non_running_checkid", "check_provided_key1", "this_should_be_kept")
 
-	p := GetPayload("testHostname", &mockAutoConfig{}, &mockCollector{})
+	p := GetPayload(ctx, "testHostname", &mockAutoConfig{}, &mockCollector{})
 
 	assert.Equal(t, startNow.UnixNano(), p.Timestamp)
 
@@ -132,7 +134,7 @@ func TestGetPayload(t *testing.T) {
 	startNow = startNow.Add(1000 * time.Second)
 	SetCheckMetadata("check1_instance1", "check_provided_key1", 456)
 
-	p = GetPayload("testHostname", &mockAutoConfig{}, &mockCollector{})
+	p = GetPayload(ctx, "testHostname", &mockAutoConfig{}, &mockCollector{})
 
 	assert.Equal(t, startNow.UnixNano(), p.Timestamp) //updated startNow is returned
 

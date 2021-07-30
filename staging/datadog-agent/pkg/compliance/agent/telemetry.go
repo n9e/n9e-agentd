@@ -9,13 +9,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/collectors"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/collectors"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
-	containersCountMetricName = "security_agent.compliance.containers_running"
+	containersCountMetricName = "datadog.security_agent.compliance.containers_running"
 )
 
 // telemetry reports environment information (e.g containers running) when the compliance component is running
@@ -24,7 +24,7 @@ type telemetry struct {
 	detector collectors.DetectorInterface
 }
 
-func newTelemtry() (*telemetry, error) {
+func newTelemetry() (*telemetry, error) {
 	sender, err := aggregator.GetDefaultSender()
 	if err != nil {
 		return nil, err
@@ -37,8 +37,8 @@ func newTelemtry() (*telemetry, error) {
 }
 
 func (t *telemetry) run(ctx context.Context) {
-	klog.Info("Start collecting Compliance telemetry")
-	defer klog.Info("Stopping Compliance telemetry")
+	log.Info("Start collecting Compliance telemetry")
+	defer log.Info("Stopping Compliance telemetry")
 
 	metricsTicker := time.NewTicker(2 * time.Minute)
 	defer metricsTicker.Stop()
@@ -49,7 +49,7 @@ func (t *telemetry) run(ctx context.Context) {
 			return
 		case <-metricsTicker.C:
 			if err := t.reportContainers(); err != nil {
-				klog.V(5).Infof("Couldn't report containers: %v", err)
+				log.Debugf("Couldn't report containers: %v", err)
 			}
 		}
 	}

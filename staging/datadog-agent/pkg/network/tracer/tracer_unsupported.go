@@ -1,11 +1,11 @@
-// +build !linux_bpf,!windows
+// +build linux,!linux_bpf windows,!npm !linux,!windows
 
 package tracer
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/config"
+	"github.com/DataDog/datadog-agent/pkg/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/network"
+	"github.com/DataDog/datadog-agent/pkg/network/config"
 )
 
 // Tracer is not implemented

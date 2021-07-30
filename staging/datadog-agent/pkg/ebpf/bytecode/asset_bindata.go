@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"io"
 
-	bindata "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf/bytecode/bindata"
+	bindata "github.com/DataDog/datadog-agent/pkg/ebpf/bytecode/bindata"
 )
 
 // GetReader returns a new AssetReader for the specified bundled asset

@@ -10,10 +10,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/mocks"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance/mocks"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
 
 	assert "github.com/stretchr/testify/require"
 )

@@ -6,6 +6,7 @@
 package zookeeper
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,9 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/providers"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/providers"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/test/integration/utils"
 )
 
 var (
@@ -123,7 +124,7 @@ func (suite *ZkTestSuite) populate() error {
 	for _, node := range zkDataTree {
 		_, err := suite.client.Create(node[0], []byte(node[1]), 0, zk.WorldACL(zk.PermAll))
 		if err != nil && err != zk.ErrNodeExists {
-			klog.Errorf("Could not create path %s with value '%s': %s", node[0], node[1], err)
+			log.Errorf("Could not create path %s with value '%s': %s", node[0], node[1], err)
 			return err
 		}
 	}
@@ -132,10 +133,11 @@ func (suite *ZkTestSuite) populate() error {
 }
 
 func (suite *ZkTestSuite) TestCollect() {
+	ctx := context.Background()
 	zk, err := providers.NewZookeeperConfigProvider(suite.providerConfig)
 	require.Nil(suite.T(), err)
 
-	templates, err := zk.Collect()
+	templates, err := zk.Collect(ctx)
 
 	require.Nil(suite.T(), err)
 	require.Len(suite.T(), templates, 3)

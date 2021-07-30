@@ -9,20 +9,22 @@
 package apiserver
 
 import (
-	a "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/clustername"
-	"k8s.io/klog/v2"
+	"context"
+
+	a "github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/clustername"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-func HostnameProvider() (string, error) {
-	nodeName, err := a.HostNodeName()
+func HostnameProvider(ctx context.Context, options map[string]interface{}) (string, error) {
+	nodeName, err := a.HostNodeName(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	clusterName := clustername.GetClusterName(nodeName)
+	clusterName := clustername.GetClusterName(ctx, nodeName)
 	if clusterName == "" {
-		klog.V(5).Infof("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered")
+		log.Debugf("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered")
 		return nodeName, nil
 	} else {
 		return (nodeName + "-" + clusterName), nil

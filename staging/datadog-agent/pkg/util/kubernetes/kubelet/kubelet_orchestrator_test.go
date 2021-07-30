@@ -8,13 +8,14 @@
 package kubelet
 
 import (
+	"context"
 	"testing"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 type KubeletOrchestratorTestSuite struct {
@@ -43,6 +44,7 @@ func (suite *KubeletOrchestratorTestSuite) SetupTest() {
 }
 
 func (suite *KubeletOrchestratorTestSuite) TestGetRawLocalPodList() {
+	ctx := context.Background()
 	mockConfig := config.Mock()
 
 	kubelet, err := newDummyKubelet("./testdata/podlist_1.8-2.json")
@@ -61,7 +63,7 @@ func (suite *KubeletOrchestratorTestSuite) TestGetRawLocalPodList() {
 	require.NotNil(suite.T(), kubeutil)
 	kubelet.dropRequests() // Throwing away first GETs
 
-	pods, err := kubeutil.GetRawLocalPodList()
+	pods, err := kubeutil.GetRawLocalPodList(ctx)
 	require.Nil(suite.T(), err)
 	require.Len(suite.T(), pods, 7)
 

@@ -20,11 +20,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var healthRe = regexp.MustCompile(`\(health: (\w+)\)`)
@@ -35,15 +35,15 @@ type ContainerListConfig struct {
 	FlagExcluded  bool
 }
 
-// Containers gets a list of all containers on the current node using a mix of
+// ListContainers gets a list of all containers on the current node using a mix of
 // the Docker APIs and cgroups stats. We attempt to limit syscalls where possible.
-func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Container, error) {
+func (d *DockerUtil) ListContainers(ctx context.Context, cfg *ContainerListConfig) ([]*containers.Container, error) {
 	err := providers.ContainerImpl().Prefetch()
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch container metrics: %s", err)
 	}
 
-	cList, err := d.dockerContainers(cfg)
+	cList, err := d.dockerContainers(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not get docker containers: %s", err)
 	}
@@ -63,15 +63,15 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			// in both cases we can't get the IP address in parseContainerNetworkAddresses
 		} else if len(container.AddressList) == 0 {
 			// the inspect should be in the cache already so this is not a problem
-			inspect, err := d.Inspect(container.ID, false)
+			inspect, err := d.Inspect(ctx, container.ID, false)
 			if err != nil {
-				klog.V(5).Infof("Error inspecting container %s: %s", container.ID, err)
+				log.Debugf("Error inspecting container %s: %s", container.ID, err)
 				continue
 			}
-			networkMode, err := GetContainerNetworkMode(container.ID)
-			klog.V(6).Infof("container %s network mode: %s", container.Name, networkMode)
+			networkMode, err := GetContainerNetworkMode(ctx, container.ID)
+			log.Tracef("container %s network mode: %s", container.Name, networkMode)
 			if err != nil {
-				klog.V(5).Infof("Failed to get network mode for container %s. Network info will be missing. Error: %s", container.ID, err)
+				log.Debugf("Failed to get network mode for container %s. Network info will be missing. Error: %s", container.ID, err)
 				continue
 			}
 			// in awsvpc, and host mode, we assume that those ports are listening to all ip addresses
@@ -85,15 +85,15 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			// in awsvpc networking mode so we try getting IP address from the
 			// ECS container metadata endpoint and port from inspect.Config.ExposedPorts
 			if networkMode == containers.AwsvpcNetworkMode {
-				ecsContainerMetadataURL, err := d.getECSMetadataURL(container.ID)
+				ecsContainerMetadataURL, err := d.getECSMetadataURL(ctx, container.ID)
 				if err != nil {
-					klog.V(5).Infof("Failed to get the ECS container metadata URI for container %s. Network info will be missing. Error: %s", container.ID, err)
+					log.Debugf("Failed to get the ECS container metadata URI for container %s. Network info will be missing. Error: %s", container.ID, err)
 					continue
 				}
 
 				addresses, err := GetContainerNetworkAddresses(ecsContainerMetadataURL)
 				if err != nil {
-					klog.Errorf("Failed to get network addresses for container: %s. Network info will be missing. Error: %s", container.ID, err)
+					log.Errorf("Failed to get network addresses for container: %s. Network info will be missing. Error: %s", container.ID, err)
 					continue
 				}
 				container.AddressList = crossIPsWithPorts(addresses, exposedPorts)
@@ -101,7 +101,7 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			} else if networkMode == containers.HostNetworkMode {
 				ips := GetDockerHostIPs()
 				if len(ips) == 0 {
-					klog.Errorf("Failed to get host IPs. Container %s will be missing network info: %s", container.Name, err)
+					log.Errorf("Failed to get host IPs. Container %s will be missing network info: %s", container.Name, err)
 					continue
 				}
 				ipAddr := []containers.NetworkAddress{}
@@ -142,14 +142,14 @@ func (d *DockerUtil) getContainerDetails(ctn *containers.Container) {
 	var err error
 	ctn.StartedAt, err = providers.ContainerImpl().GetContainerStartTime(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get StartTime for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get StartTime for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 
 	var limits *metrics.ContainerLimits
 	limits, err = providers.ContainerImpl().GetContainerLimits(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get limits for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get limits for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.SetLimits(limits)
@@ -159,14 +159,14 @@ func (d *DockerUtil) getContainerDetails(ctn *containers.Container) {
 func (d *DockerUtil) getContainerMetrics(ctn *containers.Container) {
 	metrics, err := providers.ContainerImpl().GetContainerMetrics(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get metrics for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.SetMetrics(metrics)
 
 	pids, err := providers.ContainerImpl().GetPIDs(ctn.ID)
 	if err != nil {
-		klog.V(5).Infof("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
+		log.Debugf("ContainerImplementation cannot get PIDs for container %s, err: %s", ctn.ID[:12], err)
 		return
 	}
 	ctn.Pids = pids
@@ -183,7 +183,7 @@ func (d *DockerUtil) getContainerMetrics(ctn *containers.Container) {
 
 		networkMetrics, err := providers.ContainerImpl().GetNetworkMetrics(ctn.ID, nwByIface)
 		if err != nil {
-			klog.V(5).Infof("Cannot get network stats for container %s: %s", ctn.ID, err)
+			log.Debugf("Cannot get network stats for container %s: %s", ctn.ID, err)
 			return
 		}
 		ctn.Network = networkMetrics
@@ -195,11 +195,11 @@ func (d *DockerUtil) ContainerLogs(ctx context.Context, container string, option
 }
 
 // dockerContainers returns the running container list from the docker API
-func (d *DockerUtil) dockerContainers(cfg *ContainerListConfig) ([]*containers.Container, error) {
+func (d *DockerUtil) dockerContainers(ctx context.Context, cfg *ContainerListConfig) ([]*containers.Container, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is nil")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), d.queryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, d.queryTimeout)
 	defer cancel()
 	cList, err := d.cli.ContainerList(ctx, types.ContainerListOptions{All: cfg.IncludeExited})
 	if err != nil {
@@ -211,10 +211,10 @@ func (d *DockerUtil) dockerContainers(cfg *ContainerListConfig) ([]*containers.C
 			// FIXME: We might need to invalidate this cache if a containers networks are changed live.
 			d.Lock()
 			if _, ok := d.networkMappings[c.ID]; !ok {
-				i, err := d.Inspect(c.ID, false)
+				i, err := d.Inspect(ctx, c.ID, false)
 				if err != nil {
 					d.Unlock()
-					klog.V(5).Infof("Error inspecting container %s: %s", c.ID, err)
+					log.Debugf("Error inspecting container %s: %s", c.ID, err)
 					continue
 				}
 				d.networkMappings[c.ID] = findDockerNetworks(c.ID, i.State.Pid, c)
@@ -222,9 +222,9 @@ func (d *DockerUtil) dockerContainers(cfg *ContainerListConfig) ([]*containers.C
 			d.Unlock()
 		}
 
-		image, err := d.ResolveImageName(c.Image)
+		image, err := d.ResolveImageName(ctx, c.Image)
 		if err != nil {
-			klog.Warningf("Can't resolve image name %s: %s", c.Image, err)
+			log.Warnf("Can't resolve image name %s: %s", c.Image, err)
 		}
 
 		pauseContainerExcluded := config.Datadog.GetBool("exclude_pause_container") && containers.IsPauseContainer(c.Labels)
@@ -291,14 +291,14 @@ func (d *DockerUtil) parseContainerNetworkAddresses(cID string, ports []types.Po
 	addrList := []containers.NetworkAddress{}
 	tempAddrList := []containers.NetworkAddress{}
 	if netSettings == nil || len(netSettings.Networks) == 0 {
-		klog.V(5).Infof("No network settings available from docker")
+		log.Debugf("No network settings available from docker")
 		return addrList
 	}
 	for _, port := range ports {
 		if isExposed(port) {
 			IP := net.ParseIP(port.IP)
 			if IP == nil {
-				klog.Warningf("Unable to parse IP: %v for container: %s", port.IP, container)
+				log.Warnf("Unable to parse IP: %v for container: %s", port.IP, container)
 				continue
 			}
 			addrList = append(addrList, containers.NetworkAddress{
@@ -316,12 +316,12 @@ func (d *DockerUtil) parseContainerNetworkAddresses(cID string, ports []types.Po
 	// Retieve IPs from network settings for the cached ports
 	for _, network := range netSettings.Networks {
 		if network.IPAddress == "" {
-			klog.V(5).Infof("No IP found for container %s in network %s", container, network.NetworkID)
+			log.Debugf("No IP found for container %s in network %s", container, network.NetworkID)
 			continue
 		}
 		IP := net.ParseIP(network.IPAddress)
 		if IP == nil {
-			klog.Warningf("Unable to parse IP: %v for container: %s", network.IPAddress, container)
+			log.Warnf("Unable to parse IP: %v for container: %s", network.IPAddress, container)
 			continue
 		}
 		for _, addr := range tempAddrList {
@@ -343,8 +343,8 @@ func isExposed(port types.Port) bool {
 
 // getECSMetadataURL inspects a given container ID and returns its ECS container metadata URI
 // if found in its environment. It returns an empty string and an error on failure.
-func (d *DockerUtil) getECSMetadataURL(cID string) (string, error) {
-	i, err := d.Inspect(cID, false)
+func (d *DockerUtil) getECSMetadataURL(ctx context.Context, cID string) (string, error) {
+	i, err := d.Inspect(ctx, cID, false)
 	if err != nil {
 		return "", err
 	}

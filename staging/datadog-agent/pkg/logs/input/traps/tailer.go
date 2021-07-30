@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/snmp/traps"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Tailer consumes and processes a stream of trap packets, and sends them to a stream of log messages.
@@ -52,13 +52,13 @@ func (t *Tailer) run() {
 	for packet := range t.inputChan {
 		data, err := traps.FormatPacketToJSON(packet)
 		if err != nil {
-			klog.Errorf("failed to format packet: %s", err)
+			log.Errorf("failed to format packet: %s", err)
 			continue
 		}
 		t.source.BytesRead.Add(int64(len(data)))
 		content, err := json.Marshal(data)
 		if err != nil {
-			klog.Errorf("failed to serialize packet data to JSON: %s", err)
+			log.Errorf("failed to serialize packet data to JSON: %s", err)
 			continue
 		}
 		origin := message.NewOrigin(t.source)

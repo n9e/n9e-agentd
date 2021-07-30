@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer/marshaler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/compression"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 )
 
 var initialContentEncoding = compression.ContentEncoding
@@ -389,25 +389,25 @@ func TestSendMetadata(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestSendJSONToV1Intake(t *testing.T) {
+func TestSendProcessesMetadata(t *testing.T) {
 	f := &forwarder.MockedForwarder{}
 	payload := []byte("\"test\"")
-	payloads, _ := mkPayloads(payload, false)
-	f.On("SubmitV1Intake", payloads, jsonExtraHeaders).Return(nil).Times(1)
+	payloads, _ := mkPayloads(payload, true)
+	f.On("SubmitV1Intake", payloads, jsonExtraHeadersWithCompression).Return(nil).Times(1)
 
 	s := NewSerializer(f, nil)
 
-	err := s.SendJSONToV1Intake("test")
+	err := s.SendProcessesMetadata("test")
 	require.Nil(t, err)
 	f.AssertExpectations(t)
 
-	f.On("SubmitV1Intake", payloads, jsonExtraHeaders).Return(fmt.Errorf("some error")).Times(1)
-	err = s.SendJSONToV1Intake("test")
+	f.On("SubmitV1Intake", payloads, jsonExtraHeadersWithCompression).Return(fmt.Errorf("some error")).Times(1)
+	err = s.SendProcessesMetadata("test")
 	require.NotNil(t, err)
 	f.AssertExpectations(t)
 
 	errPayload := &testErrorPayload{}
-	err = s.SendJSONToV1Intake(errPayload)
+	err = s.SendProcessesMetadata(errPayload)
 	require.NotNil(t, err)
 }
 
@@ -439,7 +439,7 @@ func TestSendWithDisabledKind(t *testing.T) {
 	s.SendSeries(payload)
 	s.SendSketch(payload)
 	s.SendServiceChecks(payload)
-	s.SendJSONToV1Intake("test")
+	s.SendProcessesMetadata("test")
 
 	f.AssertNotCalled(t, "SubmitMetadata")
 	f.AssertNotCalled(t, "SubmitEvents")

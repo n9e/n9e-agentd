@@ -8,6 +8,7 @@
 package docker
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -18,11 +19,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/providers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	v3 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/ecs/metadata/v3"
+	v3 "github.com/DataDog/datadog-agent/pkg/util/ecs/metadata/v3"
 )
 
 type dockerNetwork struct {
@@ -53,14 +54,14 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	// Check the known network modes that require specific handling.
 	// Other network modes will look at the docker NetworkSettings.
 	if netMode == containers.HostNetworkMode {
-		klog.V(5).Infof("Container %s is in network host mode, its network metrics are for the whole host", containerID)
+		log.Debugf("Container %s is in network host mode, its network metrics are for the whole host", containerID)
 		return []dockerNetwork{hostNetwork}
 	} else if netMode == containers.NoneNetworkMode {
-		klog.V(5).Infof("Container %s is in network mode 'none', we will collect metrics for the whole host", containerID)
+		log.Debugf("Container %s is in network mode 'none', we will collect metrics for the whole host", containerID)
 		return []dockerNetwork{hostNetwork}
 	} else if strings.HasPrefix(netMode, "container:") {
 		netContainerID := strings.TrimPrefix(netMode, "container:")
-		klog.V(5).Infof("Container %s uses the network namespace of container:%s", containerID, netContainerID)
+		log.Debugf("Container %s uses the network namespace of container:%s", containerID, netContainerID)
 		return []dockerNetwork{{routingContainerID: netContainerID}}
 	}
 
@@ -68,7 +69,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	// not provide the network settings in container inspect.
 	netSettings := container.NetworkSettings
 	if netSettings == nil || netSettings.Networks == nil || len(netSettings.Networks) == 0 {
-		klog.V(5).Infof("No network settings available from docker, defaulting to host network")
+		log.Debugf("No network settings available from docker, defaulting to host network")
 		return []dockerNetwork{hostNetwork}
 	}
 
@@ -76,7 +77,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	interfaces := make(map[string]uint64)
 	for netName, netConf := range netSettings.Networks {
 		if netName == "host" {
-			klog.V(5).Infof("Container %s is in network host mode, its network metrics are for the whole host", containerID)
+			log.Debugf("Container %s is in network host mode, its network metrics are for the whole host", containerID)
 			return []dockerNetwork{hostNetwork}
 		}
 
@@ -86,13 +87,13 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 		if strings.Contains(ipString, "/") {
 			ip, _, err = net.ParseCIDR(ipString)
 			if err != nil {
-				klog.Warningf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
+				log.Warnf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
 				continue
 			}
 		} else {
 			ip = net.ParseIP(ipString)
 			if ip == nil {
-				klog.Warningf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
+				log.Warnf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
 				continue
 			}
 		}
@@ -103,7 +104,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 
 	destinations, err := providers.ContainerImpl().DetectNetworkDestinations(pid)
 	if err != nil {
-		klog.Warningf("Cannot list interfaces for container id %s: %s, skipping", containerID, err)
+		log.Warnf("Cannot list interfaces for container id %s: %s, skipping", containerID, err)
 		return nil
 	}
 
@@ -133,7 +134,7 @@ func resolveDockerNetworks(containerNetworks map[string][]dockerNetwork) {
 			if cnw, ok := containerNetworks[nw.routingContainerID]; ok {
 				containerNetworks[cid] = cnw
 			} else {
-				klog.V(5).Infof("Unable to resolve network for c:%s that uses namespace of c:%s", cid, nw.routingContainerID)
+				log.Debugf("Unable to resolve network for c:%s that uses namespace of c:%s", cid, nw.routingContainerID)
 				containerNetworks[cid] = nil
 			}
 		}
@@ -143,15 +144,15 @@ func resolveDockerNetworks(containerNetworks map[string][]dockerNetwork) {
 // GetAgentContainerNetworkMode provides the network mode of the Agent container
 // To get this info in an optimal way, consider calling util.GetAgentNetworkMode	func GetContainerNetworkMode(cid string) (string, error) {
 // instead to benefit from the cache
-func GetAgentContainerNetworkMode() (string, error) {
+func GetAgentContainerNetworkMode(ctx context.Context) (string, error) {
 	agentCID, _ := providers.ContainerImpl().GetAgentCID()
-	return GetContainerNetworkMode(agentCID)
+	return GetContainerNetworkMode(ctx, agentCID)
 }
 
 // GetContainerNetworkAddresses returns internal container network address
 // representations from the container metadata retrieved at the given URL.
 func GetContainerNetworkAddresses(agentURL string) ([]containers.NetworkAddress, error) {
-	container, err := v3.NewClient(agentURL).GetContainer()
+	container, err := v3.NewClient(agentURL).GetContainer(context.TODO())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task from metadata v3 API: %s", err)
 	}
@@ -159,12 +160,12 @@ func GetContainerNetworkAddresses(agentURL string) ([]containers.NetworkAddress,
 }
 
 // GetContainerNetworkMode returns the network mode of a container
-func GetContainerNetworkMode(cid string) (string, error) {
+func GetContainerNetworkMode(ctx context.Context, cid string) (string, error) {
 	du, err := GetDockerUtil()
 	if err != nil {
 		return "", err
 	}
-	container, err := du.Inspect(cid, false)
+	container, err := du.Inspect(ctx, cid, false)
 	if err != nil {
 		return "", err
 	}
@@ -176,7 +177,7 @@ func GetContainerNetworkMode(cid string) (string, error) {
 	// Try to discover awsvpc mode
 	if strings.HasPrefix(mode, containerModePrefix) {
 		// Inspect the attached container
-		co, err := du.Inspect(mode[len(containerModePrefix):], false)
+		co, err := du.Inspect(ctx, mode[len(containerModePrefix):], false)
 		if err != nil {
 			return "", fmt.Errorf("cannot inspect attached container %s: %v", mode, err)
 		}
@@ -194,14 +195,14 @@ func GetContainerNetworkMode(cid string) (string, error) {
 func parseContainerNetworkAddresses(ports []v3.Port, networks []v3.Network, container string) []containers.NetworkAddress {
 	addrList := []containers.NetworkAddress{}
 	if networks == nil {
-		klog.V(5).Infof("No network settings available in ECS metadata")
+		log.Debugf("No network settings available in ECS metadata")
 		return addrList
 	}
 	for _, network := range networks {
 		for _, addr := range network.IPv4Addresses { // one-element list
 			IP := net.ParseIP(addr)
 			if IP == nil {
-				klog.Warningf("Unable to parse IP: %v for container: %s", addr, container)
+				log.Warnf("Unable to parse IP: %v for container: %s", addr, container)
 				continue
 			}
 			if len(ports) > 0 {

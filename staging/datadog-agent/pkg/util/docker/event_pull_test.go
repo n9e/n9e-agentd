@@ -8,6 +8,7 @@
 package docker
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
 )
 
 func TestProcessContainerEvent(t *testing.T) {
@@ -171,8 +172,10 @@ func TestProcessContainerEvent(t *testing.T) {
 			err: nil,
 		},
 	} {
+		ctx := context.Background()
+
 		t.Logf("test case %d", nb)
-		event, err := dockerUtil.processContainerEvent(tc.source)
+		event, err := dockerUtil.processContainerEvent(ctx, tc.source)
 		assert.Equal(tc.event, event)
 
 		if tc.err == nil {

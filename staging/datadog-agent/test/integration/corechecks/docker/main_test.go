@@ -14,19 +14,21 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"github.com/n9e/n9e-agentd/pkg/aggregator/mocksender"
-	"github.com/n9e/n9e-agentd/pkg/collector/check"
-	"github.com/n9e/n9e-agentd/pkg/collector/corechecks/containers/docker"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/local"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/test/integration/utils"
+	"github.com/DataDog/datadog-agent/pkg/aggregator/mocksender"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/collector/corechecks/containers/docker"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/local"
+	"github.com/DataDog/datadog-agent/test/integration/utils"
 )
 
-var retryDelay = flag.Int("retry-delay", 1, "time to wait between retries (default 1 second)")
-var retryTimeout = flag.Int("retry-timeout", 30, "maximum time before failure (default 30 seconds)")
-var skipCleanup = flag.Bool("skip-cleanup", false, "skip cleanup of the docker containers (for debugging)")
+var (
+	retryDelay   = flag.Int("retry-delay", 1, "time to wait between retries (default 1 second)")
+	retryTimeout = flag.Int("retry-timeout", 30, "maximum time before failure (default 30 seconds)")
+	skipCleanup  = flag.Bool("skip-cleanup", false, "skip cleanup of the docker containers (for debugging)")
+)
 
 var dockerCfgString = `
 collect_events: true
@@ -46,8 +48,10 @@ docker_env_as_tags:
     "low_card_env": lowcardenvtag
 `
 
-var sender *mocksender.MockSender
-var dockerCheck check.Check
+var (
+	sender      *mocksender.MockSender
+	dockerCheck check.Check
+)
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -69,7 +73,7 @@ func TestMain(m *testing.M) {
 
 	err := setup()
 	if err != nil {
-		klog.Infof("Test setup failed: %v", err)
+		log.Infof("Test setup failed: %v", err)
 		tearOffAndExit(1)
 	}
 
@@ -77,13 +81,13 @@ func TestMain(m *testing.M) {
 		select {
 		case <-retryTicker.C:
 			retryCount++
-			klog.Infof("Starting run %d", retryCount)
+			log.Infof("Starting run %d", retryCount)
 			lastRunResult = doRun(m)
 			if lastRunResult == 0 {
 				tearOffAndExit(0)
 			}
 		case <-timeoutTicker.C:
-			klog.Errorf("Timeout after %d seconds and %d retries", retryTimeout, retryCount)
+			log.Errorf("Timeout after %d seconds and %d retries", retryTimeout, retryCount)
 			tearOffAndExit(1)
 		}
 	}
@@ -97,6 +101,7 @@ func setup() error {
 	if err != nil {
 		return err
 	}
+	config.DetectFeatures()
 
 	// Setup tagger
 	tagger.SetDefaultTagger(local.NewTagger(collectors.DefaultCatalog))
@@ -110,7 +115,7 @@ func setup() error {
 		}
 		output, err := compose.Start()
 		if err != nil {
-			klog.Errorf("Compose didn't start properly: %s", string(output))
+			log.Errorf("Compose didn't start properly: %s", string(output))
 			return err
 		}
 	}
@@ -120,8 +125,8 @@ func setup() error {
 // Reset the state and trigger a new run
 func doRun(m *testing.M) int {
 	// Setup docker check
-	var dockerCfg = []byte(dockerCfgString)
-	var dockerInitCfg = []byte("")
+	dockerCfg := []byte(dockerCfgString)
+	dockerInitCfg := []byte("")
 	dockerCheck = docker.DockerFactory()
 	dockerCheck.Configure(dockerCfg, dockerInitCfg, "test")
 
@@ -147,7 +152,7 @@ func tearOffAndExit(exitcode int) {
 		}
 		output, err := compose.Stop()
 		if err != nil {
-			klog.Warningf("Compose didn't stop properly: %s", string(output))
+			log.Warnf("Compose didn't stop properly: %s", string(output))
 		}
 	}
 	os.Exit(exitcode)

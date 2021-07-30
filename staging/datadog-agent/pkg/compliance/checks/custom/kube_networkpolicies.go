@@ -9,10 +9,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/checks/env"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/eval"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/compliance/event"
+	"github.com/DataDog/datadog-agent/pkg/compliance"
+	"github.com/DataDog/datadog-agent/pkg/compliance/checks/env"
+	"github.com/DataDog/datadog-agent/pkg/compliance/eval"
+	"github.com/DataDog/datadog-agent/pkg/compliance/event"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -62,6 +62,7 @@ func kubernetesNetworkPoliciesCheck(e env.Env, ruleID string, vars map[string]st
 			compliance.KubeResourceFieldGroup:   namespaces.Items[0].GroupVersionKind().Group,
 			compliance.KubeResourceFieldVersion: namespaces.Items[0].GroupVersionKind().Version,
 		},
+		Aggregated: true,
 	}
 
 	if len(nsLookup) > 0 {

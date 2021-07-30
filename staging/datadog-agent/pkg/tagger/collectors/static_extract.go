@@ -8,8 +8,8 @@ package collectors
 import (
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/utils"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/tagger/utils"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 func (c *StaticCollector) getTagInfo(entity string) []*TagInfo {
@@ -17,7 +17,7 @@ func (c *StaticCollector) getTagInfo(entity string) []*TagInfo {
 	for _, tag := range c.ddTagsEnvVar {
 		tagParts := strings.SplitN(tag, ":", 2)
 		if len(tagParts) != 2 {
-			klog.Warningf("Cannot split tag %s", tag)
+			log.Warnf("Cannot split tag %s", tag)
 			continue
 		}
 		tags.AddLow(tagParts[0], tagParts[1])

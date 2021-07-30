@@ -13,10 +13,30 @@ struct str_array_ref_t {
     const char **array;
 };
 
+struct dentry_resolver_input_t {
+    struct path_key_t key;
+    struct dentry *dentry;
+    u64 discarder_type;
+    int callback;
+    int ret;
+    int iteration;
+};
+
+union selinux_write_payload_t {
+    // 1 for true, 0 for false, -1 (max) for error
+    u32 bool_value;
+    struct {
+        u16 disable_value;
+        u16 enforce_value;
+    } status;
+};
+
 struct syscall_cache_t {
     struct policy_t policy;
     u64 type;
     u32 discarded;
+
+    struct dentry_resolver_input_t resolver;
 
     union {
         struct {
@@ -74,6 +94,7 @@ struct syscall_cache_t {
             struct mount *dest_mnt;
             struct mountpoint *dest_mountpoint;
             struct path_key_t root_key;
+            struct path_key_t path_key;
             const char *fstype;
         } mount;
 
@@ -107,6 +128,13 @@ struct syscall_cache_t {
             u32 next_tail;
             u8 is_parsed;
         } exec;
+
+        struct {
+            struct dentry *dentry;
+            struct file_t file;
+            u32 event_kind;
+            union selinux_write_payload_t payload;
+        } selinux;
     };
 };
 
@@ -137,15 +165,47 @@ void __attribute__((always_inline)) cache_syscall(struct syscall_cache_t *syscal
 struct syscall_cache_t * __attribute__((always_inline)) peek_syscall(u64 type) {
     u64 key = bpf_get_current_pid_tgid();
     struct syscall_cache_t *syscall = (struct syscall_cache_t *) bpf_map_lookup_elem(&syscalls, &key);
-    if (syscall && (syscall->type & type) > 0)
+    if (!syscall) {
+        return NULL;
+    }
+    if (!type || syscall->type == type) {
         return syscall;
+    }
+    return NULL;
+}
+
+struct syscall_cache_t * __attribute__((always_inline)) peek_syscall_with(int (*predicate)(u64 type)) {
+    u64 key = bpf_get_current_pid_tgid();
+    struct syscall_cache_t *syscall = (struct syscall_cache_t *) bpf_map_lookup_elem(&syscalls, &key);
+    if (!syscall) {
+        return NULL;
+    }
+    if (predicate(syscall->type)) {
+        return syscall;
+    }
+    return NULL;
+}
+
+struct syscall_cache_t * __attribute__((always_inline)) pop_syscall_with(int (*predicate)(u64 type)) {
+    u64 key = bpf_get_current_pid_tgid();
+    struct syscall_cache_t *syscall = (struct syscall_cache_t *) bpf_map_lookup_elem(&syscalls, &key);
+    if (!syscall) {
+        return NULL;
+    }
+    if (predicate(syscall->type)) {
+        bpf_map_delete_elem(&syscalls, &key);
+        return syscall;
+    }
     return NULL;
 }
 
 struct syscall_cache_t * __attribute__((always_inline)) pop_syscall(u64 type) {
     u64 key = bpf_get_current_pid_tgid();
     struct syscall_cache_t *syscall = (struct syscall_cache_t *) bpf_map_lookup_elem(&syscalls, &key);
-    if (syscall && (syscall->type & type) > 0) {
+    if (!syscall) {
+        return NULL;
+    }
+    if (!type || syscall->type == type) {
         bpf_map_delete_elem(&syscalls, &key);
         return syscall;
     }

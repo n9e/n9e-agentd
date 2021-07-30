@@ -31,6 +31,6 @@ func pushMetricsToDatadog(apiKey string, results []datadog.Metric) {
 	client := datadog.NewClient(apiKey, "")
 	err := client.PostMetrics(results)
 	if err != nil {
-		klog.Errorf("Could not post metrics: %s", err)
+		log.Errorf("Could not post metrics: %s", err)
 	}
 }

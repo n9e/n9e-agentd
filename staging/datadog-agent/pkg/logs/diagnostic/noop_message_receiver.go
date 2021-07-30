@@ -5,7 +5,7 @@
 
 package diagnostic
 
-import "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
+import "github.com/DataDog/datadog-agent/pkg/logs/message"
 
 // NoopMessageReceiver for cases where diagnosing messages is unsupported or not needed (serverless, tests)
 type NoopMessageReceiver struct{}

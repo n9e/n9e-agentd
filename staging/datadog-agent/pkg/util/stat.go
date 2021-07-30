@@ -9,7 +9,7 @@ import (
 	"expvar"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 // Stat type includes a statted value and its timestamp.
@@ -48,7 +48,7 @@ func (s *Stats) StatEvent(v int64) {
 	case s.incoming <- v:
 		return
 	default:
-		klog.V(5).Infof("dropping last second stats, buffer full")
+		log.Debugf("dropping last second stats, buffer full")
 	}
 }
 
@@ -68,7 +68,7 @@ func (s *Stats) Process() {
 				Ts:  s.last,
 			}:
 			default:
-				klog.V(5).Infof("dropping last second stats, buffer full")
+				log.Debugf("dropping last second stats, buffer full")
 			}
 
 			s.valExpvar.Set(0)

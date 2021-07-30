@@ -19,11 +19,11 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/custommetrics"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/custommetrics"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/watermarkpodautoscaler/api/v1alpha1"
 )
 
@@ -57,7 +57,7 @@ func NewAutoscalersController(client kubernetes.Interface, eventRecorder record.
 	datadogHPAConfigMap := custommetrics.GetConfigmapName()
 	h.store, err = custommetrics.NewConfigMapStore(client, common.GetResourcesNamespace(), datadogHPAConfigMap)
 	if err != nil {
-		klog.Errorf("Could not instantiate the local store for the External Metrics %v", err)
+		log.Errorf("Could not instantiate the local store for the External Metrics %v", err)
 		return nil, err
 	}
 	return h, nil
@@ -66,7 +66,7 @@ func NewAutoscalersController(client kubernetes.Interface, eventRecorder record.
 func (h *AutoscalersController) enqueueWPA(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		klog.V(5).Infof("Couldn't get key for object %v: %v", obj, err)
+		log.Debugf("Couldn't get key for object %v: %v", obj, err)
 		return
 	}
 	h.WPAqueue.AddRateLimited(key)
@@ -75,7 +75,7 @@ func (h *AutoscalersController) enqueueWPA(obj interface{}) {
 func (h *AutoscalersController) enqueue(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		klog.V(5).Infof("Couldn't get key for object %v: %v", obj, err)
+		log.Debugf("Couldn't get key for object %v: %v", obj, err)
 		return
 	}
 	h.HPAqueue.AddRateLimited(key)
@@ -92,21 +92,21 @@ func (h *AutoscalersController) gc() {
 	wpaEnabled := h.isWPAEnabled()
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	klog.Infof("Starting garbage collection process on the Autoscalers: wpa=%v", wpaEnabled)
+	log.Infof("Starting garbage collection process on the Autoscalers: wpa=%v", wpaEnabled)
 	wpaList := []*v1alpha1.WatermarkPodAutoscaler{}
 	var err error
 
 	if wpaEnabled {
 		wpaListObj, err := h.wpaLister.ByNamespace(metav1.NamespaceAll).List(labels.Everything())
 		if err != nil {
-			klog.Errorf("Error listing the WatermarkPodAutoscalers %v", err)
+			log.Errorf("Error listing the WatermarkPodAutoscalers %v", err)
 			return
 		}
-		klog.V(5).Infof("Garbage collection over %d WPAs", len(wpaListObj))
+		log.Debugf("Garbage collection over %d WPAs", len(wpaListObj))
 		for _, obj := range wpaListObj {
 			tmp := &v1alpha1.WatermarkPodAutoscaler{}
-			if err := StructureIntoWPA(obj, tmp); err != nil {
-				klog.Errorf("Unable to cast object from local cache into a WPA: %v", err)
+			if err := UnstructuredIntoWPA(obj, tmp); err != nil {
+				log.Errorf("Unable to cast object from local cache into a WPA: %v", err)
 				continue
 			}
 			wpaList = append(wpaList, tmp)
@@ -115,23 +115,23 @@ func (h *AutoscalersController) gc() {
 
 	hpaList, err := h.autoscalersLister.HorizontalPodAutoscalers(metav1.NamespaceAll).List(labels.Everything())
 	if err != nil {
-		klog.Errorf("Could not list hpas: %v", err)
+		log.Errorf("Could not list hpas: %v", err)
 		return
 	}
 
 	emList, err := h.store.ListAllExternalMetricValues()
 	if err != nil {
-		klog.Errorf("Could not list external metrics from store: %v", err)
+		log.Errorf("Could not list external metrics from store: %v", err)
 		return
 	}
 	toDelete := &custommetrics.MetricsBundle{}
 	toDelete.External = autoscalers.DiffExternalMetrics(hpaList, wpaList, emList.External)
 	if err = h.store.DeleteExternalMetricValues(toDelete); err != nil {
-		klog.Errorf("Could not delete the external metrics in the store: %v", err)
+		log.Errorf("Could not delete the external metrics in the store: %v", err)
 		return
 	}
 	h.deleteFromLocalStore(toDelete.External)
-	klog.Infof("Done GC run. Deleted %d metrics", len(toDelete.External))
+	log.Infof("Done GC run. Deleted %d metrics", len(toDelete.External))
 }
 
 func (h *AutoscalersController) deleteFromLocalStore(toDelete []custommetrics.ExternalMetricValue) {
@@ -145,17 +145,17 @@ func (h *AutoscalersController) deleteFromLocalStore(toDelete []custommetrics.Ex
 
 func (h *AutoscalersController) handleErr(err error, key interface{}) {
 	if err == nil {
-		klog.V(6).Infof("Faithfully dropping key %v", key)
+		log.Tracef("Faithfully dropping key %v", key)
 		h.HPAqueue.Forget(key)
 		return
 	}
 
 	if h.HPAqueue.NumRequeues(key) < maxRetries {
-		klog.V(5).Infof("Error syncing the autoscaler %v, will rety for another %d times: %v", key, maxRetries-h.HPAqueue.NumRequeues(key), err)
+		log.Debugf("Error syncing the autoscaler %v, will rety for another %d times: %v", key, maxRetries-h.HPAqueue.NumRequeues(key), err)
 		h.HPAqueue.AddRateLimited(key)
 		return
 	}
-	klog.Errorf("Too many errors trying to sync the autoscaler %v, dropping out of the HPAqueue: %v", key, err)
+	log.Errorf("Too many errors trying to sync the autoscaler %v, dropping out of the HPAqueue: %v", key, err)
 	h.HPAqueue.Forget(key)
 }
 
@@ -163,7 +163,7 @@ func (h *AutoscalersController) updateExternalMetrics() {
 	// Grab what is available in the Global store.
 	emList, err := h.store.ListAllExternalMetricValues()
 	if err != nil {
-		klog.Errorf("Error while retrieving external metrics from the store: %s", err)
+		log.Errorf("Error while retrieving external metrics from the store: %s", err)
 		return
 	}
 	if len(emList.Deprecated) != 0 {
@@ -195,14 +195,14 @@ func (h *AutoscalersController) updateExternalMetrics() {
 	h.toStore.m.Unlock()
 
 	if len(globalCache) == 0 {
-		klog.V(5).Infof("No External Metrics to evaluate at the moment")
+		log.Debugf("No External Metrics to evaluate at the moment")
 		return
 	}
 
 	updated := h.hpaProc.UpdateExternalMetrics(globalCache)
 	err = h.store.SetExternalMetricValues(updated)
 	if err != nil {
-		klog.Errorf("Not able to store the updated metrics in the Global Store: %v", err)
+		log.Errorf("Not able to store the updated metrics in the Global Store: %v", err)
 	}
 }
 

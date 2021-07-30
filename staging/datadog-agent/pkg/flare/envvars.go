@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/DataDog/datadog-agent/pkg/config"
 )
 
 var allowedEnvvarNames = []string{
@@ -81,6 +83,15 @@ var allowedEnvvarNames = []string{
 }
 
 func getAllowedEnvvars() []string {
+	allowed := allowedEnvvarNames
+	for _, envName := range config.Datadog.GetEnvVars() {
+		// config.Datadog.GetEnvVars() returns nested config using the format DD_FOO.BAR
+		// we should consider the format DD_FOO_BAR
+		if replaced := strings.ReplaceAll(envName, ".", "_"); replaced != envName {
+			allowed = append(allowed, replaced)
+		}
+		allowed = append(allowed, envName)
+	}
 	var found []string
 	for _, envvar := range os.Environ() {
 		parts := strings.SplitN(envvar, "=", 2)
@@ -90,7 +101,12 @@ func getAllowedEnvvars() []string {
 			// `_auth_token`-suffixed env vars are sensitive: don't track them
 			continue
 		}
-		found = append(found, envvar)
+		for _, envName := range allowed {
+			if key == envName {
+				found = append(found, envvar)
+				continue
+			}
+		}
 	}
 	return found
 }

@@ -12,7 +12,7 @@ func BenchmarkLogVanilla(b *testing.B) {
 	var buff bytes.Buffer
 	w := bufio.NewWriter(&buff)
 
-	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
+	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
 
 	for n := 0; n < b.N; n++ {
 		l.Infof("this is a credential encoding uri: %s", "http://user:password@host:port")
@@ -34,7 +34,7 @@ func BenchmarkLogScrubbing(b *testing.B) {
 	var buff bytes.Buffer
 	w := bufio.NewWriter(&buff)
 
-	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
+	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
 	SetupLogger(l, "info")
 
 	for n := 0; n < b.N; n++ {
@@ -46,7 +46,7 @@ func BenchmarkLogScrubbingLevels(b *testing.B) {
 	var buff bytes.Buffer
 	w := bufio.NewWriter(&buff)
 
-	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
+	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
 	SetupLogger(l, "info")
 
 	for n := 0; n < b.N; n++ {
@@ -59,8 +59,8 @@ func BenchmarkLogScrubbingMulti(b *testing.B) {
 	wA := bufio.NewWriter(&buffA)
 	wB := bufio.NewWriter(&buffB)
 
-	lA, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(wA, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
-	lB, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(wB, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
+	lA, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(wA, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
+	lB, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(wB, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
 
 	SetupLogger(lA, "info")
 	_ = RegisterAdditionalLogger("extra", lB)
@@ -77,7 +77,7 @@ func BenchmarkLogWithContext(b *testing.B) {
 	var buff bytes.Buffer
 	w := bufio.NewWriter(&buff)
 
-	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seeklog.V(5).InfoLvl, "[%LEVEL] %FuncShort: %Msg")
+	l, _ := seelog.LoggerFromWriterWithMinLevelAndFormat(w, seelog.DebugLvl, "[%LEVEL] %FuncShort: %Msg")
 	SetupLogger(l, "info")
 
 	for n := 0; n < b.N; n++ {

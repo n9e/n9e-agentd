@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	nettestutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/network/testutil"
+	nettestutil "github.com/DataDog/datadog-agent/pkg/network/testutil"
 	"github.com/stretchr/testify/require"
 )
 

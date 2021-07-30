@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/itchyny/gojq"
 )
 
@@ -36,7 +36,7 @@ func Parse(q string) (*gojq.Code, error) {
 	}
 
 	if err := cache.Cache.Add(jqCachePrefix+q, code, cacheTTL); err != nil {
-		klog.Errorf("Unable to store item in cache: %v", err)
+		log.Errorf("Unable to store item in cache: %v", err)
 	}
 	return code, nil
 }

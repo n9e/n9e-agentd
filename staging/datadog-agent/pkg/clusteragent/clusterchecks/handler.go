@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery/scheduler"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/clusteragent/clusterchecks/types"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/cache"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/scheduler"
+	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
+	"github.com/DataDog/datadog-agent/pkg/util/cache"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -40,7 +40,7 @@ type pluggableAutoConfig interface {
 	RemoveScheduler(string)
 }
 
-// The handler is the glue holding all components for cluster-checks management
+// Handler is the glue holding all components for cluster-checks management
 type Handler struct {
 	autoconfig           pluggableAutoConfig
 	dispatcher           *dispatcher
@@ -110,7 +110,7 @@ func (h *Handler) Run(ctx context.Context) {
 		}
 
 		// Leading, start warmup
-		klog.Infof("Becoming leader, waiting %s for node-agents to report", h.warmupDuration)
+		log.Infof("Becoming leader, waiting %s for node-agents to report", h.warmupDuration)
 		select {
 		case <-ctx.Done():
 			return
@@ -123,7 +123,7 @@ func (h *Handler) Run(ctx context.Context) {
 		}
 
 		// Run discovery and dispatching
-		klog.Info("Warmup phase finished, starting to serve configurations")
+		log.Info("Warmup phase finished, starting to serve configurations")
 		dispatchCtx, dispatchCancel := context.WithCancel(ctx)
 		go h.runDispatch(dispatchCtx)
 
@@ -140,7 +140,7 @@ func (h *Handler) Run(ctx context.Context) {
 			}
 
 			if newState != leader {
-				klog.Info("Lost leadership, reverting to follower")
+				log.Info("Lost leadership, reverting to follower")
 				dispatchCancel()
 				break // Return back to main loop start
 			}
@@ -164,7 +164,7 @@ func (h *Handler) runDispatch(ctx context.Context) {
 func (h *Handler) leaderWatch(ctx context.Context) {
 	err := h.updateLeaderIP()
 	if err != nil {
-		klog.Warningf("Could not refresh leadership status: %s", err)
+		log.Warnf("Could not refresh leadership status: %s", err)
 	}
 
 	healthProbe := health.RegisterLiveness("clusterchecks-leadership")
@@ -180,7 +180,7 @@ func (h *Handler) leaderWatch(ctx context.Context) {
 		case <-watchTicker.C:
 			err := h.updateLeaderIP()
 			if err != nil {
-				klog.Warningf("Could not refresh leadership status: %s", err)
+				log.Warnf("Could not refresh leadership status: %s", err)
 			}
 		case <-ctx.Done():
 			return

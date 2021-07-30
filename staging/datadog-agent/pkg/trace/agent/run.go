@@ -14,21 +14,23 @@ import (
 	"runtime/pprof"
 	"time"
 
-	coreconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/pidfile"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/local"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/remote"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/flags"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/info"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/metrics/timing"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/osutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"k8s.io/klog/v2"
+	coreconfig "github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/pidfile"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/local"
+	"github.com/DataDog/datadog-agent/pkg/tagger/remote"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/flags"
+	"github.com/DataDog/datadog-agent/pkg/trace/info"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/metrics/timing"
+	"github.com/DataDog/datadog-agent/pkg/trace/osutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/watchdog"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/profiling"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
 
 const messageAgentDisabled = `trace-agent not enabled. Set the environment variable
@@ -85,7 +87,7 @@ func Run(ctx context.Context) {
 	defer log.Flush()
 
 	if !cfg.Enabled {
-		klog.Info(messageAgentDisabled)
+		log.Info(messageAgentDisabled)
 
 		// a sleep is necessary to ensure that supervisor registers this process as "STARTED"
 		// If the exit is "too quick", we enter a BACKOFF->FATAL loop even though this is an expected exit
@@ -99,26 +101,26 @@ func Run(ctx context.Context) {
 	if flags.CPUProfile != "" {
 		f, err := os.Create(flags.CPUProfile)
 		if err != nil {
-			klog.Error(err)
+			log.Error(err)
 		}
 		pprof.StartCPUProfile(f)
-		klog.Info("CPU profiling started...")
+		log.Info("CPU profiling started...")
 		defer pprof.StopCPUProfile()
 	}
 
 	if flags.PIDFilePath != "" {
 		err := pidfile.WritePID(flags.PIDFilePath)
 		if err != nil {
-			klog.Warningf("Error writing PID file, exiting: %v", err)
+			log.Criticalf("Error writing PID file, exiting: %v", err)
 			os.Exit(1)
 		}
 
-		klog.Infof("PID '%d' written to PID file '%s'", os.Getpid(), flags.PIDFilePath)
+		log.Infof("PID '%d' written to PID file '%s'", os.Getpid(), flags.PIDFilePath)
 		defer os.Remove(flags.PIDFilePath)
 	}
 
 	if err := util.SetupCoreDump(); err != nil {
-		klog.Warningf("Can't setup core dumps: %v, core dumps might not be available after a crash", err)
+		log.Warnf("Can't setup core dumps: %v, core dumps might not be available after a crash", err)
 	}
 
 	err = metrics.Configure(cfg, []string{"version:" + info.Version})
@@ -128,7 +130,7 @@ func Run(ctx context.Context) {
 	defer metrics.Flush()
 	defer timing.Stop()
 
-	metrics.Count("trace_agent.started", 1, nil, 1)
+	metrics.Count("datadog.trace_agent.started", 1, nil, 1)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -143,19 +145,23 @@ func Run(ctx context.Context) {
 	defer func() {
 		err := tagger.Stop()
 		if err != nil {
-			klog.Error(err)
+			log.Error(err)
 		}
 	}()
 
 	agnt := NewAgent(ctx, cfg)
-	klog.Infof("Trace agent running on host %s", cfg.Hostname)
+	log.Infof("Trace agent running on host %s", cfg.Hostname)
+	if coreconfig.Datadog.GetBool("apm_config.internal_profiling.enabled") {
+		runProfiling(cfg)
+		defer profiling.Stop()
+	}
 	agnt.Run()
 
 	// collect memory profile
 	if flags.MemProfile != "" {
 		f, err := os.Create(flags.MemProfile)
 		if err != nil {
-			klog.Error("Could not create memory profile: ", err)
+			log.Error("Could not create memory profile: ", err)
 		}
 
 		// get up-to-date statistics
@@ -163,8 +169,37 @@ func Run(ctx context.Context) {
 		// Not using WriteHeapProfile but instead calling WriteTo to
 		// make sure we pass debug=1 and resolve pointers to names.
 		if err := pprof.Lookup("heap").WriteTo(f, 1); err != nil {
-			klog.Error("Could not write memory profile: ", err)
+			log.Error("Could not write memory profile: ", err)
 		}
 		f.Close()
 	}
+}
+
+// runProfiling enables the profiler.
+func runProfiling(cfg *config.AgentConfig) {
+	if !coreconfig.Datadog.GetBool("apm_config.internal_profiling.enabled") {
+		// fail safe
+		return
+	}
+	site := "datadoghq.com"
+	if v := coreconfig.Datadog.GetString("site"); v != "" {
+		site = v
+	}
+	addr := fmt.Sprintf("https://intake.profile.%s/v1/input", site)
+	if v := coreconfig.Datadog.GetString("internal_profiling.profile_dd_url"); v != "" {
+		addr = v
+	}
+	period := profiling.DefaultProfilingPeriod
+	if v := coreconfig.Datadog.GetDuration("internal_profiling.period"); v != 0 {
+		period = v
+	}
+	cpudur := profiler.DefaultDuration
+	if v := coreconfig.Datadog.GetDuration("internal_profiling.cpu_duration"); v != 0 {
+		cpudur = v
+	}
+	mutexFraction := coreconfig.Datadog.GetInt("internal_profiling.mutex_profile_fraction")
+	blockRate := coreconfig.Datadog.GetInt("internal_profiling.block_profile_rate")
+	routines := coreconfig.Datadog.GetBool("internal_profiling.enable_goroutine_stacktraces")
+	profiling.Start(addr, cfg.DefaultEnv, "trace-agent", period, cpudur, mutexFraction, blockRate, routines, fmt.Sprintf("version:%s", info.Version))
+	log.Infof("Internal profiling enabled: [Target:%q][Env:%q][Period:%s][CPU:%s][Mutex:%d][Block:%d][Routines:%v].", addr, cfg.DefaultEnv, period, cpudur, mutexFraction, blockRate, routines)
 }

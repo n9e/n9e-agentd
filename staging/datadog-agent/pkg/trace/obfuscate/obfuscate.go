@@ -11,10 +11,12 @@ import (
 	"bytes"
 	"sync/atomic"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/pb"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
+
+//go:generate easyjson -no_std_marshalers $GOFILE
 
 // Obfuscator quantizes and obfuscates spans. The obfuscator is not safe for
 // concurrent use.
@@ -31,6 +33,13 @@ type Obfuscator struct {
 	sqlLiteralEscapes int32
 	// queryCache keeps a cache of already obfuscated queries.
 	queryCache *measuredCache
+}
+
+// SQLOptions holds options that change the behavior of the obfuscator for SQL.
+// easyjson:json
+type SQLOptions struct {
+	// QuantizeSQLTables determines if the obfuscator will perform quantization on the SQL tables.
+	QuantizeSQLTables bool `json:"quantize_sql_tables"`
 }
 
 // SetSQLLiteralEscapes sets whether or not escape characters should be treated literally by the SQL obfuscator.
@@ -104,7 +113,7 @@ func (o *Obfuscator) ObfuscateStatsGroup(b *pb.ClientGroupedStats) {
 	case "sql", "cassandra":
 		oq, err := o.ObfuscateSQLString(b.Resource)
 		if err != nil {
-			klog.Errorf("Error obfuscating stats group resource %q: %v", b.Resource, err)
+			log.Errorf("Error obfuscating stats group resource %q: %v", b.Resource, err)
 			b.Resource = nonParsableResource
 		} else {
 			b.Resource = oq.Query

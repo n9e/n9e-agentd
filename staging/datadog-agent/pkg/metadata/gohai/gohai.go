@@ -15,8 +15,8 @@ import (
 	"github.com/DataDog/gohai/network"
 	"github.com/DataDog/gohai/platform"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 var (
@@ -38,21 +38,21 @@ func getGohaiInfo() *gohai {
 	if err == nil {
 		res.CPU = cpuPayload
 	} else {
-		klog.Errorf("Failed to retrieve cpu metadata: %s", err)
+		log.Errorf("Failed to retrieve cpu metadata: %s", err)
 	}
 
 	fileSystemPayload, err := new(filesystem.FileSystem).Collect()
 	if err == nil {
 		res.FileSystem = fileSystemPayload
 	} else {
-		klog.Errorf("Failed to retrieve filesystem metadata: %s", err)
+		log.Errorf("Failed to retrieve filesystem metadata: %s", err)
 	}
 
 	memoryPayload, err := new(memory.Memory).Collect()
 	if err == nil {
 		res.Memory = memoryPayload
 	} else {
-		klog.Errorf("Failed to retrieve memory metadata: %s", err)
+		log.Errorf("Failed to retrieve memory metadata: %s", err)
 	}
 
 	if !config.IsContainerized() || detectDocker0() {
@@ -60,7 +60,7 @@ func getGohaiInfo() *gohai {
 		if err == nil {
 			res.Network = networkPayload
 		} else {
-			klog.Errorf("Failed to retrieve network metadata: %s", err)
+			log.Errorf("Failed to retrieve network metadata: %s", err)
 		}
 	}
 
@@ -68,7 +68,7 @@ func getGohaiInfo() *gohai {
 	if err == nil {
 		res.Platform = platformPayload
 	} else {
-		klog.Errorf("Failed to retrieve platform metadata: %s", err)
+		log.Errorf("Failed to retrieve platform metadata: %s", err)
 	}
 
 	return res

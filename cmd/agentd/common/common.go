@@ -12,10 +12,10 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/pkg/autodiscovery"
-	"github.com/n9e/n9e-agentd/pkg/collector"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/forwarder"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
 	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata"

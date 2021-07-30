@@ -8,8 +8,8 @@ package utils
 import (
 	"strings"
 
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/tmplvar"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/tmplvar"
 
 	"github.com/gobwas/glob"
 )
@@ -27,7 +27,7 @@ func InitMetadataAsTags(metadataAsTags map[string]string) (map[string]string, ma
 		if strings.Index(pattern, "*") != -1 {
 			g, err := glob.Compile(pattern)
 			if err != nil {
-				klog.Errorf("Failed to compile glob for [%s]: %v", pattern, err)
+				log.Errorf("Failed to compile glob for [%s]: %v", pattern, err)
 				continue
 			}
 			globMap[pattern] = g

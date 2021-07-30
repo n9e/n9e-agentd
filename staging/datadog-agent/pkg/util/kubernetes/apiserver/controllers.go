@@ -12,17 +12,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/dynamic"
-	dynamic_informer "k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
-	dd_client "github.com/DataDog/datadog-operator/pkg/generated/clientset/versioned"
-	dd_informers "github.com/DataDog/datadog-operator/pkg/generated/informers/externalversions"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 type startFunc func(ControllerContext, chan error)
@@ -57,9 +55,9 @@ type ControllerContext struct {
 	informers          map[InformerName]cache.SharedInformer
 	InformerFactory    informers.SharedInformerFactory
 	WPAClient          dynamic.Interface
-	WPAInformerFactory dynamic_informer.DynamicSharedInformerFactory
-	DDClient           dd_client.Interface
-	DDInformerFactory  dd_informers.SharedInformerFactory
+	WPAInformerFactory dynamicinformer.DynamicSharedInformerFactory
+	DDClient           dynamic.Interface
+	DDInformerFactory  dynamicinformer.DynamicSharedInformerFactory
 	Client             kubernetes.Interface
 	IsLeaderFunc       func() bool
 	EventRecorder      record.EventRecorder
@@ -75,7 +73,7 @@ func StartControllers(ctx ControllerContext) errors.Aggregate {
 	errChan := make(chan error, len(controllerCatalog))
 	for name, cntrlFuncs := range controllerCatalog {
 		if !cntrlFuncs.enabled() {
-			klog.Infof("%q is disabled", name)
+			log.Infof("%q is disabled", name)
 			continue
 		}
 

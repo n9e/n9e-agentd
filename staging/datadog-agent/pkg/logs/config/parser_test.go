@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	. "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/types"
 )
 
 func TestParseJSONWithValidFormatShouldSucceed(t *testing.T) {
@@ -61,12 +60,12 @@ func TestParseYAMLWithValidFormatShouldSucceed(t *testing.T) {
 logs:
   - type: file
     path: /var/log/app.log
-    tags: ["a", "b:c"]
+    tags: a, b:c
   - type: udp
     source: foo
     service: bar
   - type: docker
-    logProcessingRules:
+    log_processing_rules:
       - type: include_at_match
         name: numbers
         pattern: ^[0-9]+$

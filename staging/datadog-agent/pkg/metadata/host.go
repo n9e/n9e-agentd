@@ -8,11 +8,12 @@
 package metadata
 
 import (
+	"context"
 	"fmt"
 
-	v5 "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/v5"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
+	v5 "github.com/DataDog/datadog-agent/pkg/metadata/v5"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/util"
 )
 
 // HostCollector fills and sends the old metadata payload used in the
@@ -20,9 +21,9 @@ import (
 type HostCollector struct{}
 
 // Send collects the data needed and submits the payload
-func (hp *HostCollector) Send(s *serializer.Serializer) error {
-	hostnameData, _ := util.GetHostnameData()
-	payload := v5.GetPayload(hostnameData)
+func (hp *HostCollector) Send(ctx context.Context, s *serializer.Serializer) error {
+	hostnameData, _ := util.GetHostnameData(ctx)
+	payload := v5.GetPayload(ctx, hostnameData)
 	if err := s.SendHostMetadata(payload); err != nil {
 		return fmt.Errorf("unable to submit host metadata payload, %s", err)
 	}

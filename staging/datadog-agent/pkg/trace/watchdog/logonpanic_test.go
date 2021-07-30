@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	"github.com/cihub/seelog"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +20,7 @@ import (
 var testLogBuf bytes.Buffer
 
 func init() {
-	logger, err := seelog.LoggerFromWriterWithMinLevelAndFormat(&testLogBuf, seeklog.V(5).InfoLvl, "%Ns [%Level] %Msg")
+	logger, err := seelog.LoggerFromWriterWithMinLevelAndFormat(&testLogBuf, seelog.DebugLvl, "%Ns [%Level] %Msg")
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func TestLogOnPanicMain(t *testing.T) {
 			"Unexpected panic: runtime error: integer divide by zero",
 			"divide by zero panic should be reported in log")
 		assert.Contains(msg,
-			"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog.TestLogOnPanicMain",
+			"github.com/DataDog/datadog-agent/pkg/trace/watchdog.TestLogOnPanicMain",
 			"log should contain a reference to this test func name as it displays the stack trace")
 	}()
 	defer LogOnPanic()
@@ -71,7 +71,7 @@ func TestLogOnPanicGoroutine(t *testing.T) {
 				"Unexpected panic: what could possibly go wrong?",
 				"custom panic should be reported in log")
 			assert.Contains(msg,
-				"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/trace/watchdog.TestLogOnPanicGoroutine",
+				"github.com/DataDog/datadog-agent/pkg/trace/watchdog.TestLogOnPanicGoroutine",
 				"log should contain a reference to this test func name as it displays the stack trace")
 			wg.Done()
 		}()

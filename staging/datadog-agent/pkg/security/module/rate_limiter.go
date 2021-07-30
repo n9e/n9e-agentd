@@ -14,8 +14,8 @@ import (
 	"github.com/DataDog/datadog-go/statsd"
 	"golang.org/x/time/rate"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/metrics"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/security/rules"
+	"github.com/DataDog/datadog-agent/pkg/security/metrics"
+	"github.com/DataDog/datadog-agent/pkg/security/rules"
 )
 
 const (
@@ -122,8 +122,8 @@ type RateLimiterStat struct {
 // GetStats returns a map indexed by ruleIDs that describes the amount of events
 // that were dropped because of the rate limiter
 func (rl *RateLimiter) GetStats() map[rules.RuleID]RateLimiterStat {
-	rl.RLock()
-	defer rl.RUnlock()
+	rl.Lock()
+	defer rl.Unlock()
 
 	stats := make(map[rules.RuleID]RateLimiterStat)
 	for ruleID, ruleLimiter := range rl.limiters {

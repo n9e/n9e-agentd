@@ -13,18 +13,17 @@ import (
 	"math"
 	"strings"
 
-	"github.com/kubernetes-incubator/custom-metrics-apiserver/pkg/provider"
+	"github.com/kubernetes-sigs/custom-metrics-apiserver/pkg/provider"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/klog/v2"
 	"k8s.io/metrics/pkg/apis/external_metrics"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/kubernetes/autoscalers"
-	"k8s.io/klog/v2"
+	"github.com/DataDog/datadog-agent/pkg/config"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/common"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver/leaderelection"
+	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/autoscalers"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
 const (
@@ -101,7 +100,7 @@ func NewDatadogMetricProvider(ctx context.Context, apiCl *apiserver.APIClient) (
 func (p *datadogMetricProvider) GetExternalMetric(namespace string, metricSelector labels.Selector, info provider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
 	res, err := p.getExternalMetric(namespace, metricSelector, info)
 	if err != nil {
-		klog.Errorf("ExternalMetric query failed with error: %v", err)
+		log.Errorf("ExternalMetric query failed with error: %v", err)
 		convErr := apierr.NewInternalError(err)
 		if convErr != nil {
 			err = convErr
@@ -112,7 +111,7 @@ func (p *datadogMetricProvider) GetExternalMetric(namespace string, metricSelect
 }
 
 func (p *datadogMetricProvider) getExternalMetric(namespace string, metricSelector labels.Selector, info provider.ExternalMetricInfo) (*external_metrics.ExternalMetricValueList, error) {
-	klog.V(5).Infof("Received external metric query with ns: %s, selector: %s, metricName: %s", namespace, metricSelector.String(), info.Metric)
+	log.Debugf("Received external metric query with ns: %s, selector: %s, metricName: %s", namespace, metricSelector.String(), info.Metric)
 
 	// Convert metric name to lower case to allow proper matching (and DD metrics are always lower case)
 	info.Metric = strings.ToLower(info.Metric)
@@ -128,7 +127,7 @@ func (p *datadogMetricProvider) getExternalMetric(namespace string, metricSelect
 	}
 
 	datadogMetric := p.store.Get(datadogMetricID)
-	klog.V(5).Infof("DatadogMetric from store: %v", datadogMetric)
+	log.Debugf("DatadogMetric from store: %v", datadogMetric)
 
 	if datadogMetric == nil {
 		return nil, fmt.Errorf("DatadogMetric not found for metric name: %s, datadogmetricid: %s", info.Metric, datadogMetricID)
@@ -162,6 +161,6 @@ func (p *datadogMetricProvider) ListAllExternalMetrics() []provider.ExternalMetr
 		results = append(results, provider.ExternalMetricInfo{Metric: metricName})
 	}
 
-	klog.V(6).Infof("Answering list of available metrics: %v", results)
+	log.Tracef("Answering list of available metrics: %v", results)
 	return results
 }
