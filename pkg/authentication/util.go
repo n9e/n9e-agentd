@@ -19,6 +19,11 @@ const (
 	authTokenMinimalLen = 32
 )
 
+// GetClusterAgentAuthToken gets the session token
+func GetClusterAgentAuthToken() (string, error) {
+	return AuthToken, nil
+}
+
 // GetAuthToken gets the session token
 func GetAuthToken() string {
 	return AuthToken

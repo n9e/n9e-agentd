@@ -11,9 +11,9 @@ import (
 
 	"github.com/DataDog/gopsutil/cpu"
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/process/procutil"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
 )
 
 // TestRandomizeMessage generates some processes and containers, then do a deep dive on return messages and make sure the chunk logic holds

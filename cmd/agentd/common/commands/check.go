@@ -26,18 +26,18 @@ import (
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/app/standalone"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/collector"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/flare"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
+	"github.com/DataDog/datadog-agent/pkg/flare"
+	"github.com/DataDog/datadog-agent/pkg/metadata"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/status"
+	"github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/flavor"
 )
 
 var (
@@ -561,7 +561,7 @@ func getMetricsData(agg *aggregator.BufferedAggregator) map[string]interface{} {
 	series, sketches := agg.GetSeriesAndSketches(time.Now())
 	if len(series) != 0 {
 		// Workaround to get the raw sequence of metrics, see:
-		// https://github.com/n9e/n9e-agentd/staging/datadog-agent/blob/b2d9527ec0ec0eba1a7ae64585df443c5b761610/pkg/metrics/series.go#L109-L122
+		// https://github.com/DataDog/datadog-agent/blob/b2d9527ec0ec0eba1a7ae64585df443c5b761610/pkg/metrics/series.go#L109-L122
 		var data map[string]interface{}
 		sj, _ := json.Marshal(series)
 		json.Unmarshal(sj, &data) //nolint:errcheck

@@ -7,25 +7,31 @@ package settings
 
 import (
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/log"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-// logLevelRuntimeSetting wraps operations to change log level at runtime.
-type logLevelRuntimeSetting string
+// LogLevelRuntimeSetting wraps operations to change log level at runtime.
+type LogLevelRuntimeSetting struct {
+	ConfigKey string
+}
 
-func (l logLevelRuntimeSetting) Description() string {
+// Description returns the runtime setting's description
+func (l LogLevelRuntimeSetting) Description() string {
 	return "Set/get the log level, valid values are: trace, debug, info, warn, error, critical and off"
 }
 
-func (l logLevelRuntimeSetting) Hidden() bool {
+// Hidden returns whether or not this setting is hidden from the list of runtime settings
+func (l LogLevelRuntimeSetting) Hidden() bool {
 	return false
 }
 
-func (l logLevelRuntimeSetting) Name() string {
-	return string(l)
+// Name returns the name of the runtime setting
+func (l LogLevelRuntimeSetting) Name() string {
+	return "log_level"
 }
 
-func (l logLevelRuntimeSetting) Get() (interface{}, error) {
+// Get returns the current value of the runtime setting
+func (l LogLevelRuntimeSetting) Get() (interface{}, error) {
 	level, err := log.GetLogLevel()
 	if err != nil {
 		return "", err
@@ -33,13 +39,17 @@ func (l logLevelRuntimeSetting) Get() (interface{}, error) {
 	return level.String(), nil
 }
 
-func (l logLevelRuntimeSetting) Set(v interface{}) error {
+// Set changes the value of the runtime setting
+func (l LogLevelRuntimeSetting) Set(v interface{}) error {
 	logLevel := v.(string)
-	// TODO
-	//err := config.ChangeLogLevel(logLevel)
-	//if err != nil {
-	//	return err
-	//}
-	config.C.LogLevel = logLevel
+	err := config.ChangeLogLevel(logLevel)
+	if err != nil {
+		return err
+	}
+	key := "log_level"
+	if l.ConfigKey != "" {
+		key = l.ConfigKey
+	}
+	config.Datadog.Set(key, logLevel)
 	return nil
 }

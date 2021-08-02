@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/containers/metrics"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/process/procutil"
+	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
 	"github.com/DataDog/gopsutil/cpu"
 )
 

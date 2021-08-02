@@ -9,18 +9,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	core "github.com/DataDog/datadog-agent/pkg/collector/corechecks"
+	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
+	"github.com/DataDog/datadog-agent/pkg/logs/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/input/file"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
 	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/auditor"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/input/file"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/message"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/logs/pipeline"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -326,7 +326,8 @@ func NewAgent() (*Agent, error) {
 	sources := config.NewLogSources()
 	msgCh := make(chan *message.Message, 10)
 	pipelineProvider := NewChProvider(msgCh)
-	scanner := file.NewScanner(sources, coreConfig.C.LogsConfig.OpenFilesLimit, pipelineProvider, auditor, file.DefaultSleepDuration)
+	scanner := file.NewScanner(sources, coreConfig.C.LogsConfig.OpenFilesLimit, pipelineProvider, auditor, file.DefaultSleepDuration,
+		coreConfig.C.LogsConfig.ValidatePodContainerId, time.Duration(coreConfig.C.LogsConfig.FileScanPeriod)*time.Second)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Agent{

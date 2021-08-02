@@ -5,7 +5,7 @@ package checks
 import (
 	"time"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
+	"github.com/DataDog/datadog-agent/pkg/process/procutil"
 )
 
 func getAllProcesses(probe *procutil.Probe) (map[int32]*procutil.Process, error) {

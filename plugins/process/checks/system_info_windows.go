@@ -6,10 +6,10 @@ import (
 	"github.com/DataDog/gohai/platform"
 	"strconv"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
 )
 
 // CollectSystemInfo collects a set of system-level information that will not

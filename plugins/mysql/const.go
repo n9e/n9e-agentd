@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 )
 
 const (

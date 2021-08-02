@@ -6,8 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/yubo/apiserver/pkg/options"
 )
+
+func NewSystemProbeConfig() (*Config, error) {
+	return &Config{}, nil
+}
+
+func MergeSystemProbeConfig() (*Config, error) {
+	return &Config{}, nil
+}
 
 // GetEnvDefault retrieves a value from the environment named by the key or return def if not set.
 func GetEnvDefault(key, def string) string {
@@ -100,4 +109,47 @@ func SanitizeAPIKey(key string) string {
 // GetDistPath returns the fully qualified path to the 'dist' directory
 func GetDistPath() string {
 	return C.DistPath
+}
+
+// IsCloudProviderEnabled checks the cloud provider family provided in
+// pkg/util/<cloud_provider>.go against the value for cloud_provider: on the
+// global config object Datadog
+func IsCloudProviderEnabled(cloudProviderName string) bool {
+	cloudProviderFromConfig := C.CloudProviderMetadata
+
+	for _, cloudName := range cloudProviderFromConfig {
+		if strings.ToLower(cloudName) == strings.ToLower(cloudProviderName) {
+			log.Debugf("cloud_provider_metadata is set to %s in agent configuration, trying endpoints for %s Cloud Provider",
+				cloudProviderFromConfig,
+				cloudProviderName)
+			return true
+		}
+	}
+
+	log.Debugf("cloud_provider_metadata is set to %s in agent configuration, skipping %s Cloud Provider",
+		cloudProviderFromConfig,
+		cloudProviderName)
+	return false
+}
+
+func GetProxies() *Proxy {
+	return &C.Proxy
+}
+
+// GetConfiguredTags returns complete list of user configured tags
+func GetConfiguredTags(includeDogstatsd bool) []string {
+	tags := C.Tags
+	extraTags := C.ExtraTags
+
+	var dsdTags []string
+	if includeDogstatsd {
+		dsdTags = C.Statsd.Tags
+	}
+
+	combined := make([]string, 0, len(tags)+len(extraTags)+len(dsdTags))
+	combined = append(combined, tags...)
+	combined = append(combined, extraTags...)
+	combined = append(combined, dsdTags...)
+
+	return combined
 }

@@ -22,11 +22,11 @@ import (
 	"k8s.io/klog/v2"
 
 	pb "github.com/n9e/n9e-agentd/pkg/apiserver/pb"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/collectors"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/telemetry"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/tagger/types"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/grpc"
+	"github.com/DataDog/datadog-agent/pkg/tagger"
+	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/tagger/types"
+	"github.com/DataDog/datadog-agent/pkg/util/grpc"
 )
 
 const (

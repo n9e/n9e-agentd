@@ -11,9 +11,9 @@ import (
 	"github.com/shirou/w32"
 	"golang.org/x/sys/windows"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
+	"github.com/DataDog/datadog-agent/pkg/process/procutil"
 	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"github.com/DataDog/datadog-agent/pkg/util/winutil"
 	process "github.com/DataDog/gopsutil/process"
 )
 

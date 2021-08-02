@@ -6,10 +6,10 @@ import (
 
 	"github.com/DataDog/gopsutil/cpu"
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/procutil"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/process/net"
+	"github.com/DataDog/datadog-agent/pkg/process/procutil"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"k8s.io/klog/v2"
 )
 

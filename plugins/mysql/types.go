@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"k8s.io/klog/v2"
 )
 

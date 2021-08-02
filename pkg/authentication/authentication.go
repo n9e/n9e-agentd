@@ -29,8 +29,9 @@ var (
 )
 
 type config struct {
-	AuthTokenFile string `json:"authTokenFile" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
-	Fake          bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
+	AuthTokenFile        string `json:"authTokenFile" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	ClusterAuthTokenFile string `json:"authTokenFile" flag:"auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
 }
 
 func (p *config) Validate() error {

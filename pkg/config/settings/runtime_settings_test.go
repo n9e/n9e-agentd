@@ -6,16 +6,12 @@
 package settings
 
 import (
-	"sync/atomic"
+	"strings"
 	"testing"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/dogstatsd"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/serializer"
+
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type runtimeTestSetting struct {
@@ -44,10 +40,9 @@ func (t *runtimeTestSetting) Hidden() bool {
 }
 
 func setupConf() config.Config {
-	//conf := config.NewConfig("datadog", "DD", strings.NewReplacer(".", "_"))
-	//config.InitConfig(conf)
-	//return conf
-	return config.Config{}
+	conf := config.NewConfig("datadog", "DD", strings.NewReplacer(".", "_"))
+	config.InitConfig(conf)
+	return conf
 }
 
 func cleanRuntimeSetting() {
@@ -58,7 +53,7 @@ func TestRuntimeSettings(t *testing.T) {
 	cleanRuntimeSetting()
 	runtimeSetting := runtimeTestSetting{1}
 
-	err := registerRuntimeSetting(&runtimeSetting)
+	err := RegisterRuntimeSetting(&runtimeSetting)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(RuntimeSettings()))
 
@@ -73,16 +68,16 @@ func TestRuntimeSettings(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 123, v)
 
-	err = registerRuntimeSetting(&runtimeSetting)
+	err = RegisterRuntimeSetting(&runtimeSetting)
 	assert.NotNil(t, err)
 	assert.Equal(t, "duplicated settings detected", err.Error())
 }
 
 func TestLogLevel(t *testing.T) {
 	cleanRuntimeSetting()
-	//config.SetupLogger("TEST", "debug", "", "", true, true, true)
+	config.SetupLogger("TEST", "debug", "", "", true, true, true)
 
-	ll := logLevelRuntimeSetting("log_level")
+	ll := LogLevelRuntimeSetting{}
 	assert.Equal(t, "log_level", ll.Name())
 
 	err := ll.Set("off")
@@ -108,71 +103,12 @@ func TestLogLevel(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestDogstatsdMetricsStats(t *testing.T) {
-	assert := assert.New(t)
-	var err error
-
-	serializer := serializer.NewSerializer(common.Forwarder, nil)
-	agg := aggregator.InitAggregator(serializer, "")
-	common.DSD, err = dogstatsd.NewServer(agg, nil)
-	require.Nil(t, err)
-
-	cleanRuntimeSetting()
-
-	s := dsdStatsRuntimeSetting("dogstatsd_stats")
-
-	// runtime settings set/get underlying implementation
-
-	// true string
-
-	err = s.Set("true")
-	assert.Nil(err)
-	assert.Equal(atomic.LoadUint64(&common.DSD.Debug.Enabled), uint64(1))
-	v, err := s.Get()
-	assert.Nil(err)
-	assert.Equal(v, true)
-
-	// false string
-
-	err = s.Set("false")
-	assert.Nil(err)
-	assert.Equal(atomic.LoadUint64(&common.DSD.Debug.Enabled), uint64(0))
-	v, err = s.Get()
-	assert.Nil(err)
-	assert.Equal(v, false)
-
-	// true boolean
-
-	err = s.Set(true)
-	assert.Nil(err)
-	assert.Equal(atomic.LoadUint64(&common.DSD.Debug.Enabled), uint64(1))
-	v, err = s.Get()
-	assert.Nil(err)
-	assert.Equal(v, true)
-
-	// false boolean
-
-	err = s.Set(false)
-	assert.Nil(err)
-	assert.Equal(atomic.LoadUint64(&common.DSD.Debug.Enabled), uint64(0))
-	v, err = s.Get()
-	assert.Nil(err)
-	assert.Equal(v, false)
-
-	// ensure the getter uses the value from the actual server
-
-	atomic.StoreUint64(&common.DSD.Debug.Enabled, 1)
-	v, err = s.Get()
-	assert.Nil(err)
-	assert.Equal(v, true)
-}
-
 func TestProfiling(t *testing.T) {
 	cleanRuntimeSetting()
 	setupConf()
 
-	ll := profilingRuntimeSetting("profiling")
-	assert.Equal(t, "profiling", ll.Name())
+	ll := ProfilingRuntimeSetting("internal_profiling")
+	assert.Equal(t, "internal_profiling", ll.Name())
 
 	err := ll.Set("false")
 	assert.Nil(t, err)
@@ -183,4 +119,35 @@ func TestProfiling(t *testing.T) {
 
 	err = ll.Set("on")
 	assert.NotNil(t, err)
+}
+
+func TestGetInt(t *testing.T) {
+	cases := []struct {
+		v   interface{}
+		exp int
+		err bool
+	}{
+		{0, 0, false},
+		{1, 1, false},
+		{-1, -1, false},
+		{0x7fff_ffff, 0x7fff_ffff, false},
+		{-0x7fff_ffff, -0x7fff_ffff, false},
+		{"0", 0, false},
+		{"1", 1, false},
+		{"-1", -1, false},
+		{"2147483647", 2147483647, false},
+		{"-2147483648", -2147483648, false},
+		{"0x1", 0, true},
+		{"aaa", 0, true},
+	}
+
+	for _, c := range cases {
+		v, err := GetInt(c.v)
+		if c.err {
+			assert.NotNil(t, err)
+		} else {
+			assert.Nil(t, err)
+			assert.Equal(t, v, c.exp)
+		}
+	}
 }

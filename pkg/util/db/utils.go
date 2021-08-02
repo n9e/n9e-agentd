@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"k8s.io/klog/v2"
 )
 
@@ -186,7 +186,7 @@ func total_time_to_temporal_percent(total_time float64, scales ...int) float64 {
 	// T1 = 100, X1 = 2,000 / 1,000 * 100 = 200
 	// T2 = 115, X2 = 5,000 / 1,000 * 100 = 500
 	//
-	// See: https://github.com/n9e/n9e-agentd/staging/datadog-agent/blob/7.25.x/pkg/metrics/rate.go#L37
+	// See: https://github.com/DataDog/datadog-agent/blob/7.25.x/pkg/metrics/rate.go#L37
 	//
 	// V = (X2 - X1) / (T2 - T1) = (500 - 200) / (115 - 100) = 20%
 	//

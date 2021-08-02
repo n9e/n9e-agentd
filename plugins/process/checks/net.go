@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,15 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/ebpf"
+	"github.com/DataDog/datadog-agent/pkg/metadata/host"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
+	"github.com/DataDog/datadog-agent/pkg/process/dockerproxy"
+	"github.com/DataDog/datadog-agent/pkg/process/net"
+	"github.com/DataDog/datadog-agent/pkg/process/net/resolver"
+	procutil "github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/datadog-agent/pkg/util"
 	model "github.com/n9e/agent-payload/process"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/dockerproxy"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/net/resolver"
-	procutil "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/process/util"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/ebpf"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metadata/host"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util"
 	"k8s.io/klog/v2"
 )
 
@@ -53,7 +54,7 @@ func (c *ConnectionsCheck) Init(cfg *config.AgentConfig, _ *model.SystemInfo) {
 	net.SetSystemProbePath(cfg.SystemProbeAddress)
 	_, _ = net.GetRemoteSystemProbeUtil()
 
-	networkID, err := util.GetNetworkID()
+	networkID, err := util.GetNetworkID(context.Background())
 	if err != nil {
 		klog.Infof("no network ID detected: %s", err)
 	}

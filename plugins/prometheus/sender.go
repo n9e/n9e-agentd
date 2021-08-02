@@ -5,7 +5,7 @@ import (
 	"math"
 
 	dto "github.com/prometheus/client_model/go"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
 )
 
 // https://prometheus.io/docs/concepts/metric_types/#summary

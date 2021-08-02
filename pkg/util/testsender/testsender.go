@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
 )
 
 // NewTestSender initiates the aggregator and returns a

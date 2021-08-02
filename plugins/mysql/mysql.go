@@ -9,12 +9,12 @@ import (
 	"database/sql"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/autodiscovery/integration"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/n9e/n9e-agentd/pkg/util/db"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/aggregator"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/check"
-	core "github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/collector/corechecks"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/metrics"
+	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	core "github.com/DataDog/datadog-agent/pkg/collector/corechecks"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/shirou/gopsutil/process"
 	"k8s.io/klog/v2"
 )

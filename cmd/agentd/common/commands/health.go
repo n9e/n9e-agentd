@@ -1,5 +1,6 @@
 package commands
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -7,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/api/util"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/status/health"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/flavor"
+	"github.com/DataDog/datadog-agent/pkg/api/util"
+	"github.com/DataDog/datadog-agent/pkg/status/health"
 	"github.com/fatih/color"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/config/flavor"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ func Health(loggerName config.LoggerName, confPath *string, flagNoColor *bool) *
 				color.NoColor = true
 			}
 
-			if flavor.GetFlavor() == flavor.ClusterAgent {
+			if config.GetFlavor() == flavor.ClusterAgent {
 				config.Datadog.SetConfigName("datadog-cluster")
 			}
 
@@ -110,3 +111,4 @@ func requestHealth() error {
 
 	return nil
 }
+*/

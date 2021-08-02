@@ -1,4 +1,0 @@
-dependencies:
-- name: datadog-operator
-  version: 0.5.x
-  repository: https://helm.datadoghq.com
