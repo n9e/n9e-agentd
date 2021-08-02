@@ -17,7 +17,7 @@ cp -a ../misc/conf.d ${dir}/
 cp -a ../misc/scripts.d ${dir}/
 cp -a ../misc/systemd ${dir}/misc/
 cp -a ../build/n9e-agentd ${dir}/bin/
-cp -a ../build/agentdctl ${dir}/bin/
+#cp -a ../build/agentdctl ${dir}/bin/
 
 if [[ -n ${RELEASE_EXTRA} ]]; then
 	tar czvf n9e-agentd-${VERSION}-${RELEASE}-${RELEASE_EXTRA}.${os}.${arch}.tar.gz ${dir}
