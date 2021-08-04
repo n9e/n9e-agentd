@@ -27,5 +27,5 @@ if ${pre} || [[ "$RELEASE" == "rc"* ]]; then
 		v${VERSION}-${RELEASE} ${dst_dir}
 else
 	# release
-	ghr -u n9e -r n9e-agentd -delete v${VERSION}-${RELEASE} ${dst_dir}
+	ghr -u n9e -r n9e-agentd -delete v${VERSION} ${dst_dir}
 fi
