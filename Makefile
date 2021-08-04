@@ -1,7 +1,7 @@
 .PHONY: pkg clean release release dev devrun
 
 VERSION=5.0.0
-RELEASE=rc6
+RELEASE=1
 GENERATOR=RPM
 APP_NAME?=n9e-agentd
 CGO_ENABLED?=1
