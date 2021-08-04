@@ -1,20 +1,21 @@
 package checks
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/DataDog/gopsutil/cpu"
-	model "github.com/n9e/agent-payload/process"
 	"github.com/DataDog/datadog-agent/pkg/process/config"
 	"github.com/DataDog/datadog-agent/pkg/process/net"
 	"github.com/DataDog/datadog-agent/pkg/process/procutil"
 	"github.com/DataDog/datadog-agent/pkg/process/util"
 	agentutil "github.com/DataDog/datadog-agent/pkg/util"
 	"github.com/DataDog/datadog-agent/pkg/util/containers"
+	"github.com/DataDog/gopsutil/cpu"
+	model "github.com/n9e/agent-payload/process"
 	"k8s.io/klog/v2"
 )
 
@@ -95,7 +96,7 @@ func (p *ProcessCheck) Init(_ *config.AgentConfig, info *model.SystemInfo) {
 	p.sysInfo = info
 	p.notInitializedLogLimit = util.NewLogLimit(1, time.Minute*10)
 
-	networkID, err := agentutil.GetNetworkID()
+	networkID, err := agentutil.GetNetworkID(context.Background())
 	if err != nil {
 		klog.Infof("no network ID detected: %s", err)
 	}
@@ -146,16 +147,16 @@ func (p *ProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Mess
 		}
 	}
 
-	if sysProbeUtil != nil {
-		mergeProcWithSysprobeStats(procs, sysProbeUtil)
-	}
-
 	// stores lastPIDs to be used by RTProcess
 	lastPIDs := make([]int32, 0, len(procs))
 	for pid := range procs {
 		lastPIDs = append(lastPIDs, pid)
 	}
 	p.lastPIDs.Store(lastPIDs)
+
+	if sysProbeUtil != nil {
+		mergeProcWithSysprobeStats(lastPIDs, procs, sysProbeUtil)
+	}
 
 	//ctrList, _ := util.GetContainers()
 
@@ -384,8 +385,8 @@ func (p *ProcessCheck) createTimesforPIDs(pids []int32) map[int32]int64 {
 }
 
 // mergeProcWithSysprobeStats takes a process by PID map and fill the stats from system probe into the processes in the map
-func mergeProcWithSysprobeStats(procs map[int32]*procutil.Process, pu *net.RemoteSysProbeUtil) {
-	pStats, err := pu.GetProcStats()
+func mergeProcWithSysprobeStats(pids []int32, procs map[int32]*procutil.Process, pu *net.RemoteSysProbeUtil) {
+	pStats, err := pu.GetProcStats(pids)
 	if err == nil {
 		for pid, proc := range procs {
 			if s, ok := pStats.StatsByPID[pid]; ok {

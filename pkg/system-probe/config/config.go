@@ -26,19 +26,19 @@ const (
 )
 
 type Config struct {
-	Enabled        bool            `json:"enabled"`
+	Enabled        bool            `json:"enabled" default:"false" env:"DD_SYSTEM_PROBE_ENABLED"`
 	EnabledModules map[string]bool `json:"enabled_modules"`
 
 	// When the system-probe is enabled in a separate container, we need a way to also disable the system-probe
 	// packaged in the main agent container (without disabling network collection on the process-agent).
-	ExternalSystemProbe bool   `json:"external"`              // external
-	SocketAddress       string `json:"sysprobe_socket"`       // sysprobe_socket
-	MaxConnsPerMessage  int    `json:"max_conns_per_message"` // max_conns_per_message
-	LogFile             string `json:"log_file"`              // log_file
-	LogLevel            string `json:"log_level"`             // log_level
-	DebugPort           int    `json:"debug_port"`            // debug_port
-	StatsdHost          string `json:"-"`                     // GetBindHost()
-	StatsdPort          int    `json:"dogstatsd_port"`        // dogstatsd_port
+	ExternalSystemProbe bool   `json:"external" default:"false" env:"DD_SYSTEM_PROBE_EXTERNAL"`                              // external
+	SocketAddress       string `json:"sysprobe_socket" default:"/opt/n9e/agentd/run/sysprobe.sock" env:"DD_SYSPROBE_SOCKET"` // sysprobe_socket
+	MaxConnsPerMessage  int    `json:"max_conns_per_message" default:"600"`                                                  // max_conns_per_message
+	LogFile             string `json:"log_file" default:"/opt/n9e/agentd/logs/system-probe.log"`                             // log_file
+	LogLevel            string `json:"log_level" default:"info" env:"DD_LOG_LEVEL"`                                          // log_level
+	DebugPort           int    `json:"debug_port" default:"0"`                                                               // debug_port
+	StatsdHost          string `json:"-" default:"127.0.0.1"`                                                                // GetBindHost()
+	StatsdPort          int    `json:"dogstatsd_port" default:"8125"`                                                        // dogstatsd_port
 
 	SysprobeSocket               string              `json:"sysprobe_socket"`                 // system_probe_config.sysprobe_socket
 	BPFDebug                     bool                `json:"bpf_debug"`                       // system_probe_config.bpf_debug
@@ -71,7 +71,7 @@ type Config struct {
 	EnableConntrackAllNamespaces bool                `json:"enable_conntrack_all_namespaces"`                                                           // system_probe_config.enable_conntrack_all_namespaces
 	WindowsEnableMonotonicCount  bool                `json:"windows_enable_monotonic_count"`                                                            // system_probe_config.windows.enable_monotonic_count
 	WindowsDriverBufferSize      int                 `json:"windows_driver_buffer_size"`                                                                // system_probe_config.windows.driver_buffer_size
-
+	KernelHeadersDownloadDir     string              `json:"kernel_header_download_dir"`                                                                // system_probe_config.kernel_header_download_dir
 }
 
 func (p *Config) Validate() error {

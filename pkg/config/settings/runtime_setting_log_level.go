@@ -6,7 +6,8 @@
 package settings
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"fmt"
+
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
@@ -41,15 +42,16 @@ func (l LogLevelRuntimeSetting) Get() (interface{}, error) {
 
 // Set changes the value of the runtime setting
 func (l LogLevelRuntimeSetting) Set(v interface{}) error {
-	logLevel := v.(string)
-	err := config.ChangeLogLevel(logLevel)
-	if err != nil {
-		return err
-	}
-	key := "log_level"
-	if l.ConfigKey != "" {
-		key = l.ConfigKey
-	}
-	config.Datadog.Set(key, logLevel)
-	return nil
+	return fmt.Errorf("unsupported")
+	//logLevel := v.(string)
+	//err := config.ChangeLogLevel(logLevel)
+	//if err != nil {
+	//	return err
+	//}
+	//key := "log_level"
+	//if l.ConfigKey != "" {
+	//	key = l.ConfigKey
+	//}
+	//config.Datadog.Set(key, logLevel)
+	//return nil
 }

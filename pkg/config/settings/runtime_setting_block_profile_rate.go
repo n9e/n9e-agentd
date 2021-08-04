@@ -1,7 +1,8 @@
 package settings
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"fmt"
+
 	"github.com/DataDog/datadog-agent/pkg/util/profiling"
 )
 
@@ -33,13 +34,14 @@ func (r RuntimeBlockProfileRate) Get() (interface{}, error) {
 
 // Set changes the value of the runtime setting
 func (r RuntimeBlockProfileRate) Set(value interface{}) error {
-	rate, err := GetInt(value)
-	if err != nil {
-		return err
-	}
+	return fmt.Errorf("unsupported")
+	//rate, err := GetInt(value)
+	//if err != nil {
+	//	return err
+	//}
 
-	profiling.SetBlockProfileRate(rate)
-	config.Datadog.Set("internal_profiling.block_profile_rate", rate)
+	//profiling.SetBlockProfileRate(rate)
+	//config.C.InternalProfiling.BlockProfileRate = rate
 
-	return nil
+	//return nil
 }

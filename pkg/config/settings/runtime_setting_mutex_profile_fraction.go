@@ -1,7 +1,8 @@
 package settings
 
 import (
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"fmt"
+
 	"github.com/DataDog/datadog-agent/pkg/util/profiling"
 )
 
@@ -33,13 +34,14 @@ func (r RuntimeMutexProfileFraction) Get() (interface{}, error) {
 
 // Set changes the value of the runtime setting
 func (r RuntimeMutexProfileFraction) Set(value interface{}) error {
-	rate, err := GetInt(value)
-	if err != nil {
-		return err
-	}
+	return fmt.Errorf("unsupported")
+	//rate, err := GetInt(value)
+	//if err != nil {
+	//	return err
+	//}
 
-	profiling.SetMutexProfileFraction(rate)
-	config.Datadog.Set("internal_profiling.mutex_profile_fraction", rate)
+	//profiling.SetMutexProfileFraction(rate)
+	//config.Datadog.Set("internal_profiling.mutex_profile_fraction", rate)
 
-	return nil
+	//return nil
 }

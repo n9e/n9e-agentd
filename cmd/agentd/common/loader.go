@@ -7,18 +7,18 @@ package common
 
 import (
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/scheduler"
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/collector"
 	lsched "github.com/DataDog/datadog-agent/pkg/logs/scheduler"
 	lstatus "github.com/DataDog/datadog-agent/pkg/logs/status"
 	"github.com/DataDog/datadog-agent/pkg/tagger"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
 	"github.com/DataDog/datadog-agent/pkg/tagger/local"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // LoadComponents configures several common Agent components:
 // tagger, collector, scheduler and autodiscovery
-func LoadComponents(cf *config.Config) {
+func LoadComponents() {
 	// start tagging system
 	tagger.SetDefaultTagger(local.NewTagger(collectors.DefaultCatalog))
 	tagger.Init()
@@ -39,7 +39,7 @@ func LoadComponents(cf *config.Config) {
 	}
 
 	// setup autodiscovery
-	confSearchPaths := []string{cf.ConfdPath}
+	confSearchPaths := []string{config.C.ConfdPath}
 
-	AC = setupAutoDiscovery(cf, confSearchPaths, metaScheduler)
+	AC = setupAutoDiscovery(confSearchPaths, metaScheduler)
 }

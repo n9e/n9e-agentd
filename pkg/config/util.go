@@ -2,10 +2,12 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/yubo/apiserver/pkg/options"
 )
@@ -152,4 +154,57 @@ func GetConfiguredTags(includeDogstatsd bool) []string {
 	combined = append(combined, dsdTags...)
 
 	return combined
+}
+
+// IsCLCRunner returns whether the Agent is in cluster check runner mode
+func IsCLCRunner() bool {
+	if !C.CLCRunnerEnabled {
+		return false
+	}
+
+	cps := C.ConfigProviders
+
+	for _, name := range C.ExtraConfigProviders {
+		cps = append(cps, ConfigurationProviders{Name: name})
+	}
+
+	// A cluster check runner is an Agent configured to run clusterchecks only
+	// We want exactly one ConfigProvider named clusterchecks
+	if len(cps) == 0 {
+		return false
+	}
+
+	for _, cp := range cps {
+		if cp.Name != "clusterchecks" {
+			return false
+		}
+	}
+
+	return true
+}
+
+func GetMainEndpoint() (host string) {
+	if len(C.Endpoints) > 0 {
+		host, _, _ = net.SplitHostPort(C.Endpoints[0])
+	}
+	return
+}
+
+// GetValidHostAliases validates host aliases set in `host_aliases` variable and returns
+// only valid ones.
+func GetValidHostAliases() []string {
+	return getValidHostAliasesWithConfig()
+}
+
+func getValidHostAliasesWithConfig() []string {
+	aliases := []string{}
+	for _, alias := range C.HostAliases {
+		if err := validate.ValidHostname(alias); err == nil {
+			aliases = append(aliases, alias)
+		} else {
+			log.Warnf("skipping invalid host alias '%s': %s", alias, err)
+		}
+	}
+
+	return aliases
 }

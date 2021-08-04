@@ -12,6 +12,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/providers"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/scheduler"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	configad "github.com/n9e/n9e-agentd/pkg/config/autodiscovery"
 	"k8s.io/klog/v2"
 )
 
@@ -26,17 +27,19 @@ var (
 )
 
 // TODO
-func setupAutoDiscovery(cf *config.Config, confSearchPaths []string, metaScheduler *scheduler.MetaScheduler) *autodiscovery.AutoConfig {
+func setupAutoDiscovery(confSearchPaths []string, metaScheduler *scheduler.MetaScheduler) *autodiscovery.AutoConfig {
 	ad := autodiscovery.NewAutoConfig(metaScheduler)
 	ad.AddConfigProvider(providers.NewFileConfigProvider(confSearchPaths), false, 0)
 
+	cf := config.C
+
 	// Autodiscovery cannot easily use config.RegisterOverrideFunc() due to Unmarshalling
-	extraConfigProviders, extraConfigListeners := cf.DiscoverComponentsFromConfig()
+	extraConfigProviders, extraConfigListeners := configad.DiscoverComponentsFromConfig()
 
 	var extraEnvProviders []config.ConfigurationProviders
 	var extraEnvListeners []config.Listeners
 	if cf.Autoconfig.Enabled && !cf.IsCLCRunner() {
-		extraEnvProviders, extraEnvListeners = cf.DiscoverComponentsFromEnv()
+		extraEnvProviders, extraEnvListeners = configad.DiscoverComponentsFromEnv()
 	}
 
 	configProviders := cf.ConfigProviders
@@ -99,9 +102,9 @@ func setupAutoDiscovery(cf *config.Config, confSearchPaths []string, metaSchedul
 		}
 	}
 
-	listeners := config.C.Listeners
+	listeners := cf.Listeners
 	// Add extra listeners
-	for _, name := range config.C.ExtraListeners {
+	for _, name := range cf.ExtraListeners {
 		listeners = append(listeners, config.Listeners{Name: name})
 	}
 

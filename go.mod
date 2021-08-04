@@ -6,6 +6,7 @@ replace (
 	github.com/DataDog/datadog-agent => ../datadog-agent
 	github.com/DataDog/datadog-agent/pkg/util/log => ../datadog-agent/pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ../datadog-agent/pkg/util/winutil
+	github.com/n9e/agent-payload => ../agent-payload
 	github.com/yubo/apiserver => ../apiserver
 	github.com/yubo/golib => ../golib
 )
@@ -41,6 +42,7 @@ require (
 	github.com/DataDog/datadog-go v4.8.0+incompatible
 	github.com/DataDog/gohai v0.0.0-20210303102637-6b668acb50dd
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
+	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/fatih/color v1.12.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/mock v1.6.0

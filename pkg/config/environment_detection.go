@@ -6,9 +6,7 @@
 package config
 
 import (
-	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -16,8 +14,7 @@ import (
 )
 
 const (
-	autoconfEnvironmentVariable         = "AUTOCONFIG_FROM_ENVIRONMENT"
-	autoconfEnvironmentVariableWithTypo = "AUTCONFIG_FROM_ENVIRONMENT"
+	autoconfEnvironmentVariable = "AUTOCONFIG_FROM_ENVIRONMENT"
 )
 
 // Feature represents a feature of current environment
@@ -74,21 +71,7 @@ func IsFeaturePresent(feature Feature) bool {
 
 // IsAutoconfigEnabled returns if autoconfig from environment is activated or not
 func IsAutoconfigEnabled() bool {
-	// Usage of pure environment variables should be deprecated
-	for _, envVar := range []string{autoconfEnvironmentVariable, autoconfEnvironmentVariableWithTypo} {
-		if autoconfStr, found := os.LookupEnv(envVar); found {
-			activateAutoconfFromEnv, err := strconv.ParseBool(autoconfStr)
-			if err != nil {
-				log.Errorf("Unable to parse Autoconf value: '%s', err: %v - autoconfig from environment will be deactivated", autoconfStr, err)
-				return false
-			}
-
-			log.Warnf("Usage of '%s' variable is deprecated - please use DD_AUTOCONFIG_FROM_ENVIRONMENT or 'autoconfig_from_environment' in config file", envVar)
-			return activateAutoconfFromEnv
-		}
-	}
-
-	return Datadog.GetBool("autoconfig_from_environment")
+	return C.AutoconfigFromEnvironment
 }
 
 // DetectFeatures runs the feature detection.
@@ -101,10 +84,10 @@ func DetectFeatures() {
 	newFeatures := make(FeatureMap)
 	if IsAutoconfigEnabled() {
 		detectContainerFeatures(newFeatures)
-		excludedFeatures := Datadog.GetStringSlice("autoconfig_exclude_features")
+		excludedFeatures := C.AutoconfigExcludeFeatures
 		excludeFeatures(newFeatures, excludedFeatures)
 
-		includedFeatures := Datadog.GetStringSlice("autoconfig_include_features")
+		includedFeatures := C.AutoconfigIncludeFeatures
 		for _, f := range includedFeatures {
 			f = strings.ToLower(f)
 			if _, found := knownFeatures[Feature(f)]; found {

@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/gopsutil/cpu"
-	model "github.com/n9e/agent-payload/process"
 	"github.com/DataDog/datadog-agent/pkg/process/config"
 	"github.com/DataDog/datadog-agent/pkg/process/net"
 	"github.com/DataDog/datadog-agent/pkg/process/procutil"
 	"github.com/DataDog/datadog-agent/pkg/process/util"
+	"github.com/DataDog/gopsutil/cpu"
+	model "github.com/n9e/agent-payload/process"
 	"k8s.io/klog/v2"
 )
 
@@ -78,7 +78,7 @@ func (r *RTProcessCheck) Run(cfg *config.AgentConfig, groupID int32) ([]model.Me
 	}
 
 	if sysProbeUtil != nil {
-		mergeStatWithSysprobeStats(procs, sysProbeUtil)
+		mergeStatWithSysprobeStats(lastPIDs, procs, sysProbeUtil)
 	}
 
 	//ctrList, _ := util.GetContainers()
@@ -156,8 +156,8 @@ func calculateRate(cur, prev uint64, before time.Time) float32 {
 }
 
 // mergeStatWithSysprobeStats takes a process by PID map and fill the stats from system probe into the processes in the map
-func mergeStatWithSysprobeStats(stats map[int32]*procutil.Stats, pu *net.RemoteSysProbeUtil) {
-	pStats, err := pu.GetProcStats()
+func mergeStatWithSysprobeStats(pids []int32, stats map[int32]*procutil.Stats, pu *net.RemoteSysProbeUtil) {
+	pStats, err := pu.GetProcStats(pids)
 	if err == nil {
 		for pid, stats := range stats {
 			if s, ok := pStats.StatsByPID[pid]; ok {

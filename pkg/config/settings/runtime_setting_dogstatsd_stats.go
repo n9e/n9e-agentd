@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // dsdStatsRuntimeSetting wraps operations to change log level at runtime.
@@ -33,19 +32,20 @@ func (s dsdStatsRuntimeSetting) Get() (interface{}, error) {
 }
 
 func (s dsdStatsRuntimeSetting) Set(v interface{}) error {
-	var newValue bool
-	var err error
+	return fmt.Errorf("unsupported")
+	//var newValue bool
+	//var err error
 
-	if newValue, err = getBool(v); err != nil {
-		return fmt.Errorf("dsdStatsRuntimeSetting: %v", err)
-	}
+	//if newValue, err = getBool(v); err != nil {
+	//	return fmt.Errorf("dsdStatsRuntimeSetting: %v", err)
+	//}
 
-	if newValue {
-		common.DSD.EnableMetricsStats()
-	} else {
-		common.DSD.DisableMetricsStats()
-	}
+	//if newValue {
+	//	common.DSD.EnableMetricsStats()
+	//} else {
+	//	common.DSD.DisableMetricsStats()
+	//}
 
-	config.C.Statsd.MetricsStatsEnable = newValue
-	return nil
+	//config.C.Statsd.MetricsStatsEnable = newValue
+	//return nil
 }

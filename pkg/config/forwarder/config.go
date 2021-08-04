@@ -27,8 +27,12 @@ type Config struct {
 	StoragePath               string               `json:"storage_path"`                                                                             // forwarder_storage_path
 	Timeout                   time.Duration        `json:"-"`
 	Timeout_                  int                  `json:"timeout" flag:"forwarder-timeout" default:"20" description:"timeout(Second)"` // forwarder_timeout
-	RetryQueuePayloadsMaxSize int                  `json:"retry_queue_payloads_max_size" default:"15728640" description:"15m"`          // forwarder_retry_queue_payloads_max_size
-	//RetryQueueMaxSize         int           `json:"retry_queue_max_size"`         // forwarder_retry_queue_max_size
+
+	HighPrioBufferSize        int `json:"high_prio_buffer_size"`                                              //forwarder_high_prio_buffer_size
+	LowPrioBufferSize         int `json:"low_prio_buffer_size"`                                               //forwarder_low_prio_buffer_size
+	RequeueBufferSize         int `json:"requeue_buffer_size"`                                                //forwarder_requeue_buffer_size
+	RetryQueueMaxSize         int `json:"retry_queue_max_size"`                                               // forwarder_retry_queue_max_size
+	RetryQueuePayloadsMaxSize int `json:"retry_queue_payloads_max_size" default:"15728640" description:"15m"` // forwarder_retry_queue_payloads_max_size
 
 }
 

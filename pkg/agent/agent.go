@@ -5,20 +5,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
-	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
-	"github.com/DataDog/datadog-agent/pkg/collector/corechecks/embed/jmx"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/DataDog/datadog-agent/pkg/dogstatsd"
-	"github.com/DataDog/datadog-agent/pkg/forwarder/transaction"
-	"github.com/n9e/n9e-agentd/pkg/i18n"
-	"github.com/n9e/n9e-agentd/pkg/options"
-	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
 	"github.com/DataDog/datadog-agent/pkg/api/healthprobe"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
+	"github.com/DataDog/datadog-agent/pkg/collector/corechecks/embed/jmx"
 	"github.com/DataDog/datadog-agent/pkg/dogstatsd"
+	"github.com/DataDog/datadog-agent/pkg/epforwarder"
+	"github.com/DataDog/datadog-agent/pkg/forwarder"
+	"github.com/DataDog/datadog-agent/pkg/forwarder/transaction"
 	"github.com/DataDog/datadog-agent/pkg/logs"
 	"github.com/DataDog/datadog-agent/pkg/metadata"
 	"github.com/DataDog/datadog-agent/pkg/metadata/host"
@@ -27,6 +21,13 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	ddutil "github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/i18n"
+	"github.com/n9e/n9e-agentd/pkg/options"
+	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
 )
@@ -36,9 +37,10 @@ const (
 )
 
 type module struct {
-	config     *config.Config
-	name       string
-	serializer *serializer.Serializer
+	config                 *config.Config
+	name                   string
+	serializer             *serializer.Serializer
+	eventPlatformForwarder epforwarder.EventPlatformForwarder
 
 	hostname string
 
@@ -152,6 +154,10 @@ func (p *module) stop(ctx context.Context) error {
 	//	orchestratorForwarder.Stop()
 	//}
 
+	if p.eventPlatformForwarder != nil {
+		p.eventPlatformForwarder.Stop()
+	}
+
 	logs.Stop()
 	//gui.StopGUIServer()
 	//profiler.Stop()
@@ -196,7 +202,6 @@ func (p *module) readConfig() error {
 
 	p.config = cf
 	config.C = cf
-	config.Configer = configer.GetConfiger("agent")
 	config.Context = p.ctx
 
 	return nil
@@ -273,12 +278,15 @@ func (p *module) startForwarder() error {
 	p.serializer = serializer.NewSerializer(f, nil)
 	common.Forwarder = f
 
+	p.eventPlatformForwarder = epforwarder.NewEventPlatformForwarder()
+	p.eventPlatformForwarder.Start()
+
 	return nil
 }
 
 // start Agg and dogstatsd
 func (p *module) startAggStatsd() (err error) {
-	agg := aggregator.InitAggregator(p.serializer, p.hostname)
+	agg := aggregator.InitAggregator(p.serializer, p.eventPlatformForwarder, p.hostname)
 	agg.AddAgentStartupTelemetry(version.AgentVersion)
 
 	if !p.config.Statsd.Enabled {

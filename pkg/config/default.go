@@ -20,7 +20,7 @@ const (
 	// MaxNumWorkers maximum number of workers for our check runner
 	MaxNumWorkers = 25
 	// DefaultAPIKeyValidationInterval is the default interval of api key validation checks
-	DefaultAPIKeyValidationInterval = 60
+	DefaultAPIKeyValidationInterval = 3600 * time.Second
 
 	// DefaultForwarderRecoveryInterval is the default recovery interval,
 	// also used if the user-provided value is invalid.

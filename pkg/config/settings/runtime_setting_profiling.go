@@ -7,11 +7,8 @@ package settings
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/DataDog/datadog-agent/pkg/util/profiling"
-	"github.com/DataDog/datadog-agent/pkg/version"
 )
 
 // ProfilingRuntimeSetting wraps operations to change log level at runtime
@@ -34,52 +31,53 @@ func (l ProfilingRuntimeSetting) Name() string {
 
 // Get returns the current value of the runtime setting
 func (l ProfilingRuntimeSetting) Get() (interface{}, error) {
-	return config.Datadog.GetBool("internal_profiling.enabled"), nil
+	return config.C.InternalProfiling.Enabled, nil
 }
 
 // Set changes the value of the runtime setting
 func (l ProfilingRuntimeSetting) Set(v interface{}) error {
-	var profile bool
-	var err error
+	return fmt.Errorf("unsupported")
+	//var profile bool
+	//var err error
 
-	profile, err = GetBool(v)
+	//profile, err = GetBool(v)
 
-	if err != nil {
-		return fmt.Errorf("Unsupported type for profile runtime setting: %v", err)
-	}
+	//if err != nil {
+	//	return fmt.Errorf("Unsupported type for profile runtime setting: %v", err)
+	//}
 
-	if profile {
-		// populate site
-		s := config.DefaultSite
-		if config.Datadog.IsSet("site") {
-			s = config.Datadog.GetString("site")
-		}
+	//if profile {
+	//	// populate site
+	//	s := config.DefaultSite
+	//	if config.Datadog.IsSet("site") {
+	//		s = config.Datadog.GetString("site")
+	//	}
 
-		// allow full url override for development use
-		site := fmt.Sprintf(profiling.ProfileURLTemplate, s)
-		if config.Datadog.IsSet("internal_profiling.profile_dd_url") {
-			site = config.Datadog.GetString("internal_profiling.profile_dd_url")
-		}
+	//	// allow full url override for development use
+	//	site := fmt.Sprintf(profiling.ProfileURLTemplate, s)
+	//	if config.Datadog.IsSet("internal_profiling.profile_dd_url") {
+	//		site = config.Datadog.GetString("internal_profiling.profile_dd_url")
+	//	}
 
-		v, _ := version.Agent()
-		err := profiling.Start(
-			site,
-			config.Datadog.GetString("env"),
-			profiling.ProfileCoreService,
-			profiling.DefaultProfilingPeriod,
-			15*time.Second,
-			profiling.GetMutexProfileFraction(),
-			profiling.GetBlockProfileRate(),
-			config.Datadog.GetBool("internal_profiling.enable_goroutine_stacktraces"),
-			fmt.Sprintf("version:%v", v),
-		)
-		if err == nil {
-			config.Datadog.Set("internal_profiling.enabled", true)
-		}
-	} else {
-		profiling.Stop()
-		config.Datadog.Set("internal_profiling.enabled", false)
-	}
+	//	v, _ := version.Agent()
+	//	err := profiling.Start(
+	//		site,
+	//		config.Datadog.GetString("env"),
+	//		profiling.ProfileCoreService,
+	//		profiling.DefaultProfilingPeriod,
+	//		15*time.Second,
+	//		profiling.GetMutexProfileFraction(),
+	//		profiling.GetBlockProfileRate(),
+	//		config.Datadog.GetBool("internal_profiling.enable_goroutine_stacktraces"),
+	//		fmt.Sprintf("version:%v", v),
+	//	)
+	//	if err == nil {
+	//		config.Datadog.Set("internal_profiling.enabled", true)
+	//	}
+	//} else {
+	//	profiling.Stop()
+	//	config.Datadog.Set("internal_profiling.enabled", false)
+	//}
 
-	return nil
+	//return nil
 }

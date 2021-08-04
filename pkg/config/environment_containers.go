@@ -85,15 +85,15 @@ func detectDocker(features FeatureMap) {
 				continue
 			}
 
-			if exists && reachable {
-				features[Docker] = struct{}{}
+			//if exists && reachable {
+			//	features[Docker] = struct{}{}
 
-				// Even though it does not modify configuration, using the OverrideFunc mechanism for uniformity
-				AddOverrideFunc(func(Config) {
-					os.Setenv("DOCKER_HOST", getDefaultDockerSocketType()+defaultDockerSocketPath)
-				})
-				break
-			}
+			//	// Even though it does not modify configuration, using the OverrideFunc mechanism for uniformity
+			//	AddOverrideFunc(func(Config) {
+			//		os.Setenv("DOCKER_HOST", getDefaultDockerSocketType()+defaultDockerSocketPath)
+			//	})
+			//	break
+			//}
 		}
 	}
 }
@@ -101,7 +101,7 @@ func detectDocker(features FeatureMap) {
 func detectContainerd(features FeatureMap) {
 	// CRI Socket - Do not automatically default socket path if the Agent runs in Docker
 	// as we'll very likely discover the containerd instance wrapped by Docker.
-	criSocket := Datadog.GetString("cri_socket_path")
+	criSocket := C.CriSocketPath
 	if criSocket == "" && !IsDockerRuntime() {
 		for _, defaultCriPath := range getDefaultCriPaths() {
 			exists, reachable := system.CheckSocketAvailable(defaultCriPath, socketTimeout)
@@ -110,12 +110,12 @@ func detectContainerd(features FeatureMap) {
 				continue
 			}
 
-			if exists && reachable {
-				criSocket = defaultCriPath
-				AddOverride("cri_socket_path", defaultCriPath)
-				// Currently we do not support multiple CRI paths
-				break
-			}
+			//if exists && reachable {
+			//	criSocket = defaultCriPath
+			//	AddOverride("cri_socket_path", defaultCriPath)
+			//	// Currently we do not support multiple CRI paths
+			//	break
+			//}
 		}
 	}
 
@@ -139,14 +139,14 @@ func detectFargate(features FeatureMap) {
 		return
 	}
 
-	if Datadog.GetBool("eks_fargate") {
+	if C.EKSFargate {
 		features[EKSFargate] = struct{}{}
 		features[Kubernetes] = struct{}{}
 	}
 }
 
 func detectCloudFoundry(features FeatureMap) {
-	if Datadog.GetBool("cloud_foundry") {
+	if C.CloudFoundry {
 		features[CloudFoundry] = struct{}{}
 	}
 }
