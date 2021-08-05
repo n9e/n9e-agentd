@@ -7,18 +7,16 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/common/types"
-	logstypes "github.com/DataDog/datadog-agent/pkg/logs/types"
 	apm "github.com/n9e/n9e-agentd/pkg/config/apm"
 	forwarder "github.com/n9e/n9e-agentd/pkg/config/forwarder"
 	"github.com/n9e/n9e-agentd/pkg/config/internalprofiling"
+	logs "github.com/n9e/n9e-agentd/pkg/config/logs"
 	snmp "github.com/n9e/n9e-agentd/pkg/config/snmp"
 	statsd "github.com/n9e/n9e-agentd/pkg/config/statsd"
 	systemprobe "github.com/n9e/n9e-agentd/pkg/system-probe/config"
@@ -37,7 +35,7 @@ var (
 	TestConfig bool
 
 	// ungly hack, TODO: remove it
-	C = NewDefaultConfig()
+	C = NewDefaultConfig(nil)
 	// StartTime is the agent startup time
 	StartTime = time.Now()
 
@@ -49,16 +47,15 @@ var (
 func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
 	proc.RegisterFlags("agent.forwarder", "forwarder", &forwarder.Config{})
-	proc.RegisterFlags("agent.logsConfig", "logs", &LogsConfig{})
-	proc.RegisterFlags("agent.clusterChecks", "cluster checks", &ClusterChecks{})
+	proc.RegisterFlags("agent.logs_config", "logs", &logs.Config{})
+	proc.RegisterFlags("agent.cluster_checks", "cluster checks", &ClusterChecks{})
 	proc.RegisterFlags("agent.statsd", "statsd", &statsd.Config{})
 	proc.RegisterFlags("agent.jmx", "jmx", &Jmx{})
-	proc.RegisterFlags("agent.adminssionController", "adminssion controller", &AdminssionController{})
+	proc.RegisterFlags("agent.adminssion_controller", "adminssion controller", &AdminssionController{})
 
 	fs := proc.NamedFlagSets().FlagSet("global")
 	fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
 	fs.BoolVarP(&TestConfig, "test-config", "t", false, "test configuratioin and exit")
-
 }
 
 type Config struct {
@@ -99,7 +96,7 @@ type Config struct {
 	Network                          Network                             `json:"network,inline"`                                                                                                    // network
 	NetworkConfig                    NetworkConfig                       `json:"network_config,inline"`                                                                                             // network_config
 	Cmd                              Cmd                                 `json:"cmd,inline"`                                                                                                        // cmd
-	LogsConfig                       LogsConfig                          `json:"logs_config"`                                                                                                       // logs_config
+	Logs                             logs.Config                         `json:"logs_config"`                                                                                                       // logs_config
 	CloudFoundryGarden               CloudFoundryGarden                  `json:"cloud_foundry_garden,inline"`                                                                                       // cloud_foundry_garden
 	ClusterChecks                    ClusterChecks                       `json:"cluster_checks"`                                                                                                    // cluster_checks
 	Telemetry                        Telemetry                           `json:"telemetry,inline"`                                                                                                  // telemetry
@@ -151,7 +148,7 @@ type Config struct {
 	EnableGohai                      bool                                `json:"enable_gohai" default:"true"`                                                                                       // enable_gohai
 	ChecksTagCardinality             string                              `json:"checks_tag_cardinality" default:"low"`                                                                              // checks_tag_cardinality
 	HistogramAggregates              []string                            `json:"histogram_aggregates" default:"max median avg count"`                                                               // histogram_aggregates
-	HistogramPercentiles             []int                               `json:"histogram_percentiles" default:"0.95"`                                                                              // histogram_percentiles
+	HistogramPercentiles             []string                            `json:"histogram_percentiles" default:"0.95"`                                                                              // histogram_percentiles
 	AcLoadTimeout                    time.Duration                       `json:"-"`                                                                                                                 // ac_load_timeout
 	AcLoadTimeout_                   int                                 `json:"ac_load_timeout" flag:"ac-load-timeout" default:"30000" description:"ac load timeout(Millisecond)"`                 // ac_load_timeout
 	AdConfigPollInterval             time.Duration                       `json:"-"`                                                                                                                 // ad_config_poll_interval
@@ -171,7 +168,6 @@ type Config struct {
 	AutoconfTemplateDir            string        `json:"autoconf_template_dir" default:"/opt/n9e/agentd/check_configs"` // autoconf_template_dir
 	AutoconfTemplateUrlTimeout     int           `json:"autoconf_template_url_timeout" default:"5"`                     // autoconf_template_url_timeout
 	CheckRunners                   int           `json:"check_runners" default:"4"`                                     // check_runners
-	LoggingFrequency               int64         `json:"logging_frequency" default:"500"`                               // logging_frequency
 	GUIPort                        bool          `json:"gui_port"`                                                      // GUI_port
 	XAwsEc2MetadataTokenTtlSeconds bool          `json:"x_aws_ec2_metadata_token_ttl_seconds"`                          // X-aws-ec2-metadata-token-ttl-seconds
 	AcExclude                      bool          `json:"ac_exclude"`                                                    // ac_exclude
@@ -199,7 +195,6 @@ type Config struct {
 	CriQueryTimeout              time.Duration `json:"-"`                                                                                                                                // cri_query_timeout
 	CriQueryTimeout_             int           `json:"cri_query_timeout" flag:"cri-query-timeout" default:"5" description:"cri query timeout(Second)"`                                   // cri_query_timeout
 	DatadogCluster               bool          `json:"datadog_cluster"`                                                                                                                  // datadog-cluster
-	DisableFileLogging           bool          `json:"disable_file_logging"`                                                                                                             // disable_file_logging
 	DockerLabelsAsTags           bool          `json:"docker_labels_as_tags"`                                                                                                            // docker_labels_as_tags
 	DockerQueryTimeout           time.Duration `json:"-"`                                                                                                                                // docker_query_timeout
 	DockerQueryTimeout_          int           `json:"docker_query_timeout" flag:"docker-query-timeout" default:"5" description:"docker query timeout(Second)"`                          // docker_query_timeout
@@ -270,20 +265,22 @@ type Config struct {
 	LeaderLeaseDuration_              int               `json:"leader_lease_duration" flag:"leader-lease-duration" default:"60" description:"leader lease duration(second)"` // leader_lease_duration
 
 	// log
-	LogEnabled        bool     `json:"log_enabled"`
-	LogFile           string   `json:"log_file"`
-	LogFormatJson     bool     `json:"log_format_json"`
-	LogFormatRfc3339  bool     `json:"log_format_rfc3339"`
-	LogLevel          string   `json:"log_level"`
-	LogToConsole      bool     `json:"log_to_console"`
-	LogToSyslog       bool     `json:"log_to_syslog"`
-	SyslogUri         string   `json:"syslog_uri"`
-	SyslogPem         string   `json:"syslog_pem"`
-	SyslogKey         string   `json:"syslog_key"`
-	SyslogTlsVerify   bool     `json:"syslog_tls_verify"`
-	FlareStrippedKeys []string `json:"flare_stripped_keys"`
-	LogFileMaxSize    int      `json:"log_file_max_size"`
-	LogFileMaxRolls   int      `json:"log_file_max_rolls"`
+	LoggingFrequency   int64    `json:"logging_frequency" default:"500"` // logging_frequency
+	LogFile            string   `json:"log_file" default:"./logs/agent.log"`
+	DisableFileLogging bool     `json:"disable_file_logging"` // disable_file_logging
+	LogFormatJson      bool     `json:"log_format_json"`
+	SyslogRfc          bool     `json:"syslog_rfc"` // syslog_rfc
+	LogFormatRfc3339   bool     `json:"log_format_rfc3339"`
+	LogLevel           string   `json:"log_level" default:"info"`
+	LogToConsole       bool     `json:"log_to_console" default:"true"`
+	LogToSyslog        bool     `json:"log_to_syslog"`
+	SyslogUri          string   `json:"syslog_uri"`
+	SyslogPem          string   `json:"syslog_pem"`
+	SyslogKey          string   `json:"syslog_key"`
+	SyslogTlsVerify    bool     `json:"syslog_tls_verify"`
+	FlareStrippedKeys  []string `json:"flare_stripped_keys"`
+	LogFileMaxSize     int      `json:"log_file_max_size" default:"10485760"`
+	LogFileMaxRolls    int      `json:"log_file_max_rolls" default:"1"`
 
 	MemtrackEnabled           bool          `json:"memtrack_enabled"`              // memtrack_enabled
 	MetricsPort               int           `json:"metrics_port" default:"5000"`   // metrics_port
@@ -303,14 +300,13 @@ type Config struct {
 	EnablePayloads                                EnablePayloads `json:"enable_payloads,inline"`                                                       // enable_payloads.*
 	SerializerMaxPayloadSize                      int            `json:"serializer_max_payload_size" default:"2621440" description:"2.5mb"`            // serializer_max_payload_size
 	SerializerMaxUncompressedPayloadSize          int            `json:"serializer_max_uncompressed_payload_size" default:"4194304" description:"4mb"` // serializer_max_uncompressed_payload_size
-	EnableStreamPayloadSerialization              bool           `json:"enable_stream_payload_serialization" default:"true"`
+	EnableStreamPayloadSerialization              bool           `json:"enable_stream_payload_serialization" default:"false"`
 	EnableServiceChecksStreamPayloadSerialization bool           `json:"enable_service_checks_stream_payload_serialization" default:"true"`
 	EnableEventsStreamPayloadSerialization        bool           `json:"enable_events_stream_payload_serialization" default:"true"`
 	EnableSketchStreamPayloadSerialization        bool           `json:"enable_sketch_stream_payload_serialization" default:"true"`
 
 	//ServerTimeout                        time.Duration     `json:"-"`
 	//ServerTimeout_                       int               `json:"server_timeout" flag:"server-timeout" default:"15" description:"server_timeout(Second)"` // server_timeout, move to apiserver
-	SyslogRfc           bool   `json:"syslog_rfc"`        // syslog_rfc
 	TracemallocDebug    bool   `json:"tracemalloc_debug"` // tracemalloc_debug
 	Yaml                bool   `json:"yaml"`              // yaml
 	MetricTransformFile string `json:"metric_transform_file"`
@@ -353,6 +349,7 @@ func (p *Config) Set(k string, v interface{}) error {
 }
 
 func (p *Config) Read(path string, dst interface{}) error {
+	klog.Infof("read path %s dst %v", path, dst)
 	return p.configer.Read(path, dst)
 }
 
@@ -434,21 +431,8 @@ func (p *Config) Validate() error {
 		}
 	}
 
-	for i := range p.MetadataProviders {
-		if err := p.MetadataProviders[i].Validate(); err != nil {
-			return err
-		}
-	}
-
-	rv := reflect.ValueOf(p)
-	for i := 0; i < rv.Type().NumField(); i++ {
-		if rv2 := rv.Field(i); rv2.CanInterface() {
-			if v, ok := rv2.Interface().(validator); ok {
-				if err := v.Validate(); err != nil {
-					return err
-				}
-			}
-		}
+	if err := util.ValidateFields(p); err != nil {
+		return err
 	}
 
 	if err := p.SnmpTraps.Validate(p.GetBindHost()); err != nil {
@@ -473,8 +457,6 @@ func (p *Config) Validate() error {
 		}
 		p.PythonVersion = DefaultPython
 	}
-
-	sort.Ints(p.HistogramPercentiles)
 
 	// transformer
 	if err := defaultTransformer.SetMetricFromFile(p.MetricTransformFile); err != nil {
@@ -538,9 +520,9 @@ func (p *Config) ValidatePath() error {
 		return fmt.Errorf("agent.runPath %s does not exist, please create it", p.RunPath)
 	}
 
-	// LogsConfig
-	if p.LogsConfig.RunPath == "" {
-		p.LogsConfig.RunPath = p.RunPath
+	// logs
+	if p.Logs.RunPath == "" {
+		p.Logs.RunPath = p.RunPath
 	}
 	klog.Infof("agent.runPath %s", p.RunPath)
 
@@ -680,7 +662,7 @@ type Jmx struct {
 	CollectionTimeout          time.Duration `json:"-"`
 	CollectionTimeout_         int           `json:"collection_timeout" flag:"jmx-collection-timeout" default:"60" description:"collectionTimeout"` // jmx_collection_timeout
 	CustomJars                 []string      `json:"custom_jars"`                                                                                   // jmx_custom_jars
-	LogFile                    bool          `json:"log_file"`                                                                                      // jmx_log_file
+	LogFile                    string        `json:"log_file" default:"./logs/jmxfetch.log"`                                                        // jmx_log_file
 	MaxRestarts                int           `json:"max_restarts" default:"3"`                                                                      // jmx_max_restarts
 	ReconnectionThreadPoolSize int           `json:"reconnection_thread_pool_size" default:"3"`                                                     // jmx_reconnection_thread_pool_size
 	ReconnectionTimeout        time.Duration `json:"-"`
@@ -737,92 +719,6 @@ type ProcessingRule struct {
 }
 
 func (p *ProcessingRule) Validate() error {
-	return nil
-}
-
-type LogsConfig struct {
-	Enabled                     bool                        `json:"enabled"`                                            // logs_enabled
-	AdditionalEndpoints         []logstypes.Endpoint        `json:"additional_endpoints"`                               // logs_config.additional_endpoints
-	ContainerCollectAll         bool                        `json:"container_collect_all"`                              // logs_config.container_collect_all
-	ProcessingRules             []*logstypes.ProcessingRule `json:"processing_rules"`                                   // logs_config.processing_rules
-	APIKey                      string                      `json:"api_key"`                                            // logs_config.api_key
-	DevModeNoSSL                bool                        `json:"dev_mode_no_ssl"`                                    // logs_config.dev_mode_no_ssl
-	FileScanPeriod              int                         `json:"file_scan_period" default:"10" description:"second"` // logs_config.file_scan_period
-	ValidatePodContainerId      bool                        `json:"validate_pod_container_id" default:"false"`
-	ExpectedTagsDuration        time.Duration               `json:"-"`
-	ExpectedTagsDuration_       int                         `json:"expected_tags_duration" flag:"logs-expected-tags-duration" description:"expectedTagsDuration(Second)"` // logs_config.expected_tags_duration
-	Socks5ProxyAddress          string                      `json:"socks5_proxy_address"`                                                                                 // logs_config.socks5_proxy_address
-	UseTCP                      bool                        `json:"use_tcp"`                                                                                              // logs_config.use_tcp
-	UseHTTP                     bool                        `json:"use_http"`                                                                                             // logs_config.use_http
-	DevModeUseProto             bool                        `json:"dev_mode_use_proto" default:"true"`                                                                    // logs_config.dev_mode_use_proto
-	ConnectionResetInterval     time.Duration               `json:"-"`
-	ConnectionResetInterval_    int                         `json:"connection_reset_interval" flag:"logs-connection-reset-interval" default:"" description:"connectionResetInterval(Second)"` // logs_config.connection_reset_interval
-	LogsUrl                     string                      `json:"logs_url"`                                                                                                                 // logs_config.logs_dd_url, dd_url
-	UsePort443                  bool                        `json:"use_port443"`                                                                                                              // logs_config.use_port_443
-	UseSSL                      bool                        `json:"use_ssl"`                                                                                                                  // !logs_config.logs_no_ssl
-	Url443                      string                      `json:"url_443"`                                                                                                                  // logs_config.dd_url_443
-	UseCompression              bool                        `json:"use_compression" default:"true"`                                                                                           // logs_config.use_compression
-	CompressionLevel            int                         `json:"compression_level" default:"6"`                                                                                            // logs_config.compression_level
-	URL                         string                      `json:"url" default:"localhost:8080"`                                                                                             // logs_config.dd_url (e.g. localhost:8080)
-	BatchWait                   time.Duration               `json:"-"`
-	BatchWait_                  int                         `json:"batch_wait" flag:"logs-batch-wait" default:"5" description:"batchWait(Second)"` // logs_config.batch_wait
-	BatchMaxConcurrentSend      int                         `json:"batch_max_concurrent_send"`                                                     // logs_config.batch_max_concurrent_send
-	BatchMaxSize                int                         `json:"batch_max_size" default:"100"`
-	BatchMaxContentSize         int                         `json:"batch_max_content_size" default:"1000000"`
-	SenderBackoffFactor         float64                     `json:"sender_backoff_factor" default:"2.0"`
-	SenderBackoffBase           float64                     `json:"sender_backoff_base" default:"1.0"`
-	SenderBackoffMax            float64                     `json:"sender_backoff_max" default:"120.0"`
-	SenderRecoveryInterval      int                         `json:"sender_recovery_interval" default:"2"`
-	SenderRecoveryReset         bool                        `json:"sender_recovery_reset"`
-	TaggerWarmupDuration        time.Duration               `json:"-"`
-	TaggerWarmupDuration_       int                         `json:"tagger_warmup_duration" flag:"logs-tagger-warmup-duration" description:"taggerWarmupDuration(Second)"` // logs_config.tagger_warmup_duration
-	AggregationTimeout          time.Duration               `json:"-"`
-	AggregationTimeout_         int                         `json:"aggregation_timeout" flag:"logs-aggregation-timeout" default:"1000" description:"aggregationTimeout(Millisecond)"` // logs_config.aggregation_timeout
-	CloseTimeout                time.Duration               `json:"-"`
-	CloseTimeout_               int                         `json:"close_timeout" flag:"logs-close-timeout" default:"60" description:"closeTimeout(Second)"` // logs_config.close_timeout
-	AuditorTTL                  time.Duration               `json:"-"`
-	AuditorTTL_                 int                         `json:"auditor_ttl" flag:"logs-auditor-ttl" description:"auditorTTL(Second)"` // logs_config.auditor_ttl
-	RunPath                     string                      `json:"run_path"`                                                             // logs_config.run_path
-	OpenFilesLimit              int                         `json:"open_files_limit" flag:"logs-open-files-limit" default:"100"`          // logs_config.open_files_limit
-	K8SContainerUseFile         bool                        `json:"k8s_container_use_file"`                                               // logs_config.k8s_container_use_file
-	DockerContainerUseFile      bool                        `json:"docker_container_use_file"`                                            // logs_config.docker_container_use_file
-	DockerContainerForceUseFile bool                        `json:"docker_container_force_use_file"`                                      // logs_config.docker_container_force_use_file
-	DockerClientReadTimeout     time.Duration               `json:"-"`
-	DockerClientReadTimeout_    int                         `json:"docker_client_read_timeout" flag:"logs-docker-client-read-timeout" default:"30" description:"dockerClientReadTimeout(Second)"` // logs_config.docker_client_read_timeout
-	FrameSize                   int                         `json:"frame_size" default:"9000"`                                                                                                    // logs_config.frame_size
-	StopGracePeriod             time.Duration               `json:"-"`
-	StopGracePeriod_            int                         `json:"stop_grace_period" flag:"logs-stop-grace-period" default:"30" description:"stopGracePeriod(Second)"` // logs_config.stop_grace_period
-	DDPort                      int                         `json:"dd_port"`                                                                                            // logs_config.dd_port
-	UseV2Api                    bool                        `json:"use_v2_api"`                                                                                         // logs_config.use_v2_api
-}
-
-func (p *LogsConfig) Validate() error {
-	p.ExpectedTagsDuration = time.Second * time.Duration(p.ExpectedTagsDuration_)
-	p.ConnectionResetInterval = time.Second * time.Duration(p.ConnectionResetInterval_)
-	p.BatchWait = time.Second * time.Duration(p.BatchWait_)
-	p.TaggerWarmupDuration = time.Second * time.Duration(p.TaggerWarmupDuration_)
-	p.AggregationTimeout = time.Millisecond * time.Duration(p.AggregationTimeout_)
-	p.CloseTimeout = time.Second * time.Duration(p.CloseTimeout_)
-	p.AuditorTTL = time.Second * time.Duration(p.AuditorTTL_)
-	p.DockerClientReadTimeout = time.Second * time.Duration(p.DockerClientReadTimeout_)
-	p.StopGracePeriod = time.Second * time.Duration(p.StopGracePeriod_)
-
-	if p.APIKey != "" {
-		p.APIKey = strings.TrimSpace(p.APIKey)
-	}
-
-	if p.BatchWait < time.Second || 10*time.Second < p.BatchWait {
-		klog.Warningf("Invalid batchWait: %v should be in [1, 10], fallback on %v",
-			p.BatchWait_, DefaultBatchWait.Seconds())
-		p.BatchWait = DefaultBatchWait
-	}
-
-	if p.BatchMaxConcurrentSend < 0 {
-		klog.Warningf("Invalid batchMaxconcurrentSend: %v should be >= 0, fallback on %v",
-			p.BatchMaxConcurrentSend, DefaultBatchMaxConcurrentSend)
-		p.BatchMaxConcurrentSend = DefaultBatchMaxConcurrentSend
-	}
-
 	return nil
 }
 
@@ -1108,32 +1004,4 @@ func AddAgentVersionToDomain(DDURL string, app string) (string, error) {
 func getDomainPrefix(app string) string {
 	v, _ := version.Agent()
 	return fmt.Sprintf("%d-%d-%d-%s.agent", v.Major, v.Minor, v.Patch, app)
-}
-
-// NewEndpoints returns a new endpoints composite with default batching settings
-func NewEndpoints(main logstypes.Endpoint, additionals []logstypes.Endpoint, useProto bool, useHTTP bool) *logstypes.Endpoints {
-	return &logstypes.Endpoints{
-		Main:                   main,
-		Additionals:            additionals,
-		UseProto:               useProto,
-		UseHTTP:                useHTTP,
-		BatchWait:              DefaultBatchWait,
-		BatchMaxConcurrentSend: DefaultBatchMaxConcurrentSend,
-		BatchMaxSize:           DefaultBatchMaxSize,
-		BatchMaxContentSize:    DefaultBatchMaxContentSize,
-	}
-}
-
-// NewEndpointsWithBatchSettings returns a new endpoints composite with non-default batching settings specified
-func NewEndpointsWithBatchSettings(main logstypes.Endpoint, additionals []logstypes.Endpoint, useProto bool, useHTTP bool, batchWait time.Duration, batchMaxConcurrentSend int, batchMaxSize int, batchMaxContentSize int) *logstypes.Endpoints {
-	return &logstypes.Endpoints{
-		Main:                   main,
-		Additionals:            additionals,
-		UseProto:               useProto,
-		UseHTTP:                useHTTP,
-		BatchWait:              batchWait,
-		BatchMaxConcurrentSend: batchMaxConcurrentSend,
-		BatchMaxSize:           batchMaxSize,
-		BatchMaxContentSize:    batchMaxContentSize,
-	}
 }

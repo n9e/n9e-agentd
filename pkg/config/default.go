@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/collector/check/defaults"
+	"github.com/yubo/golib/configer"
 )
 
 const (
@@ -27,18 +28,6 @@ const (
 	DefaultForwarderRecoveryInterval = 2
 
 	megaByte = 1024 * 1024
-
-	DefaultBatchWait = 5 * time.Second
-
-	// DefaultBatchMaxConcurrentSend is the default HTTP batch max concurrent send for logs
-	DefaultBatchMaxConcurrentSend = 0
-
-	// DefaultBatchMaxSize is the default HTTP batch max size (maximum number of events in a single batch) for logs
-	DefaultBatchMaxSize = 100
-
-	// DefaultBatchMaxContentSize is the default HTTP batch max content size (before compression) for logs
-	// It is also the maximum possible size of a single event. Events exceeding this limit are dropped.
-	DefaultBatchMaxContentSize = 1000000
 
 	// DefaultAuditorTTL is the default logs auditor TTL in hours
 	DefaultAuditorTTL = 23
@@ -62,8 +51,11 @@ const (
 	DefaultLogsSenderBackoffRecoveryInterval = 2
 )
 
-func NewDefaultConfig() *Config {
-	cf := &Config{m: new(sync.RWMutex)}
+func NewDefaultConfig(configer *configer.Configer) *Config {
+	cf := &Config{
+		m:        new(sync.RWMutex),
+		configer: configer,
+	}
 
 	if IsContainerized() {
 		// In serverless-containerized environments (e.g Fargate)
@@ -101,7 +93,7 @@ func NewDefaultConfig() *Config {
 
 	cf.Statsd.MetricNamespaceBlacklist = StandardStatsdPrefixes
 	cf.Jmx.CheckPeriod = int(defaults.DefaultCheckInterval / time.Millisecond)
-	cf.LogsConfig.AuditorTTL = DefaultAuditorTTL
+	cf.Logs.AuditorTTL = DefaultAuditorTTL
 	cf.PythonVersion = DefaultPython
 
 	return cf

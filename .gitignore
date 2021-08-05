@@ -3,3 +3,5 @@ run/
 tmp
 vendor/
 etc/mocker.d/
+
+*.log

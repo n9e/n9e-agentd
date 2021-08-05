@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
 	"github.com/DataDog/datadog-agent/pkg/api/healthprobe"
@@ -33,7 +34,9 @@ import (
 )
 
 const (
-	moduleName = "agent"
+	moduleName                      = "agent"
+	loggerName    config.LoggerName = "CORE"
+	jmxLoggerName config.LoggerName = "JMXFETCH"
 )
 
 type module struct {
@@ -69,6 +72,10 @@ func (p *module) start(ctx context.Context) error {
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
 	if err := p.readConfig(); err != nil {
+		return err
+	}
+
+	if err := p.setupLogger(); err != nil {
 		return err
 	}
 
@@ -190,7 +197,7 @@ func (p *module) readConfig() error {
 		}
 	}
 
-	cf := config.NewDefaultConfig()
+	cf := config.NewDefaultConfig(configer)
 	if err := configer.Read(moduleName, cf); err != nil {
 		return err
 	}
@@ -205,6 +212,68 @@ func (p *module) readConfig() error {
 	config.Context = p.ctx
 
 	return nil
+}
+
+func (p *module) setupLogger() error {
+	cf := p.config
+	// Setup logger
+	if runtime.GOOS != "android" {
+		syslogURI := config.GetSyslogURI()
+		logFile := cf.LogFile
+		jmxLogFile := cf.Jmx.LogFile
+
+		if config.C.DisableFileLogging {
+			// this will prevent any logging on file
+			logFile = ""
+			jmxLogFile = ""
+		}
+
+		if err := config.SetupLogger(
+			loggerName,
+			cf.LogLevel,
+			logFile,
+			syslogURI,
+			cf.SyslogRfc,
+			cf.LogToConsole,
+			cf.LogFormatJson,
+		); err != nil {
+			return err
+		}
+
+		// Setup JMX logger
+		return config.SetupJMXLogger(
+			jmxLoggerName,
+			cf.LogLevel,
+			jmxLogFile,
+			syslogURI,
+			cf.SyslogRfc,
+			cf.LogToConsole,
+			cf.LogFormatJson,
+		)
+
+	}
+	if err := config.SetupLogger(
+		loggerName,
+		cf.LogLevel,
+		"", // no log file on android
+		"", // no syslog on android,
+		false,
+		true,  // always log to console
+		false, // not in json
+	); err != nil {
+		return err
+	}
+
+	// Setup JMX logger
+	return config.SetupJMXLogger(
+		jmxLoggerName,
+		cf.LogLevel,
+		"", // no log file on android
+		"", // no syslog on android,
+		false,
+		true,  // always log to console
+		false, // not in json
+	)
 }
 
 func (p *module) setupGeneric() error {
@@ -307,14 +376,14 @@ func (p *module) startSnmpTrap() error {
 		return nil
 	}
 
-	if !p.config.LogsConfig.Enabled {
+	if !p.config.Logs.Enabled {
 		klog.Warning("snmp-traps server did not start, as log collection is disabled. " +
 			"Please enable log collection to collect and forward traps.",
 		)
 		return nil
 	}
 
-	if err := traps.StartServer(&p.config.SnmpTraps); err != nil {
+	if err := traps.StartServer(); err != nil {
 		klog.Errorf("Failed to start snmp-traps server: %s", err)
 	}
 
@@ -323,7 +392,7 @@ func (p *module) startSnmpTrap() error {
 
 // start logs-agent
 func (p *module) startLogsAgent() error {
-	if !p.config.LogsConfig.Enabled {
+	if !p.config.Logs.Enabled {
 		klog.Info("logs-agent disabled")
 		return nil
 	}
@@ -345,20 +414,20 @@ func (p *module) startSystemProbe() error {
 
 // Detect Cloud Provider
 func (p *module) startDetectCloudProvider() error {
-	go ddutil.DetectCloudProvider()
+	go ddutil.DetectCloudProvider(context.Background())
 	return nil
 }
 
 func (p *module) startLogVersionRecord() error {
 	// Append version and timestamp to version history log file if this Agent is different than the last run version
-	ddutil.LogVersionHistory(p.config.RunPath)
+	ddutil.LogVersionHistory()
 
 	return nil
 }
 
 func (p *module) startAutoconfig() error {
 	// create and setup the Autoconfig instance
-	common.LoadComponents(p.config)
+	common.LoadComponents()
 	// start the autoconfig, this will immediately run any configured check
 	common.StartAutoConfig()
 

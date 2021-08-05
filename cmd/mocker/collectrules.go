@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/providers"
+	"github.com/n9e/n9e-agentd/pkg/api"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -80,7 +81,7 @@ func startCollectFileConfig(path string) {
 	for {
 		<-t.C
 
-		configs, err := p.Collect()
+		configs, err := p.Collect(context.Background())
 		if err != nil {
 			klog.Errorf("collect err %s", err)
 			continue

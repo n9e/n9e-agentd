@@ -9,8 +9,8 @@ import (
 	"net/http/pprof"
 	"time"
 
-	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
 	"github.com/DataDog/datadog-agent/pkg/telemetry"
+	registrymetrics "github.com/n9e/n9e-agentd/pkg/registry/metrics"
 	"k8s.io/klog/v2"
 )
 
@@ -25,7 +25,7 @@ type server struct {
 }
 
 func (p *module) startExporter() error {
-	cf := p.config.Exporter
+	cf := p.config.Telemetry
 	if cf.Port <= 0 {
 		return nil
 	}

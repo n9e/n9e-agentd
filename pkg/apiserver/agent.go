@@ -14,13 +14,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
-	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
-	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/config/settings"
-	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/DataDog/datadog-agent/pkg/flare"
 	"github.com/DataDog/datadog-agent/pkg/logs"
 	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
@@ -30,6 +25,11 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/tagger"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
+	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/config/settings"
+	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/yubo/apiserver/pkg/request"
 	"github.com/yubo/apiserver/pkg/rest"
 	"k8s.io/klog/v2"
@@ -116,6 +116,10 @@ func streamLogs(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, filte
 	_ = conn.SetDeadline(time.Time{})
 	_ = conn.SetWriteDeadline(time.Time{})
 
+	done := make(chan struct{})
+	defer close(done)
+	logChan := logMessageReceiver.Filter(filters, done)
+	flushTimer := time.NewTicker(time.Second)
 	for {
 		// Handlers for detecting a closed connection (from either the server or client)
 		select {
@@ -123,11 +127,9 @@ func streamLogs(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, filte
 			return nil
 		case <-r.Context().Done():
 			return nil
-		default:
-		}
-		if line, ok := logMessageReceiver.Next(filters); ok {
+		case line := <-logChan:
 			fmt.Fprint(w, line)
-		} else {
+		case <-flushTimer.C:
 			// The buffer will flush on its own most of the time, but when we run out of logs flush so the client is up to date.
 			flusher.Flush()
 		}
