@@ -59,7 +59,9 @@ func main() {
 
 	var port int
 	var confd string
+	var collectRule bool
 	flag.IntVar(&port, "port", 8000, "listen port")
+	flag.BoolVar(&collectRule, "collect-rule", false, "enable collect rule provider")
 	flag.StringVar(&confd, "confd", "./etc/mocker.d", "config dir")
 	flag.Parse()
 
@@ -67,7 +69,9 @@ func main() {
 		http.HandleFunc(r.pattern, payloadHandle(r.payload))
 	}
 
-	installCollectRules(confd)
+	if collectRule {
+		installCollectRules(confd)
+	}
 
 	klog.Infof("listen :%d", port)
 	klog.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))

@@ -70,11 +70,11 @@ var (
 func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
 	proc.RegisterFlags("agent.forwarder", "forwarder", &Forwarder{})
-	proc.RegisterFlags("agent.logsConfig", "logs", &LogsConfig{})
-	proc.RegisterFlags("agent.clusterChecks", "cluster checks", &ClusterChecks{})
+	proc.RegisterFlags("agent.logs_config", "logs", &LogsConfig{})
+	proc.RegisterFlags("agent.cluster_checks", "cluster checks", &ClusterChecks{})
 	proc.RegisterFlags("agent.statsd", "statsd", &Statsd{})
 	proc.RegisterFlags("agent.jmx", "jmx", &Jmx{})
-	proc.RegisterFlags("agent.adminssionController", "adminssion controller", &AdminssionController{})
+	proc.RegisterFlags("agent.adminssion_controller", "adminssion controller", &AdminssionController{})
 
 	fs := proc.NamedFlagSets().FlagSet("global")
 	fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
