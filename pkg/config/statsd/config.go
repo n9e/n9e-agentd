@@ -14,7 +14,7 @@ type Config struct {
 	ExpirySeconds_           int              `json:"expiry_seconds" flag:"statsd-expiry-seconds" default:"300" description:"expirySeconds(Second)"` // dogstatsd_expiry_seconds
 	StatsEnable              bool             `json:"stats_enable" default:"true"`                                                                   // dogstatsd_stats_enable
 	StatsBuffer              int              `json:"stats_buffer" default:"10"`                                                                     // dogstatsd_stats_buffer
-	MetricsStatsEnable       bool             `json:"metrics_stats_enable" default:"false"`                                                          // dogstatsd_metrics_stats_enable - for debug
+	MetricsStatsEnable       bool             `json:"metrics_stats_enable" default:"false"`                                                          // dogstatsd_metrics_stats_enable - for debug - move to settings
 	BufferSize               int              `json:"buffer_size" default:"8192"`                                                                    // dogstatsd_buffer_size
 	MetricNamespace          string           `json:"metric_namespace"`                                                                              // statsd_metric_namespace
 	MetricNamespaceBlacklist []string         `json:"metric_namespace_blacklist"`                                                                    // statsd_metric_namespace_blacklist

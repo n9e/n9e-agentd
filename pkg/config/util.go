@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
-	"github.com/yubo/apiserver/pkg/options"
 )
 
 func NewSystemProbeConfig() (*Config, error) {
@@ -78,20 +76,9 @@ func IsDir(path string) bool {
 	return fi.IsDir()
 }
 
-var _ipcAddress string
-
-func GetIPCAddress() (string, error) {
-	if _ipcAddress != "" {
-		return _ipcAddress, nil
-	}
-
-	server, ok := options.ApiServerFrom(Context)
-	if !ok {
-		return "", fmt.Errorf("unable to get ipc address")
-	}
-	_ipcAddress = server.Address()
-	return _ipcAddress, nil
-}
+//func GetIPCAddress() (string, error) {
+//	return C.BindHost, nil
+//}
 
 // FileUsedDir returns the absolute path to the folder containing the config
 // file used to populate the registry

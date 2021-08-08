@@ -10,28 +10,23 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var (
-	AuthTokenFile string // inited by configer
-	AuthToken     string // inited/updated by fetchAuthToken()
-)
-
 const (
 	authTokenMinimalLen = 32
 )
 
 // GetClusterAgentAuthToken gets the session token
 func GetClusterAgentAuthToken() (string, error) {
-	return AuthToken, nil
+	return _auth.token, nil
 }
 
 // GetAuthToken gets the session token
 func GetAuthToken() string {
-	return AuthToken
+	return _auth.token
 }
 
 // GetAuthTokenFilepath returns the path to the auth_token file.
 func GetAuthTokenFilepath() string {
-	return AuthTokenFile
+	return _auth.config.AuthTokenFile
 }
 
 // FetchAuthToken gets the authentication token from the auth token file & creates one if it doesn't exist
@@ -48,11 +43,11 @@ func CreateOrFetchToken() (string, error) {
 
 // DeleteAuthToken removes auth_token file (test clean up)
 func DeleteAuthToken() error {
-	return os.Remove(AuthTokenFile)
+	return os.Remove(_auth.config.AuthTokenFile)
 }
 
 func fetchAuthToken(tokenCreationAllowed bool) (string, error) {
-	authTokenFile := AuthTokenFile
+	authTokenFile := _auth.config.AuthTokenFile
 
 	// Create a new token if it doesn't exist and if permitted by calling func
 	if _, e := os.Stat(authTokenFile); os.IsNotExist(e) && tokenCreationAllowed {
@@ -81,7 +76,7 @@ func fetchAuthToken(tokenCreationAllowed bool) (string, error) {
 		return "", fmt.Errorf("invalid authentication token: must be at least %d characters in length", authTokenMinimalLen)
 	}
 
-	AuthToken = authToken
+	_auth.token = authToken
 
 	return authToken, nil
 }

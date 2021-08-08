@@ -1,8 +1,6 @@
 package settings
 
 import (
-	"fmt"
-
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
@@ -26,18 +24,17 @@ func (r ProfilingGoroutines) Hidden() bool {
 
 // Get returns the current value of the runtime setting
 func (r ProfilingGoroutines) Get() (interface{}, error) {
-	return config.C.InternalProfiling.EnableGoroutineStacktraces, nil
+	return config.Get(string(r)), nil
 }
 
 // Set changes the value of the runtime setting
 func (r ProfilingGoroutines) Set(value interface{}) error {
-	return fmt.Errorf("unsupported")
-	//enabled, err := GetBool(value)
-	//if err != nil {
-	//	return err
-	//}
+	enabled, err := GetBool(value)
+	if err != nil {
+		return err
+	}
 
-	//config.Datadog.Set("internal_profiling.enable_goroutine_stacktraces", enabled)
+	config.Set(string(r), enabled)
 
-	//return nil
+	return nil
 }

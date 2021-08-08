@@ -6,15 +6,12 @@
 package settings
 
 import (
-	"fmt"
-
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // LogLevelRuntimeSetting wraps operations to change log level at runtime.
-type LogLevelRuntimeSetting struct {
-	ConfigKey string
-}
+type LogLevelRuntimeSetting string
 
 // Description returns the runtime setting's description
 func (l LogLevelRuntimeSetting) Description() string {
@@ -28,7 +25,7 @@ func (l LogLevelRuntimeSetting) Hidden() bool {
 
 // Name returns the name of the runtime setting
 func (l LogLevelRuntimeSetting) Name() string {
-	return "log_level"
+	return string(l)
 }
 
 // Get returns the current value of the runtime setting
@@ -42,16 +39,11 @@ func (l LogLevelRuntimeSetting) Get() (interface{}, error) {
 
 // Set changes the value of the runtime setting
 func (l LogLevelRuntimeSetting) Set(v interface{}) error {
-	return fmt.Errorf("unsupported")
-	//logLevel := v.(string)
-	//err := config.ChangeLogLevel(logLevel)
-	//if err != nil {
-	//	return err
-	//}
-	//key := "log_level"
-	//if l.ConfigKey != "" {
-	//	key = l.ConfigKey
-	//}
-	//config.Datadog.Set(key, logLevel)
-	//return nil
+	logLevel := v.(string)
+	err := config.ChangeLogLevel(logLevel)
+	if err != nil {
+		return err
+	}
+	config.Set(string(l), logLevel)
+	return nil
 }

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/n9e/n9e-agentd/cmd/agentd/app"
+	"os"
+
 	"github.com/yubo/golib/staging/logs"
 	"k8s.io/klog/v2"
 )
@@ -10,7 +11,8 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	if err := app.NewServerCmd().Execute(); err != nil {
+	if err := NewServerCmd().Execute(); err != nil {
 		klog.Error(err)
+		os.Exit(1)
 	}
 }

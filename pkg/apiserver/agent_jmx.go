@@ -12,7 +12,6 @@
 package apiserver
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -27,7 +26,18 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+type JMXConfig struct {
+	Instances  []integration.JSONMap `json:"instances"`
+	InitConfig interface{}           `json:"init_config"`
+	CheckName  string                `json:"check_name"`
+}
+
+type JMXConfigs struct {
+	Configs   map[string]JMXConfig `json:"configs"`
+	Timestamp int64                `json:"timestamp"`
+}
+
+func getJMXConfigs(w http.ResponseWriter, r *http.Request) (*JMXConfigs, error) {
 	var ts int
 	queries := r.URL.Query()
 	if timestamps, ok := queries["timestamp"]; ok {
@@ -42,8 +52,7 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	w.Header().Set("Content-Type", "application/json")
 	klog.V(5).Infof("Getting latest JMX Configs as of: %#v", ts)
 
-	j := map[string]interface{}{}
-	configs := map[string]integration.JSONMap{}
+	configs := map[string]JMXConfig{}
 
 	for name, config := range jmx.GetScheduledConfigs() {
 		var rawInitConfig integration.RawMap
@@ -52,8 +61,8 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 			return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
 		}
 
-		c := map[string]interface{}{}
-		c["init_config"] = util.GetJSONSerializableMap(rawInitConfig)
+		c := JMXConfig{}
+		c.InitConfig = util.GetJSONSerializableMap(rawInitConfig)
 		instances := []integration.JSONMap{}
 		for _, instance := range config.Instances {
 			var rawInstanceConfig integration.JSONMap
@@ -64,18 +73,12 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 			instances = append(instances, util.GetJSONSerializableMap(rawInstanceConfig).(integration.JSONMap))
 		}
 
-		c["instances"] = instances
-		c["check_name"] = config.Name
+		c.Instances = instances
+		c.CheckName = config.Name
 
 		configs[name] = c
 	}
-	j["configs"] = configs
-	j["timestamp"] = time.Now().Unix()
-	jsonPayload, err := json.Marshal(util.GetJSONSerializableMap(j))
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse JMX configuration: %s", err)
-	}
-	return jsonPayload, nil
+	return &JMXConfigs{Configs: configs, Timestamp: time.Now().Unix()}, nil
 }
 
 func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, jmxStatus *status.JMXStatus) {

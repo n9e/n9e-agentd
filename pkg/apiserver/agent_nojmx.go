@@ -18,10 +18,10 @@ import (
 
 var noJMXErrorString = errors.New("jmx is not compiled in this agent")
 
-func getJMXConfigs(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	return nil, noJMXErrorString
+func getJMXConfigs(w http.ResponseWriter, r *http.Request) error {
+	return noJMXErrorString
 }
 
-func setJMXStatus(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	return nil, noJMXErrorString
+func setJMXStatus(w http.ResponseWriter, r *http.Request) error {
+	return noJMXErrorString
 }

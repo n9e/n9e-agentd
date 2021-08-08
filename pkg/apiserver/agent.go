@@ -30,6 +30,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/n9e/n9e-agentd/pkg/options"
+	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/yubo/apiserver/pkg/request"
 	"github.com/yubo/apiserver/pkg/rest"
 	"k8s.io/klog/v2"
@@ -44,12 +45,13 @@ func (p *module) installWs(c rest.GoRestfulContainer) {
 			{Method: "GET", SubPath: "/version", Handle: getVersion, Desc: "get version"},
 			{Method: "GET", SubPath: "/hostname", Handle: getHostname, Desc: "get hostname"},
 			{Method: "POST", SubPath: "/flare", Handle: makeFlare, Desc: "make flare"},
+			{Method: "POST", SubPath: "/stop", Handle: stopAgent, Desc: "stop agent"},
 			{Method: "GET", SubPath: "/status", Handle: getStatus, Desc: "get status"},
 			{Method: "POST", SubPath: "/stream-logs", Handle: streamLogs, Desc: "post stream logs"},
 			{Method: "GET", SubPath: "/statsd-stats", Handle: getDogstatsdStats, Desc: "get statsd stats"},
 			{Method: "GET", SubPath: "/status/formatted", Handle: getFormattedStatus, Desc: "get formatted status"},
 			{Method: "GET", SubPath: "/status/health", Handle: getHealth, Desc: "get health"},
-			{Method: "GET", SubPath: "/py/status", Handle: getPythonStatus, Desc: "get py status"},
+			{Method: "GET", SubPath: "/py/status", Handle: getPythonStatus, Desc: "get python status"},
 			{Method: "POST", SubPath: "/jmx/status", Handle: setJMXStatus, Desc: "set jmx status"},
 			{Method: "GET", SubPath: "/jmx/configs", Handle: getJMXConfigs, Desc: "get jmx configs"},
 			//{Method: "GET", SubPath: "/gui/csrf-token", Handle: nonHandle, Desc: "flare"},
@@ -62,6 +64,10 @@ func (p *module) installWs(c rest.GoRestfulContainer) {
 			{Method: "GET", SubPath: "/secrets", Handle: secretInfo, Desc: "get secrets info"},
 		},
 	})
+}
+
+func stopAgent(w http.ResponseWriter, r *http.Request) {
+	util.Stop()
 }
 
 func getVersion(w http.ResponseWriter, r *http.Request) (string, error) {
@@ -180,10 +186,6 @@ func getHealth(w http.ResponseWriter, r *http.Request) (*health.Status, error) {
 	}
 
 	return &h, nil
-}
-
-type componentInput struct {
-	Component string `param:"path"`
 }
 
 //func getCSRFToken(w http.ResponseWriter, r *http.Request) {

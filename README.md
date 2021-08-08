@@ -35,7 +35,7 @@ agent:
 
 Start agentd
 ```
-/opt/n9e/agentd/bin/n9e-agentd -c /opt/n9e/agentd/etc/agentd.yaml
+/opt/n9e/agentd/bin/n9e-agentd -f /opt/n9e/agentd/etc/agentd.yaml
 ```
 
 Use with systemd

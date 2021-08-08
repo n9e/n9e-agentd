@@ -42,13 +42,14 @@ require (
 	github.com/DataDog/datadog-go v4.8.0+incompatible
 	github.com/DataDog/gohai v0.0.0-20210303102637-6b668acb50dd
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
-	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
+	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
+	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/fatih/color v1.12.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
-	github.com/gosnmp/gosnmp v1.32.0 // indirect
+	github.com/gosnmp/gosnmp v1.32.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
@@ -65,8 +66,8 @@ require (
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/yubo/apiserver v0.0.0-00010101000000-000000000000
 	github.com/yubo/golib v0.0.0-20210729083123-4040286093c6
+	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/automaxprocs v1.4.0
-	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
 	golang.org/x/sys v0.0.0-20210601080250-7ecdf8ef093b
 	golang.org/x/text v0.3.6

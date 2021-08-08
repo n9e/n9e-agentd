@@ -28,7 +28,7 @@ type Config struct {
 	MaxEventsPerSecond            float64             `json:"max_events_per_second"`            // apm_config.max_events_per_second
 	MaxMemory                     float64             `json:"max_memory"`                       // apm_config.max_memory
 	MaxTracesPerSecond            float64             `json:"max_traces_per_second"`            // apm_config.max_traces_per_second
-	Obfuscation                   *ObfuscationConfig  `json:"obfuscation"`                      // apm_config.obfuscation
+	Obfuscation                   ObfuscationConfig   `json:"obfuscation"`                      // apm_config.obfuscation
 	ProfilingAdditionalEndpoints  bool                `json:"profiling_additional_endpoints"`   // apm_config.profiling_additional_endpoints
 	ProfilingDdUrl                bool                `json:"profiling_dd_url"`                 // apm_config.profiling_dd_url
 	ReceiverPort                  int                 `json:"receiver_port"`                    // apm_config.receiver_port

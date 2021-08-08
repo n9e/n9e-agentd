@@ -29,8 +29,8 @@ var (
 )
 
 type config struct {
-	AuthTokenFile        string `json:"authTokenFile" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
-	ClusterAuthTokenFile string `json:"authTokenFile" flag:"cluster-auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
 }
 
@@ -40,6 +40,7 @@ func (p *config) Validate() error {
 
 type authModule struct {
 	name   string
+	token  string
 	config *config
 }
 
@@ -55,10 +56,9 @@ func (p *authModule) init(ctx context.Context) error {
 		return err
 	}
 	p.config = cf
-	AuthTokenFile = cf.AuthTokenFile
 
 	if len(cf.AuthTokenFile) == 0 {
-		klog.InfoS("skip authModule", "name", p.name, "reason", "tokenfile not set")
+		klog.V(1).InfoS("skip authModule", "name", p.name, "reason", "tokenfile not set")
 		return nil
 	}
 	klog.V(5).InfoS("authmodule init", "name", p.name, "file", cf.AuthTokenFile)
@@ -112,6 +112,7 @@ func (a *TokenAuthenticator) Priority() int {
 func (a *TokenAuthenticator) Available() bool {
 	return true
 }
+
 func init() {
 	proc.RegisterHooks(hookOps)
 	proc.RegisterFlags(modulePath, "authentication", newConfig())

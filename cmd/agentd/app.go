@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"context"
@@ -19,6 +19,10 @@ const (
 	moduleName = "agentd.main"
 )
 
+func init() {
+	options.InstallReporter()
+}
+
 func NewServerCmd() *cobra.Command {
 	ctx := context.Background()
 	ctx = proc.WithName(ctx, AppName)
@@ -38,8 +42,4 @@ func NewServerCmd() *cobra.Command {
 	cmd.AddCommand(options.NewVersionCmd())
 
 	return cmd
-}
-
-func init() {
-	options.InstallReporter()
 }

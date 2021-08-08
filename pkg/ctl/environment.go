@@ -1,14 +1,14 @@
-// Copyright 2018,2019 freewheel. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-package agentdctl
+package ctl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -45,37 +45,70 @@ type EnvSettingsOutput struct {
 	BuildDate   string
 }
 
-const (
-	moduleName = "agentdctl"
-)
-
-// envSettings describes all of the environment settings.
-type EnvSettings struct {
-	Host        string `json:"host" flag:"host" default:"localhost" env:"AGENTD_HOST" description:"agentd endpoint"`
-	CmdPort     int    `json:"cmd_port" flag:"cmd-port" default:"5001" env:"AGENTD_CMD_PORT" description:"cmd port"` // cmd_port
-	AgentdRoot  string `json:"agentd_root" flag:"root" default:"/opt/n9e/agentd" env:"AGENTD_ROOT" description:"agentd server work dir"`
-	Token       string `json:"token" env:"AGENTD_TOKEN" description:"token"`
-	Timeout     int    `json:"tiemout" env:"AGENTD_TIMEOUT" flag:"timeout" default:"5" description:"timeout(Second)"`
-	DisablePage bool   `json:"disable_page" flag:"disable-page" default:"false" env:"AGENTD_DISABLE_PAGE"`
-	PageSize    int    `json:"page_size" flag:"page-size" default:"10" env:"AGENTD_PAGE_SIZE"`
-	NoColor     bool   `json:"no_color" flag:"no-color" default:"false" env:"AGENTD_NO_COLOR"`
-
-	In       io.Reader      `json:"-"`
-	Out      io.Writer      `json:"-"`
-	Errout   io.Writer      `json:"-"`
-	TopCmd   *cobra.Command `json:"-"`
-	Req      *http.Request  `json:"-"`
-	Resp     *http.Response `json:"-"`
-	configer *configer.Configer
-	fs       *pflag.FlagSet
+type Telemetry struct {
+	Port int `json:"port" default:"8070"` // expvar_port
 }
 
-func (p *EnvSettings) Validate() error {
+type agentConfig struct {
+	WorkDir     string    `json:"work_dir" flag:"workdir,w" env:"AGENTD_WORK_DIR" description:"workdir"` // e.g. /opt/n9e/agentd
+	Token       string    `json:"token" env:"AGENTD_TOKEN" description:"token"`
+	Timeout     int       `json:"tiemout" env:"AGENTD_TIMEOUT" flag:"timeout" default:"5" description:"timeout(Second)"`
+	DisablePage bool      `json:"disable_page" flag:"disable-page" default:"false" env:"AGENTD_DISABLE_PAGE"`
+	PageSize    int       `json:"page_size" flag:"page-size" default:"10" env:"AGENTD_PAGE_SIZE"`
+	NoColor     bool      `json:"no_color" flag:"no-color,n" default:"false" env:"AGENTD_NO_COLOR" description:"disable color output"`
+	Telemetry   Telemetry `json:"telemetry,inline"` // telemetry
+}
+
+func (p *agentConfig) Validate() error {
+	if p.NoColor {
+		color.NoColor = true
+	}
+	if p.WorkDir != "" {
+		dir, err := filepath.Abs(p.WorkDir)
+		if err != nil {
+			return err
+		}
+		p.WorkDir = dir
+	}
+	return nil
+}
+
+type apiserverConfig struct {
+	Host string `json:"address" default:"127.0.0.1" flag:"bind-host" description:"The IP address on which to listen for the --bind-port port. The associated interface(s) must be reachable by the rest of the cluster, and by CLI/web clients. If blank or an unspecified address (127.0.0.1 or ::), all interfaces will be used."` // BindAddress
+	Port int    `json:"port" default:"8010" flag:"bind-port" description:"The port on which to serve HTTPS with authentication and authorization. It cannot be switched off with 0."`                                                                                                                                                // BindPort is ignored when Listener is set, will serve https even with 0.
+}
+
+func (p *apiserverConfig) Validate() error {
 	p.Host = strings.TrimRight(p.Host, "/")
 	if p.Host == "" {
 		p.Host = "localhost"
 	}
 	return nil
+}
+
+type authConfig struct {
+	AuthTokenFile string `json:"auth_token_file" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+}
+
+func (p *authConfig) Validate() error {
+	return nil
+}
+
+// envSettings describes all of the environment settings.
+type EnvSettings struct {
+	Agent     agentConfig
+	Apiserver apiserverConfig
+	Auth      authConfig
+
+	In       io.Reader
+	Out      io.Writer
+	Errout   io.Writer
+	token    string
+	TopCmd   *cobra.Command
+	Req      *http.Request
+	Resp     *http.Response
+	configer *configer.Configer
+	fs       *pflag.FlagSet
 }
 
 func (p *EnvSettings) Init() error {
@@ -87,13 +120,29 @@ func (p *EnvSettings) Init() error {
 		return err
 	}
 
-	if err := configer.Read(moduleName, p); err != nil {
+	if err := configer.Read("agent", &p.Agent); err != nil {
+		return err
+	}
+	if err := configer.Read("apiserver", &p.Apiserver); err != nil {
+		return err
+	}
+	if err := configer.Read("authentication", &p.Auth); err != nil {
 		return err
 	}
 
-	if p.NoColor {
-		color.NoColor = true
+	// token
+	if file := p.Auth.AuthTokenFile; file != "" {
+		if p.Agent.WorkDir != "" && !filepath.IsAbs(file) {
+			file = filepath.Join(p.Agent.WorkDir, file)
+		}
+		token, err := ioutil.ReadFile(file)
+		if err != nil {
+			klog.Errorf("unable to open token file %s", file)
+		} else {
+			p.token = string(token)
+		}
 	}
+
 	klog.V(5).Infof("config %s", p)
 
 	return nil
@@ -106,23 +155,25 @@ func (p EnvSettings) String() string {
 // AddFlags binds flags to the given flagset.
 func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	s.fs = fs
-	configer.AddFlags(fs, moduleName, &EnvSettings{})
+	configer.Setting.AddFlags(fs)
+	configer.AddFlags(fs, "agent", &agentConfig{})
+	configer.AddFlags(fs, "apiserver", &apiserverConfig{})
+	configer.AddFlags(fs, "authentication", &authConfig{})
 }
 
 func (p EnvSettings) Output(verbose bool) *EnvSettingsOutput {
 	ret := &EnvSettingsOutput{
-		Host:        p.Host,
-		DisablePage: p.DisablePage,
-		Version:     options.Version,
-		Branch:      options.Branch,
-		Revision:    options.Revision,
-		BuildDate:   options.BuildDate,
+		Host:      p.Apiserver.Host,
+		Version:   options.Version,
+		Branch:    options.Branch,
+		Revision:  options.Revision,
+		BuildDate: options.BuildDate,
 	}
 
 	if verbose {
-		ret.Token = p.Token
+		ret.Token = p.token
 	} else {
-		if token := p.Token; token != "" {
+		if token := p.token; token != "" {
 			ret.Token = util.SubStr3(token, 3, -3)
 		}
 	}
@@ -141,10 +192,11 @@ func (p *EnvSettings) apiCall(method, url string, input, output interface{}, cb 
 		Output:     output,
 		Url:        url,
 		Method:     method,
-		Bearer:     &p.Token,
+		Bearer:     &p.token,
+		Ctx:        context.Background(),
 		InputParam: input,
 		Client: http.Client{
-			Timeout: time.Duration(p.Timeout) * time.Second,
+			Timeout: time.Duration(p.Agent.Timeout) * time.Second,
 		},
 	}
 
@@ -210,10 +262,10 @@ func (p *EnvSettings) ApiPaging(svc, uri string, input, output interface{}, cb .
 		rv = rv.Elem()
 	}
 
-	rv.SetInt(int64(p.PageSize))
+	rv.SetInt(int64(p.Agent.PageSize))
 
-	return cmdcli.TermPaging(p.PageSize,
-		p.DisablePage, p, svc+"/"+uri,
+	return cmdcli.TermPaging(p.Agent.PageSize,
+		p.Agent.DisablePage, p, svc+"/"+uri,
 		input, output, p.apiCall, cb...)
 }
 
@@ -241,37 +293,23 @@ func SetFlagFromEnv(name, envName string, fs *pflag.FlagSet) {
 // uri: /health
 // return: http://localhost:5001/health
 func (p *EnvSettings) url(svc, uri string) string {
+	uri = strings.Trim(uri, "/")
 	switch strings.ToLower(svc) {
 	case "cmd":
-		return fmt.Sprintf("http://%s:%d/%v", p.Host, p.CmdPort, uri)
+		return fmt.Sprintf("http://%s:%d/%v", p.Apiserver.Host, p.Apiserver.Port, uri)
 	default:
-		return fmt.Sprintf("http://%s:%d/%v", p.Host, p.CmdPort, uri)
+		return fmt.Sprintf("http://%s:%d/%v", p.Apiserver.Host, p.Agent.Telemetry.Port, uri) // metrics
 	}
 }
 
 func (p *EnvSettings) RshRequest(svc, url string, input interface{}) error {
 	opt := &rest.RequestOptions{
 		Method:     "GET",
-		Bearer:     &p.Token,
+		Bearer:     &p.token,
 		InputParam: input,
 		Url:        p.url(svc, url),
 		Client:     http.Client{},
 	}
 
 	return rsh.RshRequest(opt)
-}
-
-func newEnvCmd(env *EnvSettings) *cobra.Command {
-	var verbose bool
-	cmd := &cobra.Command{
-		Use:   "env",
-		Short: "show grab env information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			env.Out.Write(cmdcli.Table(env.Output(verbose)))
-			return nil
-		},
-	}
-	flags := cmd.Flags()
-	flags.BoolVarP(&verbose, "verbvose", "V", false, "show secret infomation")
-	return cmd
 }

@@ -15,7 +15,7 @@ import (
 	"net/http"
 )
 
-func getPythonStatus(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func getPythonStatus(w http.ResponseWriter, r *http.Request) error {
 	// nothing here when python disabled
-	return nil, nil
+	return nil
 }

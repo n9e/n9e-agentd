@@ -6,8 +6,6 @@
 package settings
 
 import (
-	"fmt"
-
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
@@ -31,12 +29,21 @@ func (l ProfilingRuntimeSetting) Name() string {
 
 // Get returns the current value of the runtime setting
 func (l ProfilingRuntimeSetting) Get() (interface{}, error) {
-	return config.C.InternalProfiling.Enabled, nil
+	return config.Get(string(l)), nil
 }
 
 // Set changes the value of the runtime setting
 func (l ProfilingRuntimeSetting) Set(v interface{}) error {
-	return fmt.Errorf("unsupported")
+	enabled, err := GetBool(v)
+	if err != nil {
+		return err
+	}
+
+	config.Set(string(l), enabled)
+
+	return nil
+
+	// TODO
 	//var profile bool
 	//var err error
 
@@ -48,10 +55,7 @@ func (l ProfilingRuntimeSetting) Set(v interface{}) error {
 
 	//if profile {
 	//	// populate site
-	//	s := config.DefaultSite
-	//	if config.Datadog.IsSet("site") {
-	//		s = config.Datadog.GetString("site")
-	//	}
+	//	s := config.C.Endpoints[0]
 
 	//	// allow full url override for development use
 	//	site := fmt.Sprintf(profiling.ProfileURLTemplate, s)
@@ -62,21 +66,21 @@ func (l ProfilingRuntimeSetting) Set(v interface{}) error {
 	//	v, _ := version.Agent()
 	//	err := profiling.Start(
 	//		site,
-	//		config.Datadog.GetString("env"),
+	//		config.C.Env,
 	//		profiling.ProfileCoreService,
 	//		profiling.DefaultProfilingPeriod,
 	//		15*time.Second,
 	//		profiling.GetMutexProfileFraction(),
 	//		profiling.GetBlockProfileRate(),
-	//		config.Datadog.GetBool("internal_profiling.enable_goroutine_stacktraces"),
+	//		config.C.InternalProfiling.EnableGoroutineStacktraces,
 	//		fmt.Sprintf("version:%v", v),
 	//	)
 	//	if err == nil {
-	//		config.Datadog.Set("internal_profiling.enabled", true)
+	//		config.Set(string(l), true)
 	//	}
 	//} else {
 	//	profiling.Stop()
-	//	config.Datadog.Set("internal_profiling.enabled", false)
+	//	config.Set(string(l), false)
 	//}
 
 	//return nil

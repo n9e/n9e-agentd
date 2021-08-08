@@ -7,45 +7,49 @@ package settings
 
 import (
 	"fmt"
-	"sync/atomic"
 
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
-// dsdStatsRuntimeSetting wraps operations to change log level at runtime.
-type dsdStatsRuntimeSetting string
+// DsdStatsRuntimeSetting wraps operations to change log level at runtime.
+type DsdStatsRuntimeSetting string
 
-func (s dsdStatsRuntimeSetting) Description() string {
+func (s DsdStatsRuntimeSetting) Description() string {
 	return "Enable/disable the dogstatsd debug stats. Possible values: true, false"
 }
 
-func (s dsdStatsRuntimeSetting) Hidden() bool {
+func (s DsdStatsRuntimeSetting) Hidden() bool {
 	return false
 }
 
-func (s dsdStatsRuntimeSetting) Name() string {
+func (s DsdStatsRuntimeSetting) Name() string {
 	return string(s)
 }
 
-func (s dsdStatsRuntimeSetting) Get() (interface{}, error) {
-	return atomic.LoadUint64(&common.DSD.Debug.Enabled) == 1, nil
+func (s DsdStatsRuntimeSetting) Get() (interface{}, error) {
+	return config.Get(string(s)), nil
+	//return atomic.LoadUint64(&common.DSD.Debug.Enabled) == 1, nil
 }
 
-func (s dsdStatsRuntimeSetting) Set(v interface{}) error {
-	return fmt.Errorf("unsupported")
-	//var newValue bool
-	//var err error
+func (s DsdStatsRuntimeSetting) Set(v interface{}) error {
+	if !config.C.Statsd.Enabled {
+		return fmt.Errorf("statsd has been disabled")
+	}
 
-	//if newValue, err = getBool(v); err != nil {
-	//	return fmt.Errorf("dsdStatsRuntimeSetting: %v", err)
-	//}
+	var newValue bool
+	var err error
 
-	//if newValue {
-	//	common.DSD.EnableMetricsStats()
-	//} else {
-	//	common.DSD.DisableMetricsStats()
-	//}
+	if newValue, err = GetBool(v); err != nil {
+		return fmt.Errorf("dsdStatsRuntimeSetting: %v", err)
+	}
 
-	//config.C.Statsd.MetricsStatsEnable = newValue
-	//return nil
+	if newValue {
+		common.DSD.EnableMetricsStats()
+	} else {
+		common.DSD.DisableMetricsStats()
+	}
+
+	config.Set(string(s), newValue)
+	return nil
 }

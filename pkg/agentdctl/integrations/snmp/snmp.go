@@ -1,4 +1,0 @@
-package snmp
-
-func test() {
-}

@@ -1,0 +1,222 @@
+package cmds
+
+import (
+	"fmt"
+
+	"github.com/n9e/n9e-agentd/pkg/config/settings"
+	"github.com/n9e/n9e-agentd/pkg/ctl"
+
+	"github.com/spf13/cobra"
+)
+
+// Config returns the main cobra config command.
+func newConfigCmd(env *ctl.EnvSettings) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "Print the runtime configuration of a running agent",
+		Long:  ``,
+		RunE:  func(_ *cobra.Command, _ []string) error { return getFullConfig(env) },
+	}
+
+	cmd.AddCommand(newListConfig(env))
+	cmd.AddCommand(newGetConfig(env))
+	cmd.AddCommand(newSetConfig(env))
+	cmd.AddCommand(newConfigZshCmd(env))
+	cmd.AddCommand(newConfigBashCmd(env))
+
+	return cmd
+}
+
+func getFullConfig(env *ctl.EnvSettings) error {
+	return env.ApiCall("GET", "cmd", "/api/v1/config", nil, env.Out)
+}
+
+// listRuntime returns a cobra command to list the settings that can be changed at runtime.
+func newListConfig(env *ctl.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list-runtime",
+		Short: "List settings that can be changed at runtime",
+		Long:  ``,
+		RunE:  func(_ *cobra.Command, _ []string) error { return listRuntimeConfigurableValue(env) },
+	}
+}
+
+func listRuntimeConfigurableValue(env *ctl.EnvSettings) error {
+	configs, err := _listRuntimeConfigurableValue(env)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("=== Settings that can be changed at runtime ===")
+	for setting, details := range configs {
+		if !details.Hidden {
+			fmt.Printf("%-30s %s\n", setting, details.Description)
+		}
+	}
+
+	return nil
+}
+
+func _listRuntimeConfigurableValue(env *ctl.EnvSettings) (map[string]settings.RuntimeSettingResponse, error) {
+	output := map[string]settings.RuntimeSettingResponse{}
+
+	if err := env.ApiCall("GET", "cmd", "/api/v1/config/list-runtime", nil, &output); err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+// set returns a cobra command to set a config value at runtime.
+func newSetConfig(env *ctl.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "set [setting] [value]",
+		Short: "Set, for the current runtime, the value of a given configuration setting",
+		Long:  ``,
+		RunE:  func(_ *cobra.Command, args []string) error { return setConfigValue(env, args) },
+	}
+}
+
+// get returns a cobra command to get a runtime config value.
+func newGetConfig(env *ctl.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "get [setting]",
+		Short: "Get, for the current runtime, the value of a given configuration setting",
+		Long:  ``,
+		RunE:  func(_ *cobra.Command, args []string) error { return getConfigValue(env, args) },
+	}
+}
+
+type setConfigInput struct {
+	Setting string `param:"path"`
+	Value   string `param:"query"`
+}
+
+func setConfigValue(env *ctl.EnvSettings, args []string) error {
+	if len(args) != 2 {
+		return fmt.Errorf("exactly two parameters are required: the setting name and its value")
+	}
+
+	hidden, err := _setConfigValue(env, args[0], args[1])
+	if err != nil {
+		return err
+	}
+
+	if hidden {
+		fmt.Printf("IMPORTANT: you have modified a hidden option, this may incur billing charges or have other unexpected side-effects.\n")
+	}
+
+	fmt.Printf("Configuration setting %s is now set to: %s\n", args[0], args[1])
+
+	return nil
+}
+
+func _setConfigValue(env *ctl.EnvSettings, key, value string) (bool, error) {
+	list, err := _listRuntimeConfigurableValue(env)
+	if err != nil {
+		return false, err
+	}
+
+	if err := env.ApiCall("POST", "cmd", "/api/v1/config/{setting}", &setConfigInput{
+		Setting: key,
+		Value:   value,
+	}, nil); err != nil {
+		return false, err
+	}
+
+	hidden := false
+	if setting, ok := list[key]; ok {
+		hidden = setting.Hidden
+	}
+
+	return hidden, nil
+}
+
+func getConfigValue(env *ctl.EnvSettings, args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("a single setting name must be specified")
+	}
+
+	value, err := _getConfigValue(env, args[0])
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s is set to: %v\n", args[0], value)
+
+	return nil
+}
+
+func _getConfigValue(env *ctl.EnvSettings, key string) (interface{}, error) {
+	var output interface{}
+	if err := env.ApiCall("GET", "cmd", "/api/v1/config/{setting}", &setConfigInput{Setting: key}, &output); err != nil {
+		return false, err
+	}
+	return output, nil
+
+}
+
+func newConfigZshCmd(env *ctl.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "zsh",
+		Short: "set zsh completion config",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return configZshCompletion(env)
+		},
+	}
+}
+
+const zshConfigUsage = `# Zsh completion file has been generated(~/.n9e/zsh/_n9e)
+
+# So, to initialize the compsys add the following code into your ~/.zshrc file
+cat >> ~/.zshrc <<'EOF'
+# add custom completion scripts
+fpath=(~/.n9e/zsh $fpath)
+
+# compsys initialization
+autoload -U compinit
+compinit
+
+# show completion menu when number of 
+zstyle ':completion:*' menu select=2
+EOF
+`
+
+func configZshCompletion(env *ctl.EnvSettings) error {
+	if err := env.TopCmd.GenZshCompletion(env.Out); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(env.Out, zshConfigUsage)
+
+	return nil
+}
+
+func newConfigBashCmd(env *ctl.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "bash",
+		Short: "set bash completion config",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return configBashCompletion(env)
+		},
+	}
+}
+
+const bashConfigUsage = `# Bash completion file has been generated(~/.n9e/n9e.bash)
+
+# So, to initialize the compsys add the following code into your ~/.bashrc file
+cat >> ~/.bashrc <<'EOF'
+if [ -f ~/.n9e/n9e.bash ]; then
+	source ~/.n9e/n9e.bash
+fi
+EOF
+`
+
+func configBashCompletion(env *ctl.EnvSettings) error {
+	if err := env.TopCmd.GenBashCompletion(env.Out); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(env.Out, bashConfigUsage)
+	return nil
+}

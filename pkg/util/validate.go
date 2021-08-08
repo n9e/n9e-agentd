@@ -22,7 +22,7 @@ func ValidateFields(obj interface{}) error {
 		if rv2 := reflect.Indirect(rv.Field(i)); rv2.CanAddr() && rv2.CanInterface() {
 			switch rv2.Kind() {
 			case reflect.Struct:
-				klog.Infof("name %s kind %s", rv2.Type().Name(), rv2.Type().Kind())
+				klog.V(5).Infof("name %s kind %s", rv2.Type().Name(), rv2.Type().Kind())
 				if v, ok := rv2.Addr().Interface().(validator); ok && v != nil {
 					if err := v.Validate(); err != nil {
 						return err

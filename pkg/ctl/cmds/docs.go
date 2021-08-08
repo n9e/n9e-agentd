@@ -1,12 +1,10 @@
-// Copyright 2018,2019 freewheel. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-package agentdctl
+package cmds
 
 import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/n9e/n9e-agentd/pkg/ctl"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
@@ -33,7 +31,7 @@ type docsCmd struct {
 	topCmd        *cobra.Command
 }
 
-func newDocsCmd(env *EnvSettings) *cobra.Command {
+func newDocsCmd(env *ctl.EnvSettings) *cobra.Command {
 	dc := &docsCmd{}
 
 	cmd := &cobra.Command{
@@ -72,40 +70,4 @@ func (d *docsCmd) run() error {
 	default:
 		return fmt.Errorf("unknown doc type %q. Try 'markdown' or 'man'", d.docTypeString)
 	}
-}
-
-const completionDesc = `
-Generate autocompletions script for fks for the specified shell (bash).
-
-This command can generate shell autocompletions. e.g.
-
-	$ agentdctl completion
-
-Can be sourced as such
-
-	$ source <(agentdctl completion)
-`
-
-func newCompletionCmd(env *EnvSettings) *cobra.Command {
-	var typ string
-
-	cmd := &cobra.Command{
-		Use:   "completion",
-		Short: "Generate autocompletions script for the specified shell [bash/zsh] (defualt:bash)",
-		Long:  completionDesc,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				typ = args[0]
-			}
-			switch typ {
-			case "zsh":
-				return env.TopCmd.GenZshCompletion(env.Out)
-			case "bash", "":
-				return env.TopCmd.GenBashCompletion(env.Out)
-			default:
-				return fmt.Errorf("unsupported %s", typ)
-			}
-		},
-	}
-	return cmd
 }

@@ -22,9 +22,12 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	ddutil "github.com/DataDog/datadog-agent/pkg/util"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common"
 	"github.com/n9e/n9e-agentd/cmd/agentd/common/misconfig"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/config/settings"
+	commonsettings "github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/n9e/n9e-agentd/pkg/i18n"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
@@ -79,6 +82,7 @@ func (p *module) start(ctx context.Context) error {
 		return err
 	}
 
+	// coredump, hostMetadata, ...
 	if err := p.setupGeneric(); err != nil {
 		return nil
 	}
@@ -95,8 +99,13 @@ func (p *module) start(ctx context.Context) error {
 		return err
 	}
 
+	// statsd & aggr
 	if err := p.startAggStatsd(); err != nil {
 		return err
+	}
+
+	if err := initRuntimeSettings(); err != nil {
+		log.Warnf("Can't initiliaze the runtime settings: %v", err)
 	}
 
 	if err := p.startSnmpTrap(); err != nil {
@@ -190,10 +199,10 @@ func init() {
 func (p *module) readConfig() error {
 	configer := proc.ConfigerFrom(p.ctx)
 	if config.Configfile != "" {
-		klog.Warningf("--config has been Deprecated, use -f instead of it")
+		klog.Warningf("--config has been Deprecated, use -f(--values) instead of it")
 		if _, err := os.Stat(config.Configfile); err != nil {
 			// path/to/whatever exists
-			klog.Warningf("openfile %s error %s", config.Configfile, err)
+			return fmt.Errorf("openfile %s error %s", config.Configfile, err)
 		}
 	}
 
@@ -203,7 +212,8 @@ func (p *module) readConfig() error {
 	}
 
 	if config.TestConfig {
-		klog.Infof("\n[config]\n %s", configer)
+		configer.PrintFlags()
+		fmt.Printf("agentd: configuration test is successful\n")
 		os.Exit(0)
 	}
 
@@ -446,4 +456,35 @@ func (p *module) setupMedatadaCollector() error {
 	}
 
 	return nil
+}
+
+// initRuntimeSettings builds the map of runtime settings configurable at runtime.
+func initRuntimeSettings() error {
+	// Runtime-editable settings must be registered here to dynamically populate command-line information
+	if err := commonsettings.RegisterRuntimeSetting(
+		commonsettings.LogLevelRuntimeSetting(config.S_log_level), config.C.LogLevel); err != nil {
+		return err
+	}
+	if err := commonsettings.RegisterRuntimeSetting(
+		commonsettings.RuntimeMutexProfileFraction(config.S_runtime_mutex_profile_fraction), config.C.InternalProfiling.MutexProfileFraction); err != nil {
+		return err
+	}
+	if err := commonsettings.RegisterRuntimeSetting(
+		commonsettings.RuntimeBlockProfileRate(config.S_runtime_block_profile_rate), config.C.InternalProfiling.BlockProfileRate); err != nil {
+		return err
+	}
+	if err := commonsettings.RegisterRuntimeSetting(
+		settings.DsdStatsRuntimeSetting(config.S_dogstatsd_stats), config.C.Statsd.MetricsStatsEnable); err != nil {
+		return err
+	}
+	if err := commonsettings.RegisterRuntimeSetting(
+		settings.DsdCaptureDurationRuntimeSetting(config.S_dogstatsd_capture_duration), 0); err != nil {
+		return err
+	}
+	if err := commonsettings.RegisterRuntimeSetting(
+		commonsettings.ProfilingGoroutines(config.S_internal_profiling_goroutines), config.C.InternalProfiling.EnableGoroutineStacktraces); err != nil {
+		return err
+	}
+	return commonsettings.RegisterRuntimeSetting(
+		commonsettings.ProfilingRuntimeSetting(config.S_internal_profiling), config.C.InternalProfiling.Enabled)
 }

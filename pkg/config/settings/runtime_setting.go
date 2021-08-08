@@ -38,11 +38,16 @@ type RuntimeSetting interface {
 }
 
 // RegisterRuntimeSetting keeps track of configurable settings
-func RegisterRuntimeSetting(setting RuntimeSetting) error {
+func RegisterRuntimeSetting(setting RuntimeSetting, def interface{}) error {
 	if _, ok := runtimeSettings[setting.Name()]; ok {
 		return errors.New("duplicated settings detected")
 	}
 	runtimeSettings[setting.Name()] = setting
+
+	if def != nil {
+		setting.Set(def)
+	}
+
 	return nil
 }
 
