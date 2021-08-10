@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -113,4 +115,35 @@ func WriteRawJSON(statusCode int, object interface{}, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	w.Write(output)
+}
+
+func ResolveRootPath(root string) (string, error) {
+	if root != "" {
+		return filepath.Abs(root)
+	}
+
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return "", err
+	}
+
+	// strip bin/
+	if filepath.Base(dir) == "bin" {
+		return filepath.Dir(dir), nil
+	}
+
+	return dir, nil
+
+}
+
+func AbsPath(path, rootPath, defPath string) string {
+	if path == "" {
+		path = defPath
+	}
+
+	if filepath.IsAbs(path) {
+		return path
+	}
+
+	return filepath.Join(rootPath, path)
 }

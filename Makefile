@@ -9,8 +9,8 @@ OBJ=$(APP_NAME)
 RPM_FILE=$(APP_NAME)-$(VERSION)-$(RELEASE).$(shell uname -s).$(shell uname -m).rpm
 DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -a -not -path "./staging/*") \
 	 pkg/data/resources.go
-TARGETS?=directories build/agentdctl build/n9e-agentd 
-TARGETS?=directories build/agentdctl
+TARGETS?=directories build/agentctl build/n9e-agentd 
+#TARGETS?=directories build/agentctl
 
 GO_BUILD_LDFLAGS_CMD=$(abspath ./scripts/go-build-ldflags.sh)
 GO_BUILD_LDFLAGS=$(shell $(GO_BUILD_LDFLAGS_CMD) LDFLAG)
@@ -46,10 +46,10 @@ build/n9e-agentd: $(DEP_OBJS)
 	-o $@ ./cmd/agentd && \
 	$@ version
 
-build/agentdctl: $(DEP_OBJS)
+build/agentctl: $(DEP_OBJS)
 	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) \
 	go build -ldflags '$(GO_BUILD_LDFLAGS)' \
-	-o $@ ./cmd/agentdctl
+	-o $@ ./cmd/agentctl
 
 clean:
 	rm -rf build

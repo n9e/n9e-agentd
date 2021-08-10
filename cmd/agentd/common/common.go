@@ -10,7 +10,6 @@ package common
 import (
 	"encoding/json"
 	"net/http"
-	"path/filepath"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
 	"github.com/DataDog/datadog-agent/pkg/collector"
@@ -47,7 +46,7 @@ var (
 func GetPythonPaths() []string {
 	// wheels install in default site - already in sys.path; takes precedence over any additional location
 	return []string{
-		filepath.Join(config.C.WorkDir, "checks.d"),
+		config.C.PyChecksPath,
 		config.C.AdditionalChecksd, // custom checks, least precedent check location
 	}
 }

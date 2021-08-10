@@ -71,9 +71,9 @@ type Config struct {
 	configer *configer.Configer
 
 	//path
-	WorkDir           string `json:"work_dir" flag:"workdir,w" env:"AGENTD_WORK_DIR" description:"workdir"` // e.g. /opt/n9e/agentd
-	PidfilePath       string `json:"pidfile_path"`                                                          //
-	AdditionalChecksd string `json:"additional_checksd"`                                                    // additional_checksd
+	RootDir           string `json:"root_dir" flag:"root" env:"AGENTD_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
+	PidfilePath       string `json:"pidfile_path"`                                                           //
+	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"`                  // additional_checksd
 	//AuthTokenFilePath              string `json:"auth_token_file_path"`                                    // auth_token_file_path // move to apiserver
 
 	// apiserver
@@ -83,16 +83,17 @@ type Config struct {
 	//CmdHost    string `json:"cmd_host" default:"localhost"` // cmd_host // -> apiserver.bind_host
 	//CmdPort    int    `json:"cmd_port" default:"5001"`      // cmd_port, move to apiserver -> apiserver.bind_port
 
-	RunPath                  string `json:"run_path"`                   // run_path
-	ConfdPath                string `json:"confd_path"`                 // confd_path
-	CriSocketPath            string `json:"cri_socket_path"`            // cri_socket_path
-	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`    // kubelet_auth_token_path
-	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"` // kubernetes_kubeconfig_path
-	ProcfsPath               string `json:"procfs_path"`                // procfs_path
-	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`     // windows_use_pythonpath
-	DistPath                 string `json:"-"`                          // {workdir}/dist
-	PyChecksPath             string `json:"-"`                          // {workdir}/checks.d
-	HostnameFile             string `json:"hostname_file"`              // hostname_file
+	RunPath                  string `json:"run_path"`                               // run_path
+	JmxPath                  string `json:"jmx_path" description:"{root}/misc/jmx"` // jmx_path
+	ConfdPath                string `json:"confd_path"`                             // confd_path
+	CriSocketPath            string `json:"cri_socket_path"`                        // cri_socket_path
+	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                // kubelet_auth_token_path
+	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`             // kubernetes_kubeconfig_path
+	ProcfsPath               string `json:"procfs_path"`                            // procfs_path
+	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`                 // windows_use_pythonpath
+	DistPath                 string `json:"dist_path"`                              // {workdir}/dist
+	PyChecksPath             string `json:"py_checks_path"`                         // {workdir}/checks.d
+	HostnameFile             string `json:"hostname_file"`                          // hostname_file
 
 	Ident             string   `json:"ident" flag:"ident" default:"$ip" description:"Ident of this host"`
 	Alias             string   `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
@@ -307,7 +308,8 @@ type Config struct {
 	// python
 	Python3LinterTimeout             time.Duration `json:"-"`
 	Python3LinterTimeout_            int           `json:"python3_linter_timeout" flag:"python3-linter-timeout" default:"120" description:"python3LinterTimeout(Second)"` // python3_linter_timeout
-	PythonVersion                    string        `json:"python_version" default:"4"`                                                                                    // python_version
+	PythonVersion                    string        `json:"python_version" default:"3"`                                                                                    // python_version
+	PythonHome                       string        `json:"python_home"`
 	AllowPythonPathHeuristicsFailure bool          `json:"allow_python_path_heuristics_failure"`
 	CCoreDump                        bool          `json:"c_core_dump"`             // c_core_dump
 	CStacktraceCollection            bool          `json:"c_stacktrace_collection"` // c_stacktrace_collection
@@ -492,74 +494,51 @@ func (p *Config) Validate() error {
 	return nil
 }
 
-func (p *Config) ValidatePath() error {
-	if p.WorkDir == "" {
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return err
-		}
-
-		// strip bin/
-		klog.Infof("dir %s %s", dir, filepath.Base(dir))
-		if filepath.Base(dir) == "bin" {
-			dir = filepath.Dir(dir)
-		}
-
-		p.WorkDir = dir
-	} else {
-		dir, err := filepath.Abs(p.WorkDir)
-		if err != nil {
-			return err
-		}
-		p.WorkDir = dir
+func (p *Config) ValidatePath() (err error) {
+	if p.RootDir, err = util.ResolveRootPath(p.RootDir); err != nil {
+		return err
 	}
-	if !IsDir(p.WorkDir) {
-		return fmt.Errorf("agent.workDir %s does not exist, please create it", p.WorkDir)
+	if !IsDir(p.RootDir) {
+		return fmt.Errorf("agent.workDir %s does not exist, please create it", p.RootDir)
 	}
 
-	klog.V(1).Infof("chdir to ${workdir} %s", p.WorkDir)
-	os.Chdir(p.WorkDir)
+	klog.V(1).Infof("chdir to ${workdir} %s", p.RootDir)
+	os.Chdir(p.RootDir)
 
 	// {prefix}/conf.d
-	if p.ConfdPath == "" {
-		p.ConfdPath = filepath.Join(p.WorkDir, "conf.d")
-	}
+	p.ConfdPath = util.AbsPath(p.ConfdPath, p.RootDir, "conf.d")
 	if !IsDir(p.ConfdPath) {
 		klog.Warningf("agent.confd_path %s does not exist, please create it", p.ConfdPath)
 	}
 	klog.V(1).Infof("agent.confd_path %s", p.ConfdPath)
 
 	// {prefix}/checks.d
-	if p.AdditionalChecksd == "" {
-		p.AdditionalChecksd = filepath.Join(p.WorkDir, "checks.d")
-	}
-	//if !IsDir(p.AdditionalChecksd) {
-	//	return fmt.Errorf("agent.additionalChecks %s does not exist, please create it", p.AdditionalChecksd)
-	//}
+	//p.AdditionalChecksd = util.AbsPath(p.AdditionalChecksd, p.RootDir, "checks.d")
+
 	klog.V(1).Infof("agent.additional_checks %s", p.AdditionalChecksd)
 
 	// {prefix}/run
-	if p.RunPath == "" {
-		p.RunPath = filepath.Join(p.WorkDir, "run")
-	}
+	p.RunPath = util.AbsPath(p.RunPath, p.RootDir, "run")
 	if !IsDir(p.RunPath) {
 		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
 
+	p.JmxPath = util.AbsPath(p.JmxPath, p.RootDir, "misc/jmx")
+
 	// logs
-	if p.Logs.RunPath == "" {
-		p.Logs.RunPath = p.RunPath
-	}
+	p.Logs.RunPath = util.AbsPath(p.Logs.RunPath, p.RootDir, p.RunPath)
 	klog.V(1).Infof("agent.logs_config.run_path %s", p.RunPath)
 
 	// {prefix}/run/transactions_to_retry
-	if p.Forwarder.StoragePath == "" {
-		p.Forwarder.StoragePath = filepath.Join(p.RunPath, "transactions_to_retry")
-	}
+	p.Forwarder.StoragePath = util.AbsPath(p.Forwarder.StoragePath,
+		p.RootDir,
+		filepath.Join(p.RunPath, "transactions_to_retry"),
+	)
 	klog.V(1).Infof("agent.forwarder.storage_path %s", p.Forwarder.StoragePath)
 
-	p.DistPath = filepath.Join(p.WorkDir, "dist")
-	p.PyChecksPath = filepath.Join(p.WorkDir, "checks.d")
+	p.DistPath = util.AbsPath(p.DistPath, p.RootDir, "dist")
+	p.PyChecksPath = util.AbsPath(p.PyChecksPath, p.RootDir, "checks.d")
+	p.PythonHome = util.AbsPath(p.PythonHome, p.RootDir, "embedded")
 
 	// {prefix}/{name}.sock
 

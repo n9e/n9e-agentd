@@ -44,6 +44,7 @@ require (
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
+	github.com/coreos/go-semver v0.3.0
 	github.com/fatih/color v1.12.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/mock v1.6.0

@@ -33,7 +33,7 @@ set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
 include(scripts/package.cmake)
 
 install(PROGRAMS build/n9e-agentd DESTINATION bin)
-install(PROGRAMS build/agentdctl DESTINATION /usr/bin)
+install(PROGRAMS build/agentctl DESTINATION /usr/bin)
 
 install(CODE "FILE(MAKE_DIRECTORY
 	\$ENV{DESTDIR}/${CMAKE_INSTALL_PREFIX}/logs

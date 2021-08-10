@@ -41,7 +41,7 @@ for str in ${lists}; do
 		CC=${cc} CXX=${cxx} \
 		go build -ldflags "${GO_BUILD_LDFLAGS}" \
 		-mod vendor \
-		-o ${dir}/bin/agentdctl ../cmd/agentdctl
+		-o ${dir}/bin/agentctl ../cmd/agentctl
 	cp -a ../README.md ${dir}/
 	cp -a ../misc/etc ${dir}/
 	cp -a ../misc/conf.d ${dir}/
