@@ -35,6 +35,3 @@ instances:
     ## https://docs.datadoghq.com/developers/writeAgentCheck/#collection-interval
     #
     # min_collection_interval: 15
-
-
-
