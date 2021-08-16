@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"k8s.io/klog/v2"
@@ -34,6 +35,9 @@ func (t *Transformer) Metric(name string) string {
 	if v, ok := t.metrics[name]; ok {
 		return v
 	}
+
+	// datadog_dogstatsd_* -> stasd_*
+	name = strings.TrimPrefix(name, "datadog_dog")
 
 	return name
 }
