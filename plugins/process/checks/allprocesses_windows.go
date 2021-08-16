@@ -11,10 +11,10 @@ import (
 	"github.com/shirou/w32"
 	"golang.org/x/sys/windows"
 
-	"github.com/n9e/n9e-agentd/pkg/process/procutil"
-	"k8s.io/klog/v2"
-	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
 	process "github.com/DataDog/gopsutil/process"
+	"github.com/n9e/n9e-agentd/pkg/process/procutil"
+	"github.com/n9e/n9e-agentd/staging/datadog-agent/pkg/util/winutil"
+	"k8s.io/klog/v2"
 )
 
 var (

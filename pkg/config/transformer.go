@@ -60,9 +60,19 @@ func (t *Transformer) SetMetricFromFile(file string) error {
 	return nil
 }
 
-func TransformMetric(metric string) string             { return defaultTransformer.Metric(metric) }
-func TransformMapTags(tags []string) map[string]string { return util.SanitizeMapTags(tags) }
-func TransformTags(tags []string) []string             { return util.SanitizeTags(tags) }
+func TransformMetric(metric string) string { return defaultTransformer.Metric(metric) }
+func TransformMapTags(tags []string) map[string]string {
+	return util.SanitizeMapTags(AdditionTags(tags))
+}
+func TransformTags(tags []string) []string {
+	return util.SanitizeTags(AdditionTags(tags))
+}
+func AdditionTags(tags []string) []string {
+	if !C.N9eSeriesFormat {
+		return tags
+	}
+	return append(tags, C.Tags...)
+}
 
 var (
 	// ugly hack

@@ -39,6 +39,7 @@ pkgs: $(TARGETS)
 		/src/scripts/pkgs.sh
 
 build/n9e-agentd: $(DEP_OBJS)
+	unset GOFLAGS && \
 	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) \
 	go build -ldflags '$(GO_BUILD_LDFLAGS)' \
 	-o $@ ./cmd/agentd && \

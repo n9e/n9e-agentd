@@ -6,6 +6,7 @@ make || exit 1
 
 cd build
 
+unset GOFLAGS
 os=$(go env GOOS)
 arch=$(go env GOARCH)
 file=n9e-agentd
