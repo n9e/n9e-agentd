@@ -9,7 +9,8 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agentctl"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/yubo/golib/staging/logs"
+	"github.com/yubo/golib/configer"
+	"github.com/yubo/golib/logs"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/kubectl/pkg/cmd/options"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -31,7 +32,7 @@ func main() {
 }
 
 func newRootCmd() *cobra.Command {
-	settings := ctl.NewSettings()
+	settings := agentctl.NewSettings()
 
 	cmd := &cobra.Command{
 		Use:   "agentctl",
@@ -42,7 +43,7 @@ func newRootCmd() *cobra.Command {
 			Find more information at:
 			https://github.com/n9e/n9e-agentd`),
 		SilenceUsage: true,
-		Args:         ctl.NoArgs,
+		Args:         agentctl.NoArgs,
 		PersistentPreRunE: func(*cobra.Command, []string) error {
 			if err := settings.Init(); err != nil {
 				return err
@@ -56,10 +57,11 @@ func newRootCmd() *cobra.Command {
 
 	settings.TopCmd = cmd
 
-	flags := cmd.PersistentFlags()
-	settings.AddFlags(flags)
+	fs := cmd.PersistentFlags()
+	configer.SetOptions(true, false, 5, fs)
+	settings.AddFlags(fs)
 
-	otherCmds, groups := ctl.GetHookGroups(settings)
+	otherCmds, groups := agentctl.GetHookGroups(settings)
 	groups.Add(cmd)
 	filters := []string{"options"}
 	templates.ActsAsRootCommand(cmd, filters, groups...)

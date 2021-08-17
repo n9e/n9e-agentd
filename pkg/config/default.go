@@ -51,7 +51,7 @@ const (
 	DefaultLogsSenderBackoffRecoveryInterval = 2
 )
 
-func NewDefaultConfig(configer *configer.Configer) *Config {
+func NewConfig(configer *configer.Configer) *Config {
 	cf := &Config{
 		m:        new(sync.RWMutex),
 		configer: configer,

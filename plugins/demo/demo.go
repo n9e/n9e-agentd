@@ -10,7 +10,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
 	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	core "github.com/DataDog/datadog-agent/pkg/collector/corechecks"
-	"github.com/yubo/golib/staging/util/clock"
+	"github.com/yubo/golib/util/clock"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )

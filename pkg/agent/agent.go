@@ -206,7 +206,7 @@ func (p *module) readConfig() error {
 		}
 	}
 
-	cf := config.NewDefaultConfig(configer)
+	cf := config.NewConfig(configer)
 	if err := configer.Read(moduleName, cf); err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/yubo/apiserver/pkg/cmdcli"
 )
 
-func newEnvCmd(env *ctl.EnvSettings) *cobra.Command {
+func newEnvCmd(env *agentctl.EnvSettings) *cobra.Command {
 	var verbose bool
 	cmd := &cobra.Command{
 		Use:   "env",

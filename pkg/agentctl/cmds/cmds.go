@@ -3,15 +3,17 @@ package cmds
 import "github.com/n9e/n9e-agentd/pkg/agentctl"
 
 var (
-	cmds = []ctl.CmdOps{
-		{newDocsCmd, ctl.CMD_G_OTHER},
-		{newCompletionCmd, ctl.CMD_G_OTHER},
-		{newEnvCmd, ctl.CMD_G_OTHER},
-		{newVersionCmd, ctl.CMD_G_OTHER},
-		{newConfigCmd, ctl.CMD_G_OTHER},
+	cmds = []agentctl.CmdOps{
+		{CmdFactory: newDocsCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newCompletionCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newEnvCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newVersionCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newConfigCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newCheckCmd, GroupNum: agentctl.CMD_G_OTHER},
+		{CmdFactory: newIntegrationCmd, GroupNum: agentctl.CMD_G_OTHER},
 	}
 )
 
 func init() {
-	ctl.RegisterCmd(cmds...)
+	agentctl.RegisterCmd(cmds...)
 }

@@ -19,7 +19,7 @@ Can be sourced as such
 	$ source <(agentctl completion)
 `
 
-func newCompletionCmd(env *ctl.EnvSettings) *cobra.Command {
+func newCompletionCmd(env *agentctl.EnvSettings) *cobra.Command {
 	var typ string
 
 	cmd := &cobra.Command{

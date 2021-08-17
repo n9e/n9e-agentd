@@ -31,7 +31,7 @@ type docsCmd struct {
 	topCmd        *cobra.Command
 }
 
-func newDocsCmd(env *ctl.EnvSettings) *cobra.Command {
+func newDocsCmd(env *agentctl.EnvSettings) *cobra.Command {
 	dc := &docsCmd{}
 
 	cmd := &cobra.Command{

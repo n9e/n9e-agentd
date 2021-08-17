@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DataDog/datadog-agent/pkg/util/executable"
 	"github.com/coreos/go-semver/semver"
 	"github.com/fatih/color"
 	"github.com/n9e/n9e-agentd/pkg/agentctl"
@@ -54,7 +53,7 @@ var (
 )
 
 type integrationsCmd struct {
-	env                 *ctl.EnvSettings
+	env                 *agentctl.EnvSettings
 	verbose             int
 	allowRoot           bool
 	useSysPython        bool
@@ -68,7 +67,7 @@ type integrationsCmd struct {
 	localWheel          bool
 }
 
-func newIntegrationCmd(env *ctl.EnvSettings) *cobra.Command {
+func newIntegrationCmd(env *agentctl.EnvSettings) *cobra.Command {
 	ic := &integrationsCmd{env: env}
 
 	cmd := &cobra.Command{
@@ -154,7 +153,8 @@ func (p *integrationsCmd) newShowCmd() *cobra.Command {
 }
 
 func (p *integrationsCmd) loadPythonInfo() error {
-	p.rootDir, _ = executable.Folder()
+	p.rootDir = p.env.Agent.RootDir
+	//p.rootDir, _ = executable.Folder()
 	for {
 		agentReleaseFile := filepath.Join(p.rootDir, reqAgentReleaseFile)
 		klog.V(5).Infof("agentReleaseFile %s", agentReleaseFile)
@@ -921,8 +921,4 @@ func (p *integrationsCmd) show(pkg string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	ctl.RegisterCmd(ctl.CmdOps{newIntegrationCmd, ctl.CMD_G_OTHER})
 }

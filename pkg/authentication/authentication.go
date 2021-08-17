@@ -29,7 +29,7 @@ var (
 )
 
 type config struct {
-	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" env:"N9E_TOKEN_FILE" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
 }

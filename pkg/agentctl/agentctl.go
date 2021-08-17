@@ -1,4 +1,4 @@
-package ctl
+package agentctl
 
 import (
 	"github.com/spf13/cobra"
@@ -57,7 +57,7 @@ type HookOps struct {
 }
 
 func RegisterHooks(in []HookOps) error {
-	for i, _ := range in {
+	for i := range in {
 		v := &in[i]
 		hookOps = append(hookOps, v)
 		groupOps[v.GroupNum] = append(groupOps[v.GroupNum], v)

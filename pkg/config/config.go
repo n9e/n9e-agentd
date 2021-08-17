@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -35,7 +34,7 @@ var (
 	TestConfig bool
 
 	// ungly hack, TODO: remove it
-	C = NewDefaultConfig(nil)
+	C = NewConfig(nil)
 	// StartTime is the agent startup time
 	StartTime = time.Now()
 
@@ -58,22 +57,17 @@ func AddFlags() {
 	fs.BoolVarP(&TestConfig, "test-config", "t", false, "test configuratioin and exit")
 }
 
-func (p *Config) IsSet(path string) bool {
-	return p.configer.IsSet("agent." + path)
-}
-
-func (p *Config) Get(path string) interface{} {
-	return p.configer.GetRaw("agent." + path)
-}
-
 type Config struct {
 	m        *sync.RWMutex
 	configer *configer.Configer
 
+	IsCliRunner bool `json:"-"`
+
 	//path
-	RootDir           string `json:"root_dir" flag:"root" env:"AGENTD_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
-	PidfilePath       string `json:"pidfile_path"`                                                           //
-	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"`                  // additional_checksd
+	RootDir           string `json:"root_dir" flag:"root" env:"N9E_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
+	PidfilePath       string `json:"pidfile_path"`                                                        //
+	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"`               // additional_checksd
+	CheckFlareDir     string `json:"check_flare_dir" description:"check flare directory"`
 	//AuthTokenFilePath              string `json:"auth_token_file_path"`                                    // auth_token_file_path // move to apiserver
 
 	// apiserver
@@ -345,54 +339,29 @@ type Config struct {
 	CheckSamplerBucketCommitsCountExpiry int  `json:"check_sampler_bucket_commits_count_expiry"`
 } // end of Config
 
-type UseV2Api struct {
-	Series        bool `json:"series" default:"false"`
-	Events        bool `json:"events" default:"false"`
-	ServiceChecks bool `json:"service_checks" default:"false"`
+func (p *Config) IsSet(path string) bool {
+	p.m.RLock()
+	defer p.m.RUnlock()
+	return p.configer.IsSet("agent." + path)
 }
 
-type Container struct {
-	DockerHost            string   `json:"-"`
-	EksFargate            bool     `json:"eks_fargate"`
-	CriSocketPath         string   `json:"cri_socket_path"`
-	IncludeMetrics        []string `json:"include_metrics"`         // container_include, container_include_metrics, ac_include
-	ExcludeMetrics        []string `json:"exclude_metrics"`         // container_exclude, container_exclude_metrics, ac_exclude
-	IncludeLogs           []string `json:"include_logs"`            // container_include_logs
-	ExcludeLogs           []string `json:"exclude_logs"`            // container_exclude_logs
-	ExcludePauseContainer bool     `json:"exclude_parse_container"` // exclude_pause_container
+func (p *Config) Get(path string) interface{} {
+	p.m.RLock()
+	defer p.m.RUnlock()
+	return p.configer.GetRaw("agent." + path)
 }
 
 func (p *Config) Set(k string, v interface{}) error {
+	p.m.Lock()
+	defer p.m.Unlock()
 	return p.configer.Set(k, v)
 }
 
 func (p *Config) Read(path string, dst interface{}) error {
 	klog.Infof("read path %s dst %v", path, dst)
+	p.m.Lock()
+	defer p.m.Unlock()
 	return p.configer.Read(path, dst)
-}
-
-func (p *Container) Validate() error {
-	return nil
-}
-
-type ProcessConfig struct {
-	Enabled                         bool                `json:"enabled"`                           // process_config.enabled
-	OrchestratorAdditionalEndpoints map[string][]string `json:"orchestrator_additional_endpoints"` // process_config.orchestrator_additional_endpoints
-	Url                             string              `json:"url"`                               // process_config.orchestrator_dd_url
-}
-
-type Experimental struct {
-	OTLP OTLP `json:"otlp"`
-}
-
-type OTLP struct {
-	HTTPPort int `json:"http_port"`
-	GRPCPort int `json:"grpc_port"`
-}
-type Proxy struct {
-	HTTP    string   `json:"http"`     // proxy.http
-	HTTPS   string   `json:"https"`    // proxy.https
-	NoProxy []string `json:"no_proxy"` // proxy.no_proxy
 }
 
 func (p Config) String() string {
@@ -439,7 +408,7 @@ func (p *Config) Validate() error {
 		return err
 	}
 
-	if len(p.Endpoints) == 0 {
+	if len(p.Endpoints) == 0 && !p.IsCliRunner {
 		return fmt.Errorf("unable to get agent.endpoints")
 	}
 
@@ -505,31 +474,33 @@ func (p *Config) ValidatePath() (err error) {
 	klog.V(1).Infof("chdir to ${workdir} %s", p.RootDir)
 	os.Chdir(p.RootDir)
 
-	// {prefix}/conf.d
+	// {root}/conf.d
 	p.ConfdPath = util.AbsPath(p.ConfdPath, p.RootDir, "conf.d")
 	if !IsDir(p.ConfdPath) {
 		klog.Warningf("agent.confd_path %s does not exist, please create it", p.ConfdPath)
 	}
 	klog.V(1).Infof("agent.confd_path %s", p.ConfdPath)
 
-	// {prefix}/checks.d
+	// {root}/checks.d
 	//p.AdditionalChecksd = util.AbsPath(p.AdditionalChecksd, p.RootDir, "checks.d")
 
 	klog.V(1).Infof("agent.additional_checks %s", p.AdditionalChecksd)
 
-	// {prefix}/run
+	// {root}/run
 	p.RunPath = util.AbsPath(p.RunPath, p.RootDir, "run")
 	if !IsDir(p.RunPath) {
 		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
 
-	p.JmxPath = util.AbsPath(p.JmxPath, p.RootDir, "misc/jmx")
+	// {root}/misc/jmx
+	p.JmxPath = util.AbsPath(p.JmxPath, p.RootDir, filepath.Join("misc", "jmx"))
 
 	// logs
+	// {root}/run
 	p.Logs.RunPath = util.AbsPath(p.Logs.RunPath, p.RootDir, p.RunPath)
 	klog.V(1).Infof("agent.logs_config.run_path %s", p.RunPath)
 
-	// {prefix}/run/transactions_to_retry
+	// {root}/run/transactions_to_retry
 	p.Forwarder.StoragePath = util.AbsPath(p.Forwarder.StoragePath,
 		p.RootDir,
 		filepath.Join(p.RunPath, "transactions_to_retry"),
@@ -540,33 +511,53 @@ func (p *Config) ValidatePath() (err error) {
 	p.PyChecksPath = util.AbsPath(p.PyChecksPath, p.RootDir, "checks.d")
 	p.PythonHome = util.AbsPath(p.PythonHome, p.RootDir, "embedded")
 
-	// {prefix}/{name}.sock
+	// {root}/{name}.sock
+
+	// {root}/logs/checks for check flare
+	p.CheckFlareDir = util.AbsPath(p.PythonHome, p.RootDir, filepath.Join("logs", "checks"))
 
 	return nil
 }
 
-func configEval(value string) string {
-	switch strings.ToLower(value) {
-	case "$ip":
-		return getOutboundIP()
-	case "$host", "$hostname":
-		host, _ := os.Hostname()
-		return host
-	default:
-		return value
-	}
+type UseV2Api struct {
+	Series        bool `json:"series" default:"false"`
+	Events        bool `json:"events" default:"false"`
+	ServiceChecks bool `json:"service_checks" default:"false"`
 }
 
-func getOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		return "127.0.0.1"
-	}
-	defer conn.Close()
+type Container struct {
+	DockerHost            string   `json:"-"`
+	EksFargate            bool     `json:"eks_fargate"`
+	CriSocketPath         string   `json:"cri_socket_path"`
+	IncludeMetrics        []string `json:"include_metrics"`         // container_include, container_include_metrics, ac_include
+	ExcludeMetrics        []string `json:"exclude_metrics"`         // container_exclude, container_exclude_metrics, ac_exclude
+	IncludeLogs           []string `json:"include_logs"`            // container_include_logs
+	ExcludeLogs           []string `json:"exclude_logs"`            // container_exclude_logs
+	ExcludePauseContainer bool     `json:"exclude_parse_container"` // exclude_pause_container
+}
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
+func (p *Container) Validate() error {
+	return nil
+}
 
-	return localAddr.IP.String()
+type ProcessConfig struct {
+	Enabled                         bool                `json:"enabled"`                           // process_config.enabled
+	OrchestratorAdditionalEndpoints map[string][]string `json:"orchestrator_additional_endpoints"` // process_config.orchestrator_additional_endpoints
+	Url                             string              `json:"url"`                               // process_config.orchestrator_dd_url
+}
+
+type Experimental struct {
+	OTLP OTLP `json:"otlp"`
+}
+
+type OTLP struct {
+	HTTPPort int `json:"http_port"`
+	GRPCPort int `json:"grpc_port"`
+}
+type Proxy struct {
+	HTTP    string   `json:"http"`     // proxy.http
+	HTTPS   string   `json:"https"`    // proxy.https
+	NoProxy []string `json:"no_proxy"` // proxy.no_proxy
 }
 
 //type N9e struct {

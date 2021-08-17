@@ -10,6 +10,29 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
+func configEval(value string) string {
+	switch strings.ToLower(value) {
+	case "$ip":
+		return getOutboundIP()
+	case "$host", "$hostname":
+		host, _ := os.Hostname()
+		return host
+	default:
+		return value
+	}
+}
+
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "127.0.0.1"
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
+}
 func NewSystemProbeConfig() (*Config, error) {
 	return &Config{}, nil
 }

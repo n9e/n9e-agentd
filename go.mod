@@ -55,6 +55,7 @@ require (
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 	github.com/n9e/agent-payload v4.71.0+incompatible
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.23.0
@@ -66,7 +67,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/yubo/apiserver v0.0.0-00010101000000-000000000000
-	github.com/yubo/golib v0.0.0-20210729083123-4040286093c6
+	github.com/yubo/golib v0.0.0-20210816033817-49c454336790
 	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
@@ -75,7 +76,7 @@ require (
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/component-base v0.20.5
+	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.0.0
 	sigs.k8s.io/yaml v1.2.0

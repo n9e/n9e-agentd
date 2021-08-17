@@ -7,7 +7,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/util/testsender"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/yubo/golib/staging/util/clock"
+	"github.com/yubo/golib/util/clock"
 )
 
 func TestDemo(t *testing.T) {

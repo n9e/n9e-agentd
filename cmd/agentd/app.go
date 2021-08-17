@@ -27,7 +27,6 @@ func NewServerCmd() *cobra.Command {
 	ctx := context.Background()
 	ctx = proc.WithName(ctx, AppName)
 	ctx = proc.WithConfigOps(ctx,
-		configer.WithFlagOptions(true, false, 5),
 		// Configfile Deprecated, remove it later
 		configer.WithCallback(func(o configer.Options) {
 			if config.Configfile != "" {

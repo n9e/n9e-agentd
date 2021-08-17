@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newVersionCmd(env *ctl.EnvSettings) *cobra.Command {
+func newVersionCmd(env *agentctl.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:          "version",
 		Short:        "show version information",
