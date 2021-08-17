@@ -25,7 +25,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/status"
 	"github.com/DataDog/datadog-agent/pkg/util"
 	"github.com/fatih/color"
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
 	"github.com/n9e/n9e-agentd/pkg/agentctl"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/olekukonko/tablewriter"

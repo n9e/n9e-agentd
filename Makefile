@@ -43,7 +43,7 @@ pkgs: $(TARGETS)
 build/n9e-agentd: $(DEP_OBJS)
 	GO111MODULE=on CGO_ENABLED=$(CGO_ENABLED) \
 	go build -ldflags '$(GO_BUILD_LDFLAGS)' \
-	-o $@ ./cmd/agentd && \
+	-o $@ ./cmd/agent && \
 	$@ version
 
 build/agentctl: $(DEP_OBJS)

@@ -8,7 +8,7 @@ package settings
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/cmd/agentd/common"
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 

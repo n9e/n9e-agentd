@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	AppName    = "agentd"
+	AppName    = "agent"
 	moduleName = "agentd.main"
 )
 
