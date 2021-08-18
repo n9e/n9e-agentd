@@ -4,25 +4,25 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/n9e/n9e-agentd/pkg/agentctl"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
 const docsDesc = `
-Generate documentation files for Agentctl.
+Generate documentation files for agent.
 
-This command can generate documentation for Agentctl in the following formats:
+This command can generate documentation for agent in the following formats:
 
 - Markdown
 - Man pages
 
 It can also generate bash autocompletions.
 
-	$ agentctl create docs --type markdown --dir mydocs/
-	$ agentctl create docs --type man --dir mymans/
-	$ agentctl create docs --type bash --dir /etc/bash_completion.d/
-	$ agentctl create docs --type zsh --dir myzsh/
+	$ agent create docs --type markdown --dir mydocs/
+	$ agent create docs --type man --dir mymans/
+	$ agent create docs --type bash --dir /etc/bash_completion.d/
+	$ agent create docs --type zsh --dir myzsh/
 `
 
 type docsCmd struct {
@@ -31,7 +31,7 @@ type docsCmd struct {
 	topCmd        *cobra.Command
 }
 
-func newDocsCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newDocsCmd(env *agent.EnvSettings) *cobra.Command {
 	dc := &docsCmd{}
 
 	cmd := &cobra.Command{
@@ -59,14 +59,14 @@ func (d *docsCmd) run() error {
 		return doc.GenMarkdownTree(d.topCmd, d.dest)
 	case "man":
 		header := &doc.GenManHeader{
-			Title:   "agentctl",
+			Title:   "agent",
 			Section: "1",
 		}
 		return doc.GenManTree(d.topCmd, header, d.dest)
 	case "bash":
-		return d.topCmd.GenBashCompletionFile(filepath.Join(d.dest, "agentctl.bash"))
+		return d.topCmd.GenBashCompletionFile(filepath.Join(d.dest, "agent.bash"))
 	case "zsh":
-		return d.topCmd.GenZshCompletionFile(filepath.Join(d.dest, "agentctl.zsh"))
+		return d.topCmd.GenZshCompletionFile(filepath.Join(d.dest, "agent.zsh"))
 	default:
 		return fmt.Errorf("unknown doc type %q. Try 'markdown' or 'man'", d.docTypeString)
 	}

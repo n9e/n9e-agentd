@@ -72,7 +72,7 @@ func init() {
 	authorization.RegisterHooks()
 
 	// override apiserver config
-	proc.RegisterFlags("apiserver", "apiserver", &apiserverConfig{})
+	proc.RegisterFlags("apiserver", "apiserver", &Config{})
 
 	// override authorization config
 	proc.RegisterFlags("authorization", "authorization", &authzConfig{})

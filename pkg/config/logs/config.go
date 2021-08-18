@@ -93,7 +93,7 @@ func (p *Config) Validate() error {
 	}
 
 	if p.BatchWait < time.Second || 10*time.Second < p.BatchWait {
-		klog.Warningf("Invalid batchWait: %v should be in [1, 10], fallback on %v",
+		klog.V(6).Infof("Invalid batchWait: %v should be in [1, 10], fallback on %v",
 			p.BatchWait_, DefaultBatchWait.Seconds())
 		p.BatchWait = DefaultBatchWait
 	}

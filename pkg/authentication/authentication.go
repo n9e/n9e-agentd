@@ -28,24 +28,24 @@ var (
 	}}
 )
 
-type config struct {
+type Config struct {
 	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" env:"N9E_TOKEN_FILE" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
 }
 
-func (p *config) Validate() error {
+func (p *Config) Validate() error {
 	return nil
 }
 
 type authModule struct {
 	name   string
 	token  string
-	config *config
+	config *Config
 }
 
-func newConfig() *config {
-	return &config{}
+func newConfig() *Config {
+	return &Config{}
 }
 
 func (p *authModule) init(ctx context.Context) error {

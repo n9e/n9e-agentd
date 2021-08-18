@@ -26,7 +26,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util"
 	"github.com/fatih/color"
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
-	"github.com/n9e/n9e-agentd/pkg/agentctl"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -39,7 +39,7 @@ const (
 )
 
 type checkCmd struct {
-	env                    *agentctl.EnvSettings
+	env                    *agent.EnvSettings
 	checkRate              bool
 	checkTimes             int
 	checkPause             int
@@ -72,7 +72,7 @@ type checkCmd struct {
 
 func (p *checkCmd) addFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&p.checkRate, "check-rate", "r", false, "check rates by running the check twice with a 1sec-pause between the 2 runs")
-	fs.IntVarP(&p.checkTimes, "check-times", "t", 1, "number of times to run the check")
+	fs.IntVar(&p.checkTimes, "check-times", 1, "number of times to run the check")
 	fs.IntVar(&p.checkPause, "pause", 0, "pause between multiple runs of the check, in milliseconds")
 	fs.StringVarP(&p.logLevel, "log-level", "l", "", "set the log level (default 'off') (deprecated, use the env var DD_LOG_LEVEL instead)")
 	fs.IntVarP(&p.checkDelay, "delay", "d", 100, "delay between running the check and grabbing the metrics in milliseconds")
@@ -101,7 +101,7 @@ func (p *checkCmd) addFlags(fs *pflag.FlagSet) {
 }
 
 // Check returns a cobra command to run checks
-func newCheckCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newCheckCmd(env *agent.EnvSettings) *cobra.Command {
 	cc := &checkCmd{env: env}
 
 	cmd := &cobra.Command{
@@ -464,7 +464,7 @@ func (p *checkCmd) runChecks() error {
 		checkFileOutput.WriteString(instanceJSONString + "\n")
 	} else if p.singleCheckRun() {
 		if p.profileMemory {
-			color.Yellow("Check has run only once, to collect diff data run the check multiple times with the -t/--check-times flag.")
+			color.Yellow("Check has run only once, to collect diff data run the check multiple times with the --check-times flag.")
 		} else {
 			color.Yellow("Check has run only once, if some metrics are missing you can try again with --check-rate to see any other metric if available.")
 		}

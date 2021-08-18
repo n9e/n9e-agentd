@@ -1,12 +1,12 @@
 package apiserver
 
-// apiserverConfig contains the config while running a generic api server.
-type apiserverConfig struct {
+// Config contains the config while running a generic api server.
+type Config struct {
 	Enabled bool `json:"enabled" default:"false" flag:"apiserver-enable" description:"api server enable"`
 
 	ExternalHost string `json:"externalHost" flag:"external-hostname" description:"The hostname to use when generating externalized URLs for this master (e.g. Swagger API Docs or OpenID Discovery)."`
 
-	Host string/*net.IP*/ `json:"address" default:"127.0.0.1" flag:"bind-host" env:"N9E_API_HOST" description:"The IP address on which to listen for the --bind-port port. The associated interface(s) must be reachable by the rest of the cluster, and by CLI/web clients. If blank or an unspecified address (127.0.0.1 or ::), all interfaces will be used."` // BindAddress
+	Host string `json:"address" default:"127.0.0.1" flag:"bind-host" env:"N9E_API_HOST" description:"The IP address on which to listen for the --bind-port port. The associated interface(s) must be reachable by the rest of the cluster, and by CLI/web clients. If blank or an unspecified address (127.0.0.1 or ::), all interfaces will be used."` // BindAddress
 
 	Port int `json:"port" default:"8010" flag:"bind-port" env:"N9E_API_PORT" description:"The port on which to serve HTTPS with authentication and authorization. It cannot be switched off with 0."` // BindPort is ignored when Listener is set, will serve https even with 0.
 

@@ -1,4 +1,4 @@
-package agentctl
+package agent
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/n9e/n9e-agentd/pkg/apiserver"
+	"github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
@@ -16,22 +18,23 @@ import (
 	"github.com/yubo/apiserver/pkg/rest"
 	apierrors "github.com/yubo/golib/api/errors"
 	"github.com/yubo/golib/configer"
+	"github.com/yubo/golib/proc"
 	"github.com/yubo/golib/scheme"
 	gutil "github.com/yubo/golib/util"
 	"k8s.io/klog/v2"
 )
 
-func NewSettings() *EnvSettings {
+func NewSettings(ctx context.Context) *EnvSettings {
 	return &EnvSettings{
 		In:     os.Stdin,
 		Out:    os.Stdout,
 		Errout: os.Stderr,
+		ctx:    ctx,
 	}
 }
 
 type EnvSettingsOutput struct {
-	Host string
-	//Token         string
+	Endpoint      string
 	AuthTokenFile string
 	DisablePage   bool
 	PageSize      int
@@ -43,9 +46,10 @@ type EnvSettingsOutput struct {
 
 // envSettings describes all of the environment settings.
 type EnvSettings struct {
-	Agent     agentConfig
-	Apiserver apiserverConfig
-	Auth      authConfig
+	Agent     *config.Config
+	Apiserver apiserver.Config
+	Auth      authentication.Config
+	ctx       context.Context
 
 	In     io.Reader
 	Out    io.Writer
@@ -57,20 +61,18 @@ type EnvSettings struct {
 	TopCmd   *cobra.Command
 	configer *configer.Configer
 	fs       *pflag.FlagSet
-
-	//token    string
-	//Req      *http.Request
-	//Resp     *http.Response
 }
 
 func (p *EnvSettings) Init() error {
-	configer, err := configer.New()
+	opts, _ := proc.ConfigOptsFrom(p.ctx)
+	configer, err := configer.New(opts...)
 	if err != nil {
 		return err
 	}
 	p.configer = configer
 
-	if err := configer.Read("agent", &p.Agent); err != nil {
+	p.Agent = config.NewConfig(configer)
+	if err := configer.Read("agent", p.Agent); err != nil {
 		return err
 	}
 	if err := configer.Read("apiserver", &p.Apiserver); err != nil {
@@ -100,19 +102,12 @@ func (p EnvSettings) String() string {
 	return gutil.Prettify(p)
 }
 
-// AddFlags binds flags to the given flagset.
-func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
-	s.fs = fs
-	configer.Setting.AddFlags(fs)
-	configer.AddConfigs(fs, "agent", &agentConfig{})
-	configer.AddConfigs(fs, "apiserver", &apiserverConfig{})
-	configer.AddConfigs(fs, "authentication", &authConfig{})
-}
-
-func (p EnvSettings) Output(verbose bool) *EnvSettingsOutput {
+func (p EnvSettings) Output() *EnvSettingsOutput {
 	ret := &EnvSettingsOutput{
-		Host:          p.Apiserver.Host,
+		Endpoint:      fmt.Sprintf("%s:%d", p.Apiserver.Host, p.Apiserver.Port),
 		AuthTokenFile: p.Auth.AuthTokenFile,
+		DisablePage:   p.Agent.DisablePage,
+		PageSize:      p.Agent.PageSize,
 		Version:       options.Version,
 		Branch:        options.Branch,
 		Revision:      options.Revision,
@@ -153,8 +148,8 @@ func (p *EnvSettings) Request(method, uri string, input, output interface{}, opt
 	if output != nil {
 		opts = append(opts, cmdcli.WithOutput(output))
 	}
-	if p.Agent.Timeout > 0 {
-		opts = append(opts, cmdcli.WithOutput(output))
+	if p.Agent.CliQueryTimeout > 0 {
+		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout))
 	}
 
 	return cmdcli.NewRequestWithClient(p.client, opts...), nil

@@ -42,6 +42,7 @@ require (
 	github.com/DataDog/datadog-go v4.8.0+incompatible
 	github.com/DataDog/gohai v0.0.0-20210303102637-6b668acb50dd
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
+	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0
@@ -59,6 +60,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.23.0
+	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/shirou/gopsutil v3.21.5+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
 	github.com/spf13/afero v1.6.0

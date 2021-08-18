@@ -1,58 +1,98 @@
-package core
+package agent
 
 import (
-	"runtime"
-	"strconv"
-	"strings"
+	"fmt"
+	"os"
 
-	"go.uber.org/automaxprocs/maxprocs"
-	"k8s.io/klog/v2"
+	"github.com/spf13/cobra"
 )
 
-// setMaxProcs sets the GOMAXPROCS for the go runtime to a sane value
-func setMaxProcs(max string) {
-
-	defer func() {
-		klog.Infof("runtime: final GOMAXPROCS value is: %d", runtime.GOMAXPROCS(0))
-	}()
-
-	// This call will cause GOMAXPROCS to be set to the number of vCPUs allocated to the process
-	// if the process is running in a Linux environment (including when its running in a docker / K8s setup).
-	_, err := maxprocs.Set(maxprocs.Logger(klog.V(5).Infof))
-	if err != nil {
-		klog.Errorf("runtime: error auto-setting maxprocs: %v ", err)
+func Mkdir(path string) error {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return os.MkdirAll(path, 0755)
 	}
-
-	if len(max) > 0 {
-		_, err = strconv.Atoi(max)
-		if err == nil {
-			// Go runtime will already have parsed the integer and set it properly.
-			return
+	return err
+}
+func InStrings(a string, b []string) bool {
+	for _, v := range b {
+		if v == a {
+			return true
 		}
-
-		if strings.HasSuffix(max, "m") {
-			// Value represented as millicpus.
-			trimmed := strings.TrimSuffix(max, "m")
-			milliCPUs, err := strconv.Atoi(trimmed)
-			if err != nil {
-				klog.Errorf("runtime: error parsing GOMAXPROCS milliCPUs value: %v", max)
-				return
-			}
-
-			cpus := milliCPUs / 1000
-			if cpus > 0 {
-				klog.Infof("runtime: honoring GOMAXPROCS millicpu configuration: %v, setting GOMAXPROCS to: %d", max, cpus)
-				runtime.GOMAXPROCS(cpus)
-			} else {
-				klog.Infof(
-					"runtime: GOMAXPROCS millicpu configuration: %s was less than 1, setting GOMAXPROCS to 1",
-					max)
-				runtime.GOMAXPROCS(1)
-			}
-			return
-		}
-
-		klog.Errorf(
-			"runtime: unhandled GOMAXPROCS value: %s", max)
 	}
+	return false
+}
+
+func SplitArgs(args []string, argsLenAtDash int) ([]string, []string) {
+	if argsLenAtDash >= 0 && argsLenAtDash < len(args) {
+		return args[:argsLenAtDash], args[argsLenAtDash:]
+	}
+	return args, nil
+}
+
+// NoArgs returns an error if any args are included.
+func NoArgs(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf(
+			"%q accepts no arguments\n\nUsage:  %s",
+			cmd.CommandPath(),
+			cmd.UseLine(),
+		)
+	}
+	return nil
+}
+
+// ExactArgs returns an error if there are not exactly n args.
+func ExactArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) != n {
+			return fmt.Errorf(
+				"%q requires %d %s\n\nUsage:  %s",
+				cmd.CommandPath(),
+				n,
+				pluralize("argument", n),
+				cmd.UseLine(),
+			)
+		}
+		return nil
+	}
+}
+
+// MaximumNArgs returns an error if there are more than N args.
+func MaximumNArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) > n {
+			return fmt.Errorf(
+				"%q accepts at most %d %s\n\nUsage:  %s",
+				cmd.CommandPath(),
+				n,
+				pluralize("argument", n),
+				cmd.UseLine(),
+			)
+		}
+		return nil
+	}
+}
+
+// MinimumNArgs returns an error if there is not at least N args.
+func MinimumNArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) < n {
+			return fmt.Errorf(
+				"%q requires at least %d %s\n\nUsage:  %s",
+				cmd.CommandPath(),
+				n,
+				pluralize("argument", n),
+				cmd.UseLine(),
+			)
+		}
+		return nil
+	}
+}
+
+func pluralize(word string, n int) string {
+	if n == 1 {
+		return word
+	}
+	return word + "s"
 }

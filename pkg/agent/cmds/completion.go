@@ -3,7 +3,7 @@ package cmds
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/agentctl"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/spf13/cobra"
 )
 
@@ -12,14 +12,14 @@ Generate autocompletions script for fks for the specified shell (bash).
 
 This command can generate shell autocompletions. e.g.
 
-	$ agentctl completion
+	$ agent completion
 
 Can be sourced as such
 
-	$ source <(agentctl completion)
+	$ source <(agent completion)
 `
 
-func newCompletionCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newCompletionCmd(env *agent.EnvSettings) *cobra.Command {
 	var typ string
 
 	cmd := &cobra.Command{

@@ -11,7 +11,7 @@ type validator interface {
 	Validate() error
 }
 
-func ValidateFields(obj interface{}) error {
+func FieldsValidate(obj interface{}) error {
 	rv := reflect.Indirect(reflect.ValueOf(obj))
 	if rv.Type().Kind() != reflect.Struct {
 		return fmt.Errorf("kind of %s expect a struct, got %s",

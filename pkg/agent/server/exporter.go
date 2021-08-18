@@ -1,4 +1,4 @@
-package core
+package server
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type server struct {
 	handler http.Handler
 }
 
-func (p *module) startExporter() error {
+func (p *agentServer) startExporter() error {
 	cf := p.config.Telemetry
 	if cf.Port <= 0 {
 		return nil

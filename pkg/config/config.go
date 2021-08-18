@@ -45,12 +45,6 @@ var (
 
 func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
-	proc.RegisterFlags("agent.forwarder", "forwarder", &forwarder.Config{})
-	proc.RegisterFlags("agent.logs_config", "logs", &logs.Config{})
-	proc.RegisterFlags("agent.cluster_checks", "cluster checks", &ClusterChecks{})
-	proc.RegisterFlags("agent.statsd", "statsd", &statsd.Config{})
-	proc.RegisterFlags("agent.jmx", "jmx", &Jmx{})
-	proc.RegisterFlags("agent.adminssion_controller", "adminssion controller", &AdminssionController{})
 
 	fs := proc.NamedFlagSets().FlagSet("global")
 	fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
@@ -77,6 +71,13 @@ type Config struct {
 	//CmdHost    string `json:"cmd_host" default:"localhost"` // cmd_host // -> apiserver.bind_host
 	//CmdPort    int    `json:"cmd_port" default:"5001"`      // cmd_port, move to apiserver -> apiserver.bind_port
 
+	// client
+	CliQueryTimeout  time.Duration `json:"-"`
+	CliQueryTimeout_ int           `json:"cli_query_timeout" flag:"cli-query-timeout" default:"5" description:"cli query timeout(Second)"`
+	DisablePage      bool          `json:"disable_page" flag:"disable-page" default:"false" env:"AGENTD_DISABLE_PAGE"`
+	PageSize         int           `json:"page_size" flag:"page-size" default:"10" env:"AGENTD_PAGE_SIZE"`
+	NoColor          bool          `json:"no_color" flag:"no-color,n" default:"false" env:"AGENTD_NO_COLOR" description:"disable color output"`
+
 	RunPath                  string `json:"run_path"`                               // run_path
 	JmxPath                  string `json:"jmx_path" description:"{root}/misc/jmx"` // jmx_path
 	ConfdPath                string `json:"confd_path"`                             // confd_path
@@ -96,33 +97,33 @@ type Config struct {
 	N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                            // the payload format for forwarder
 	Endpoints         []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000"  description:"endpoints addresses of n9e server"` // site, dd_url
 
-	MetadataProviders       []MetadataProviders                 `json:"metadata_providers"`               // metadata_providers
-	Forwarder               forwarder.Config                    `json:"forwarder,inline"`                 // fowarder_*
-	PrometheusScrape        PrometheusScrape                    `json:"prometheus_scrape,inline"`         // prometheus_scrape
-	Autoconfig              Autoconfig                          `json:"autoconfig,inline"`                //
-	Container               Container                           `json:"container,inline"`                 //
-	SnmpTraps               snmp.TrapsConfig                    `json:"snmp_traps,inline"`                // snmp_traps_config
-	SnmpListener            snmp.ListenerConfig                 `json:"snmp_listener,inline"`             // snmp_listener
-	ClusterAgent            ClusterAgent                        `json:"cluster_agent,inline"`             // cluster_agent
-	Network                 Network                             `json:"network,inline"`                   // network
-	NetworkConfig           NetworkConfig                       `json:"network_config,inline"`            // network_config
-	Cmd                     Cmd                                 `json:"cmd,inline"`                       // cmd
-	Logs                    logs.Config                         `json:"logs_config"`                      // logs_config
-	CloudFoundryGarden      CloudFoundryGarden                  `json:"cloud_foundry_garden,inline"`      // cloud_foundry_garden
-	ClusterChecks           ClusterChecks                       `json:"cluster_checks"`                   // cluster_checks
-	Telemetry               Telemetry                           `json:"telemetry,inline"`                 // telemetry
-	OrchestratorExplorer    OrchestratorExplorer                `json:"orchestrator_explorer,inline"`     // orchestrator_explorer
-	Statsd                  statsd.Config                       `json:"statsd"`                           // statsd_*, dagstatsd_*
-	Apm                     apm.Config                          `json:"apm_config,inline"`                // apm_config.*
-	Jmx                     Jmx                                 `json:"jmx"`                              // jmx_*
-	RuntimeSecurity         RuntimeSecurity                     `json:"runtime_security,inline"`          // runtime_security_config.*
-	AdminssionController    AdminssionController                `json:"adminssion_controller"`            // admission_controller.*
-	ExternalMetricsProvider ExternalMetricsProvider             `json:"external_metrics_provider,inline"` // external_metrics_provider.*
-	InternalProfiling       internalprofiling.InternalProfiling `json:"internal_profiling,inline"`        // internal_profiling
-	SystemProbe             systemprobe.Config                  `json:"system_probe,inline"`              // system_probe_config.*
-	Listeners               []Listeners                         `json:"listeners,inline"`                 // listeners
-	ConfigProviders         []ConfigurationProviders            `json:"config_providers,inline"`          // config_providers
-	VerboseReport           bool                                `json:"verbose_report" default:"true"`    // collects run in verbose mode, e.g. report both with cpu.used(sys+user), cpu.system & cpu.user
+	MetadataProviders       []MetadataProviders                 `json:"metadata_providers"`            // metadata_providers
+	Forwarder               forwarder.Config                    `json:"forwarder"`                     // fowarder_*
+	PrometheusScrape        PrometheusScrape                    `json:"prometheus_scrape"`             // prometheus_scrape
+	Autoconfig              Autoconfig                          `json:"autoconfig"`                    //
+	Container               Container                           `json:"container"`                     //
+	SnmpTraps               snmp.TrapsConfig                    `json:"snmp_traps"`                    // snmp_traps_config
+	SnmpListener            snmp.ListenerConfig                 `json:"snmp_listener"`                 // snmp_listener
+	ClusterAgent            ClusterAgent                        `json:"cluster_agent"`                 // cluster_agent
+	Network                 Network                             `json:"network"`                       // network
+	NetworkConfig           NetworkConfig                       `json:"network_config"`                // network_config
+	Cmd                     Cmd                                 `json:"cmd"`                           // cmd
+	Logs                    logs.Config                         `json:"logs_config"`                   // logs_config
+	CloudFoundryGarden      CloudFoundryGarden                  `json:"cloud_foundry_garden"`          // cloud_foundry_garden
+	ClusterChecks           ClusterChecks                       `json:"cluster_checks"`                // cluster_checks
+	Telemetry               Telemetry                           `json:"telemetry"`                     // telemetry
+	OrchestratorExplorer    OrchestratorExplorer                `json:"orchestrator_explorer"`         // orchestrator_explorer
+	Statsd                  statsd.Config                       `json:"statsd"`                        // statsd_*, dagstatsd_*
+	Apm                     apm.Config                          `json:"apm_config"`                    // apm_config.*
+	Jmx                     Jmx                                 `json:"jmx"`                           // jmx_*
+	RuntimeSecurity         RuntimeSecurity                     `json:"runtime_security"`              // runtime_security_config.*
+	AdminssionController    AdminssionController                `json:"adminssion_controller"`         // admission_controller.*
+	ExternalMetricsProvider ExternalMetricsProvider             `json:"external_metrics_provider"`     // external_metrics_provider.*
+	InternalProfiling       internalprofiling.InternalProfiling `json:"internal_profiling"`            // internal_profiling
+	SystemProbe             systemprobe.Config                  `json:"system_probe"`                  // system_probe_config.*
+	Listeners               []Listeners                         `json:"listeners"`                     // listeners
+	ConfigProviders         []ConfigurationProviders            `json:"config_providers"`              // config_providers
+	VerboseReport           bool                                `json:"verbose_report" default:"true"` // collects run in verbose mode, e.g. report both with cpu.used(sys+user), cpu.system & cpu.user
 
 	ApiKey                         string   `json:"api_key"`                                                 // api_key
 	Hostname                       string   `json:"hostname" flag:"hostname" description:"custom host name"` //
@@ -166,9 +167,7 @@ type Config struct {
 	AdConfigPollInterval_            int               `json:"ad_config_poll_interval" flag:"ac-config-poll-interval" default:"10" description:"ac config poll interval(Second)"` // ad_config_poll_interval
 
 	// aggregator
-	AggregatorBufferSize   int           `json:"aggregator_buffer_size" default:"100"` // aggregator_buffer_size
-	AggregationTimeout     time.Duration `json:"-"`
-	AggregationTimeout_    int           `json:"aggregation_timeout" flag:"logs-aggregation-timeout" default:"1000" description:"aggregationTimeout(Millisecond)"` // logs_config.aggregation_timeout
+	AggregatorBufferSize   int           `json:"aggregator_buffer_size" default:"100"`                                                                             // aggregator_buffer_size
 	AggregatorStopTimeout  time.Duration `json:"-"`                                                                                                                // aggregator_stop_timeout
 	AggregatorStopTimeout_ int           `json:"aggregator_stop_timeout" flag:"aggregator-stop-timeout" default:"2" description:"aggregator stop timeout(Second)"` // aggregator_stop_timeout
 
@@ -312,7 +311,7 @@ type Config struct {
 
 	// serializer
 	EnableJsonStreamSharedCompressorBuffers       bool           `json:"enable_json_stream_shared_compressor_buffers" default:"true"`                  //enable_json_stream_shared_compressor_buffers
-	EnablePayloads                                EnablePayloads `json:"enable_payloads,inline"`                                                       // enable_payloads.*
+	EnablePayloads                                EnablePayloads `json:"enable_payloads"`                                                              // enable_payloads.*
 	SerializerMaxPayloadSize                      int            `json:"serializer_max_payload_size" default:"2621440" description:"2.5mb"`            // serializer_max_payload_size
 	SerializerMaxUncompressedPayloadSize          int            `json:"serializer_max_uncompressed_payload_size" default:"4194304" description:"4mb"` // serializer_max_uncompressed_payload_size
 	EnableStreamPayloadSerialization              bool           `json:"enable_stream_payload_serialization" default:"false"`
@@ -358,7 +357,6 @@ func (p *Config) Set(k string, v interface{}) error {
 }
 
 func (p *Config) Read(path string, dst interface{}) error {
-	klog.Infof("read path %s dst %v", path, dst)
 	p.m.Lock()
 	defer p.m.Unlock()
 	return p.configer.Read(path, dst)
@@ -371,6 +369,7 @@ func (p Config) String() string {
 }
 
 func (p *Config) prepareTimeDuration() error {
+	p.CliQueryTimeout = time.Second * time.Duration(p.CliQueryTimeout_)
 	p.ECSMetadataTimeout = time.Millisecond * time.Duration(p.ECSMetadataTimeout_)
 	p.GCEMetadataTimeout = time.Millisecond * time.Duration(p.GCEMetadataTimeout_)
 	p.AdConfigPollInterval = time.Second * time.Duration(p.AdConfigPollInterval_)
@@ -393,7 +392,6 @@ func (p *Config) prepareTimeDuration() error {
 	p.KubernetesPodExpirationDuration = time.Second * time.Duration(p.KubernetesPodExpirationDuration_)
 	p.LeaderLeaseDuration = time.Second * time.Duration(p.LeaderLeaseDuration_)
 	p.Python3LinterTimeout = time.Second * time.Duration(p.Python3LinterTimeout_)
-	p.AggregationTimeout = time.Second * time.Duration(p.AggregationTimeout_)
 
 	return nil
 }
@@ -418,7 +416,7 @@ func (p *Config) Validate() error {
 		}
 	}
 
-	if err := util.ValidateFields(p); err != nil {
+	if err := util.FieldsValidate(p); err != nil {
 		return err
 	}
 

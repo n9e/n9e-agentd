@@ -50,7 +50,7 @@ func (p *Config) Validate() error {
 	}
 
 	if p.RecoveryInterval <= 0 {
-		return fmt.Errorf("Configured forwarder.recoveryInterval (%v) is not positive", p.RecoveryInterval)
+		return fmt.Errorf("Configured forwarder.recovery_interval (%v) is not positive", p.RecoveryInterval)
 	}
 	return nil
 }

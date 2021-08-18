@@ -3,14 +3,14 @@ package cmds
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/agentctl"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
 
 	"github.com/spf13/cobra"
 )
 
 // Config returns the main cobra config command.
-func newConfigCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newConfigCmd(env *agent.EnvSettings) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Print the runtime configuration of a running agent",
@@ -29,12 +29,12 @@ func newConfigCmd(env *agentctl.EnvSettings) *cobra.Command {
 	return cmd
 }
 
-func getFullConfig(env *agentctl.EnvSettings) error {
+func getFullConfig(env *agent.EnvSettings) error {
 	return env.ApiCall("GET", "/api/v1/config", nil, env.Out)
 }
 
 // listRuntime returns a cobra command to list the settings that can be changed at runtime.
-func newListConfig(env *agentctl.EnvSettings) *cobra.Command {
+func newListConfig(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list-runtime",
 		Short: "List settings that can be changed at runtime",
@@ -45,7 +45,7 @@ func newListConfig(env *agentctl.EnvSettings) *cobra.Command {
 	}
 }
 
-func listRuntimeConfigurableValue(env *agentctl.EnvSettings) error {
+func listRuntimeConfigurableValue(env *agent.EnvSettings) error {
 	configs, err := _listRuntimeConfigurableValue(env)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func listRuntimeConfigurableValue(env *agentctl.EnvSettings) error {
 	return nil
 }
 
-func _listRuntimeConfigurableValue(env *agentctl.EnvSettings) (map[string]settings.RuntimeSettingResponse, error) {
+func _listRuntimeConfigurableValue(env *agent.EnvSettings) (map[string]settings.RuntimeSettingResponse, error) {
 	output := map[string]settings.RuntimeSettingResponse{}
 
 	if err := env.ApiCall("GET", "/api/v1/config/list-runtime", nil, &output); err != nil {
@@ -72,7 +72,7 @@ func _listRuntimeConfigurableValue(env *agentctl.EnvSettings) (map[string]settin
 }
 
 // set returns a cobra command to set a config value at runtime.
-func newSetConfig(env *agentctl.EnvSettings) *cobra.Command {
+func newSetConfig(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "set [setting] [value]",
 		Short: "Set, for the current runtime, the value of a given configuration setting",
@@ -84,7 +84,7 @@ func newSetConfig(env *agentctl.EnvSettings) *cobra.Command {
 }
 
 // get returns a cobra command to get a runtime config value.
-func newGetConfig(env *agentctl.EnvSettings) *cobra.Command {
+func newGetConfig(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get [setting]",
 		Short: "Get, for the current runtime, the value of a given configuration setting",
@@ -100,7 +100,7 @@ type setConfigInput struct {
 	Value   string `param:"query"`
 }
 
-func setConfigValue(env *agentctl.EnvSettings, args []string) error {
+func setConfigValue(env *agent.EnvSettings, args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("exactly two parameters are required: the setting name and its value")
 	}
@@ -119,7 +119,7 @@ func setConfigValue(env *agentctl.EnvSettings, args []string) error {
 	return nil
 }
 
-func _setConfigValue(env *agentctl.EnvSettings, key, value string) (bool, error) {
+func _setConfigValue(env *agent.EnvSettings, key, value string) (bool, error) {
 	list, err := _listRuntimeConfigurableValue(env)
 	if err != nil {
 		return false, err
@@ -140,7 +140,7 @@ func _setConfigValue(env *agentctl.EnvSettings, key, value string) (bool, error)
 	return hidden, nil
 }
 
-func getConfigValue(env *agentctl.EnvSettings, args []string) error {
+func getConfigValue(env *agent.EnvSettings, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("a single setting name must be specified")
 	}
@@ -155,7 +155,7 @@ func getConfigValue(env *agentctl.EnvSettings, args []string) error {
 	return nil
 }
 
-func _getConfigValue(env *agentctl.EnvSettings, key string) (interface{}, error) {
+func _getConfigValue(env *agent.EnvSettings, key string) (interface{}, error) {
 	var output interface{}
 	if err := env.ApiCall("GET", "/api/v1/config/{setting}", &setConfigInput{Setting: key}, &output); err != nil {
 		return false, err
@@ -164,7 +164,7 @@ func _getConfigValue(env *agentctl.EnvSettings, key string) (interface{}, error)
 
 }
 
-func newConfigZshCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newConfigZshCmd(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "zsh",
 		Short: "set zsh completion config",
@@ -190,7 +190,7 @@ zstyle ':completion:*' menu select=2
 EOF
 `
 
-func configZshCompletion(env *agentctl.EnvSettings) error {
+func configZshCompletion(env *agent.EnvSettings) error {
 	if err := env.TopCmd.GenZshCompletion(env.Out); err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func configZshCompletion(env *agentctl.EnvSettings) error {
 	return nil
 }
 
-func newConfigBashCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newConfigBashCmd(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "bash",
 		Short: "set bash completion config",
@@ -220,7 +220,7 @@ fi
 EOF
 `
 
-func configBashCompletion(env *agentctl.EnvSettings) error {
+func configBashCompletion(env *agent.EnvSettings) error {
 	if err := env.TopCmd.GenBashCompletion(env.Out); err != nil {
 		return err
 	}

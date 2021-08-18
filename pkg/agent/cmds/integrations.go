@@ -22,7 +22,7 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 	"github.com/fatih/color"
-	"github.com/n9e/n9e-agentd/pkg/agentctl"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -53,7 +53,7 @@ var (
 )
 
 type integrationsCmd struct {
-	env                 *agentctl.EnvSettings
+	env                 *agent.EnvSettings
 	verbose             int
 	allowRoot           bool
 	useSysPython        bool
@@ -67,7 +67,7 @@ type integrationsCmd struct {
 	localWheel          bool
 }
 
-func newIntegrationCmd(env *agentctl.EnvSettings) *cobra.Command {
+func newIntegrationCmd(env *agent.EnvSettings) *cobra.Command {
 	ic := &integrationsCmd{env: env}
 
 	cmd := &cobra.Command{
