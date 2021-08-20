@@ -1,52 +1,35 @@
 #!/bin/bash
-CWD=$(cd $(dirname $0)/; pwd)
+CWD=$(cd $(dirname $0)/..; pwd)
 cd $CWD/..
 
+APP_NAME=${APP_NAME:-n9e-agentd}
+
 # https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63
-#lists="darwin/amd64 linux/amd64 linux/arm64 windows/amd64"
-lists="darwin/amd64 linux/amd64 windows/amd64"
-#lists="windows/amd64"
+# go tool dist list
+#lists="darwin/amd64 linux/amd64 linux/arm64 linux/arm windows/amd64"
+lists="darwin/amd64"
 
-
-unset GOFLAGS
-set -aex
-cd build
 for str in ${lists}; do
 	arr=(${str//\// })
-	os=${arr[0]}
-	arch=${arr[1]}
-	dir="${os}-${arch}"
-	file=n9e-agentd
-	cc=$(go env CC)
-	cxx=$(go env CXX)
+	GOOS=${arr[0]}
+	GOARCH=${arr[1]}
+	mount="-v ${CWD}:/src"
 
-	if [[ ${os} == "windows" ]]; then
-		file=n9e-agentd.exe
-		cc=x86_64-w64-mingw32-gcc
-		cxx=x86_64-w64-mingw32-g++
+	if [ -f ./build/envs ]; then
+		sudo rm -f ./build/envs
 	fi
 
-	if [[ ${os} == "darwin" ]]; then
-		cc=o64-clang
-		cxx=o64-clang++
+	if [ -d /opt/data ]; then
+		mount="${mount} -v /opt/data:/opt/data"
 	fi
-
-	test -d ${dir} || mkdir -p ${dir}/{bin,misc,run,checks.d}
-	GO111MODULE=on CGO_ENABLED=1 GOOS=${os} GOARCH=${arch} \
-		CC=${cc} CXX=${cxx} \
-		go build -ldflags "${GO_BUILD_LDFLAGS}" \
-		-mod vendor \
-		-o ${dir}/bin/${file} ../cmd/agentd
-	GO111MODULE=on CGO_ENABLED=1 GOOS=${os} GOARCH=${arch} \
-		CC=${cc} CXX=${cxx} \
-		go build -ldflags "${GO_BUILD_LDFLAGS}" \
-		-mod vendor \
-		-o ${dir}/bin/agentctl ../cmd/agentctl
-	cp -a ../README.md ${dir}/
-	cp -a ../misc/etc ${dir}/
-	cp -a ../misc/conf.d ${dir}/
-	cp -a ../misc/scripts.d ${dir}/
-	cp -a ../misc/licenses ${dir}/
-	cp -a ../misc/systemd ${dir}/misc/
-	tar czvf n9e-agentd-${VERSION}-${RELEASE}.${os}.${arch}.tar.gz ${dir}
+	echo ${mount}
+	sudo docker run --rm \
+		-w /src \
+		${mount} \
+		--name golang-cross-builder \
+		--hostname golang-cross-builder \
+		-e GOOS=${arr[0]} \
+		-e GOARCH=${arr[1]} \
+		-it ghcr.io/gythialy/golang-cross-builder:v1.16.2 \
+		make pkg
 done

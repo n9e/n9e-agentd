@@ -109,7 +109,7 @@ You must specify a version of the package to install using the syntax: <package>
 
 	fs := cmd.Flags()
 	fs.BoolVar(&p.localWheel, "local-wheel", false, fmt.Sprintf("install an agent check from a locally available wheel file. %s", disclaimer))
-	fs.BoolVarP(&p.thirdParty, "third-party", "t", false, "install a community or vendor-contributed integration")
+	fs.BoolVar(&p.thirdParty, "third-party", false, "install a community or vendor-contributed integration")
 
 	return cmd
 }

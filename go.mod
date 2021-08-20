@@ -3,12 +3,10 @@ module github.com/n9e/n9e-agentd
 go 1.16
 
 replace (
-	github.com/DataDog/datadog-agent => ../datadog-agent
-	github.com/DataDog/datadog-agent/pkg/util/log => ../datadog-agent/pkg/util/log
-	github.com/DataDog/datadog-agent/pkg/util/winutil => ../datadog-agent/pkg/util/winutil
-	github.com/n9e/agent-payload => ../agent-payload
-	github.com/yubo/apiserver => ../apiserver
-	github.com/yubo/golib => ../golib
+	github.com/DataDog/datadog-agent => ./staging/datadog-agent
+	github.com/DataDog/datadog-agent/pkg/util/log => ./staging/datadog-agent/pkg/util/log
+	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
+	github.com/DataDog/mmh3 => github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a
 )
 
 // NOTE: Prefer using simple `require` directives instead of using `replace` if possible.
@@ -42,7 +40,7 @@ require (
 	github.com/DataDog/datadog-go v4.8.0+incompatible
 	github.com/DataDog/gohai v0.0.0-20210303102637-6b668acb50dd
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
-	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
+	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0
@@ -55,12 +53,12 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
-	github.com/n9e/agent-payload v4.71.0+incompatible
+	github.com/n9e/agent-payload v0.0.0-20210803052830-38cc6d91cc21
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.23.0
-	github.com/russross/blackfriday v1.5.2 // indirect
+	github.com/russross/blackfriday v1.5.2
 	github.com/shirou/gopsutil v3.21.5+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
 	github.com/spf13/afero v1.6.0
@@ -68,8 +66,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	github.com/yubo/apiserver v0.0.0-00010101000000-000000000000
-	github.com/yubo/golib v0.0.0-20210816033817-49c454336790
+	github.com/yubo/apiserver v0.0.0-20210818114029-aa8851f65709
+	github.com/yubo/golib v0.0.0-20210818091248-62b6daa0f29d
 	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
@@ -78,7 +76,6 @@ require (
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.0.0
 	sigs.k8s.io/yaml v1.2.0

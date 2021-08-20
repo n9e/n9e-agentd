@@ -1,0 +1,54 @@
+default_language_version:
+  python: python3
+
+repos:
+- repo: https://gitlab.com/pycqa/flake8
+  rev: 3.8.3 # should match major Python version
+  hooks:
+    - id: flake8
+      additional_dependencies:
+        - flake8-bugbear==20.1.4
+        - flake8-unused-arguments==0.0.6
+- repo: https://github.com/psf/black
+  rev: 19.10b0
+  hooks:
+    - id: black
+- repo: https://github.com/timothycrosley/isort/
+  rev: 5.2.2
+  hooks:
+    - id: isort
+- repo: https://github.com/jumanjihouse/pre-commit-hooks
+  rev: 2.1.1
+  hooks:
+    - id: shellcheck
+      args: ["--severity=info", "-e", "SC2059", "-e", "SC2028"]
+      additional_dependencies: [] # Can be removed after this fix gets merged: https://github.com/jumanjihouse/pre-commit-hooks/pull/80
+- repo: local
+  hooks:
+    - id: revive
+      name: revive
+      description: revive
+      entry: 'python3 tasks/git-hooks/revive.py'
+      language: system
+      files: \.go$
+    - id: govet
+      name: govet
+      description: go vet
+      entry: 'python3 tasks/git-hooks/govet.py'
+      language: system
+      require_serial: true
+      files: \.go$
+    - id: gofmt
+      name: gofmt
+      description: go fmt
+      entry: 'python3 tasks/git-hooks/gofmt.py'
+      language: system
+      files: \.go$
+    - id: clang-format
+      name: clang-format
+      description: clang-format
+      entry: 'python3 tasks/git-hooks/clang-format.py'
+      language: system
+      require_serial: true
+      files: '^pkg/(ebpf|network|security)/.*\.(c|h)$'
+      exclude: '^pkg/ebpf/(c/bpf_endian|c/bpf_helpers|compiler/clang-stdarg).h$'

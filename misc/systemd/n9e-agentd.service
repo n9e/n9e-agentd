@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/n9e/agentd
-#EnvironmentFile=/opt/n9e/agentd/etc/agentd.env
+EnvironmentFile=/opt/n9e/agentd/etc/agentd.env
 Type=simple
 ExecStart=/opt/n9e/agentd/bin/n9e-agentd -c /opt/n9e/agentd/etc/agentd.yaml
 Restart=on-failure

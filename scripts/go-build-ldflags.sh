@@ -1,5 +1,4 @@
 #!/bin/sh
-
 MODE=$1
 
 if [ "$MODE" != "LDFLAG" ] && [ "$MODE" != "ECHO" ]; then

@@ -94,7 +94,6 @@ github.com/Azure/go-autorest/logger v0.2.1/go.mod h1:T9E3cAhj2VqvPOtCYAvby9aBXkZ
 github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBpUA79WCAKPPZVC2DeU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/DataDog/agent-payload v4.78.0+incompatible/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
 github.com/DataDog/cast v1.3.1-0.20190301154711-1ee8c8bd14a3 h1:SobA9WYm4K/MUtWlbKaomWTmnuYp1KhIm8Wlx3vmpsg=
 github.com/DataDog/cast v1.3.1-0.20190301154711-1ee8c8bd14a3/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/DataDog/datadog-api-client-go v1.0.0-beta.18/go.mod h1:Gn0fZwIOBbSidO0OaPEh9nO5EmIPsxJrHfHvfVXEaoU=
@@ -113,7 +112,6 @@ github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321 h1:OPAXA+r6yznoxW
 github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321/go.mod h1:tGQp6XG4XpOyy67WG/YWXVxzOY6LejK35e8KcQhtRIQ=
 github.com/DataDog/gostackparse v0.5.0 h1:jb72P6GFHPHz2W0onsN51cS3FkaMDcjb0QzgxxA4gDk=
 github.com/DataDog/gostackparse v0.5.0/go.mod h1:lTfqcJKqS9KnXQGnyQMCugq3u1FP6UZMfWR0aitKFMM=
-github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981/go.mod h1:SvsjzyJlSg0rKsqYgdcFxeEVflx3ZNAyFfkUHP0TxXg=
 github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a h1:m9REhmyaWD5YJ0P53ygRHxKKo+KM+nw+zz0hEdKztMo=
 github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a/go.mod h1:SvsjzyJlSg0rKsqYgdcFxeEVflx3ZNAyFfkUHP0TxXg=
 github.com/DataDog/nikos v1.0.0 h1:rpZRYzsT8sCOGmYCOuFGIW9TEQJ4zGEz1UPi7J3wUz8=
@@ -1054,6 +1052,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f h1:y5//uYreIhSUg3J1GEMiLbxo1LJaP8RfCpH6pymGZus=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
+github.com/n9e/agent-payload v0.0.0-20210803052830-38cc6d91cc21 h1:YIz+LiGh6aNamA6zdT5AJgIZtacdEg73ZYTp5OPIBFE=
+github.com/n9e/agent-payload v0.0.0-20210803052830-38cc6d91cc21/go.mod h1:qglO/Vsh4hMXMbrLk5LOQtni/pCCCksIDyn3hbmWKCY=
 github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
 github.com/naoina/toml v0.1.1/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
 github.com/nats-io/jwt v0.3.0/go.mod h1:fRYCDE99xlTsqUzISS1Bi75UBJ6ljOJQOAAu5VglpSg=
@@ -1422,6 +1422,11 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/xor-gate/ar v0.0.0-20170530204233-5c72ae81e2b7 h1:Vo3q7h44BfmnLQh5SdF+2xwIoVnHThmZLunx6odjrHI=
 github.com/xor-gate/ar v0.0.0-20170530204233-5c72ae81e2b7/go.mod h1:TCWCUPhQU1j7axqROa/VHnlgJGHthAOqJZahg7b/DUc=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
+github.com/yubo/apiserver v0.0.0-20210818114029-aa8851f65709 h1:2hUjQvyvbBDqZb0XELJYuT9PWQQzxgO6i3JufZndJS0=
+github.com/yubo/apiserver v0.0.0-20210818114029-aa8851f65709/go.mod h1:GHE2slfvHmcKp7N4umAGuWGwTqbhQOCGaV5yB+AvcSI=
+github.com/yubo/golib v0.0.0-20210816033817-49c454336790/go.mod h1:sOuGN8FoxpwF/+FJbYNy2HqF2TfRpHWp/QiSBZ9rHOQ=
+github.com/yubo/golib v0.0.0-20210818091248-62b6daa0f29d h1:NqwpcYWMpewbfljsyZahh7NnzCGmum0XRtAujYsgDOo=
+github.com/yubo/golib v0.0.0-20210818091248-62b6daa0f29d/go.mod h1:sOuGN8FoxpwF/+FJbYNy2HqF2TfRpHWp/QiSBZ9rHOQ=
 github.com/yubo/goswagger v0.0.0-20210729084640-1f6e710ffaaf/go.mod h1:gAX7WMxJB3z/fcLwP8VCrkZh0Dj0X/5vaJlXtq/f5qo=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
