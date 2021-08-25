@@ -28,7 +28,7 @@ Configure
 ## /opt/n9e/agentd/etc/agentd.yaml
 agent:
   ident: $ip
-  alias: $host
+  alias: $hostname
   endpoints:
     - http://localhost:8000			# replace the server address here
 ```
