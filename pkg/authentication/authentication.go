@@ -58,7 +58,7 @@ func newConfig() *Config {
 }
 
 func (p *authModule) init(ctx context.Context) error {
-	c := proc.ConfigerFrom(ctx)
+	c := proc.ConfigerMustFrom(ctx)
 
 	cf := newConfig()
 	if err := c.Read(modulePath, cf); err != nil {

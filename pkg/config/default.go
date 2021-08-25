@@ -7,6 +7,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/collector/check/defaults"
 	"github.com/yubo/golib/configer"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -53,9 +54,11 @@ const (
 
 func NewConfig(configer *configer.Configer) *Config {
 	cf := &Config{
-		m:        new(sync.RWMutex),
-		configer: configer,
+		m:          new(sync.RWMutex),
+		configer:   configer,
+		ValueFiles: configer.ValueFiles(),
 	}
+	klog.V(1).Infof("configFiles %v", cf.ValueFiles)
 
 	if IsContainerized() {
 		// In serverless-containerized environments (e.g Fargate)

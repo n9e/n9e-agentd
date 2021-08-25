@@ -13,6 +13,8 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/collector/check"
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
@@ -21,73 +23,50 @@ var configCheckURL string
 
 // GetConfigCheck dump all loaded configurations to the writer
 func GetConfigCheck(w io.Writer, withDebug bool) error {
-	return fmt.Errorf("unsupported")
-	//if w != color.Output {
-	//	color.NoColor = true
-	//}
+	if w != color.Output {
+		color.NoColor = true
+	}
 
-	//c := util.GetClient(false) // FIX: get certificates right then make this true
+	cr := response.ConfigCheckResponse{}
+	err := common.Client.ApiCall("GET", "/api/v1/config-check", nil, &cr)
+	if err != nil {
+		return err
+	}
 
-	//// Set session token
-	//err := util.SetAuthToken()
-	//if err != nil {
-	//	return err
-	//}
-	//ipcAddress, err := config.GetIPCAddress()
-	//if err != nil {
-	//	return err
-	//}
-	//if configCheckURL == "" {
-	//	configCheckURL = fmt.Sprintf("https://%v:%v/agent/config-check", ipcAddress, config.Datadog.GetInt("cmd_port"))
-	//}
-	//r, err := util.DoGet(c, configCheckURL)
-	//if err != nil {
-	//	if r != nil && string(r) != "" {
-	//		return fmt.Errorf("the agent ran into an error while checking config: %s", string(r))
-	//	}
-	//	return fmt.Errorf("failed to query the agent (running?): %s", err)
-	//}
+	if len(cr.ConfigErrors) > 0 {
+		fmt.Fprintln(w, fmt.Sprintf("=== Configuration %s ===", color.RedString("errors")))
+		for check, error := range cr.ConfigErrors {
+			fmt.Fprintln(w, fmt.Sprintf("\n%s: %s", color.RedString(check), error))
+		}
+	}
 
-	//cr := response.ConfigCheckResponse{}
-	//err = json.Unmarshal(r, &cr)
-	//if err != nil {
-	//	return err
-	//}
+	for _, c := range cr.Configs {
+		PrintConfig(w, c)
+	}
 
-	//if len(cr.ConfigErrors) > 0 {
-	//	fmt.Fprintln(w, fmt.Sprintf("=== Configuration %s ===", color.RedString("errors")))
-	//	for check, error := range cr.ConfigErrors {
-	//		fmt.Fprintln(w, fmt.Sprintf("\n%s: %s", color.RedString(check), error))
-	//	}
-	//}
+	if withDebug {
+		if len(cr.ResolveWarnings) > 0 {
+			fmt.Fprintln(w, fmt.Sprintf("\n=== Resolve %s ===", color.YellowString("warnings")))
+			for check, warnings := range cr.ResolveWarnings {
+				fmt.Fprintln(w, fmt.Sprintf("\n%s", color.YellowString(check)))
+				for _, warning := range warnings {
+					fmt.Fprintln(w, fmt.Sprintf("* %s", warning))
+				}
+			}
+		}
+		if len(cr.Unresolved) > 0 {
+			fmt.Fprintln(w, fmt.Sprintf("\n=== %s Configs ===", color.YellowString("Unresolved")))
+			for ids, configs := range cr.Unresolved {
+				fmt.Fprintln(w, fmt.Sprintf("\n%s: %s", color.BlueString("Auto-discovery IDs"), color.YellowString(ids)))
+				fmt.Fprintln(w, fmt.Sprintf("%s:", color.BlueString("Templates")))
+				for _, config := range configs {
+					fmt.Fprintln(w, config.String())
+				}
+			}
+		}
+	}
 
-	//for _, c := range cr.Configs {
-	//	PrintConfig(w, c)
-	//}
-
-	//if withDebug {
-	//	if len(cr.ResolveWarnings) > 0 {
-	//		fmt.Fprintln(w, fmt.Sprintf("\n=== Resolve %s ===", color.YellowString("warnings")))
-	//		for check, warnings := range cr.ResolveWarnings {
-	//			fmt.Fprintln(w, fmt.Sprintf("\n%s", color.YellowString(check)))
-	//			for _, warning := range warnings {
-	//				fmt.Fprintln(w, fmt.Sprintf("* %s", warning))
-	//			}
-	//		}
-	//	}
-	//	if len(cr.Unresolved) > 0 {
-	//		fmt.Fprintln(w, fmt.Sprintf("\n=== %s Configs ===", color.YellowString("Unresolved")))
-	//		for ids, configs := range cr.Unresolved {
-	//			fmt.Fprintln(w, fmt.Sprintf("\n%s: %s", color.BlueString("Auto-discovery IDs"), color.YellowString(ids)))
-	//			fmt.Fprintln(w, fmt.Sprintf("%s:", color.BlueString("Templates")))
-	//			for _, config := range configs {
-	//				fmt.Fprintln(w, config.String())
-	//			}
-	//		}
-	//	}
-	//}
-
-	//return nil
+	return nil
 }
 
 // GetClusterAgentConfigCheck proxies GetConfigCheck overidding the URL

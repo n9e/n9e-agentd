@@ -29,7 +29,7 @@ var (
 	Context context.Context
 
 	// Deprecated
-	Configfile string
+	//Configfile string
 	TestConfig bool
 
 	// ungly hack, TODO: remove it
@@ -46,7 +46,7 @@ func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
 
 	fs := proc.NamedFlagSets().FlagSet("global")
-	fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
+	//fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
 	fs.BoolVarP(&TestConfig, "test-config", "t", false, "test configuratioin and exit")
 }
 
@@ -54,7 +54,9 @@ type Config struct {
 	m        *sync.RWMutex
 	configer *configer.Configer
 
-	IsCliRunner bool `json:"-"`
+	IsCliRunner bool `json:"is_cli_runner"`
+
+	ValueFiles []string `json:"-"` // from golib.configer.Setting.valueFiles
 
 	//path
 	RootDir           string `json:"root_dir" flag:"root" env:"N9E_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
@@ -468,7 +470,7 @@ func (p *Config) ValidatePath() (err error) {
 	if p.RootDir, err = util.ResolveRootPath(p.RootDir); err != nil {
 		return err
 	}
-	if !IsDir(p.RootDir) {
+	if !util.IsDir(p.RootDir) {
 		return fmt.Errorf("agent.workDir %s does not exist, please create it", p.RootDir)
 	}
 	os.Chdir(p.RootDir)
@@ -478,14 +480,14 @@ func (p *Config) ValidatePath() (err error) {
 
 	// {root}/conf.d
 	p.ConfdPath = root.Abs(p.ConfdPath, "conf.d")
-	if !IsDir(p.ConfdPath) {
+	if !util.IsDir(p.ConfdPath) {
 		klog.Warningf("agent.confd_path %s does not exist, please create it", p.ConfdPath)
 	}
 	klog.V(1).InfoS("agent", "confd_path", p.ConfdPath)
 
 	// {root}/run
 	p.RunPath = root.Abs(p.RunPath, "run")
-	if !IsDir(p.RunPath) {
+	if !util.IsDir(p.RunPath) {
 		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
 

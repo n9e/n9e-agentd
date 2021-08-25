@@ -738,7 +738,7 @@ func zipHealth(tempDir, hostname string) error {
 }
 
 func zipInstallInfo(tempDir, hostname string) error {
-	originalPath := filepath.Join(config.FileUsedDir(), "install_info")
+	originalPath := filepath.Join(config.C.RootDir, "install_info")
 	zippedPath := filepath.Join(tempDir, hostname, "install_info")
 	return zipFile(originalPath, zippedPath)
 }

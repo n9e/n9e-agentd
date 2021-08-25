@@ -13,5 +13,4 @@ if [[ ! -f ${CWD}/bin/n9e-agentd ]]; then
 fi
 
 source ${CWD}/etc/agentd.rc
-#./bin/n9e-agentd -f ./etc/agentd.yaml $*
 ${CWD}/bin/n9e-agentd $*

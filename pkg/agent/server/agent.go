@@ -197,7 +197,7 @@ func init() {
 }
 
 func (p *agentServer) readConfig() error {
-	configer := proc.ConfigerFrom(p.ctx)
+	configer := proc.ConfigerMustFrom(p.ctx)
 
 	cf := config.NewConfig(configer)
 	if err := configer.Read(moduleName, cf); err != nil {

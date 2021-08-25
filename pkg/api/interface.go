@@ -1,5 +1,7 @@
 package api
 
+import "github.com/yubo/apiserver/pkg/cmdcli"
+
 // Initializer is an interface that all plugin types: Inputs, Outputs,
 // Processors, and Aggregators can optionally implement to initialize the
 // plugin.
@@ -36,4 +38,8 @@ type Logger interface {
 	Infof(format string, args ...interface{})
 	// Info logs an information message, patterned after log.Print.
 	Info(args ...interface{})
+}
+
+type Client interface {
+	ApiCall(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) error
 }

@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
 
 	"github.com/n9e/n9e-agentd/pkg/agent"
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util/templates"
 	"github.com/spf13/cobra"
@@ -50,11 +50,12 @@ func newRootCmd() *cobra.Command {
 			https://github.com/n9e/n9e-agentd`),
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if cmd != settings.ServerCmd {
-				config.C.IsCliRunner = true
-				if err := settings.Init(); err != nil {
-					klog.Error(err)
-				}
+			override := map[string]string{
+				"agent": fmt.Sprintf(`is_cli_runner: %v`, cmd != settings.ServerCmd),
+			}
+
+			if err := settings.Init(override); err != nil {
+				klog.Error(err)
 			}
 			return nil
 		},
@@ -67,17 +68,8 @@ func newRootCmd() *cobra.Command {
 }
 
 func newContext() context.Context {
-	ctx := context.Background()
-	ctx = proc.WithName(ctx, AppName)
-	ctx = proc.WithConfigOps(ctx,
-		// Configfile Deprecated, remove it later
-		configer.WithCallback(func(o configer.Options) {
-			if config.Configfile != "" {
-				klog.Warningf("--config has been Deprecated, use -f(--values) instead of it")
-				o.AppendValueFile(config.Configfile)
-			}
-		}),
-	)
+	ctx := proc.WithName(context.Background(), AppName)
+	ctx = proc.WithAttr(ctx, make(map[interface{}]interface{}))
 
 	return ctx
 }
@@ -90,7 +82,7 @@ func setupCommand(cmd *cobra.Command, settings *agent.EnvSettings) {
 	configer.SetOptions(true, false, 5, fs)
 	namedFlagSets := proc.NamedFlagSets()
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), AppName)
-	configer.Setting.AddFlags(namedFlagSets.FlagSet("global"))
+	configer.Options.AddFlags(namedFlagSets.FlagSet("global"))
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
 	}

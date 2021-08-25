@@ -97,7 +97,10 @@ install(CODE "FILE(MAKE_DIRECTORY
 	\$ENV{DESTDIR}/${CMAKE_INSTALL_PREFIX}/checks.d
 )")
 
-install(FILES build/n9e-agentd misc/gen-envs.sh DESTINATION bin)
+install(PROGRAMS
+	build/n9e-agentd
+	misc/bin/gen-envs.sh
+	misc/bin/agent DESTINATION bin)
 install(DIRECTORY misc/etc USE_SOURCE_PERMISSIONS DESTINATION .)
 install(DIRECTORY misc/licenses USE_SOURCE_PERMISSIONS DESTINATION .)
 install(DIRECTORY misc/scripts.d USE_SOURCE_PERMISSIONS DESTINATION .)

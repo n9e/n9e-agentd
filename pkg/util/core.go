@@ -4,6 +4,8 @@ package util
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 
@@ -28,4 +30,25 @@ func SetupCoreDump() error {
 
 func Stop() error {
 	return syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+}
+
+func DefaultConfigfile() string {
+	root, err := ResolveRootPath("")
+	if err != nil {
+		return ""
+	}
+
+	return filepath.Join(root, "etc", "agentd.yaml")
+}
+
+func IsDir(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fi.IsDir()
+}
+func IsFile(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && !fi.IsDir()
 }

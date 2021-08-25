@@ -193,7 +193,6 @@ func getHealth(w http.ResponseWriter, r *http.Request) (*health.Status, error) {
 //}
 
 func getConfigCheck(w http.ResponseWriter, r *http.Request) (*response.ConfigCheckResponse, error) {
-
 	if common.AC == nil {
 		return nil, fmt.Errorf("Trying to use /config-check before the agent has been initialized.")
 	}

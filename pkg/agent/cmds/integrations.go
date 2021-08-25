@@ -136,7 +136,7 @@ func (p *integrationsCmd) newInfoCmd() *cobra.Command {
 			if err := p.validateArgs(args); err != nil {
 				return err
 			}
-			return p.show(args[0])
+			return p.info(args[0])
 		},
 	}
 }
@@ -894,7 +894,7 @@ func (p *integrationsCmd) list() error {
 	return nil
 }
 
-func (p *integrationsCmd) show(pkg string) error {
+func (p *integrationsCmd) info(pkg string) error {
 	if err := p.loadPythonInfo(); err != nil {
 		return err
 	}

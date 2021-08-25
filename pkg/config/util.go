@@ -3,7 +3,6 @@ package config
 import (
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
@@ -91,26 +90,18 @@ func pathExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func IsDir(path string) bool {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return fi.IsDir()
-}
-
 //func GetIPCAddress() (string, error) {
 //	return C.BindHost, nil
 //}
 
 // FileUsedDir returns the absolute path to the folder containing the config
 // file used to populate the registry
-func FileUsedDir() string {
-	return filepath.Dir(ConfigFileUsed())
-}
+//func FileUsedDir() string {
+//	return filepath.Join(C.RootDir, "etc")
+//}
 
 func ConfigFileUsed() string {
-	return Configfile
+	return strings.Join(C.ValueFiles, ",")
 }
 
 // SanitizeAPIKey strips newlines and other control characters from a given string.

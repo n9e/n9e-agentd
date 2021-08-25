@@ -7,10 +7,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
 	"github.com/n9e/n9e-agentd/pkg/apiserver"
 	"github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/options"
+	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/yubo/apiserver/pkg/cmdcli"
@@ -63,22 +65,34 @@ type EnvSettings struct {
 	fs        *pflag.FlagSet
 }
 
-func (p *EnvSettings) Init() error {
+func (p *EnvSettings) Init(override map[string]string) error {
 	opts, _ := proc.ConfigOptsFrom(p.ctx)
-	configer, err := configer.New(opts...)
+
+	if len(configer.Options.ValueFiles()) == 0 {
+		if f := util.DefaultConfigfile(); util.IsFile(f) {
+			klog.V(1).Infof("use default config file %s", f)
+			opts = append(opts, configer.WithValueFile(f))
+		}
+	}
+
+	for k, v := range override {
+		opts = append(opts, configer.WithOverrideYaml(k, v))
+	}
+
+	c, err := configer.New(opts...)
 	if err != nil {
 		return err
 	}
-	p.configer = configer
+	p.configer = c
 
-	p.Agent = config.NewConfig(configer)
-	if err := configer.Read("agent", p.Agent); err != nil {
+	p.Agent = config.NewConfig(c)
+	if err := c.Read("agent", p.Agent); err != nil {
 		return err
 	}
-	if err := configer.Read("apiserver", &p.Apiserver); err != nil {
+	if err := c.Read("apiserver", &p.Apiserver); err != nil {
 		return err
 	}
-	if err := configer.Read("authentication", &p.Auth); err != nil {
+	if err := c.Read("authentication", &p.Auth); err != nil {
 		return err
 	}
 
@@ -94,7 +108,10 @@ func (p *EnvSettings) Init() error {
 		klog.Infof("unable to create client, err %s", err)
 	}
 
-	klog.V(5).Infof("config %s", p)
+	proc.WithConfiger(p.ctx, p.configer)
+	common.Client = p
+
+	klog.V(10).Infof("config %s", p)
 
 	return nil
 }

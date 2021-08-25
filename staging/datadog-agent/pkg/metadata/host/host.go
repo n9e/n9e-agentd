@@ -281,7 +281,7 @@ func buildKey(key string) string {
 }
 
 func getInstallInfoPath() string {
-	return path.Join(config.FileUsedDir(), "install_info")
+	return path.Join(config.C.RootDir, "install_info")
 }
 
 func getInstallInfo(infoPath string) (*installInfo, error) {
