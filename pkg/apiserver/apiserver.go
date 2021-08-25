@@ -71,9 +71,9 @@ func init() {
 	// authz
 	authorization.RegisterHooks()
 
-	// override apiserver config
+	// override apiserver config's flags & envs
 	proc.RegisterFlags("apiserver", "apiserver", &Config{})
 
-	// override authorization config
+	// override authorization config's flags & envs
 	proc.RegisterFlags("authorization", "authorization", &authzConfig{})
 }

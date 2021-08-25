@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -78,17 +77,17 @@ type Config struct {
 	PageSize         int           `json:"page_size" flag:"page-size" default:"10" env:"AGENTD_PAGE_SIZE"`
 	NoColor          bool          `json:"no_color" flag:"no-color,n" default:"false" env:"AGENTD_NO_COLOR" description:"disable color output"`
 
-	RunPath                  string `json:"run_path"`                               // run_path
-	JmxPath                  string `json:"jmx_path" description:"{root}/misc/jmx"` // jmx_path
-	ConfdPath                string `json:"confd_path"`                             // confd_path
-	CriSocketPath            string `json:"cri_socket_path"`                        // cri_socket_path
-	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                // kubelet_auth_token_path
-	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`             // kubernetes_kubeconfig_path
-	ProcfsPath               string `json:"procfs_path"`                            // procfs_path
-	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`                 // windows_use_pythonpath
-	DistPath                 string `json:"dist_path"`                              // {workdir}/dist
-	PyChecksPath             string `json:"py_checks_path"`                         // {workdir}/checks.d
-	HostnameFile             string `json:"hostname_file"`                          // hostname_file
+	RunPath                  string `json:"run_path"`                                             // run_path
+	JmxPath                  string `json:"jmx_path" description:"default {root}/misc/jmx"`       // jmx_path
+	ConfdPath                string `json:"confd_path" description:"default {root}/conf.d"`       // confd_path
+	CriSocketPath            string `json:"cri_socket_path"`                                      // cri_socket_path
+	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                              // kubelet_auth_token_path
+	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`                           // kubernetes_kubeconfig_path
+	ProcfsPath               string `json:"procfs_path"`                                          // procfs_path
+	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`                               // windows_use_pythonpath
+	DistPath                 string `json:"dist_path" description:"default {root}/dis"`           // {root}/dist
+	PyChecksPath             string `json:"py_checks_path" description:"default {root}/checks.d"` // {root}/checks.d
+	HostnameFile             string `json:"hostname_file"`                                        // hostname_file
 
 	Ident             string   `json:"ident" flag:"ident" default:"$ip" description:"Ident of this host"`
 	Alias             string   `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
@@ -171,26 +170,26 @@ type Config struct {
 	AggregatorStopTimeout  time.Duration `json:"-"`                                                                                                                // aggregator_stop_timeout
 	AggregatorStopTimeout_ int           `json:"aggregator_stop_timeout" flag:"aggregator-stop-timeout" default:"2" description:"aggregator stop timeout(Second)"` // aggregator_stop_timeout
 
-	IotHost                        bool   `json:"iot_host"`                                                      // iot_host
-	HerokuDyno                     bool   `json:"heroku_dyno"`                                                   // heroku_dyno
-	BasicTelemetryAddContainerTags bool   `json:"basic_telemetry_add_container_tags"`                            // basic_telemetry_add_container_tags
-	LogPayloads                    bool   `json:"log_payloads"`                                                  // log_payloads
-	AutoconfTemplateDir            string `json:"autoconf_template_dir" default:"/opt/n9e/agentd/check_configs"` // autoconf_template_dir
-	AutoconfTemplateUrlTimeout     int    `json:"autoconf_template_url_timeout" default:"5"`                     // autoconf_template_url_timeout
-	CheckRunners                   int    `json:"check_runners" default:"4"`                                     // check_runners
-	GUIPort                        bool   `json:"gui_port"`                                                      // GUI_port
-	XAwsEc2MetadataTokenTtlSeconds bool   `json:"x_aws_ec2_metadata_token_ttl_seconds"`                          // X-aws-ec2-metadata-token-ttl-seconds
-	AcExclude                      bool   `json:"ac_exclude"`                                                    // ac_exclude
-	AcInclude                      bool   `json:"ac_include"`                                                    // ac_include
-	AllowArbitraryTags             bool   `json:"allow_arbitrary_tags"`                                          // allow_arbitrary_tags
-	AppKey                         bool   `json:"app_key"`                                                       // app_key
+	IotHost                        bool   `json:"iot_host"`                                                         // iot_host
+	HerokuDyno                     bool   `json:"heroku_dyno"`                                                      // heroku_dyno
+	BasicTelemetryAddContainerTags bool   `json:"basic_telemetry_add_container_tags"`                               // basic_telemetry_add_container_tags
+	LogPayloads                    bool   `json:"log_payloads"`                                                     // log_payloads
+	AutoconfTemplateDir            string `json:"autoconf_template_dir" description:"default {root}/check_configs"` // autoconf_template_dir
+	AutoconfTemplateUrlTimeout     int    `json:"autoconf_template_url_timeout" default:"5"`                        // autoconf_template_url_timeout
+	CheckRunners                   int    `json:"check_runners" default:"4"`                                        // check_runners
+	GUIPort                        bool   `json:"gui_port"`                                                         // GUI_port
+	XAwsEc2MetadataTokenTtlSeconds bool   `json:"x_aws_ec2_metadata_token_ttl_seconds"`                             // X-aws-ec2-metadata-token-ttl-seconds
+	AcExclude                      bool   `json:"ac_exclude"`                                                       // ac_exclude
+	AcInclude                      bool   `json:"ac_include"`                                                       // ac_include
+	AllowArbitraryTags             bool   `json:"allow_arbitrary_tags"`                                             // allow_arbitrary_tags
+	AppKey                         bool   `json:"app_key"`                                                          // app_key
 
 	CacheSyncTimeout  time.Duration `json:"-"`
 	CacheSyncTimeout_ int           `json:"cache_sync_timeout" flag:"cache-sync-timeout" default:"2" description:"cache sync timeout(Second)"` // cache_sync_timeout
 	ClcRunnerId       string        `json:"clc_runner_id"`                                                                                     // clc_runner_id
 
 	CollectKubernetesEvents      bool          `json:"collect_kubernetes_events"`                                                                                                        // collect_kubernetes_events
-	ComplianceConfigDir          string        `json:"compliance_config_dir" default:"/opt/n9e/agentd/compliance.d"`                                                                     // compliance_config.dir
+	ComplianceConfigDir          string        `json:"compliance_config_dir" description:"default {root}/compliance.d"`                                                                  // compliance_config.dir
 	ComplianceConfigEnabled      bool          `json:"compliance_config_enabled"`                                                                                                        // compliance_config.enabled
 	ContainerCgroupPrefix        string        `json:"container_cgroup_prefix"`                                                                                                          // container_cgroup_prefix
 	ContainerCgroupRoot          string        `json:"container_cgroup_root"`                                                                                                            // container_cgroup_root
@@ -302,7 +301,7 @@ type Config struct {
 	Python3LinterTimeout             time.Duration `json:"-"`
 	Python3LinterTimeout_            int           `json:"python3_linter_timeout" flag:"python3-linter-timeout" default:"120" description:"python3LinterTimeout(Second)"` // python3_linter_timeout
 	PythonVersion                    string        `json:"python_version" default:"3"`                                                                                    // python_version
-	PythonHome                       string        `json:"python_home"`
+	PythonHome                       string        `json:"python_home" flag:"python-home" description:"default {root}/embedded"`
 	AllowPythonPathHeuristicsFailure bool          `json:"allow_python_path_heuristics_failure"`
 	CCoreDump                        bool          `json:"c_core_dump"`             // c_core_dump
 	CStacktraceCollection            bool          `json:"c_stacktrace_collection"` // c_stacktrace_collection
@@ -436,6 +435,10 @@ func (p *Config) Validate() error {
 		return err
 	}
 
+	if p.EnableN9eProvider {
+		p.UseV2Api.Series = true
+	}
+
 	if ForceDefaultPython == "true" {
 		if p.PythonVersion != DefaultPython {
 			klog.Warningf("Python version has been forced to %s", DefaultPython)
@@ -468,57 +471,62 @@ func (p *Config) ValidatePath() (err error) {
 	if !IsDir(p.RootDir) {
 		return fmt.Errorf("agent.workDir %s does not exist, please create it", p.RootDir)
 	}
-
-	klog.V(1).Infof("chdir to ${workdir} %s", p.RootDir)
 	os.Chdir(p.RootDir)
+	klog.V(1).InfoS("agent", "root_dir", p.RootDir, "chdir", p.RootDir)
+
+	root := util.NewRootDir(p.RootDir)
 
 	// {root}/conf.d
-	p.ConfdPath = util.AbsPath(p.ConfdPath, p.RootDir, "conf.d")
+	p.ConfdPath = root.Abs(p.ConfdPath, "conf.d")
 	if !IsDir(p.ConfdPath) {
 		klog.Warningf("agent.confd_path %s does not exist, please create it", p.ConfdPath)
 	}
-	klog.V(1).Infof("agent.confd_path %s", p.ConfdPath)
-
-	// {root}/checks.d
-	//p.AdditionalChecksd = util.AbsPath(p.AdditionalChecksd, p.RootDir, "checks.d")
-
-	klog.V(1).Infof("agent.additional_checks %s", p.AdditionalChecksd)
+	klog.V(1).InfoS("agent", "confd_path", p.ConfdPath)
 
 	// {root}/run
-	p.RunPath = util.AbsPath(p.RunPath, p.RootDir, "run")
+	p.RunPath = root.Abs(p.RunPath, "run")
 	if !IsDir(p.RunPath) {
 		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
 
 	// {root}/misc/jmx
-	p.JmxPath = util.AbsPath(p.JmxPath, p.RootDir, filepath.Join("misc", "jmx"))
+	p.JmxPath = root.Abs(p.JmxPath, "misc", "jmx")
+	klog.V(1).InfoS("agent", "jmx_path", p.JmxPath)
 
-	// logs
 	// {root}/run
-	p.Logs.RunPath = util.AbsPath(p.Logs.RunPath, p.RootDir, p.RunPath)
-	klog.V(1).Infof("agent.logs_config.run_path %s", p.RunPath)
+	p.Logs.RunPath = root.Abs(p.Logs.RunPath, p.RunPath)
+	klog.V(1).InfoS("agent", "logs_config.run_path", p.Logs.RunPath)
 
 	// {root}/run/transactions_to_retry
-	p.Forwarder.StoragePath = util.AbsPath(p.Forwarder.StoragePath,
-		p.RootDir,
-		filepath.Join(p.RunPath, "transactions_to_retry"),
-	)
-	klog.V(1).Infof("agent.forwarder.storage_path %s", p.Forwarder.StoragePath)
+	p.Forwarder.StoragePath = root.Abs(p.Forwarder.StoragePath, p.RunPath, "transactions_to_retry")
+	klog.V(1).InfoS("agent", "forwarder.storage_path", p.Forwarder.StoragePath)
 
-	p.DistPath = util.AbsPath(p.DistPath, p.RootDir, "dist")
-	p.PyChecksPath = util.AbsPath(p.PyChecksPath, p.RootDir, "checks.d")
-	p.PythonHome = util.AbsPath(p.PythonHome, p.RootDir, "embedded")
+	p.DistPath = root.Abs(p.DistPath, "dist")
+	klog.V(1).InfoS("agent", "dist_path", p.DistPath)
+
+	p.PyChecksPath = root.Abs(p.PyChecksPath, "checks.d")
+	klog.V(1).InfoS("agent", "py_checks_path", p.PyChecksPath)
+
+	p.PythonHome = root.Abs(p.PythonHome, "embedded")
+	klog.V(1).InfoS("agent", "python_home", p.PythonHome)
 
 	// {root}/{name}.sock
 
 	// {root}/logs/checks for check flare
-	p.CheckFlareDir = util.AbsPath(p.PythonHome, p.RootDir, filepath.Join("logs", "checks"))
+	p.CheckFlareDir = root.Abs(p.PythonHome, "logs", "checks")
+	klog.V(1).InfoS("agent", "check_flare_dir", p.CheckFlareDir)
+
+	p.RuntimeSecurity.PoliciesDir = root.Abs(p.RuntimeSecurity.PoliciesDir, "etc", "runtime-security.d")
+	p.SystemProbe.SocketAddress = root.Abs(p.SystemProbe.SocketAddress, "run", "sysprobe.sock")
+	p.SystemProbe.LogFile = root.Abs(p.SystemProbe.LogFile, "logs", "system-probe.log")
+	p.ComplianceConfigDir = root.Abs(p.ComplianceConfigDir, "compliance.d")
+	p.AutoconfTemplateDir = root.Abs(p.AutoconfTemplateDir, "check_configs")
 
 	return nil
 }
 
 type UseV2Api struct {
-	Series        bool `json:"series" default:"false"`
+	Series        bool `json:"series" default:"true"`
 	Events        bool `json:"events" default:"false"`
 	ServiceChecks bool `json:"service_checks" default:"false"`
 }
@@ -626,25 +634,25 @@ func (p *AdminssionController) Validate() error {
 }
 
 type RuntimeSecurity struct {
-	Enabled                            bool   `json:"enabled"`                                                       // runtime_security_config.enabled
-	Socket                             string `json:"socket"`                                                        // runtime_security_config.socket
-	AgentMonitoringEvents              bool   `json:"agent_monitoring_events"`                                       // runtime_security_config.agent_monitoring_events
-	CookieCacheSize                    bool   `json:"cookie_cache_size"`                                             // runtime_security_config.cookie_cache_size
-	CustomSensitiveWords               bool   `json:"custom_sensitive_words"`                                        // runtime_security_config.custom_sensitive_words
-	EnableApprovers                    bool   `json:"enable_approvers"`                                              // runtime_security_config.enable_approvers
-	EnableDiscarders                   bool   `json:"enable_discarders"`                                             // runtime_security_config.enable_discarders
-	EnableKernelFilters                bool   `json:"enable_kernel_filters"`                                         // runtime_security_config.enable_kernel_filters
-	EventServerBurst                   bool   `json:"event_server_burst"`                                            // runtime_security_config.event_server.burst
-	EventServerRate                    bool   `json:"event_server_rate"`                                             // runtime_security_config.event_server.rate
-	EventsStatsPollingInterval         bool   `json:"events_stats_polling_interval"`                                 // runtime_security_config.events_stats.polling_interval
-	FimEnabled                         bool   `json:"fim_enabled"`                                                   // runtime_security_config.fim_enabled
-	FlushDiscarderWindow               bool   `json:"flush_discarder_window"`                                        // runtime_security_config.flush_discarder_window
-	LoadControllerControlPeriod        bool   `json:"load_controller_control_period"`                                // runtime_security_config.load_controller.control_period
-	LoadControllerDiscarderTimeout     bool   `json:"load_controller_discarder_timeout"`                             // runtime_security_config.load_controller.discarder_timeout
-	LoadControllerEventsCountThreshold bool   `json:"load_controller_events_count_threshold"`                        // runtime_security_config.load_controller.events_count_threshold
-	PidCacheSize                       bool   `json:"pid_cache_size"`                                                // runtime_security_config.pid_cache_size
-	PoliciesDir                        string `json:"policies_dir" default:"/opt/n9e/agentd/etc/runtime-security.d"` // runtime_security_config.policies.dir
-	SyscallMonitorEnabled              bool   `json:"syscall_monitor_enabled"`                                       // runtime_security_config.syscall_monitor.enabled
+	Enabled                            bool   `json:"enabled"`                                                          // runtime_security_config.enabled
+	Socket                             string `json:"socket"`                                                           // runtime_security_config.socket
+	AgentMonitoringEvents              bool   `json:"agent_monitoring_events"`                                          // runtime_security_config.agent_monitoring_events
+	CookieCacheSize                    bool   `json:"cookie_cache_size"`                                                // runtime_security_config.cookie_cache_size
+	CustomSensitiveWords               bool   `json:"custom_sensitive_words"`                                           // runtime_security_config.custom_sensitive_words
+	EnableApprovers                    bool   `json:"enable_approvers"`                                                 // runtime_security_config.enable_approvers
+	EnableDiscarders                   bool   `json:"enable_discarders"`                                                // runtime_security_config.enable_discarders
+	EnableKernelFilters                bool   `json:"enable_kernel_filters"`                                            // runtime_security_config.enable_kernel_filters
+	EventServerBurst                   bool   `json:"event_server_burst"`                                               // runtime_security_config.event_server.burst
+	EventServerRate                    bool   `json:"event_server_rate"`                                                // runtime_security_config.event_server.rate
+	EventsStatsPollingInterval         bool   `json:"events_stats_polling_interval"`                                    // runtime_security_config.events_stats.polling_interval
+	FimEnabled                         bool   `json:"fim_enabled"`                                                      // runtime_security_config.fim_enabled
+	FlushDiscarderWindow               bool   `json:"flush_discarder_window"`                                           // runtime_security_config.flush_discarder_window
+	LoadControllerControlPeriod        bool   `json:"load_controller_control_period"`                                   // runtime_security_config.load_controller.control_period
+	LoadControllerDiscarderTimeout     bool   `json:"load_controller_discarder_timeout"`                                // runtime_security_config.load_controller.discarder_timeout
+	LoadControllerEventsCountThreshold bool   `json:"load_controller_events_count_threshold"`                           // runtime_security_config.load_controller.events_count_threshold
+	PidCacheSize                       bool   `json:"pid_cache_size"`                                                   // runtime_security_config.pid_cache_size
+	PoliciesDir                        string `json:"policies_dir" description:"default {root}/etc/runtime-security.d"` // runtime_security_config.policies.dir
+	SyscallMonitorEnabled              bool   `json:"syscall_monitor_enabled"`                                          // runtime_security_config.syscall_monitor.enabled
 }
 
 func (p *RuntimeSecurity) Validate() error {
@@ -738,7 +746,7 @@ func (p *NetworkConfig) Validate() error {
 
 type Telemetry struct {
 	Enabled bool     `json:"enabled" default:"true"` // telemetry.enabled
-	Port    int      `json:"port" default:"8070"`    // expvar_port
+	Port    int      `json:"port" default:"8011"`    // expvar_port
 	Docs    bool     `json:"docs" default:"true"`    // /docs/*
 	Metrics bool     `json:"metrics" default:"true"` // /metrics/
 	Expvar  bool     `json:"expvar" default:"true"`  // /vars

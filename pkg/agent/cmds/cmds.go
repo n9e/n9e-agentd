@@ -1,20 +1,21 @@
 package cmds
 
-import "github.com/n9e/n9e-agentd/pkg/agent"
+import . "github.com/n9e/n9e-agentd/pkg/agent"
 
 var (
-	cmds = []agent.CmdOps{
-		{CmdFactory: newDocsCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newCompletionCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newEnvCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newVersionCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newConfigCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newCheckCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newIntegrationCmd, GroupNum: agent.CMD_G_OTHER},
-		{CmdFactory: newOptionsCmd, GroupNum: agent.CMD_G_OTHER},
+	cmds = []CmdOps{
+		{CmdFactory: newDocsCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newCompletionCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newEnvCmd, GroupNum: CMD_G_DEUBG},
+		{CmdFactory: newVersionCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newConfigCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newCheckCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newIntegrationCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newOptionsCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newStartCmd, GroupNum: CMD_G_RESOURCE},
 	}
 )
 
 func init() {
-	agent.RegisterCmd(cmds...)
+	RegisterCmd(cmds...)
 }

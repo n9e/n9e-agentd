@@ -136,14 +136,14 @@ func ResolveRootPath(root string) (string, error) {
 
 }
 
-func AbsPath(path, rootPath, defPath string) string {
-	if path == "" {
-		path = defPath
-	}
-
-	if filepath.IsAbs(path) {
-		return path
-	}
-
-	return filepath.Join(rootPath, path)
-}
+//func AbsPath(path, rootPath, defPath string) string {
+//	if path == "" {
+//		path = defPath
+//	}
+//
+//	if filepath.IsAbs(path) {
+//		return path
+//	}
+//
+//	return filepath.Join(rootPath, path)
+//}

@@ -38,7 +38,7 @@ var (
 		{api.V1IntakeEndpoint, nil},
 		{api.V1SketchSeriesEndpoint, nil},
 		{api.V1ValidateEndpoint, nil},
-		{api.SeriesEndpoint, nil},
+		//{api.SeriesEndpoint, nil},
 		{api.EventsEndpoint, gogen.EventsPayload{}},
 		{api.ServiceChecksEndpoint, gogen.ServiceChecksPayload{}},
 		{api.SketchSeriesEndpoint, gogen.SketchPayload{}},

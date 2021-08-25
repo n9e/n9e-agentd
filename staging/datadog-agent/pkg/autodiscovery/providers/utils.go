@@ -14,7 +14,9 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -212,4 +214,73 @@ func GetPollInterval(cp config.ConfigurationProviders) time.Duration {
 		}
 	}
 	return config.C.AdConfigPollInterval
+}
+
+func ParseJSONConfig(data []byte) (*integration.Config, error) {
+	cf, err := api.ParseConfigFormatJson(data)
+	if err != nil {
+		return nil, err
+	}
+	return newConfig(cf)
+}
+
+func ParseYAMLConfig(data []byte) (*integration.Config, error) {
+	cf, err := api.ParseConfigFormatYaml(data)
+	if err != nil {
+		return nil, err
+	}
+	return newConfig(cf)
+}
+
+// not set Name, Provider
+func newConfig(cf *api.ConfigFormat) (*integration.Config, error) {
+	config := &integration.Config{}
+
+	if cf.MetricConfig == nil && cf.LogsConfig == nil && len(cf.Instances) < 1 {
+		return nil, fmt.Errorf("config contains no valid instances")
+	}
+
+	var err error
+	if cf.InitConfig != nil {
+		if config.InitConfig, err = yaml.Marshal(cf.InitConfig); err != nil {
+			return nil, err
+		}
+	}
+
+	if len(cf.Instances) > 0 {
+		for _, instance := range cf.Instances {
+			rawConf, err := yaml.Marshal(instance)
+			if err != nil {
+				return nil, err
+			}
+			config.Instances = append(config.Instances, rawConf)
+		}
+	}
+
+	// If JMX metrics were found, add them to the config
+	if cf.MetricConfig != nil {
+		if config.MetricConfig, err = yaml.Marshal(cf.MetricConfig); err != nil {
+			return nil, err
+		}
+	}
+
+	// If logs was found, add it to the config
+	if cf.LogsConfig != nil {
+		logsConfig := make(map[string]interface{})
+		logsConfig["logs"] = cf.LogsConfig
+		if config.LogsConfig, err = yaml.Marshal(logsConfig); err != nil {
+			return nil, err
+		}
+	}
+
+	// Copy auto discovery identifiers
+	config.ADIdentifiers = cf.ADIdentifiers
+
+	// Copy cluster_check status
+	config.ClusterCheck = cf.ClusterCheck
+
+	// Copy ignore_autodiscovery_tags parameter
+	config.IgnoreAutodiscoveryTags = cf.IgnoreAutodiscoveryTags
+
+	return config, nil
 }

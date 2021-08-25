@@ -31,7 +31,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	commonsettings "github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/n9e/n9e-agentd/pkg/i18n"
-	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/yubo/golib/proc"
@@ -60,17 +59,15 @@ type agentServer struct {
 var (
 	_agentServer = &agentServer{name: moduleName}
 	hookOps      = []proc.HookOps{{
-		Hook:        _agentServer.start,
-		Owner:       moduleName,
-		HookNum:     proc.ACTION_START,
-		Priority:    proc.PRI_MODULE,
-		SubPriority: options.PRI_M_CORE,
+		Hook:     _agentServer.start,
+		Owner:    moduleName,
+		HookNum:  proc.ACTION_START,
+		Priority: proc.PRI_SYS_INIT, // must init root_dir before auth module
 	}, {
-		Hook:        _agentServer.stop,
-		Owner:       moduleName,
-		HookNum:     proc.ACTION_STOP,
-		Priority:    proc.PRI_MODULE,
-		SubPriority: options.PRI_M_CORE,
+		Hook:     _agentServer.stop,
+		Owner:    moduleName,
+		HookNum:  proc.ACTION_STOP,
+		Priority: proc.PRI_SYS_INIT, // must init root_dir before auth module
 	}}
 )
 
@@ -365,6 +362,7 @@ func (p *agentServer) startAggStatsd() (err error) {
 	agg.AddAgentStartupTelemetry(version.AgentVersion)
 
 	if !p.config.Statsd.Enabled {
+		klog.Infof("statsd is disabled")
 		return nil
 	}
 
@@ -379,6 +377,7 @@ func (p *agentServer) startAggStatsd() (err error) {
 
 func (p *agentServer) startSnmpTrap() error {
 	if !p.config.SnmpTraps.Enabled {
+		klog.Infof("snmp traps is disabled")
 		return nil
 	}
 
@@ -399,7 +398,7 @@ func (p *agentServer) startSnmpTrap() error {
 // start logs-agent
 func (p *agentServer) startLogsAgent() error {
 	if !p.config.Logs.Enabled {
-		klog.Info("logs-agent disabled")
+		klog.Info("logs-agent is disabled")
 		return nil
 	}
 

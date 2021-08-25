@@ -354,6 +354,7 @@ func (p *checkCmd) runChecks() error {
 	var checkFileOutput bytes.Buffer
 	var instancesData []interface{}
 	for _, c := range p.cs {
+		// <<--
 		s := p.runCheck(c)
 
 		// Sleep for a while to allow the aggregator to finish ingesting all the metrics/events/sc

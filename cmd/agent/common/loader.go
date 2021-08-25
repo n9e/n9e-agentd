@@ -25,12 +25,14 @@ func LoadComponents() {
 
 	// create the Collector instance and start all the components
 	// NOTICE: this will also setup the Python environment, if available
+	// <<--
 	Coll = collector.NewCollector(GetPythonPaths()...)
 
 	// creating the meta scheduler
 	metaScheduler := scheduler.NewMetaScheduler()
 
 	// registering the check scheduler
+	// <<--
 	metaScheduler.Register("check", collector.InitCheckScheduler(Coll))
 
 	// registering the logs scheduler

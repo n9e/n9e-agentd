@@ -3,6 +3,8 @@ module github.com/n9e/n9e-agentd
 go 1.16
 
 replace (
+	github.com/yubo/golib => ../golib
+	github.com/yubo/apiserver => ../apiserver
 	github.com/DataDog/datadog-agent => ./staging/datadog-agent
 	github.com/DataDog/datadog-agent/pkg/util/log => ./staging/datadog-agent/pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
@@ -76,6 +78,7 @@ require (
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.0.0
 	sigs.k8s.io/yaml v1.2.0

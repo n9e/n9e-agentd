@@ -31,14 +31,14 @@ type Config struct {
 
 	// When the system-probe is enabled in a separate container, we need a way to also disable the system-probe
 	// packaged in the main agent container (without disabling network collection on the process-agent).
-	ExternalSystemProbe bool   `json:"external" default:"false" env:"DD_SYSTEM_PROBE_EXTERNAL"`                              // external
-	SocketAddress       string `json:"sysprobe_socket" default:"/opt/n9e/agentd/run/sysprobe.sock" env:"DD_SYSPROBE_SOCKET"` // sysprobe_socket
-	MaxConnsPerMessage  int    `json:"max_conns_per_message" default:"600"`                                                  // max_conns_per_message
-	LogFile             string `json:"log_file" default:"/opt/n9e/agentd/logs/system-probe.log"`                             // log_file
-	LogLevel            string `json:"log_level" default:"info" env:"DD_LOG_LEVEL"`                                          // log_level
-	DebugPort           int    `json:"debug_port" default:"0"`                                                               // debug_port
-	StatsdHost          string `json:"-" default:"127.0.0.1"`                                                                // GetBindHost()
-	StatsdPort          int    `json:"dogstatsd_port" default:"8125"`                                                        // dogstatsd_port
+	ExternalSystemProbe bool   `json:"external" default:"false" env:"DD_SYSTEM_PROBE_EXTERNAL"`                                 // external
+	SocketAddress       string `json:"sysprobe_socket" env:"DD_SYSPROBE_SOCKET" description:"default {root}/run/sysprobe.sock"` // sysprobe_socket
+	MaxConnsPerMessage  int    `json:"max_conns_per_message" default:"600"`                                                     // max_conns_per_message
+	LogFile             string `json:"log_file" description:"default {root}/logs/system-probe.log"`                             // log_file
+	LogLevel            string `json:"log_level" default:"info" env:"DD_LOG_LEVEL"`                                             // log_level
+	DebugPort           int    `json:"debug_port" default:"0"`                                                                  // debug_port
+	StatsdHost          string `json:"-" default:"127.0.0.1"`                                                                   // GetBindHost()
+	StatsdPort          int    `json:"dogstatsd_port" default:"8125"`                                                           // dogstatsd_port
 
 	SysprobeSocket               string              `json:"sysprobe_socket"`                 // system_probe_config.sysprobe_socket
 	BPFDebug                     bool                `json:"bpf_debug"`                       // system_probe_config.bpf_debug

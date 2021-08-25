@@ -85,8 +85,8 @@ func newIntegrationCmd(env *agent.EnvSettings) *cobra.Command {
 
 	cmd.AddCommand(ic.newInstallCmd())
 	cmd.AddCommand(ic.newRemoveCmd())
-	cmd.AddCommand(ic.newFreezeCmd())
-	cmd.AddCommand(ic.newShowCmd())
+	cmd.AddCommand(ic.newInfoCmd())
+	cmd.AddCommand(ic.newListCmd())
 
 	return cmd
 }
@@ -126,9 +126,9 @@ func (p *integrationsCmd) newRemoveCmd() *cobra.Command {
 		},
 	}
 }
-func (p *integrationsCmd) newFreezeCmd() *cobra.Command {
+func (p *integrationsCmd) newInfoCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "show [package]",
+		Use:   "info [package]",
 		Short: "Print out information about [package]",
 		Args:  cobra.ExactArgs(1),
 		Long:  ``,
@@ -140,9 +140,9 @@ func (p *integrationsCmd) newFreezeCmd() *cobra.Command {
 		},
 	}
 }
-func (p *integrationsCmd) newShowCmd() *cobra.Command {
+func (p *integrationsCmd) newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "freeze",
+		Use:   "list",
 		Short: "Print the list of installed packages in the agent's python environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return p.list()

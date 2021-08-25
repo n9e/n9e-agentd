@@ -37,7 +37,6 @@ cp -a ../misc/conf.d ${dir}/
 cp -a ../misc/scripts.d ${dir}/
 cp -a ../misc/licenses ${dir}/
 cp -a ../misc/systemd ${dir}/misc/
-cp -a ../scripts/gen-envs.sh ${dir}/bin/
 
 if [[ -n ${DD_ROOT} && -d ${CWD}/.cache/dd-${GOOS}-${GOARCH} ]]; then
 	cd ${CWD}/.cache/dd-${GOOS}-${GOARCH}

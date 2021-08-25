@@ -15,6 +15,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/collector/runner"
 	"github.com/DataDog/datadog-agent/pkg/collector/scheduler"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -53,6 +54,7 @@ func NewCollector(paths ...string) *Collector {
 		checkInstances: int64(0),
 	}
 	pyVer, pyHome, pyPath := pySetup(paths...)
+	klog.InfoS("py setup", "paths", paths, "version", pyVer, "home", pyHome, "path", pyPath)
 
 	// print the Python info if the interpreter was embedded
 	if pyVer != "" {

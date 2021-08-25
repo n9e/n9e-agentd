@@ -11,7 +11,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util/templates"
 	"github.com/spf13/cobra"
-	"github.com/yubo/golib/cli/flag"
 	"github.com/yubo/golib/cli/globalflag"
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
@@ -51,21 +50,13 @@ func newRootCmd() *cobra.Command {
 			https://github.com/n9e/n9e-agentd`),
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if cmd != settings.TopCmd {
+			if cmd != settings.ServerCmd {
 				config.C.IsCliRunner = true
 				if err := settings.Init(); err != nil {
 					klog.Error(err)
-					//return err
 				}
 			}
 			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if klog.V(5).Enabled() {
-				fs := cmd.Flags()
-				flag.PrintFlags(fs)
-			}
-			return proc.Start()
 		},
 	}
 

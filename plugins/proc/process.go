@@ -8,19 +8,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "github.com/n9e/agent-payload/process"
-	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
-	"github.com/DataDog/datadog-agent/pkg/process/config"
-	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/plugins/process/checks"
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
+	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	core "github.com/DataDog/datadog-agent/pkg/collector/corechecks"
+	"github.com/DataDog/datadog-agent/pkg/process/config"
+	model "github.com/n9e/agent-payload/process"
+	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/n9e/n9e-agentd/plugins/proc/checks"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
 
-const checkName = "process"
+const checkName = "proc"
 
 var collector *Collector
 

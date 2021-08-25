@@ -63,7 +63,7 @@ type Config struct {
 	CloseTimeout_               int               `json:"close_timeout" flag:"logs-close-timeout" default:"60" description:"closeTimeout(Second)"` // logs_config.close_timeout
 	AuditorTTL                  time.Duration     `json:"-"`
 	AuditorTTL_                 int               `json:"auditor_ttl" flag:"logs-auditor-ttl" description:"auditorTTL(Second)"` // logs_config.auditor_ttl
-	RunPath                     string            `json:"run_path"`                                                             // logs_config.run_path
+	RunPath                     string            `json:"run_path" description:"default {root}/{run_path}"`                     // logs_config.run_path
 	OpenFilesLimit              int               `json:"open_files_limit" flag:"logs-open-files-limit" default:"100"`          // logs_config.open_files_limit
 	K8SContainerUseFile         bool              `json:"k8s_container_use_file"`                                               // logs_config.k8s_container_use_file
 	DockerContainerUseFile      bool              `json:"docker_container_use_file"`                                            // logs_config.docker_container_use_file

@@ -2,7 +2,7 @@ package apiserver
 
 // Config contains the config while running a generic api server.
 type Config struct {
-	Enabled bool `json:"enabled" default:"false" flag:"apiserver-enable" description:"api server enable"`
+	Enabled bool `json:"enabled" default:"false" flag:"apiserver" description:"api server enable"`
 
 	ExternalHost string `json:"externalHost" flag:"external-hostname" description:"The hostname to use when generating externalized URLs for this master (e.g. Swagger API Docs or OpenID Discovery)."`
 

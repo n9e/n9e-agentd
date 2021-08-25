@@ -9,15 +9,14 @@ import (
 )
 
 func main() {
-	if err := sendStart(); err != nil {
-		klog.Fatal(err)
-	}
 
 	var port int
 	var confd string
 	var collectRule bool
+	var sendStatsd bool
 	flag.IntVar(&port, "port", 8000, "listen port")
 	flag.BoolVar(&collectRule, "collect-rule", false, "enable collect rule provider")
+	flag.BoolVar(&sendStatsd, "send-statsd", false, "enable send statsd sample data")
 	flag.StringVar(&confd, "confd", "./etc/mocker.d", "config dir")
 	flag.Parse()
 
@@ -27,6 +26,12 @@ func main() {
 
 	if collectRule {
 		installCollectRules(confd)
+	}
+
+	if sendStatsd {
+		if err := sendStart(); err != nil {
+			klog.Fatal(err)
+		}
 	}
 
 	klog.Infof("listen :%d", port)

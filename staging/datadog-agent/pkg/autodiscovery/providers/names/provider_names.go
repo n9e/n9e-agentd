@@ -22,4 +22,5 @@ const (
 	PrometheusServices = "prometheus-services"
 	SNMP               = "snmp"
 	Zookeeper          = "zookeeper"
+	Http               = "http"
 )

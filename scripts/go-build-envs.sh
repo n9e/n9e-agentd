@@ -95,8 +95,9 @@ if [[ -d ${dd_root}/embedded/lib ]]; then
 		cd ${CWD}
 	fi
 
+	setenv CGO_CFLAGS      "-I${dd_root}/embedded/include"
+	setenv CGO_LDFLAGS     "-L${dd_root}/embedded/lib -ldl"
 	setenv DD_ROOT         "${dd_root}"
-	setenv LDFLAGS         "-L${dd_root}/embedded/lib"
 	setenv LD_LIBRARY_PATH "${dd_root}/embedded/lib"
 fi
 

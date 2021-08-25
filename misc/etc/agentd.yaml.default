@@ -41,9 +41,9 @@ agent:
   #   - "0.95"
 
   exporter:
-  ## @param port - integer - optional - default: 8070
+  ## @param port - integer - optional - default: 8011
   ## Port for the debug endpoints for the process Agent.
-  # port: 8070
+  # port: 8011
 
   #############################
   ## statsd Configuration ##

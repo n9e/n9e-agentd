@@ -24,7 +24,7 @@ type Config struct {
 	StopTimeout_              int                  `json:"stop_timeout" flag:"forwarder-stop-timeout" default:"2" description:"stopTimeout(Second)"` // forwarder_stop_timeout
 	StorageMaxDiskRatio       float64              `json:"storage_max_disk_ratio" default:"0.95"`                                                    // forwarder_storage_max_disk_ratio
 	StorageMaxSizeInBytes     int64                `json:"storage_max_size_in_bytes"`                                                                // forwarder_storage_max_size_in_bytes
-	StoragePath               string               `json:"storage_path"`                                                                             // forwarder_storage_path
+	StoragePath               string               `json:"storage_path" description:"default {root}/transactions_to_retry"`                          // forwarder_storage_path
 	Timeout                   time.Duration        `json:"-"`
 	Timeout_                  int                  `json:"timeout" flag:"forwarder-timeout" default:"20" description:"timeout(Second)"` // forwarder_timeout
 

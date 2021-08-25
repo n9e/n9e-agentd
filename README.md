@@ -10,7 +10,7 @@ This is a monitor agent for N9E
 $ make pkg
 
 $ ls build/
-linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc5.linux.amd64.tar.gz
+linux-amd64/  n9e-agentd  n9e-agentd-5.1.0-rc1.linux.amd64.tar.gz
 ```
 
 ## Install & Running
@@ -18,8 +18,8 @@ linux-amd64/  n9e-agentd  n9e-agentd-5.0.0-rc5.linux.amd64.tar.gz
 Install
 ```shell
 tar xzvf n9e-agentd-x.x.x.linux.amd64.tar.gz
-mkdir -p /opt/n9e
-mv ./linux-amd64 /opt/n9e/agentd
+mkdir -p /opt/n9e/agentd
+mv ./linux-amd64/* /opt/n9e/agentd/
 cp /opt/n9e/agentd/etc/agentd.yaml.default /opt/n9e/agentd/etc/agentd.yaml
 ```
 
@@ -36,7 +36,7 @@ agent:
 Start agentd
 ```shell
 source /opt/n9e/agentd/etc/agentd.rc && \
-/opt/n9e/agentd/bin/n9e-agentd -f /opt/n9e/agentd/etc/agentd.yaml
+/opt/n9e/agentd/bin/n9e-agentd start -f /opt/n9e/agentd/etc/agentd.yaml
 ```
 
 Use with systemd
@@ -46,9 +46,15 @@ systemctl enable n9e-agentd
 systemctl start n9e-agentd
 ```
 
-## Use with rpm
+## Run agentd in special directory
 
 ```shell
-sudo rpm -Uvh n9e-agentd-x.x.x.Linux.x86_64.rpm
-sudo systemctl status n9e-agentd
+# refresh agentd.rc
+cd {n9e-agentd-dir}
+
+# generate env files
+./bin/gen-envs.sh ./etc
+
+source ./etc/agentd.rc
+./bin/n9e-agentd start -f ./etc/agentd.yaml
 ```

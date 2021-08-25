@@ -11,7 +11,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/options"
-	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/yubo/apiserver/pkg/cmdcli"
@@ -58,9 +57,10 @@ type EnvSettings struct {
 	client  *rest.RESTClient
 	clients map[string]*rest.RESTClient // metrcs/cmd
 
-	TopCmd   *cobra.Command
-	configer *configer.Configer
-	fs       *pflag.FlagSet
+	TopCmd    *cobra.Command
+	ServerCmd *cobra.Command
+	configer  *configer.Configer
+	fs        *pflag.FlagSet
 }
 
 func (p *EnvSettings) Init() error {
@@ -83,7 +83,8 @@ func (p *EnvSettings) Init() error {
 	}
 
 	// client
-	p.Auth.AuthTokenFile = util.AbsPath(p.Auth.AuthTokenFile, p.Agent.RootDir, "etc/auth_token")
+	p.Auth.ValidatePath(p.Agent.RootDir)
+
 	p.client, err = rest.RESTClientFor(&rest.Config{
 		Host:            fmt.Sprintf("%s:%d", p.Apiserver.Host, p.Apiserver.Port),
 		ContentConfig:   rest.ContentConfig{NegotiatedSerializer: scheme.Codecs},

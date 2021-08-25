@@ -3,6 +3,7 @@ package authentication
 import (
 	"context"
 
+	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/yubo/apiserver/pkg/authentication"
 	"github.com/yubo/apiserver/pkg/authentication/authenticator"
 	"github.com/yubo/apiserver/pkg/authentication/user"
@@ -29,9 +30,17 @@ var (
 )
 
 type Config struct {
-	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" env:"N9E_TOKEN_FILE" default:"./etc/auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
-	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" default:"./etc/cluster_agent.auth_token" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" env:"N9E_TOKEN_FILE" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
+	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
+}
+
+func (p *Config) ValidatePath(rootDir string) error {
+	root := util.NewRootDir(rootDir)
+	p.AuthTokenFile = root.Abs(p.AuthTokenFile, "etc", "auth_token")
+	klog.V(1).InfoS("authentication", "auth_token_file", p.AuthTokenFile)
+
+	return nil
 }
 
 func (p *Config) Validate() error {
@@ -57,11 +66,7 @@ func (p *authModule) init(ctx context.Context) error {
 	}
 	p.config = cf
 
-	if len(cf.AuthTokenFile) == 0 {
-		klog.V(1).InfoS("skip authModule", "name", p.name, "reason", "tokenfile not set")
-		return nil
-	}
-	klog.V(5).InfoS("authmodule init", "name", p.name, "file", cf.AuthTokenFile)
+	p.config.ValidatePath("")
 
 	auth, err := p.newAuthToken()
 	if err != nil {

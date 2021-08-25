@@ -11,7 +11,7 @@ const (
 )
 
 const (
-	CMD_G_OTHER = iota
+	CMD_G_GENERIC = iota
 	CMD_G_RESOURCE
 	CMD_G_DEUBG
 	CMD_G_INTEGRATION
@@ -22,7 +22,7 @@ var (
 	hookOps       = []*HookOps{}
 	groupOps      [CMD_G_SIZE][]*HookOps
 	groupMessages = [CMD_G_SIZE]string{
-		"Other Commands",
+		"Other Commands", // don't edit
 		"Resource Management Commands",
 		"Troubleshooting and Debugging Commands",
 		"Integration",
