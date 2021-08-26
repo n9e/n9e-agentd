@@ -56,8 +56,8 @@ type EnvSettings struct {
 	Out    io.Writer
 	Errout io.Writer
 
-	client  *rest.RESTClient
-	clients map[string]*rest.RESTClient // metrcs/cmd
+	Client  *rest.RESTClient
+	Clients map[string]*rest.RESTClient // metrcs/cmd
 
 	TopCmd    *cobra.Command
 	ServerCmd *cobra.Command
@@ -99,7 +99,7 @@ func (p *EnvSettings) Init(override map[string]string) error {
 	// client
 	p.Auth.ValidatePath(p.Agent.RootDir)
 
-	p.client, err = rest.RESTClientFor(&rest.Config{
+	p.Client, err = rest.RESTClientFor(&rest.Config{
 		Host:            fmt.Sprintf("%s:%d", p.Apiserver.Host, p.Apiserver.Port),
 		ContentConfig:   rest.ContentConfig{NegotiatedSerializer: scheme.Codecs},
 		BearerTokenFile: p.Auth.AuthTokenFile,
@@ -152,11 +152,19 @@ func (p *EnvSettings) ApiCall(method, uri string, input, output interface{}, opt
 }
 
 func (p *EnvSettings) Request(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) (*cmdcli.Request, error) {
+	if p.Client == nil {
+		return nil, fmt.Errorf("unable to get client")
+	}
 	if p, ok := input.(Preparer); ok {
 		if err := p.Prepare(); err != nil {
 			return nil, err
 		}
 	}
+
+	if method != "" {
+		opts = append(opts, cmdcli.WithMethod(method))
+	}
+
 	if uri != "" {
 		opts = append(opts, cmdcli.WithPrifix(uri))
 	}
@@ -170,7 +178,7 @@ func (p *EnvSettings) Request(method, uri string, input, output interface{}, opt
 		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout))
 	}
 
-	return cmdcli.NewRequestWithClient(p.client, opts...), nil
+	return cmdcli.NewRequestWithClient(p.Client, opts...), nil
 }
 
 func (p *EnvSettings) ApiCallDone(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) (err error) {

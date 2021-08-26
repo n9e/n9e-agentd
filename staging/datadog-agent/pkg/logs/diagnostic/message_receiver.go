@@ -35,9 +35,9 @@ type BufferedMessageReceiver struct {
 
 // Filters for processing log messages
 type Filters struct {
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Source string `json:"source"`
+	Name   string `param:"query"`
+	Type   string `param:"query"`
+	Source string `param:"query"`
 }
 
 // NewBufferedMessageReceiver creates a new MessageReceiver

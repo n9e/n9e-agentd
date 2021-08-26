@@ -15,8 +15,8 @@ func newConfigCmd(env *agent.EnvSettings) *cobra.Command {
 		Use:   "config",
 		Short: "Print the runtime configuration of a running agent",
 		Long:  ``,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return getFullConfig(env)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return env.ApiCall("GET", "/api/v1/config", nil, env.Out)
 		},
 	}
 
@@ -27,10 +27,6 @@ func newConfigCmd(env *agent.EnvSettings) *cobra.Command {
 	cmd.AddCommand(newConfigBashCmd(env))
 
 	return cmd
-}
-
-func getFullConfig(env *agent.EnvSettings) error {
-	return env.ApiCall("GET", "/api/v1/config", nil, env.Out)
 }
 
 // listRuntime returns a cobra command to list the settings that can be changed at runtime.

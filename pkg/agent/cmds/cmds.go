@@ -16,7 +16,10 @@ var (
 		{CmdFactory: newIntegrationCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newOptionsCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newStartCmd, GroupNum: CMD_G_RESOURCE},
-		{CmdFactory: newConfigCheckCmd, GroupNum: CMD_G_RESOURCE},
+		{CmdFactory: newConfigCheckCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newHostnameCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newStopCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newStreamLogsCmd, GroupNum: CMD_G_GENERIC},
 	}
 	loggerName config.LoggerName = "CORE"
 )

@@ -3,12 +3,12 @@ module github.com/n9e/n9e-agentd
 go 1.16
 
 replace (
-	github.com/yubo/golib => ../golib
-	github.com/yubo/apiserver => ../apiserver
 	github.com/DataDog/datadog-agent => ./staging/datadog-agent
 	github.com/DataDog/datadog-agent/pkg/util/log => ./staging/datadog-agent/pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
 	github.com/DataDog/mmh3 => github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a
+	github.com/yubo/apiserver => ../apiserver
+	github.com/yubo/golib => ../golib
 )
 
 // NOTE: Prefer using simple `require` directives instead of using `replace` if possible.
@@ -52,6 +52,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/gosnmp/gosnmp v1.32.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
@@ -77,6 +78,7 @@ require (
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.31.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0

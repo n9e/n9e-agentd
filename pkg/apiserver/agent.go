@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
@@ -31,8 +30,9 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/yubo/apiserver/pkg/request"
+	"github.com/yubo/apiserver/pkg/handlers"
 	"github.com/yubo/apiserver/pkg/rest"
+	"github.com/yubo/apiserver/pkg/watch"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -47,7 +47,7 @@ func (p *module) installWs(c rest.GoRestfulContainer) {
 			{Method: "POST", SubPath: "/flare", Handle: makeFlare, Desc: "make flare"},
 			{Method: "POST", SubPath: "/stop", Handle: stopAgent, Desc: "stop agent"},
 			{Method: "GET", SubPath: "/status", Handle: getStatus, Desc: "get status"},
-			{Method: "POST", SubPath: "/stream-logs", Handle: streamLogs, Desc: "post stream logs"},
+			{Method: "GET", SubPath: "/stream-logs", Handle: streamLogs, Desc: "post stream logs"},
 			{Method: "GET", SubPath: "/statsd-stats", Handle: getDogstatsdStats, Desc: "get statsd stats"},
 			{Method: "GET", SubPath: "/status/formatted", Handle: getFormattedStatus, Desc: "get formatted status"},
 			{Method: "GET", SubPath: "/status/health", Handle: getHealth, Desc: "get health"},
@@ -92,54 +92,80 @@ func getStatus(w http.ResponseWriter, r *http.Request) (map[string]interface{}, 
 	return status.GetStatus()
 }
 
-func streamLogs(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, filters *diagnostic.Filters) error {
-	klog.Info("Got a request for stream logs.")
-	w.Header().Set("Transfer-Encoding", "chunked")
+type logWatcher struct {
+	logChan  <-chan string
+	done     chan struct{}
+	result   chan watch.Event
+	stopped  bool
+	running  bool
+	receiver *diagnostic.BufferedMessageReceiver
+}
 
-	logMessageReceiver := logs.GetMessageReceiver()
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		return fmt.Errorf("Expected a Flusher type, got: %v", w)
-	}
-
-	if logMessageReceiver == nil {
-		flusher.Flush()
+func newLogsWatch(filters *diagnostic.Filters) (*logWatcher, error) {
+	receiver := logs.GetMessageReceiver()
+	if receiver == nil {
 		klog.Info("Logs agent is not running - can't stream logs")
-		return fmt.Errorf("The logs agent is not running")
+		return nil, fmt.Errorf("The logs agent is not running")
 	}
 
-	if !logMessageReceiver.SetEnabled(true) {
-		flusher.Flush()
+	if !receiver.SetEnabled(true) {
 		klog.Info("Logs are already streaming. Dropping connection.")
-		return fmt.Errorf("Another client is already streaming logs.")
+		return nil, fmt.Errorf("Another client is already streaming logs.")
 	}
-	defer logMessageReceiver.SetEnabled(false)
-
-	conn, _ := request.ConnFrom(r.Context())
-
-	// Override the default server timeouts so the connection never times out
-	_ = conn.SetDeadline(time.Time{})
-	_ = conn.SetWriteDeadline(time.Time{})
-
 	done := make(chan struct{})
-	defer close(done)
-	logChan := logMessageReceiver.Filter(filters, done)
-	flushTimer := time.NewTicker(time.Second)
-	for {
-		// Handlers for detecting a closed connection (from either the server or client)
-		select {
-		case <-w.(http.CloseNotifier).CloseNotify():
-			return nil
-		case <-r.Context().Done():
-			return nil
-		case line := <-logChan:
-			fmt.Fprint(w, line)
-		case <-flushTimer.C:
-			// The buffer will flush on its own most of the time, but when we run out of logs flush so the client is up to date.
-			flusher.Flush()
-		}
+
+	logChan := receiver.Filter(filters, done)
+
+	return &logWatcher{
+		logChan:  logChan,
+		done:     done,
+		result:   make(chan watch.Event, 100),
+		receiver: receiver,
+	}, nil
+}
+
+func (p *logWatcher) Start() error {
+	if p.running {
+		return fmt.Errorf("logWatcher is already running")
 	}
+	p.running = true
+	go func() {
+		for {
+			select {
+			case log := <-p.logChan:
+				p.result <- watch.Event{Type: watch.Added, Object: &log}
+			case <-p.done:
+				return
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (p *logWatcher) Stop() {
+	if !p.stopped {
+		klog.V(4).Infof("Stopping log watcher.")
+		close(p.result)
+		close(p.done)
+		p.receiver.SetEnabled(false)
+		p.stopped = true
+		p.running = false
+	}
+}
+
+func (p *logWatcher) ResultChan() <-chan watch.Event {
+	return p.result
+}
+
+func streamLogs(w http.ResponseWriter, r *http.Request, filters *diagnostic.Filters) error {
+	watcher, err := newLogsWatch(filters)
+	if err != nil {
+		return err
+	}
+	watcher.Start()
+
+	return handlers.ServeWatch(watcher, r, w, 0)
 }
 
 func getDogstatsdStats(w http.ResponseWriter, r *http.Request) ([]byte, error) {
