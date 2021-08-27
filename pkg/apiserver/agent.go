@@ -1,30 +1,26 @@
-// Unless explicitly stated otherwise all files in this repository are licensed
-// under the Apache License Version 2.0.
-// This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2016-present Datadog, Inc.
-
-// Package agent implements the api endpoints for the `/agent` prefix.
-// This group of endpoints is meant to provide high-level functionalities
-// at the agent level.
 package apiserver
 
 import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
+	dsdReplay "github.com/DataDog/datadog-agent/pkg/dogstatsd/replay"
 	"github.com/DataDog/datadog-agent/pkg/flare"
-	"github.com/DataDog/datadog-agent/pkg/logs"
 	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo"
 	"github.com/DataDog/datadog-agent/pkg/secrets"
 	"github.com/DataDog/datadog-agent/pkg/status"
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	"github.com/DataDog/datadog-agent/pkg/tagger"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
+	"github.com/DataDog/datadog-agent/pkg/tagger/replay"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
@@ -32,7 +28,6 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/yubo/apiserver/pkg/handlers"
 	"github.com/yubo/apiserver/pkg/rest"
-	"github.com/yubo/apiserver/pkg/watch"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -41,31 +36,9 @@ func (p *module) installWs(c rest.GoRestfulContainer) {
 	rest.WsRouteBuild(&rest.WsOption{
 		Path:               "/api/v1",
 		GoRestfulContainer: c,
-		Routes: []rest.WsRoute{
-			{Method: "GET", SubPath: "/version", Handle: getVersion, Desc: "get version"},
-			{Method: "GET", SubPath: "/hostname", Handle: getHostname, Desc: "get hostname"},
-			{Method: "POST", SubPath: "/flare", Handle: makeFlare, Desc: "make flare"},
-			{Method: "POST", SubPath: "/stop", Handle: stopAgent, Desc: "stop agent"},
-			{Method: "GET", SubPath: "/status", Handle: getStatus, Desc: "get status"},
-			{Method: "GET", SubPath: "/stream-logs", Handle: streamLogs, Desc: "post stream logs"},
-			{Method: "GET", SubPath: "/statsd-stats", Handle: getDogstatsdStats, Desc: "get statsd stats"},
-			{Method: "GET", SubPath: "/status/formatted", Handle: getFormattedStatus, Desc: "get formatted status"},
-			{Method: "GET", SubPath: "/status/health", Handle: getHealth, Desc: "get health"},
-			{Method: "GET", SubPath: "/py/status", Handle: getPythonStatus, Desc: "get python status"},
-			{Method: "POST", SubPath: "/jmx/status", Handle: setJMXStatus, Desc: "set jmx status"},
-			{Method: "GET", SubPath: "/jmx/configs", Handle: getJMXConfigs, Desc: "get jmx configs"},
-			//{Method: "GET", SubPath: "/gui/csrf-token", Handle: nonHandle, Desc: "flare"},
-			{Method: "GET", SubPath: "/config-check", Handle: getConfigCheck, Desc: "get config check"},
-			{Method: "GET", SubPath: "/config", Handle: getFullRuntimeConfig, Desc: "get full runtime config"},
-			{Method: "GET", SubPath: "/config/list-runtime", Handle: getRuntimeConfigurableSettings, Desc: "get runtime configure able settings"},
-			{Method: "GET", SubPath: "/config/{setting}", Handle: getRuntimeConfig, Desc: "get runtime config"},
-			{Method: "POST", SubPath: "/config/{setting}", Handle: setRuntimeConfig, Desc: "set runtime config"},
-			{Method: "GET", SubPath: "/tagger-list", Handle: getTaggerList, Desc: "get tagger list"},
-			{Method: "GET", SubPath: "/secrets", Handle: secretInfo, Desc: "get secrets info"},
-		},
+		Routes:             apiV1Routes,
 	})
 }
-
 func stopAgent(w http.ResponseWriter, r *http.Request) {
 	util.Stop()
 }
@@ -90,72 +63,6 @@ func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, profil
 func getStatus(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
 	klog.Info("Got a request for the status. Making status.")
 	return status.GetStatus()
-}
-
-type logWatcher struct {
-	logChan  <-chan string
-	done     chan struct{}
-	result   chan watch.Event
-	stopped  bool
-	running  bool
-	receiver *diagnostic.BufferedMessageReceiver
-}
-
-func newLogsWatch(filters *diagnostic.Filters) (*logWatcher, error) {
-	receiver := logs.GetMessageReceiver()
-	if receiver == nil {
-		klog.Info("Logs agent is not running - can't stream logs")
-		return nil, fmt.Errorf("The logs agent is not running")
-	}
-
-	if !receiver.SetEnabled(true) {
-		klog.Info("Logs are already streaming. Dropping connection.")
-		return nil, fmt.Errorf("Another client is already streaming logs.")
-	}
-	done := make(chan struct{})
-
-	logChan := receiver.Filter(filters, done)
-
-	return &logWatcher{
-		logChan:  logChan,
-		done:     done,
-		result:   make(chan watch.Event, 100),
-		receiver: receiver,
-	}, nil
-}
-
-func (p *logWatcher) Start() error {
-	if p.running {
-		return fmt.Errorf("logWatcher is already running")
-	}
-	p.running = true
-	go func() {
-		for {
-			select {
-			case log := <-p.logChan:
-				p.result <- watch.Event{Type: watch.Added, Object: &log}
-			case <-p.done:
-				return
-			}
-		}
-	}()
-
-	return nil
-}
-
-func (p *logWatcher) Stop() {
-	if !p.stopped {
-		klog.V(4).Infof("Stopping log watcher.")
-		close(p.result)
-		close(p.done)
-		p.receiver.SetEnabled(false)
-		p.stopped = true
-		p.running = false
-	}
-}
-
-func (p *logWatcher) ResultChan() <-chan watch.Event {
-	return p.result
 }
 
 func streamLogs(w http.ResponseWriter, r *http.Request, filters *diagnostic.Filters) error {
@@ -265,36 +172,72 @@ func getRuntimeConfigurableSettings(w http.ResponseWriter, r *http.Request) (map
 	return configurableSettings, nil
 }
 
-type SettingInput struct {
-	Setting string `param:"path"`
-	Value   string `param:"query"`
-}
-
-func getRuntimeConfig(w http.ResponseWriter, r *http.Request, in *SettingInput) (interface{}, error) {
+func getRuntimeConfig(w http.ResponseWriter, r *http.Request, in *api.SettingInput) (interface{}, error) {
 	klog.Infof("Got a request to read a setting value: %s", in.Setting)
 	return settings.GetRuntimeSetting(in.Setting)
 }
 
-func setRuntimeConfig(w http.ResponseWriter, r *http.Request, in *SettingInput) error {
+func setRuntimeConfig(w http.ResponseWriter, r *http.Request, in *api.SettingInput) error {
 	klog.Infof("Got a request to change a setting: %s", in.Setting)
 
 	return settings.SetRuntimeSetting(in.Setting, in.Value)
 }
 
-func getTaggerList(w http.ResponseWriter, r *http.Request) (response.TaggerListResponse, error) {
+func getTaggerList(w http.ResponseWriter, r *http.Request) (*response.TaggerListResponse, error) {
 	// query at the highest cardinality between checks and dogstatsd cardinalities
 	cardinality := collectors.TagCardinality(max(int(tagger.ChecksCardinality), int(tagger.DogstatsdCardinality)))
-	return tagger.List(cardinality), nil
+	resp := tagger.List(cardinality)
+	return &resp, nil
 }
 
 func secretInfo(w http.ResponseWriter, r *http.Request) (*secrets.SecretInfo, error) {
 	return secrets.GetDebugInfo()
 }
 
-// max returns the maximum value between a and b.
-func max(a, b int) int {
-	if a > b {
-		return a
+func statsdCaptureTrigger(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, input *api.StatsdCaptureTriggerInput) (*string, error) {
+	err := common.DSD.Capture(time.Second*time.Duration(input.Duration), input.Compressed)
+	if err != nil {
+		return nil, err
 	}
-	return b
+
+	// wait for the capture to start
+	for !common.DSD.TCapture.IsOngoing() {
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	path, err := common.DSD.TCapture.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	return &path, nil
+}
+
+func statsdSetTaggerStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, req *pb.TaggerState) (*pb.TaggerStateResponse, error) {
+	// Reset and return if no state pushed
+	if req == nil || req.State == nil {
+		log.Debugf("API: empty request or state")
+		tagger.ResetCaptureTagger()
+		dsdReplay.SetPidMap(nil)
+		return &pb.TaggerStateResponse{Loaded: false}, nil
+	}
+
+	// FiXME: we should perhaps lock the capture processing while doing this...
+	t := replay.NewTagger()
+	if t == nil {
+		return nil, fmt.Errorf("unable to instantiate state")
+	}
+	t.LoadState(req.State)
+
+	log.Debugf("API: setting capture state tagger")
+	tagger.SetCaptureTagger(t)
+	dsdReplay.SetPidMap(req.PidMap)
+
+	log.Debugf("API: loaded state successfully")
+
+	return &pb.TaggerStateResponse{Loaded: true}, nil
+}
+
+func unsupported(w http.ResponseWriter, r *http.Request) error {
+	return fmt.Errorf("unsupported")
 }

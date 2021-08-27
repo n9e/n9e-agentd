@@ -4,7 +4,6 @@ import (
 	// plugin checks
 	_ "github.com/n9e/n9e-agentd/plugins/demo"
 	_ "github.com/n9e/n9e-agentd/plugins/log"
-	_ "github.com/n9e/n9e-agentd/plugins/mysql"
 	_ "github.com/n9e/n9e-agentd/plugins/port"
 	_ "github.com/n9e/n9e-agentd/plugins/proc"
 	_ "github.com/n9e/n9e-agentd/plugins/prometheus"

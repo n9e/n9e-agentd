@@ -78,7 +78,7 @@ setenv CXX     ${cxx}
 setenv OUTFILE ${CWD}/build/${outfile}
 
 dd_root=/opt/data/${GOOS}/${GOARCH}/datadog-agent
-goflags="-tags=zlib,systemd,jmx,kubelet"
+goflags="-tags=zlib,systemd,jmx,kubelet,secrets"
 
 if [[ -d ${dd_root}/embedded/lib ]]; then
 	goflags="${goflags},python"

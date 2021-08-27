@@ -20,6 +20,13 @@ var (
 		{CmdFactory: newHostnameCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newStopCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newStreamLogsCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newDiagnoseCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newStatsdCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newStatusCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newHealthCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newListchecksCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newReloadChecksCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newSecretCmd, GroupNum: CMD_G_GENERIC},
 	}
 	loggerName config.LoggerName = "CORE"
 )

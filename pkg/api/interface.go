@@ -41,5 +41,5 @@ type Logger interface {
 }
 
 type Client interface {
-	ApiCall(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) error
+	ApiCall(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) error
 }

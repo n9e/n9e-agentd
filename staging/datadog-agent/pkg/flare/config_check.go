@@ -28,7 +28,7 @@ func GetConfigCheck(w io.Writer, withDebug bool) error {
 	}
 
 	cr := response.ConfigCheckResponse{}
-	err := common.Client.ApiCall("GET", "/api/v1/config-check", nil, &cr)
+	err := common.Client.ApiCall("GET", "/api/v1/config-check", nil, nil, &cr)
 	if err != nil {
 		return err
 	}

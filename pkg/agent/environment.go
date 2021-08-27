@@ -89,6 +89,8 @@ func (p *EnvSettings) Init(override map[string]string) error {
 	if err := c.Read("agent", p.Agent); err != nil {
 		return err
 	}
+	config.C = p.Agent
+
 	if err := c.Read("apiserver", &p.Apiserver); err != nil {
 		return err
 	}
@@ -142,8 +144,12 @@ type Preparer interface {
 	Prepare() error
 }
 
-func (p *EnvSettings) ApiCall(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) error {
-	req, err := p.Request(method, uri, input, output, opts...)
+type Validator interface {
+	Validate() error
+}
+
+func (p *EnvSettings) ApiCall(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) error {
+	req, err := p.Request(method, uri, param, body, output, opts...)
 	if err != nil {
 		return err
 	}
@@ -151,12 +157,22 @@ func (p *EnvSettings) ApiCall(method, uri string, input, output interface{}, opt
 	return req.Do(context.Background())
 }
 
-func (p *EnvSettings) Request(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) (*cmdcli.Request, error) {
+func (p *EnvSettings) Request(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) (*cmdcli.Request, error) {
 	if p.Client == nil {
 		return nil, fmt.Errorf("unable to get client")
 	}
-	if p, ok := input.(Preparer); ok {
+	if p, ok := param.(Preparer); ok {
 		if err := p.Prepare(); err != nil {
+			return nil, err
+		}
+	}
+	if p, ok := param.(Validator); ok {
+		if err := p.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	if p, ok := body.(Validator); ok {
+		if err := p.Validate(); err != nil {
 			return nil, err
 		}
 	}
@@ -168,8 +184,11 @@ func (p *EnvSettings) Request(method, uri string, input, output interface{}, opt
 	if uri != "" {
 		opts = append(opts, cmdcli.WithPrifix(uri))
 	}
-	if input != nil {
-		opts = append(opts, cmdcli.WithInput(input))
+	if param != nil {
+		opts = append(opts, cmdcli.WithParam(param))
+	}
+	if body != nil {
+		opts = append(opts, cmdcli.WithBody(body))
 	}
 	if output != nil {
 		opts = append(opts, cmdcli.WithOutput(output))
@@ -181,8 +200,8 @@ func (p *EnvSettings) Request(method, uri string, input, output interface{}, opt
 	return cmdcli.NewRequestWithClient(p.Client, opts...), nil
 }
 
-func (p *EnvSettings) ApiCallDone(method, uri string, input, output interface{}, opts ...cmdcli.RequestOption) (err error) {
-	if err = p.ApiCall(method, uri, input, output, opts...); err != nil {
+func (p *EnvSettings) ApiCallDone(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) (err error) {
+	if err = p.ApiCall(method, uri, param, body, output, opts...); err != nil {
 		if apierrors.IsNotFound(err) {
 			p.Write([]byte("No Data\n"))
 			return nil
@@ -199,8 +218,8 @@ func (p *EnvSettings) ApiCallDone(method, uri string, input, output interface{},
 	return
 }
 
-func (p *EnvSettings) ApiPaging(uri string, input, output interface{}, opts ...cmdcli.RequestOption) error {
-	req, err := p.Request("GET", uri, input, output, opts...)
+func (p *EnvSettings) ApiPaging(uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) error {
+	req, err := p.Request("GET", uri, param, body, output, opts...)
 	if err != nil {
 		return err
 	}

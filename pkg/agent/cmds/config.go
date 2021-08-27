@@ -16,7 +16,7 @@ func newConfigCmd(env *agent.EnvSettings) *cobra.Command {
 		Short: "Print the runtime configuration of a running agent",
 		Long:  ``,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return env.ApiCall("GET", "/api/v1/config", nil, env.Out)
+			return env.ApiCall("GET", "/api/v1/config", nil, nil, env.Out)
 		},
 	}
 
@@ -60,7 +60,7 @@ func listRuntimeConfigurableValue(env *agent.EnvSettings) error {
 func _listRuntimeConfigurableValue(env *agent.EnvSettings) (map[string]settings.RuntimeSettingResponse, error) {
 	output := map[string]settings.RuntimeSettingResponse{}
 
-	if err := env.ApiCall("GET", "/api/v1/config/list-runtime", nil, &output); err != nil {
+	if err := env.ApiCall("GET", "/api/v1/config/list-runtime", nil, nil, &output); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +124,7 @@ func _setConfigValue(env *agent.EnvSettings, key, value string) (bool, error) {
 	if err := env.ApiCall("POST", "cmd", "/api/v1/config/{setting}", &setConfigInput{
 		Setting: key,
 		Value:   value,
-	}, nil); err != nil {
+	}, nil, nil); err != nil {
 		return false, err
 	}
 
@@ -153,7 +153,7 @@ func getConfigValue(env *agent.EnvSettings, args []string) error {
 
 func _getConfigValue(env *agent.EnvSettings, key string) (interface{}, error) {
 	var output interface{}
-	if err := env.ApiCall("GET", "/api/v1/config/{setting}", &setConfigInput{Setting: key}, &output); err != nil {
+	if err := env.ApiCall("GET", "/api/v1/config/{setting}", &setConfigInput{Setting: key}, nil, &output); err != nil {
 		return false, err
 	}
 	return output, nil

@@ -809,3 +809,39 @@ func waitForConfigs(checkName string, retryInterval, timeout time.Duration) []in
 		}
 	}
 }
+
+// TODO: re-enable when the API endpoint is implemented
+func newListchecksCmd(env *agent.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "list-checks",
+		Short: "Query the agent for the list of checks running",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprintf(env.Out, "Checks: ")
+			env.ApiCall("GET", "/api/v1/checks", nil, nil, env.Out)
+			fmt.Fprintf(env.Out, "\n")
+			return nil
+		},
+	}
+}
+
+func newReloadChecksCmd(env *agent.EnvSettings) *cobra.Command {
+	return &cobra.Command{
+		Use:   "reload-check <check_name>",
+		Short: "Reload a running check",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			var checkName string
+			if len(args) != 0 {
+				checkName = args[0]
+			} else {
+				return fmt.Errorf("missing arguments")
+			}
+
+			fmt.Fprintf(env.Out, "Reload check %s: ", checkName)
+			env.ApiCall("POST", fmt.Sprintf("/api/v1/checks/%s/reload", checkName),
+				nil, nil, env.Out)
+			fmt.Fprintf(env.Out, "\n")
+			return nil
+		},
+	}
+}

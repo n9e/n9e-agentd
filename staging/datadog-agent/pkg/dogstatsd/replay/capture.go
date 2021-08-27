@@ -57,15 +57,14 @@ func (tc *TrafficCapture) IsOngoing() bool {
 }
 
 // Start starts a TrafficCapture and returns an error in the event of an issue.
-func (tc *TrafficCapture) Start(d time.Duration) error {
+func (tc *TrafficCapture) Start(d time.Duration, compressed bool) error {
 	if tc.IsOngoing() {
 		return fmt.Errorf("Ongoing capture in progress")
 	}
 
-	go tc.Writer.Capture(d)
+	go tc.Writer.Capture(d, compressed)
 
 	return nil
-
 }
 
 // Stop stops an ongoing TrafficCapture.

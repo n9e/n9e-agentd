@@ -30,7 +30,10 @@ func newStreamLogsCmd(env *agent.EnvSettings) *cobra.Command {
 }
 
 func streamLogs(env *agent.EnvSettings, filters *diagnostic.Filters) error {
-	watching, err := env.Client.Get().Prefix("/api/v1/stream-logs").Watch(context.Background(), new(string))
+	watching, err := env.Client.Get().
+		Prefix("/api/v1/stream-logs").
+		Timeout(0).
+		Watch(context.Background(), new(string))
 	if err != nil {
 		return err
 	}

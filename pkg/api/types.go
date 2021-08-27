@@ -7,6 +7,29 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type SettingInput struct {
+	Setting string `param:"path"`
+	Value   string `param:"query"`
+}
+
+type StatsdReplayInput struct {
+	ReplayFile string `param:"query" flag:"file,d" description:"Input file with TCP traffic to replay."`
+	TaggerFile string `param:"query" flag:"tagger" description:"Input file with TCP traffic to replay."`
+}
+
+type StatsdCaptureTriggerInput struct {
+	Duration   int  `json:"duration" flag:"duration,d" default:"60" description:"capture duration (second)"`
+	Compressed bool `json:"compressed" flag:"compressed,z" default:"true" description:"Should capture be zstd compressed."`
+}
+
+func (p *StatsdCaptureTriggerInput) Validate() error {
+	if p.Duration <= 0 {
+		p.Duration = 60
+	}
+
+	return nil
+}
+
 type CollectRule struct {
 	ID   int64  `json:"id"`   // option rule.ID
 	Name string `json:"name"` // option Config.instances[$] ruleID
