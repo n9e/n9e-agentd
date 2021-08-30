@@ -33,6 +33,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/apiserver/pkg/rest"
 
 	"gopkg.in/yaml.v2"
 )
@@ -84,13 +86,16 @@ type filePermsInfo struct {
 // ProfileData maps (pprof) profile names to the profile data.
 type ProfileData map[string][]byte
 
+type apiCaller interface {
+	ApiCall(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) error
+}
+
 // CreatePerformanceProfile adds a set of heap and CPU profiles into target, using cpusec as the CPU
 // profile duration, debugURL as the target URL for fetching the profiles and prefix as a prefix for
 // naming them inside target.
 //
 // It is accepted to pass a nil target.
-func CreatePerformanceProfile(prefix, debugURL string, cpusec int, target *ProfileData) error {
-	c := apiutil.GetClient(false)
+func CreatePerformanceProfile(caller apiCaller, cli *rest.RESTClient, prefix string, cpusec int, target *ProfileData) error {
 	if *target == nil {
 		*target = make(ProfileData)
 	}
@@ -98,34 +103,35 @@ func CreatePerformanceProfile(prefix, debugURL string, cpusec int, target *Profi
 		{
 			// 1st heap profile
 			Name: prefix + "-1st-heap.pprof",
-			URL:  debugURL + "/heap",
+			URL:  "/debug/pprof/heap",
 		},
 		{
 			// CPU profile
 			Name: prefix + "-cpu.pprof",
-			URL:  fmt.Sprintf("%s/profile?seconds=%d", debugURL, cpusec),
+			URL:  fmt.Sprintf("/debug/pprof/profile?seconds=%d", cpusec),
 		},
 		{
 			// 2nd heap profile
 			Name: prefix + "-2nd-heap.pprof",
-			URL:  debugURL + "/heap",
+			URL:  "/debug/pprof/heap",
 		},
 		{
 			// mutex profile
 			Name: prefix + "-mutex.pprof",
-			URL:  debugURL + "/mutex",
+			URL:  "/debug/pprof/mutex",
 		},
 		{
 			// goroutine blocking profile
 			Name: prefix + "-block.pprof",
-			URL:  debugURL + "/block",
+			URL:  "/debug/pprof/block",
 		},
 	} {
-		b, err := apiutil.DoGet(c, prof.URL)
+		resp := []byte{}
+		err := caller.ApiCall("GET", prof.URL, nil, nil, &resp, cmdcli.WithClient(cli))
 		if err != nil {
 			return err
 		}
-		(*target)[prof.Name] = b
+		(*target)[prof.Name] = resp
 	}
 	return nil
 }

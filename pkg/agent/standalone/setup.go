@@ -8,7 +8,7 @@ package standalone
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
@@ -16,32 +16,33 @@ import (
 // - config, with defaults to avoid conflicting with an agent process running in parallel
 // - logger
 // and returns the log level resolved from cliLogLevel and defaultLogLevel
-func SetupCLI(loggerName config.LoggerName, confFilePath, configName string, cliLogFile string, cliLogLevel string, defaultLogLevel string) (string, *config.Warnings, error) {
+func SetupCLI(env *agent.EnvSettings, loggerName config.LoggerName, cliLogFile string, cliLogLevel string) (string, *config.Warnings, error) {
 	var resolvedLogLevel string
 
 	if cliLogLevel != "" {
 		// Honour the deprecated --log-level argument
-		overrides := make(map[string]interface{})
-		overrides["log_level"] = cliLogLevel
-		config.AddOverrides(overrides)
-		resolvedLogLevel = cliLogLevel
-	} else {
-		resolvedLogLevel = config.GetEnvDefault("DD_LOG_LEVEL", defaultLogLevel)
+		//overrides := make(map[string]interface{})
+		//overrides["log_level"] = cliLogLevel
+		config.C.LogLevel = cliLogLevel
+		//config.AddOverrides(overrides)
 	}
 
-	overrides := make(map[string]interface{})
-	overrides["cmd_port"] = 0 // let the OS assign an available port for the HTTP server
-	config.AddOverrides(overrides)
+	resolvedLogLevel = env.Agent.LogLevel
 
-	warnings, err := common.SetupConfigWithWarnings(confFilePath, configName)
+	//overrides := make(map[string]interface{})
+	//overrides["cmd_port"] = 0
+	//config.AddOverrides(overrides)
+	//env.Apiserver.Port = 0 // let the OS assign an available port for the HTTP server
+
+	//warnings, err := common.SetupConfigWithWarnings(confFilePath, configName)
+	//if err != nil {
+	//	return resolvedLogLevel, warnings, fmt.Errorf("unable to set up global agent configuration: %v", err)
+	//}
+
+	err := config.SetupLogger(loggerName, resolvedLogLevel, cliLogFile, "", false, true, false)
 	if err != nil {
-		return resolvedLogLevel, warnings, fmt.Errorf("unable to set up global agent configuration: %v", err)
+		return resolvedLogLevel, nil, fmt.Errorf("unable to set up logger: %v", err)
 	}
 
-	err = config.SetupLogger(loggerName, resolvedLogLevel, cliLogFile, "", false, true, false)
-	if err != nil {
-		return resolvedLogLevel, warnings, fmt.Errorf("unable to set up logger: %v", err)
-	}
-
-	return resolvedLogLevel, warnings, nil
+	return resolvedLogLevel, nil, nil
 }

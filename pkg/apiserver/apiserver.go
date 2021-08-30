@@ -8,10 +8,15 @@ import (
 	"github.com/yubo/apiserver/pkg/apiserver"
 	"github.com/yubo/apiserver/pkg/authorization" // authz
 	apioptions "github.com/yubo/apiserver/pkg/options"
+	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/golib/proc"
 
-	_ "github.com/yubo/apiserver/pkg/authentication/register"      // authn
-	_ "github.com/yubo/apiserver/pkg/authorization/login/register" // authz.login
+	_ "github.com/yubo/apiserver/pkg/authentication/register" // authn
+	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
+
+	// authz.login
+	"github.com/yubo/apiserver/pkg/authorization/abac/api"
+	"github.com/yubo/apiserver/pkg/authorization/abac/register" // authz.login
 )
 
 const (
@@ -51,6 +56,9 @@ func (p *module) start(ctx context.Context) error {
 
 	p.installWs(server)
 
+	rest.ScopeRegister("write", "write resource")
+	rest.ScopeRegister("read", "read resource")
+
 	return nil
 }
 
@@ -76,4 +84,20 @@ func init() {
 
 	// override authorization config's flags & envs
 	proc.RegisterFlags("authorization", "authorization", &authzConfig{})
+
+	register.PolicyList = []*api.Policy{
+		{Spec: api.PolicySpec{
+			Group:           "system:unauthenticated",
+			Readonly:        true,
+			NonResourcePath: "/swagger*",
+		}}, {Spec: api.PolicySpec{
+			Group:           "system:unauthenticated",
+			Readonly:        true,
+			NonResourcePath: "/apidocs.json",
+		}}, {Spec: api.PolicySpec{
+			Group:           "system:authenticated",
+			NonResourcePath: "*",
+			Resource:        "*",
+		}},
+	}
 }

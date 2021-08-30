@@ -11,4 +11,4 @@ var (
 	defaultSystemProbeAddress = "localhost:3333"
 )
 
-const ServiceName = "Agent"
+const ServiceName = "n9e-agent"

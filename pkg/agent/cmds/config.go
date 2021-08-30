@@ -16,7 +16,12 @@ func newConfigCmd(env *agent.EnvSettings) *cobra.Command {
 		Short: "Print the runtime configuration of a running agent",
 		Long:  ``,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return env.ApiCall("GET", "/api/v1/config", nil, nil, env.Out)
+			config, err := agent.NewSettingsClient(env).FullConfig()
+			if err != nil {
+				return err
+			}
+			env.Out.Write([]byte(config))
+			return nil
 		},
 	}
 
@@ -91,17 +96,12 @@ func newGetConfig(env *agent.EnvSettings) *cobra.Command {
 	}
 }
 
-type setConfigInput struct {
-	Setting string `param:"path"`
-	Value   string `param:"query"`
-}
-
 func setConfigValue(env *agent.EnvSettings, args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("exactly two parameters are required: the setting name and its value")
 	}
 
-	hidden, err := _setConfigValue(env, args[0], args[1])
+	hidden, err := agent.NewSettingsClient(env).Set(args[0], args[1])
 	if err != nil {
 		return err
 	}
@@ -115,33 +115,12 @@ func setConfigValue(env *agent.EnvSettings, args []string) error {
 	return nil
 }
 
-func _setConfigValue(env *agent.EnvSettings, key, value string) (bool, error) {
-	list, err := _listRuntimeConfigurableValue(env)
-	if err != nil {
-		return false, err
-	}
-
-	if err := env.ApiCall("POST", "cmd", "/api/v1/config/{setting}", &setConfigInput{
-		Setting: key,
-		Value:   value,
-	}, nil, nil); err != nil {
-		return false, err
-	}
-
-	hidden := false
-	if setting, ok := list[key]; ok {
-		hidden = setting.Hidden
-	}
-
-	return hidden, nil
-}
-
 func getConfigValue(env *agent.EnvSettings, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("a single setting name must be specified")
 	}
 
-	value, err := _getConfigValue(env, args[0])
+	value, err := agent.NewSettingsClient(env).Get(args[0])
 	if err != nil {
 		return err
 	}
@@ -149,15 +128,6 @@ func getConfigValue(env *agent.EnvSettings, args []string) error {
 	fmt.Printf("%s is set to: %v\n", args[0], value)
 
 	return nil
-}
-
-func _getConfigValue(env *agent.EnvSettings, key string) (interface{}, error) {
-	var output interface{}
-	if err := env.ApiCall("GET", "/api/v1/config/{setting}", &setConfigInput{Setting: key}, nil, &output); err != nil {
-		return false, err
-	}
-	return output, nil
-
 }
 
 func newConfigZshCmd(env *agent.EnvSettings) *cobra.Command {

@@ -26,9 +26,10 @@ var (
 		{CmdFactory: newHealthCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newListchecksCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newReloadChecksCmd, GroupNum: CMD_G_GENERIC},
-		{CmdFactory: newSecretCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newFlareCmd, GroupNum: CMD_G_GENERIC},
 	}
-	loggerName config.LoggerName = "CORE"
+	loggerName    config.LoggerName = "CORE"
+	jmxLoggerName config.LoggerName = "JMXFETCH"
 )
 
 func init() {

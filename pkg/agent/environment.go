@@ -98,22 +98,60 @@ func (p *EnvSettings) Init(override map[string]string) error {
 		return err
 	}
 
-	// client
+	// validate
 	p.Auth.ValidatePath(p.Agent.RootDir)
 
-	p.Client, err = rest.RESTClientFor(&rest.Config{
-		Host:            fmt.Sprintf("%s:%d", p.Apiserver.Host, p.Apiserver.Port),
-		ContentConfig:   rest.ContentConfig{NegotiatedSerializer: scheme.Codecs},
-		BearerTokenFile: p.Auth.AuthTokenFile,
-	})
-	if err != nil {
-		klog.Infof("unable to create client, err %s", err)
+	// client
+	if err := p.initClients(); err != nil {
+		return err
 	}
 
 	proc.WithConfiger(p.ctx, p.configer)
 	common.Client = p
 
 	klog.V(10).Infof("config %s", p)
+
+	return nil
+}
+
+func (p *EnvSettings) newClient(host string, port int) (*rest.RESTClient, error) {
+	return rest.RESTClientFor(&rest.Config{
+		Host:            fmt.Sprintf("%s:%d", host, port),
+		ContentConfig:   rest.ContentConfig{NegotiatedSerializer: scheme.Codecs},
+		BearerTokenFile: p.Auth.AuthTokenFile,
+	})
+
+}
+
+func (p *EnvSettings) initClients() error {
+	p.Clients = map[string]*rest.RESTClient{}
+
+	// /vars, /metrics, /debug/pprof
+	if port := p.Agent.Telemetry.Port; port > 0 {
+		client, err := p.newClient("127.0.0.1", port)
+		if err != nil {
+			return err
+		}
+		p.Clients["exporter"] = client
+	}
+
+	// apm
+	if port := p.Agent.Apm.ReceiverPort; port > 0 {
+		client, err := p.newClient("127.0.0.1", port)
+		if err != nil {
+			return err
+		}
+		p.Clients["apm"] = client
+	}
+
+	// apiserver
+	if port := p.Apiserver.Port; port > 0 {
+		client, err := p.newClient(p.Apiserver.Host, port)
+		if err != nil {
+			klog.Infof("unable to create client, err %s", err)
+		}
+		p.Client = client
+	}
 
 	return nil
 }

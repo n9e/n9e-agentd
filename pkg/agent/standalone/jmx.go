@@ -7,64 +7,63 @@
 
 package standalone
 
-/*
 import (
 	"fmt"
 	"strings"
 
-	"github.com/DataDog/datadog-agent/cmd/agent/api"
-	"github.com/DataDog/datadog-agent/cmd/agent/common"
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	"github.com/DataDog/datadog-agent/pkg/collector/corechecks/embed/jmx"
 	"github.com/DataDog/datadog-agent/pkg/jmxfetch"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/pkg/agent"
 )
 
 // ExecJMXCommandConsole runs the provided JMX command name on the selected checks, and
 // reports with the ConsoleReporter to the agent's `log.Info`.
 // The common utils, including AutoConfig, must have already been initialized.
-func ExecJMXCommandConsole(command string, selectedChecks []string, logLevel string) error {
-	return execJmxCommand(command, selectedChecks, jmxfetch.ReporterConsole, log.JMXInfo, logLevel)
+func ExecJMXCommandConsole(env *agent.EnvSettings, command string, selectedChecks []string, logLevel string) error {
+	return execJmxCommand(env, command, selectedChecks, jmxfetch.ReporterConsole, log.JMXInfo, logLevel)
 }
 
 // ExecJmxListWithMetricsJSON runs the JMX command with "with-metrics", reporting
 // the data as a JSON on the console. It is used by the `check jmx` cli command
 // of the Agent.
 // The common utils, including AutoConfig, must have already been initialized.
-func ExecJmxListWithMetricsJSON(selectedChecks []string, logLevel string) error {
+func ExecJmxListWithMetricsJSON(env *agent.EnvSettings, selectedChecks []string, logLevel string) error {
 	// don't pollute the JSON with the log pattern.
 	out := func(a ...interface{}) {
 		fmt.Println(a...)
 	}
-	return execJmxCommand("list_with_metrics", selectedChecks, jmxfetch.ReporterJSON, out, logLevel)
+	return execJmxCommand(env, "list_with_metrics", selectedChecks, jmxfetch.ReporterJSON, out, logLevel)
 }
 
 // ExecJmxListWithRateMetricsJSON runs the JMX command with "with-rate-metrics", reporting
 // the data as a JSON on the console. It is used by the `check jmx --rate` cli command
 // of the Agent.
 // The common utils, including AutoConfig, must have already been initialized.
-func ExecJmxListWithRateMetricsJSON(selectedChecks []string, logLevel string) error {
+func ExecJmxListWithRateMetricsJSON(env *agent.EnvSettings, selectedChecks []string, logLevel string) error {
 	// don't pollute the JSON with the log pattern.
 	out := func(a ...interface{}) {
 		fmt.Println(a...)
 	}
-	return execJmxCommand("list_with_rate_metrics", selectedChecks, jmxfetch.ReporterJSON, out, logLevel)
+	return execJmxCommand(env, "list_with_rate_metrics", selectedChecks, jmxfetch.ReporterJSON, out, logLevel)
 }
 
 // execJmxCommand runs the provided JMX command name on the selected checks.
 // The common utils, including AutoConfig, must have already been initialized.
-func execJmxCommand(command string, selectedChecks []string, reporter jmxfetch.JMXReporter, output func(...interface{}), logLevel string) error {
+func execJmxCommand(env *agent.EnvSettings, command string, selectedChecks []string, reporter jmxfetch.JMXReporter, output func(...interface{}), logLevel string) error {
 	// start the cmd HTTP server
-	if err := api.StartServer(); err != nil {
-		return fmt.Errorf("Error while starting api server, exiting: %v", err)
-	}
+	//if err := api.StartServer(); err != nil {
+	//	return fmt.Errorf("Error while starting api server, exiting: %v", err)
+	//}
 
 	runner := &jmxfetch.JMXFetch{}
 
 	runner.Reporter = reporter
 	runner.Command = command
-	runner.IPCPort = api.ServerAddress().Port
+	runner.IPCPort = env.Apiserver.Port
 	runner.Output = output
 	runner.LogLevel = logLevel
 
@@ -125,4 +124,3 @@ func configIncluded(config integration.Config, selectedChecks []string) bool {
 	}
 	return false
 }
-*/

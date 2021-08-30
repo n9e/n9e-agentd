@@ -30,7 +30,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"github.com/yubo/apiserver/pkg/cmdcli"
 	"gopkg.in/yaml.v2"
 )
 
@@ -39,65 +39,36 @@ const (
 )
 
 type checkCmd struct {
-	env                    *agent.EnvSettings
-	checkRate              bool
-	checkTimes             int
-	checkPause             int
-	checkName              string
-	checkDelay             int
-	logLevel               string
-	formatJSON             bool
-	formatTable            bool
-	breakPoint             string
-	fullSketches           bool
-	saveFlare              bool
-	profileMemory          bool
-	profileMemoryDir       string
-	profileMemoryFrames    string
-	profileMemoryGC        string
-	profileMemoryCombine   string
-	profileMemorySort      string
-	profileMemoryLimit     string
-	profileMemoryDiff      string
-	profileMemoryFilters   string
-	profileMemoryUnit      string
-	profileMemoryVerbose   string
-	discoveryTimeout       uint
-	discoveryRetryInterval uint
+	env       *agent.EnvSettings
+	checkName string
+
+	CheckRate              bool   `flag:"check-rate,r" description:"check rates by running the check twice with a 1sec-pause between the 2 runs"`
+	CheckTimes             int    `flag:"check-times" default:"1" description:"number of times to run the check"`
+	CheckPause             int    `flag:"pause" default:"0" description:"pause between multiple runs of the check, in milliseconds"`
+	LogLevel               string `flag:"log-level,l" description:"set the log level (default 'off') (deprecated, use the env var DD_LOG_LEVEL instead)"`
+	CheckDelay             int    `flag:"delay,d" default:"100" description:"delay between running the check and grabbing the metrics in milliseconds"`
+	FormatJSON             bool   `flag:"json" description:"format aggregator and check runner output as json"`
+	FormatTable            bool   `flag:"table" description:"format aggregator and check runner output as an ascii table"`
+	BreakPoint             string `flag:"breakpoint,b" description:"set a breakpoint at a particular line number (Python checks only)"`
+	FullSketches           bool   `flag:"full-sketches" description:"output sketches with bins information"`
+	SaveFlare              bool   `flag:"flare" description:"save check results to the log dir so it may be reported in a flare"`
+	DiscoveryTimeout       uint   `flag:"discovery-timeout" default:"5" description:"max retry duration until Autodiscovery resolves the check template (in seconds)"`
+	DiscoveryRetryInterval uint   `flag:"discovery-retry-interval" default:"1" description:"duration between retries until Autodiscovery resolves the check template (in seconds)"`
+	ProfileMemory          bool   `flag:"profile-memory,m" description:"run the memory profiler (Python checks only)"`
+	ProfileMemoryDir       string `flag:"m-dir" description:"an existing directory in which to store memory profiling data, ignoring clean-up"`
+	ProfileMemoryFrames    string `flag:"m-frames" description:"the number of stack frames to consider"`
+	ProfileMemoryGC        string `flag:"m-gc" description:"whether or not to run the garbage collector to remove noise"`
+	ProfileMemoryCombine   string `flag:"m-combine" description:"whether or not to aggregate over all traceback frames"`
+	ProfileMemorySort      string `flag:"m-sort" description:"what to sort by between: lineno | filename | traceback"`
+	ProfileMemoryLimit     string `flag:"m-limit" description:"the maximum number of sorted results to show"`
+	ProfileMemoryDiff      string `flag:"m-diff" description:"how to order diff results between: absolute | positive"`
+	ProfileMemoryFilters   string `flag:"m-filters" description:"comma-separated list of file path glob patterns to filter by"`
+	ProfileMemoryUnit      string `flag:"m-unit" description:"the binary unit to represent memory usage (kib, mb, etc.). the default is dynamic"`
+	ProfileMemoryVerbose   string `flag:"m-verbose" description:"whether or not to include potentially noisy sources"`
 
 	allConfigs []integration.Config
 	cs         []check.Check
 	agg        *aggregator.BufferedAggregator
-}
-
-func (p *checkCmd) addFlags(fs *pflag.FlagSet) {
-	fs.BoolVarP(&p.checkRate, "check-rate", "r", false, "check rates by running the check twice with a 1sec-pause between the 2 runs")
-	fs.IntVar(&p.checkTimes, "check-times", 1, "number of times to run the check")
-	fs.IntVar(&p.checkPause, "pause", 0, "pause between multiple runs of the check, in milliseconds")
-	fs.StringVarP(&p.logLevel, "log-level", "l", "", "set the log level (default 'off') (deprecated, use the env var DD_LOG_LEVEL instead)")
-	fs.IntVarP(&p.checkDelay, "delay", "d", 100, "delay between running the check and grabbing the metrics in milliseconds")
-	fs.BoolVarP(&p.formatJSON, "json", "", false, "format aggregator and check runner output as json")
-	fs.BoolVarP(&p.formatTable, "table", "", false, "format aggregator and check runner output as an ascii table")
-	fs.StringVarP(&p.breakPoint, "breakpoint", "b", "", "set a breakpoint at a particular line number (Python checks only)")
-	fs.BoolVarP(&p.profileMemory, "profile-memory", "m", false, "run the memory profiler (Python checks only)")
-	fs.BoolVar(&p.fullSketches, "full-sketches", false, "output sketches with bins information")
-	fs.BoolVarP(&p.saveFlare, "flare", "", false, "save check results to the log dir so it may be reported in a flare")
-	fs.UintVarP(&p.discoveryTimeout, "discovery-timeout", "", 5, "max retry duration until Autodiscovery resolves the check template (in seconds)")
-	fs.UintVarP(&p.discoveryRetryInterval, "discovery-retry-interval", "", 1, "duration between retries until Autodiscovery resolves the check template (in seconds)")
-	// config.Datadog.BindPFlag("cmd.check.fullsketches", cmd.Flags().Lookup("full-sketches")) //nolint:errcheck
-
-	// Power user flags - mark as hidden
-	fs.StringVar(&p.profileMemoryDir, "m-dir", "", "an existing directory in which to store memory profiling data, ignoring clean-up")
-	fs.StringVar(&p.profileMemoryFrames, "m-frames", "", "the number of stack frames to consider")
-	fs.StringVar(&p.profileMemoryGC, "m-gc", "", "whether or not to run the garbage collector to remove noise")
-	fs.StringVar(&p.profileMemoryCombine, "m-combine", "", "whether or not to aggregate over all traceback frames")
-	fs.StringVar(&p.profileMemorySort, "m-sort", "", "what to sort by between: lineno | filename | traceback")
-	fs.StringVar(&p.profileMemoryLimit, "m-limit", "", "the maximum number of sorted results to show")
-	fs.StringVar(&p.profileMemoryDiff, "m-diff", "", "how to order diff results between: absolute | positive")
-	fs.StringVar(&p.profileMemoryFilters, "m-filters", "", "comma-separated list of file path glob patterns to filter by")
-	fs.StringVar(&p.profileMemoryUnit, "m-unit", "", "the binary unit to represent memory usage (kib, mb, etc.). the default is dynamic")
-	fs.StringVar(&p.profileMemoryVerbose, "m-verbose", "", "whether or not to include potentially noisy sources")
-
 }
 
 // Check returns a cobra command to run checks
@@ -124,8 +95,8 @@ func newCheckCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
+	cmdcli.AddFlags(cmd.Flags(), cc)
 	cmd.SetArgs([]string{"checkName"})
-	cc.addFlags(cmd.Flags())
 	return cmd
 }
 
@@ -149,19 +120,19 @@ func (p *checkCmd) check() error {
 		metadata.SetupInventoriesExpvar(common.AC, common.Coll)
 	}
 
-	if p.discoveryRetryInterval > p.discoveryTimeout {
-		fmt.Println("The discovery retry interval", p.discoveryRetryInterval, "is higher than the discovery timeout", p.discoveryTimeout)
-		fmt.Println("Setting the discovery retry interval to", p.discoveryTimeout)
-		p.discoveryRetryInterval = p.discoveryTimeout
+	if p.DiscoveryRetryInterval > p.DiscoveryTimeout {
+		fmt.Println("The discovery retry interval", p.DiscoveryRetryInterval, "is higher than the discovery timeout", p.DiscoveryTimeout)
+		fmt.Println("Setting the discovery retry interval to", p.DiscoveryTimeout)
+		p.DiscoveryRetryInterval = p.DiscoveryTimeout
 	}
 
-	p.allConfigs = waitForConfigs(p.checkName, time.Duration(p.discoveryRetryInterval)*time.Second, time.Duration(p.discoveryTimeout)*time.Second)
+	p.allConfigs = waitForConfigs(p.checkName, time.Duration(p.DiscoveryRetryInterval)*time.Second, time.Duration(p.DiscoveryTimeout)*time.Second)
 
 	if err := p.stripJmx(); err != nil {
 		return err
 	}
 
-	if p.profileMemory {
+	if p.ProfileMemory {
 		fn, err := p.setProfileMemory()
 		if fn != nil {
 			defer fn()
@@ -169,7 +140,7 @@ func (p *checkCmd) check() error {
 		if err != nil {
 			return err
 		}
-	} else if p.breakPoint != "" {
+	} else if p.BreakPoint != "" {
 		if err := p.setBreakPoint(); err != nil {
 			return err
 		}
@@ -233,13 +204,13 @@ func (p *checkCmd) stripJmx() error {
 
 func (p *checkCmd) setProfileMemory() (fn func(), err error) {
 	// If no directory is specified, make a temporary one
-	if p.profileMemoryDir == "" {
-		if p.profileMemoryDir, err = ioutil.TempDir("", "datadog-agent-memory-profiler"); err != nil {
+	if p.ProfileMemoryDir == "" {
+		if p.ProfileMemoryDir, err = ioutil.TempDir("", "datadog-agent-memory-profiler"); err != nil {
 			return
 		}
 
 		fn = func() {
-			cleanupErr := os.RemoveAll(p.profileMemoryDir)
+			cleanupErr := os.RemoveAll(p.ProfileMemoryDir)
 			if cleanupErr != nil {
 				fmt.Printf("%s\n", cleanupErr)
 			}
@@ -262,7 +233,7 @@ func (p *checkCmd) setProfileMemory() (fn func(), err error) {
 			data = make(map[string]interface{})
 		}
 
-		data["profile_memory"] = p.profileMemoryDir
+		data["profile_memory"] = p.ProfileMemoryDir
 		if err = p.populateMemoryProfileConfig(data); err != nil {
 			return
 		}
@@ -277,7 +248,7 @@ func (p *checkCmd) setProfileMemory() (fn func(), err error) {
 }
 
 func (p *checkCmd) setBreakPoint() error {
-	breakPointLine, err := strconv.Atoi(p.breakPoint)
+	breakPointLine, err := strconv.Atoi(p.BreakPoint)
 	if err != nil {
 		fmt.Printf("breakpoint must be an integer\n")
 		return err
@@ -358,9 +329,9 @@ func (p *checkCmd) runChecks() error {
 		s := p.runCheck(c)
 
 		// Sleep for a while to allow the aggregator to finish ingesting all the metrics/events/sc
-		time.Sleep(time.Duration(p.checkDelay) * time.Millisecond)
+		time.Sleep(time.Duration(p.CheckDelay) * time.Millisecond)
 
-		if p.formatJSON {
+		if p.FormatJSON {
 			aggregatorData := getMetricsData(p.agg)
 			var collectorData map[string]interface{}
 
@@ -387,12 +358,12 @@ func (p *checkCmd) runChecks() error {
 			continue
 		}
 
-		if p.profileMemory {
+		if p.ProfileMemory {
 			// Every instance will create its own directory
 			instanceID := strings.SplitN(string(c.ID()), ":", 2)[1]
 			// Colons can't be part of Windows file paths
 			instanceID = strings.Replace(instanceID, ":", "_", -1)
-			profileDataDir := filepath.Join(p.profileMemoryDir, p.checkName, instanceID)
+			profileDataDir := filepath.Join(p.ProfileMemoryDir, p.checkName, instanceID)
 
 			snapshotDir := filepath.Join(profileDataDir, "snapshots")
 			if _, err := os.Stat(snapshotDir); !os.IsNotExist(err) {
@@ -454,7 +425,7 @@ func (p *checkCmd) runChecks() error {
 	//	standalone.PrintWindowsUserWarning("check")
 	//}
 
-	if p.formatJSON {
+	if p.FormatJSON {
 		fmt.Fprintln(color.Output, fmt.Sprintf("=== %s ===", color.BlueString("JSON")))
 		checkFileOutput.WriteString("=== JSON ===\n")
 
@@ -464,7 +435,7 @@ func (p *checkCmd) runChecks() error {
 		fmt.Println(instanceJSONString)
 		checkFileOutput.WriteString(instanceJSONString + "\n")
 	} else if p.singleCheckRun() {
-		if p.profileMemory {
+		if p.ProfileMemory {
 			color.Yellow("Check has run only once, to collect diff data run the check multiple times with the --check-times flag.")
 		} else {
 			color.Yellow("Check has run only once, if some metrics are missing you can try again with --check-rate to see any other metric if available.")
@@ -475,7 +446,7 @@ func (p *checkCmd) runChecks() error {
 	//	return errors.New("tracemalloc is enabled but unavailable with python version 2")
 	//}
 
-	if p.saveFlare {
+	if p.SaveFlare {
 		p.writeCheckToFile(p.checkName, &checkFileOutput)
 	}
 
@@ -484,10 +455,10 @@ func (p *checkCmd) runChecks() error {
 
 func (p *checkCmd) runCheck(c check.Check) *check.Stats {
 	s := check.NewStats(c)
-	times := p.checkTimes
-	pause := p.checkPause
-	if p.checkRate {
-		if p.checkTimes > 2 {
+	times := p.CheckTimes
+	pause := p.CheckPause
+	if p.CheckRate {
+		if p.CheckTimes > 2 {
 			color.Yellow("The check-rate option is overriding check-times to 2")
 		}
 		if pause > 0 {
@@ -515,7 +486,7 @@ func (p *checkCmd) printMetrics(checkFileOutput *bytes.Buffer) {
 	if len(series) != 0 {
 		fmt.Fprintln(color.Output, fmt.Sprintf("=== %s ===", color.BlueString("Series")))
 
-		if p.formatTable {
+		if p.FormatTable {
 			headers, data := series.MarshalStrings()
 			var buffer bytes.Buffer
 
@@ -554,7 +525,7 @@ func (p *checkCmd) printMetrics(checkFileOutput *bytes.Buffer) {
 	if len(serviceChecks) != 0 {
 		fmt.Fprintln(color.Output, fmt.Sprintf("=== %s ===", color.BlueString("Service Checks")))
 
-		if p.formatTable {
+		if p.FormatTable {
 			headers, data := serviceChecks.MarshalStrings()
 			var buffer bytes.Buffer
 
@@ -689,7 +660,7 @@ func getMetricsData(agg *aggregator.BufferedAggregator) map[string]interface{} {
 }
 
 func (p *checkCmd) singleCheckRun() bool {
-	return p.checkRate == false && p.checkTimes < 2
+	return p.CheckRate == false && p.CheckTimes < 2
 }
 
 func createHiddenStringFlag(cmd *cobra.Command, p *string, name string, value string, usage string) {
@@ -698,16 +669,16 @@ func createHiddenStringFlag(cmd *cobra.Command, p *string, name string, value st
 }
 
 func (p *checkCmd) populateMemoryProfileConfig(initConfig map[string]interface{}) error {
-	if p.profileMemoryFrames != "" {
-		profileMemoryFrames, err := strconv.Atoi(p.profileMemoryFrames)
+	if p.ProfileMemoryFrames != "" {
+		profileMemoryFrames, err := strconv.Atoi(p.ProfileMemoryFrames)
 		if err != nil {
 			return fmt.Errorf("--m-frames must be an integer")
 		}
 		initConfig["profile_memory_frames"] = profileMemoryFrames
 	}
 
-	if p.profileMemoryGC != "" {
-		profileMemoryGC, err := strconv.Atoi(p.profileMemoryGC)
+	if p.ProfileMemoryGC != "" {
+		profileMemoryGC, err := strconv.Atoi(p.ProfileMemoryGC)
 		if err != nil {
 			return fmt.Errorf("--m-gc must be an integer")
 		}
@@ -715,51 +686,51 @@ func (p *checkCmd) populateMemoryProfileConfig(initConfig map[string]interface{}
 		initConfig["profile_memory_gc"] = profileMemoryGC
 	}
 
-	if p.profileMemoryCombine != "" {
-		profileMemoryCombine, err := strconv.Atoi(p.profileMemoryCombine)
+	if p.ProfileMemoryCombine != "" {
+		profileMemoryCombine, err := strconv.Atoi(p.ProfileMemoryCombine)
 		if err != nil {
 			return fmt.Errorf("--m-combine must be an integer")
 		}
 
-		if profileMemoryCombine != 0 && p.profileMemorySort == "traceback" {
+		if profileMemoryCombine != 0 && p.ProfileMemorySort == "traceback" {
 			return fmt.Errorf("--m-combine cannot be sorted (--m-sort) by traceback")
 		}
 
 		initConfig["profile_memory_combine"] = profileMemoryCombine
 	}
 
-	if p.profileMemorySort != "" {
-		if p.profileMemorySort != "lineno" && p.profileMemorySort != "filename" && p.profileMemorySort != "traceback" {
+	if p.ProfileMemorySort != "" {
+		if p.ProfileMemorySort != "lineno" && p.ProfileMemorySort != "filename" && p.ProfileMemorySort != "traceback" {
 			return fmt.Errorf("--m-sort must one of: lineno | filename | traceback")
 		}
-		initConfig["profile_memory_sort"] = p.profileMemorySort
+		initConfig["profile_memory_sort"] = p.ProfileMemorySort
 	}
 
-	if p.profileMemoryLimit != "" {
-		profileMemoryLimit, err := strconv.Atoi(p.profileMemoryLimit)
+	if p.ProfileMemoryLimit != "" {
+		profileMemoryLimit, err := strconv.Atoi(p.ProfileMemoryLimit)
 		if err != nil {
 			return fmt.Errorf("--m-limit must be an integer")
 		}
 		initConfig["profile_memory_limit"] = profileMemoryLimit
 	}
 
-	if p.profileMemoryDiff != "" {
-		if p.profileMemoryDiff != "absolute" && p.profileMemoryDiff != "positive" {
+	if p.ProfileMemoryDiff != "" {
+		if p.ProfileMemoryDiff != "absolute" && p.ProfileMemoryDiff != "positive" {
 			return fmt.Errorf("--m-diff must one of: absolute | positive")
 		}
-		initConfig["profile_memory_diff"] = p.profileMemoryDiff
+		initConfig["profile_memory_diff"] = p.ProfileMemoryDiff
 	}
 
-	if p.profileMemoryFilters != "" {
-		initConfig["profile_memory_filters"] = p.profileMemoryFilters
+	if p.ProfileMemoryFilters != "" {
+		initConfig["profile_memory_filters"] = p.ProfileMemoryFilters
 	}
 
-	if p.profileMemoryUnit != "" {
-		initConfig["profile_memory_unit"] = p.profileMemoryUnit
+	if p.ProfileMemoryUnit != "" {
+		initConfig["profile_memory_unit"] = p.ProfileMemoryUnit
 	}
 
-	if p.profileMemoryVerbose != "" {
-		profileMemoryVerbose, err := strconv.Atoi(p.profileMemoryVerbose)
+	if p.ProfileMemoryVerbose != "" {
+		profileMemoryVerbose, err := strconv.Atoi(p.ProfileMemoryVerbose)
 		if err != nil {
 			return fmt.Errorf("--m-verbose must be an integer")
 		}

@@ -42,7 +42,7 @@ func newClient(endpoints, path, agentID, token string) (*Client, error) {
 
 func (c *Client) get(path string) ([]byte, error) {
 	url := c.domain.Current() + path
-	log.Debug("get %s", url)
+	log.Debugf("get %s", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	logURL := log.SanitizeURL(url) // sanitized url that can be logged

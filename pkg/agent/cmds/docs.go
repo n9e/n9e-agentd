@@ -7,6 +7,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"github.com/yubo/apiserver/pkg/cmdcli"
 )
 
 const docsDesc = `
@@ -26,8 +27,8 @@ It can also generate bash autocompletions.
 `
 
 type docsCmd struct {
-	dest          string
-	docTypeString string
+	Dest          string `flag:"dir" default:"./" description:"directory to which documentation is written"`
+	DocTypeString string `flag:"type" default:"markdown" description:"the type of documentation to generate (markdown, man, bash, zsh)"`
 	topCmd        *cobra.Command
 }
 
@@ -46,28 +47,26 @@ func newDocsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	f := cmd.Flags()
-	f.StringVar(&dc.dest, "dir", "./", "directory to which documentation is written")
-	f.StringVar(&dc.docTypeString, "type", "markdown", "the type of documentation to generate (markdown, man, bash, zsh)")
+	cmdcli.AddFlags(cmd.Flags(), dc)
 
 	return cmd
 }
 
 func (d *docsCmd) run() error {
-	switch d.docTypeString {
+	switch d.DocTypeString {
 	case "markdown", "mdown", "md":
-		return doc.GenMarkdownTree(d.topCmd, d.dest)
+		return doc.GenMarkdownTree(d.topCmd, d.Dest)
 	case "man":
 		header := &doc.GenManHeader{
 			Title:   "agent",
 			Section: "1",
 		}
-		return doc.GenManTree(d.topCmd, header, d.dest)
+		return doc.GenManTree(d.topCmd, header, d.Dest)
 	case "bash":
-		return d.topCmd.GenBashCompletionFile(filepath.Join(d.dest, "agent.bash"))
+		return d.topCmd.GenBashCompletionFile(filepath.Join(d.Dest, "agent.bash"))
 	case "zsh":
-		return d.topCmd.GenZshCompletionFile(filepath.Join(d.dest, "agent.zsh"))
+		return d.topCmd.GenZshCompletionFile(filepath.Join(d.Dest, "agent.zsh"))
 	default:
-		return fmt.Errorf("unknown doc type %q. Try 'markdown' or 'man'", d.docTypeString)
+		return fmt.Errorf("unknown doc type %q. Try 'markdown' or 'man'", d.DocTypeString)
 	}
 }

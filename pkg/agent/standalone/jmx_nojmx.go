@@ -7,7 +7,6 @@
 
 package standalone
 
-/*
 import "fmt"
 
 // ExecJMXCommandConsole is not supported when the 'jmx' build tag isn't included
@@ -24,4 +23,3 @@ func ExecJmxListWithMetricsJSON(selectedChecks []string, logLevel string) error 
 func ExecJmxListWithRateMetricsJSON(selectedChecks []string, logLevel string) error {
 	return fmt.Errorf("not supported: the Agent is compiled without the 'jmx' build tag")
 }
-*/

@@ -46,5 +46,5 @@ type Config struct {
 
 // authzConfig contains all build-in authorization options for API Server
 type authzConfig struct {
-	Modes []string `json:"modes" default:"Login" flag:"authorization-mode" description:"Ordered list of plug-ins to do authorization on secure port."`
+	Modes []string `json:"modes" default:"ABAC" flag:"authorization-mode" description:"Ordered list of plug-ins to do authorization on secure port."`
 }

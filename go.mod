@@ -69,7 +69,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	github.com/yubo/apiserver v0.0.0-20210818114029-aa8851f65709
+	github.com/yubo/apiserver v0.0.0-20210827105854-e08676c3df33
 	github.com/yubo/golib v0.0.0-20210818091248-62b6daa0f29d
 	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/automaxprocs v1.4.0

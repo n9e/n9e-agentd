@@ -62,7 +62,8 @@ type Config struct {
 	RootDir           string `json:"root_dir" flag:"root" env:"N9E_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
 	PidfilePath       string `json:"pidfile_path"`                                                        //
 	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"`               // additional_checksd
-	CheckFlareDir     string `json:"check_flare_dir" description:"check flare directory"`
+	CheckFlareDir     string `json:"check_flare_dir" description:"check flare directory default {root}/logs/checks"`
+	JmxFlareDir       string `json:"jmx_flare_dir" description:"default {root}/logs/jmxinfo"` // DefaultJMXFlareDirectory
 	//AuthTokenFilePath              string `json:"auth_token_file_path"`                                    // auth_token_file_path // move to apiserver
 
 	// apiserver
@@ -524,6 +525,10 @@ func (p *Config) ValidatePath() (err error) {
 	p.ComplianceConfigDir = root.Abs(p.ComplianceConfigDir, "compliance.d")
 	p.AutoconfTemplateDir = root.Abs(p.AutoconfTemplateDir, "check_configs")
 
+	// jmx_log_file {root}/logs/jmxfetch.log
+	p.Jmx.LogFile = root.Abs(p.Jmx.LogFile, "logs", "jmxfetch.log")
+	p.JmxFlareDir = root.Abs(p.JmxFlareDir, "logs", "jmxinfo")
+
 	return nil
 }
 
@@ -666,7 +671,7 @@ type Jmx struct {
 	CollectionTimeout          time.Duration `json:"-"`
 	CollectionTimeout_         int           `json:"collection_timeout" flag:"jmx-collection-timeout" default:"60" description:"collectionTimeout"` // jmx_collection_timeout
 	CustomJars                 []string      `json:"custom_jars"`                                                                                   // jmx_custom_jars
-	LogFile                    string        `json:"log_file" default:"./logs/jmxfetch.log"`                                                        // jmx_log_file
+	LogFile                    string        `json:"log_file" description:"default: {root}/logs/jmxfetch.log"`                                      // jmx_log_file
 	MaxRestarts                int           `json:"max_restarts" default:"3"`                                                                      // jmx_max_restarts
 	ReconnectionThreadPoolSize int           `json:"reconnection_thread_pool_size" default:"3"`                                                     // jmx_reconnection_thread_pool_size
 	ReconnectionTimeout        time.Duration `json:"-"`
