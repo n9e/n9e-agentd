@@ -13,10 +13,10 @@ import (
 )
 
 type config struct {
-	Port        int    `flag:"port" default:"8000" description:"listen port"`
-	Confd       string `flag:"collect-rule" description:"enable collect rule provider"`
-	CollectRule bool   `flag:"" description:"enable send statsd sample data"`
-	SendStatsd  bool   `flag:"" default:"./etc/mocker.d" description:"config dir"`
+	Port        int    `flag:"port" default:"8000" env:"N9E_MOCKER_PORT" description:"listen port"`
+	CollectRule bool   `flag:"collect-rule" description:"enable send statsd sample data"`
+	SendStatsd  bool   `flag:"send-statsd" description:"enable collect rule provider"`
+	Confd       string `flag:"confd" default:"./etc/mocker.d" description:"config dir"`
 }
 
 func main() {
@@ -36,7 +36,6 @@ func newRootCmd() *cobra.Command {
 		Use:   "watcher",
 		Short: "watcher is a tool which watch files change and execute some command",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			for _, r := range routes {
 				http.HandleFunc(r.pattern, payloadHandle(r.payload))
 			}
@@ -52,12 +51,12 @@ func newRootCmd() *cobra.Command {
 			}
 
 			klog.Infof("listen :%d", cf.Port)
-			klog.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
-
+			return http.ListenAndServe(fmt.Sprintf(":%d", cf.Port), nil)
 		},
 	}
 
 	configer.AddFlags(cmd.Flags(), cf)
 	globalflag.AddGlobalFlags(cmd.Flags(), "watcher")
+
 	return cmd
 }
