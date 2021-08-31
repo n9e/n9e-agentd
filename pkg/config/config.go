@@ -60,8 +60,8 @@ type Config struct {
 
 	//path
 	RootDir           string `json:"root_dir" flag:"root" env:"N9E_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
-	PidfilePath       string `json:"pidfile_path"`                                                        //
-	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"`               // additional_checksd
+	PidfilePath       string `json:"pidfile_path" flag:"pid" env:"N9E_AGENT_PIDFILE" description:"default {root}/run/agentd.pid"`
+	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"` // additional_checksd
 	CheckFlareDir     string `json:"check_flare_dir" description:"check flare directory default {root}/logs/checks"`
 	JmxFlareDir       string `json:"jmx_flare_dir" description:"default {root}/logs/jmxinfo"` // DefaultJMXFlareDirectory
 	//AuthTokenFilePath              string `json:"auth_token_file_path"`                                    // auth_token_file_path // move to apiserver
@@ -491,6 +491,9 @@ func (p *Config) ValidatePath() (err error) {
 	if !util.IsDir(p.RunPath) {
 		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
+
+	// pid
+	p.PidfilePath = root.Abs(p.PidfilePath, "run", "agentd.pid")
 
 	// {root}/misc/jmx
 	p.JmxPath = root.Abs(p.JmxPath, "misc", "jmx")

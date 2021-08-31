@@ -1,4 +1,4 @@
-.PHONY: pkg pkgs var clean release tools build
+.PHONY: pkg pkgs var clean release tools
 
 .EXPORT_ALL_VARIABLES:
 VERSION=5.1.0
@@ -8,7 +8,7 @@ APP_NAME?=n9e-agentd
 CGO_ENABLED?=1
 OBJ=$(APP_NAME)
 RPM_FILE=$(APP_NAME)-$(VERSION)-$(RELEASE).$(shell uname -s).$(shell uname -m).rpm
-DEP_OBJS=$(shell find . -name "*.go" -type f -not -path "./vendor/*" -a -not -path "./staging/*") \
+DEP_OBJS=$(shell find pkg -name "*.go" -type f) \
 	 pkg/data/resources.go
 TARGETS?=build/n9e-agentd
 GO_BUILD_LDFLAGS=`./scripts/go-build-ldflags.sh LDFLAG`
@@ -36,7 +36,7 @@ release:
 tools:
 	go get -u github.com/tcnksm/ghr
 
-build:
+agent: ./build/envs
 	source ./build/envs && ./scripts/build.sh
 
 build/n9e-agentd: $(DEP_OBJS) ./build/envs

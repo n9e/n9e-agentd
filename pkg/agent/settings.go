@@ -17,7 +17,7 @@ func (p *settingsClient) Get(key string) (interface{}, error) {
 	var output interface{}
 	input := &api.SettingInput{Setting: key}
 
-	err := p.ApiCall("GET", "/api/v1/config/{setting}", input, nil, &output)
+	err := p.ApiCall("GET", "/api/v1/config/settings/{setting}", input, nil, &output)
 	return output, err
 }
 
@@ -44,13 +44,13 @@ func (p *settingsClient) set(key, value string) error {
 		Setting: key,
 		Value:   value,
 	}
-	return p.ApiCall("POST", "/api/v1/config/{setting}", input, nil, nil)
+	return p.ApiCall("POST", "/api/v1/config/settings/{setting}", input, nil, nil)
 }
 
 func (p *settingsClient) List() (map[string]settings.RuntimeSettingResponse, error) {
 	output := map[string]settings.RuntimeSettingResponse{}
 
-	if err := p.ApiCall("GET", "/api/v1/config/list-runtime", nil, nil, &output); err != nil {
+	if err := p.ApiCall("GET", "/api/v1/config/settings", nil, nil, &output); err != nil {
 		return nil, err
 	}
 

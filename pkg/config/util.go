@@ -186,7 +186,11 @@ func IsCLCRunner() bool {
 
 func GetMainEndpoint() (host string) {
 	if len(C.Endpoints) > 0 {
-		host, _, _ = net.SplitHostPort(C.Endpoints[0])
+		s := C.Endpoints[0]
+		if n := strings.Index(s, "://"); n > 0 {
+			s = s[n+3:]
+		}
+		host, _, _ = net.SplitHostPort(s)
 	}
 	return
 }

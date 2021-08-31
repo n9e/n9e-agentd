@@ -65,7 +65,7 @@ func listRuntimeConfigurableValue(env *agent.EnvSettings) error {
 func _listRuntimeConfigurableValue(env *agent.EnvSettings) (map[string]settings.RuntimeSettingResponse, error) {
 	output := map[string]settings.RuntimeSettingResponse{}
 
-	if err := env.ApiCall("GET", "/api/v1/config/list-runtime", nil, nil, &output); err != nil {
+	if err := env.ApiCall("GET", "/api/v1/config/settings", nil, nil, &output); err != nil {
 		return nil, err
 	}
 
