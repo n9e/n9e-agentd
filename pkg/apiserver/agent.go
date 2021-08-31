@@ -32,13 +32,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func (p *module) installWs(c rest.GoRestfulContainer) {
-	rest.WsRouteBuild(&rest.WsOption{
-		Path:               "/api/v1",
-		GoRestfulContainer: c,
-		Routes:             apiV1Routes,
-	})
-}
 func stopAgent(w http.ResponseWriter, r *http.Request) {
 	util.Stop()
 }

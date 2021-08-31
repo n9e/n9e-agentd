@@ -10,6 +10,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/spf13/cobra"
 	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/golib/configer"
 )
 
 type statusInput struct {
@@ -30,7 +31,7 @@ func newStatusCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &input)
+	configer.AddFlags(cmd.Flags(), &input)
 	return cmd
 }
 
@@ -49,7 +50,7 @@ func newStatusComponentCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &input)
+	configer.AddFlags(cmd.Flags(), &input)
 	return cmd
 }
 

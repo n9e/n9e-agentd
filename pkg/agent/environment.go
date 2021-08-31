@@ -68,7 +68,7 @@ type EnvSettings struct {
 func (p *EnvSettings) Init(override map[string]string) error {
 	opts, _ := proc.ConfigOptsFrom(p.ctx)
 
-	if len(configer.Options.ValueFiles()) == 0 {
+	if len(configer.GlobalOptions.ValueFiles()) == 0 {
 		if f := util.DefaultConfigfile(); util.IsFile(f) {
 			klog.V(1).Infof("use default config file %s", f)
 			opts = append(opts, configer.WithValueFile(f))

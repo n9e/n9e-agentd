@@ -18,7 +18,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/golib/configer"
 
 	"github.com/spf13/cobra"
 )
@@ -54,7 +54,7 @@ func newStatsdCaptureCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &input)
+	configer.AddFlags(cmd.Flags(), &input)
 
 	return cmd
 }
@@ -70,7 +70,7 @@ func newStatsdReplayCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &input)
+	configer.AddFlags(cmd.Flags(), &input)
 
 	return cmd
 }
@@ -195,7 +195,7 @@ func newStatsdStatsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &input)
+	configer.AddFlags(cmd.Flags(), &input)
 
 	return cmd
 }

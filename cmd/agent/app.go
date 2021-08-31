@@ -82,7 +82,7 @@ func setupCommand(cmd *cobra.Command, settings *agent.EnvSettings) {
 	configer.SetOptions(true, false, 5, fs)
 	namedFlagSets := proc.NamedFlagSets()
 	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), AppName)
-	configer.Options.AddFlags(namedFlagSets.FlagSet("global"))
+	configer.GlobalOptions.AddFlags(namedFlagSets.FlagSet("global"))
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
 	}

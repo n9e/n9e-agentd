@@ -10,7 +10,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/spf13/cobra"
-	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/golib/configer"
 )
 
 type flareCmd struct {
@@ -50,7 +50,7 @@ func newFlareCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), &in)
+	configer.AddFlags(cmd.Flags(), &in)
 	cmd.SetArgs([]string{"caseID"})
 	return cmd
 

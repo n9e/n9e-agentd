@@ -1,4 +1,4 @@
-.PHONY: pkg pkgs var clean release dev devrun tools
+.PHONY: pkg pkgs var clean release tools build
 
 .EXPORT_ALL_VARIABLES:
 VERSION=5.1.0
@@ -36,6 +36,9 @@ release:
 tools:
 	go get -u github.com/tcnksm/ghr
 
+build:
+	source ./build/envs && ./scripts/build.sh
+
 build/n9e-agentd: $(DEP_OBJS) ./build/envs
 	source ./build/envs && ./scripts/build.sh
 
@@ -55,13 +58,8 @@ build/envs: Makefile
 build/envs.cmake: Makefile
 	./scripts/go-build-envs.sh cmake >  $@
 
-devrun: build/n9e-agentd
-	@echo "./build/n9e-agentd start --config ./run/etc/agentd.yml -v 10 --add-dir-header 2>&1"
-
-dev: build/n9e-agentd
-	source ./build/envs && watcher -logtostderr \
-		 --add-dir-header -v 10 -e build -e .git -e docs \
-		 -e plugins -e tmp -e vendor -e staging -f .go -d 1000
-
 pkg/data/resources.go:
 	go-bindata --prefix pkg/data/resources -pkg data -o $@ pkg/data/resources/...
+
+build/mocker: $(find cmd/mocker -name "*.go")
+	go build -o $@ ./cmd/mocker

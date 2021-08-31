@@ -30,7 +30,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/golib/configer"
 	"gopkg.in/yaml.v2"
 )
 
@@ -95,7 +95,7 @@ func newCheckCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), cc)
+	configer.AddFlags(cmd.Flags(), cc)
 	cmd.SetArgs([]string{"checkName"})
 	return cmd
 }

@@ -96,8 +96,8 @@ type Config struct {
 	Alias             string   `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
 	Lang              string   `json:"lang" flag:"lang" default:"zh" description:"Default lang(zh, en)"`
 	EnableN9eProvider bool     `json:"enable_n9e_provider" flag:"enable-n9e-provider" default:"true" description:"enable n9e server api as autodiscovery provider"`
-	N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                            // the payload format for forwarder
-	Endpoints         []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000"  description:"endpoints addresses of n9e server"` // site, dd_url
+	N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                                               // the payload format for forwarder
+	Endpoints         []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000" env:"N9E_ENDPOINTS" description:"endpoints addresses of n9e server"` // site, dd_url
 
 	MetadataProviders       []MetadataProviders                 `json:"metadata_providers"`            // metadata_providers
 	Forwarder               forwarder.Config                    `json:"forwarder"`                     // fowarder_*
@@ -113,7 +113,7 @@ type Config struct {
 	Logs                    logs.Config                         `json:"logs_config"`                   // logs_config
 	CloudFoundryGarden      CloudFoundryGarden                  `json:"cloud_foundry_garden"`          // cloud_foundry_garden
 	ClusterChecks           ClusterChecks                       `json:"cluster_checks"`                // cluster_checks
-	Telemetry               Telemetry                           `json:"telemetry"`                     // telemetry
+	Telemetry               Telemetry                           `json:"exporter"`                      // telemetry
 	OrchestratorExplorer    OrchestratorExplorer                `json:"orchestrator_explorer"`         // orchestrator_explorer
 	Statsd                  statsd.Config                       `json:"statsd"`                        // statsd_*, dagstatsd_*
 	Apm                     apm.Config                          `json:"apm_config"`                    // apm_config.*

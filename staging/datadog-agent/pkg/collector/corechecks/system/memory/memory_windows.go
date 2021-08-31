@@ -106,6 +106,9 @@ func (c *Check) Run() error {
 		sender.Gauge("system.mem.usable", float64(v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.used", float64(v.Total-v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pct_usable", float64(100-v.UsedPercent)/100, "", nil)
+		if config.C.VerboseReport {
+			sender.Gauge("system.mem.pct_used", v.UsedPercent, "", nil)
+		}
 	} else {
 		log.Errorf("memory.Check: could not retrieve virtual memory stats: %s", errVirt)
 	}
@@ -115,14 +118,14 @@ func (c *Check) Run() error {
 		sender.Gauge("system.swap.total", float64(s.Total)/mbSize, "", nil)
 		sender.Gauge("system.swap.free", float64(s.Free)/mbSize, "", nil)
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
-		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent)/100, "", nil)
+		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent), "", nil)
 	} else {
 		log.Errorf("memory.Check: could not retrieve swap memory stats: %s", errSwap)
 	}
 
 	p, errPage := pageMemory()
 	if errPage == nil {
-		sender.Gauge("system.mem.pagefile.pct_free", float64(100-p.UsedPercent)/100, "", nil)
+		sender.Gauge("system.mem.pagefile.pct_free", float64(100-p.UsedPercent), "", nil)
 		sender.Gauge("system.mem.pagefile.total", float64(p.Total)/mbSize, "", nil)
 		sender.Gauge("system.mem.pagefile.free", float64(p.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pagefile.used", float64(p.Used)/mbSize, "", nil)

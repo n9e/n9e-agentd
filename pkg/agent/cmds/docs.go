@@ -7,7 +7,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/agent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/golib/configer"
 )
 
 const docsDesc = `
@@ -47,7 +47,7 @@ func newDocsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	cmdcli.AddFlags(cmd.Flags(), dc)
+	configer.AddFlags(cmd.Flags(), dc)
 
 	return cmd
 }

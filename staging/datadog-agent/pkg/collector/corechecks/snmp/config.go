@@ -127,7 +127,8 @@ func (c *snmpConfig) addUptimeMetric() {
 // warning: changing getStaticTags logic might lead to different deviceID
 // getStaticTags does not contain tags from instance[].tags config
 func (c *snmpConfig) getStaticTags() []string {
-	tags := []string{"snmp_device:" + c.ipAddress}
+	//tags := []string{"snmp_device:" + c.ipAddress}
+	tags := []string{"__ident__:" + c.ipAddress}
 	tags = append(tags, c.extraTags...)
 	return tags
 }
