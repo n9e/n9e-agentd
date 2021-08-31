@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/shirou/gopsutil/mem"
 
 	"github.com/DataDog/datadog-agent/pkg/aggregator"

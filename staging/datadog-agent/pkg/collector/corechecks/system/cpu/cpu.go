@@ -9,6 +9,7 @@ package cpu
 import (
 	"fmt"
 
+	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/shirou/gopsutil/cpu"
 
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
