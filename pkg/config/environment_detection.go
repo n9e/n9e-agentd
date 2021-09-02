@@ -70,19 +70,19 @@ func IsFeaturePresent(feature Feature) bool {
 }
 
 // IsAutoconfigEnabled returns if autoconfig from environment is activated or not
-func IsAutoconfigEnabled() bool {
-	return C.AutoconfigFromEnvironment
+func (p *Config) IsAutoconfigEnabled() bool {
+	return p.AutoconfigFromEnvironment
 }
 
 // DetectFeatures runs the feature detection.
 // We guarantee that Datadog configuration is entirely loaded (env + YAML)
 // before this function is called
-func DetectFeatures() {
+func (p *Config) DetectFeatures() {
 	featureLock.Lock()
 	defer featureLock.Unlock()
 
 	newFeatures := make(FeatureMap)
-	if IsAutoconfigEnabled() {
+	if p.IsAutoconfigEnabled() {
 		detectContainerFeatures(newFeatures)
 		excludedFeatures := C.AutoconfigExcludeFeatures
 		excludeFeatures(newFeatures, excludedFeatures)

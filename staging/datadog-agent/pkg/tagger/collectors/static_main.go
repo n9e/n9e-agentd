@@ -8,8 +8,8 @@ package collectors
 import (
 	"context"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/util/fargate"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 const (
@@ -46,7 +46,8 @@ func staticFactory() Collector {
 	return &StaticCollector{}
 }
 
-func init() {
+// remove to LoadComponents for after loaded config
+func Init() {
 	// Only register collector if it is an ECS Fargate or EKS Fargate instance
 	if fargate.IsFargateInstance(context.TODO()) {
 		registerCollector(staticCollectorName, staticFactory, NodeOrchestrator)

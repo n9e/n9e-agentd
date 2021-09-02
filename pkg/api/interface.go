@@ -1,6 +1,9 @@
 package api
 
-import "github.com/yubo/apiserver/pkg/cmdcli"
+import (
+	"github.com/yubo/apiserver/pkg/cmdcli"
+	"github.com/yubo/apiserver/pkg/rest"
+)
 
 // Initializer is an interface that all plugin types: Inputs, Outputs,
 // Processors, and Aggregators can optionally implement to initialize the
@@ -42,4 +45,5 @@ type Logger interface {
 
 type Client interface {
 	ApiCall(method, uri string, param, body, output interface{}, opts ...cmdcli.RequestOption) error
+	GetClient(name string) *rest.RESTClient
 }

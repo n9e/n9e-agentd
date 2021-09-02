@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -26,14 +25,14 @@ import (
 )
 
 var (
-	Context context.Context
+	//Context context.Context
 
 	// Deprecated
 	//Configfile string
 	TestConfig bool
 
-	// ungly hack, TODO: remove it
-	C = NewConfig(nil)
+	C *Config
+
 	// StartTime is the agent startup time
 	StartTime = time.Now()
 
@@ -67,8 +66,11 @@ type Config struct {
 	//AuthTokenFilePath              string `json:"auth_token_file_path"`                                    // auth_token_file_path // move to apiserver
 
 	// apiserver
-	BindHost string `json:"-"` // bind_host -> apiserver.bind_host
-	BindPort int    `json:"-"` // bind_host -> apiserver.bind_host
+	BindHost             string `json:"-"` // bind_host -> apiserver.address
+	BindPort             int    `json:"-"` // bind_host -> apiserver.port
+	AuthTokenFile        string `json:"-"` // -> authentication.auth_token_file
+	ClusterAuthTokenFile string `json:"-"` // -> authentication.cluster_auth_token_file
+	Token                string `json:"-"` // -> authentication.Token
 	//IPCAddress string `json:"ipc_address" default:"localhost"` //  -> apiserver.bind_host
 	//CmdHost    string `json:"cmd_host" default:"localhost"` // cmd_host // -> apiserver.bind_host
 	//CmdPort    int    `json:"cmd_port" default:"5001"`      // cmd_port, move to apiserver -> apiserver.bind_port
@@ -81,14 +83,14 @@ type Config struct {
 	NoColor          bool          `json:"no_color" flag:"no-color,n" default:"false" env:"AGENTD_NO_COLOR" description:"disable color output"`
 
 	RunPath                  string `json:"run_path"`                                             // run_path
-	JmxPath                  string `json:"jmx_path" description:"default {root}/misc/jmx"`       // jmx_path
+	JmxPath                  string `json:"jmx_path" description:"default {root}/dist/jmx"`       // jmx_path
 	ConfdPath                string `json:"confd_path" description:"default {root}/conf.d"`       // confd_path
 	CriSocketPath            string `json:"cri_socket_path"`                                      // cri_socket_path
 	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                              // kubelet_auth_token_path
 	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`                           // kubernetes_kubeconfig_path
 	ProcfsPath               string `json:"procfs_path"`                                          // procfs_path
 	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`                               // windows_use_pythonpath
-	DistPath                 string `json:"dist_path" description:"default {root}/dis"`           // {root}/dist
+	DistPath                 string `json:"dist_path" description:"default {root}/dist"`          // {root}/dist
 	PyChecksPath             string `json:"py_checks_path" description:"default {root}/checks.d"` // {root}/checks.d
 	HostnameFile             string `json:"hostname_file"`                                        // hostname_file
 
@@ -418,6 +420,25 @@ func (p *Config) Validate() error {
 		}
 	}
 
+	// ClusterCheck
+	p.Ident = configEval(p.Ident)
+	p.Alias = configEval(p.Alias)
+
+	// apiserver
+	p.BindHost = p.configer.GetString("apiserver.address")
+	p.BindPort, _ = p.configer.GetInt("apiserver.port")
+
+	// tokenFile
+	p.AuthTokenFile = p.configer.GetString("authentication.auth_token_file")
+	if p.AuthTokenFile != "" {
+		var err error
+		if p.Token, err = util.FetchAuthToken(p.AuthTokenFile, true); err != nil {
+			return fmt.Errorf("get token from %s err %s", p.AuthTokenFile, err)
+		}
+	}
+
+	p.ClusterAuthTokenFile = p.configer.GetString("authentication.cluster_auth_token_file")
+
 	if err := util.FieldsValidate(p); err != nil {
 		return err
 	}
@@ -425,10 +446,6 @@ func (p *Config) Validate() error {
 	if err := p.SnmpTraps.Validate(p.GetBindHost()); err != nil {
 		return err
 	}
-
-	// ClusterCheck
-	p.Ident = configEval(p.Ident)
-	p.Alias = configEval(p.Alias)
 
 	if strings.Contains(p.Ident, "localhost") || strings.Contains(p.Ident, "127.0.0.1") {
 		return fmt.Errorf("agent.ident should not include 'localhost'")
@@ -453,13 +470,8 @@ func (p *Config) Validate() error {
 	if err := defaultTransformer.SetMetricFromFile(p.MetricTransformFile); err != nil {
 		return err
 	}
-
-	// apiserver
-	p.BindHost = p.configer.GetString("apiserver.bind_host")
-	p.BindPort, _ = p.configer.GetInt("apiserver.bind_port")
-
 	// TODO
-	DetectFeatures()
+	p.DetectFeatures()
 	//applyOverrideFuncs(p)
 	// setTracemallocEnabled *must* be called before setNumWorkers
 	//warnings.TraceMallocEnabledWithPy2 = setTracemallocEnabled(config)
@@ -495,8 +507,8 @@ func (p *Config) ValidatePath() (err error) {
 	// pid
 	p.PidfilePath = root.Abs(p.PidfilePath, "run", "agentd.pid")
 
-	// {root}/misc/jmx
-	p.JmxPath = root.Abs(p.JmxPath, "misc", "jmx")
+	// {root}/dist/jmx
+	p.JmxPath = root.Abs(p.JmxPath, "dist", "jmx")
 	klog.V(1).InfoS("agent", "jmx_path", p.JmxPath)
 
 	// {root}/run

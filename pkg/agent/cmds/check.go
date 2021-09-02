@@ -79,18 +79,9 @@ func newCheckCmd(env *agent.EnvSettings) *cobra.Command {
 		Use:   "check <check_name>",
 		Short: "Run the specified check",
 		Long:  `Use this to run a specific check with a specific rate`,
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := env.SetupCLI(); err != nil {
-				fmt.Printf("Cannot initialize command: %v\n", err)
-				return err
-			}
-			if len(args) != 0 {
-				cc.checkName = args[0]
-			} else {
-				cmd.Help() //nolint:errcheck
-				return nil
-			}
-
+			cc.checkName = args[0]
 			return cc.check()
 		},
 	}

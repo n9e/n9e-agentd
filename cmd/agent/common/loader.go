@@ -20,7 +20,10 @@ import (
 // tagger, collector, scheduler and autodiscovery
 func LoadComponents() {
 	// start tagging system
+	collectors.Init()
+
 	tagger.SetDefaultTagger(local.NewTagger(collectors.DefaultCatalog))
+
 	tagger.Init()
 
 	// create the Collector instance and start all the components

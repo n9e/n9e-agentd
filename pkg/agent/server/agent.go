@@ -197,23 +197,14 @@ func init() {
 }
 
 func (p *agentServer) readConfig() error {
-	configer := proc.ConfigerMustFrom(p.ctx)
-
-	cf := config.NewConfig(configer)
-	if err := configer.Read(moduleName, cf); err != nil {
-		return err
-	}
-
 	if config.TestConfig {
+		configer := proc.ConfigerMustFrom(p.ctx)
 		configer.PrintFlags()
 		fmt.Printf("agentd: configuration test is successful\n")
 		os.Exit(0)
 	}
 
-	p.config = cf
-	config.C = cf
-	config.Context = p.ctx
-
+	p.config = config.C
 	return nil
 }
 

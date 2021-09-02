@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
-	"github.com/n9e/n9e-agentd/pkg/apiserver"
-	"github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util"
@@ -47,10 +44,10 @@ type EnvSettingsOutput struct {
 
 // envSettings describes all of the environment settings.
 type EnvSettings struct {
-	Agent     *config.Config
-	Apiserver apiserver.Config
-	Auth      authentication.Config
-	ctx       context.Context
+	Agent *config.Config
+	//Apiserver apiserver.Config
+	//Auth      authentication.Config
+	ctx context.Context
 
 	In     io.Reader
 	Out    io.Writer
@@ -91,16 +88,6 @@ func (p *EnvSettings) Init(override map[string]string) error {
 	}
 	config.C = p.Agent
 
-	if err := c.Read("apiserver", &p.Apiserver); err != nil {
-		return err
-	}
-	if err := c.Read("authentication", &p.Auth); err != nil {
-		return err
-	}
-
-	// validate
-	p.Auth.ValidatePath(p.Agent.RootDir)
-
 	// client
 	if err := p.initClients(); err != nil {
 		return err
@@ -114,11 +101,15 @@ func (p *EnvSettings) Init(override map[string]string) error {
 	return nil
 }
 
+func (p *EnvSettings) GetClient(name string) *rest.RESTClient {
+	return p.Clients[name]
+}
+
 func (p *EnvSettings) newClient(host string, port int) (*rest.RESTClient, error) {
 	return rest.RESTClientFor(&rest.Config{
 		Host:            fmt.Sprintf("%s:%d", host, port),
 		ContentConfig:   rest.ContentConfig{NegotiatedSerializer: scheme.Codecs},
-		BearerTokenFile: p.Auth.AuthTokenFile,
+		BearerTokenFile: p.Agent.AuthTokenFile,
 	})
 
 }
@@ -132,7 +123,9 @@ func (p *EnvSettings) initClients() error {
 		if err != nil {
 			return err
 		}
-		p.Clients["exporter"] = client
+		p.Clients["telemetry"] = client
+		p.Clients["metrics"] = client
+		p.Clients["pprof"] = client
 	}
 
 	// apm
@@ -145,8 +138,8 @@ func (p *EnvSettings) initClients() error {
 	}
 
 	// apiserver
-	if port := p.Apiserver.Port; port > 0 {
-		client, err := p.newClient(p.Apiserver.Host, port)
+	if port := p.Agent.BindPort; port > 0 {
+		client, err := p.newClient(p.Agent.BindHost, port)
 		if err != nil {
 			klog.Infof("unable to create client, err %s", err)
 		}
@@ -162,8 +155,8 @@ func (p EnvSettings) String() string {
 
 func (p EnvSettings) Output() *EnvSettingsOutput {
 	ret := &EnvSettingsOutput{
-		Endpoint:      fmt.Sprintf("%s:%d", p.Apiserver.Host, p.Apiserver.Port),
-		AuthTokenFile: p.Auth.AuthTokenFile,
+		Endpoint:      fmt.Sprintf("%s:%d", p.Agent.BindHost, p.Agent.BindPort),
+		AuthTokenFile: p.Agent.AuthTokenFile,
 		DisablePage:   p.Agent.DisablePage,
 		PageSize:      p.Agent.PageSize,
 		Version:       options.Version,
@@ -283,28 +276,4 @@ func SetFlagFromEnv(name, envName string, fs *pflag.FlagSet) {
 			klog.Error(err)
 		}
 	}
-}
-
-// svc: cmd
-// uri: /health
-// return: http://localhost:5001/health
-func (p *EnvSettings) url(svc, uri string) string {
-	uri = strings.Trim(uri, "/")
-	switch strings.ToLower(svc) {
-	case "cmd":
-		return fmt.Sprintf("http://%s:%d/%v", p.Apiserver.Host, p.Apiserver.Port, uri)
-	default:
-		return fmt.Sprintf("http://%s:%d/%v", p.Apiserver.Host, p.Agent.Telemetry.Port, uri) // metrics
-	}
-}
-
-// SetupCLI
-func (p *EnvSettings) SetupCLI() error {
-	cf := config.NewConfig(p.configer)
-	cf.IsCliRunner = true
-	if err := p.configer.Read("agent", cf); err != nil {
-		return err
-	}
-	config.C = cf
-	return nil
 }

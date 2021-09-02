@@ -207,7 +207,7 @@ func statsdStats(env *agent.EnvSettings, in *statsdStatsInput) error {
 	var s string
 
 	var r []byte
-	err := env.ApiCall("GET", "/api/v1/statsd-stats", nil, nil, &r)
+	err := env.ApiCall("GET", "/api/v1/statsd/stats", nil, nil, &r)
 	if err != nil {
 		return err
 	}

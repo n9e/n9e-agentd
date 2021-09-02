@@ -6,18 +6,11 @@
 package clusteragent
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"sync"
-	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/api/util"
 	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
 	"github.com/DataDog/datadog-agent/pkg/version"
-	auth "github.com/n9e/n9e-agentd/pkg/authentication"
-	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 /*
@@ -54,58 +47,59 @@ func GetCLCRunnerClient() (CLCRunnerClientInterface, error) {
 }
 
 func (c *CLCRunnerClient) init() {
-	c.initErr = nil
+	/*
+		c.initErr = nil
 
-	authToken, err := auth.GetClusterAgentAuthToken()
-	if err != nil {
-		c.initErr = err
-		return
-	}
+		authToken := auth.C.Token
 
-	// Set headers
-	c.clcRunnerAPIRequestHeaders = http.Header{}
-	c.clcRunnerAPIRequestHeaders.Set(authorizationHeaderKey, fmt.Sprintf("Bearer %s", authToken))
+		// Set headers
+		c.clcRunnerAPIRequestHeaders = http.Header{}
+		c.clcRunnerAPIRequestHeaders.Set(authorizationHeaderKey, fmt.Sprintf("Bearer %s", authToken))
 
-	// Set http client
-	// TODO remove insecure
-	c.clcRunnerAPIClient = util.GetClient(false)
-	c.clcRunnerAPIClient.Timeout = 2 * time.Second
+		// Set http client
+		// TODO remove insecure
+		c.clcRunnerAPIClient = util.GetClient(false)
+		c.clcRunnerAPIClient.Timeout = 2 * time.Second
 
-	// Set http port used by the CLC Runners
-	c.clcRunnerPort = config.C.ClusterChecks.ClcRunnersPort
+		// Set http port used by the CLC Runners
+		c.clcRunnerPort = config.C.ClusterChecks.ClcRunnersPort
+	*/
 }
 
 // GetVersion fetches the version of the CLC Runner
 func (c *CLCRunnerClient) GetVersion(IP string) (version.Version, error) {
-	var version version.Version
-	var err error
+	/*
+		var version version.Version
+		var err error
 
-	rawURL := fmt.Sprintf("https://%s:%d/%s/%s", IP, c.clcRunnerPort, clcRunnerPath, clcRunnerVersionPath)
+		rawURL := fmt.Sprintf("https://%s:%d/%s/%s", IP, c.clcRunnerPort, clcRunnerPath, clcRunnerVersionPath)
 
-	req, err := http.NewRequest("GET", rawURL, nil)
-	if err != nil {
+		req, err := http.NewRequest("GET", rawURL, nil)
+		if err != nil {
+			return version, err
+		}
+		req.Header = c.clcRunnerAPIRequestHeaders
+
+		resp, err := c.clcRunnerAPIClient.Do(req)
+		if err != nil {
+			return version, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return version, fmt.Errorf("unexpected status code from CLC runner: %d", resp.StatusCode)
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return version, err
+		}
+
+		err = json.Unmarshal(body, &version)
+
 		return version, err
-	}
-	req.Header = c.clcRunnerAPIRequestHeaders
-
-	resp, err := c.clcRunnerAPIClient.Do(req)
-	if err != nil {
-		return version, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return version, fmt.Errorf("unexpected status code from CLC runner: %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return version, err
-	}
-
-	err = json.Unmarshal(body, &version)
-
-	return version, err
+	*/
+	return version.Version{}, nil
 }
 
 // GetRunnerStats fetches the runner stats exposed by the Cluster Level Check Runner
@@ -113,33 +107,35 @@ func (c *CLCRunnerClient) GetRunnerStats(IP string) (types.CLCRunnersStats, erro
 	var stats types.CLCRunnersStats
 	var err error
 
-	rawURL := fmt.Sprintf("https://%s:%d/%s/%s", IP, c.clcRunnerPort, clcRunnerPath, clcRunnerStatsPath)
+	/*
+		rawURL := fmt.Sprintf("https://%s:%d/%s/%s", IP, c.clcRunnerPort, clcRunnerPath, clcRunnerStatsPath)
 
-	req, err := http.NewRequest("GET", rawURL, nil)
-	if err != nil {
-		return stats, err
-	}
-	req.Header = c.clcRunnerAPIRequestHeaders
+		req, err := http.NewRequest("GET", rawURL, nil)
+		if err != nil {
+			return stats, err
+		}
+		req.Header = c.clcRunnerAPIRequestHeaders
 
-	resp, err := c.clcRunnerAPIClient.Do(req)
-	if err != nil {
-		return stats, err
-	}
-	defer resp.Body.Close()
+		resp, err := c.clcRunnerAPIClient.Do(req)
+		if err != nil {
+			return stats, err
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return stats, fmt.Errorf("unexpected status code from CLC runner: %d", resp.StatusCode)
-	}
+		if resp.StatusCode != http.StatusOK {
+			return stats, fmt.Errorf("unexpected status code from CLC runner: %d", resp.StatusCode)
+		}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return stats, err
-	}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return stats, err
+		}
 
-	err = json.Unmarshal(body, &stats)
+		err = json.Unmarshal(body, &stats)
 
-	// clean stats map if it contains an empty entry
-	delete(stats, "")
+		// clean stats map if it contains an empty entry
+		delete(stats, "")
+	*/
 
 	return stats, err
 }

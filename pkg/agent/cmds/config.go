@@ -77,7 +77,7 @@ func newSetConfig(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "set [setting] [value]",
 		Short: "Set, for the current runtime, the value of a given configuration setting",
-		Long:  ``,
+		Args:  cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return setConfigValue(env, args)
 		},
@@ -89,18 +89,14 @@ func newGetConfig(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get [setting]",
 		Short: "Get, for the current runtime, the value of a given configuration setting",
-		Long:  ``,
-		RunE: func(_ *cobra.Command, args []string) error {
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			return getConfigValue(env, args)
 		},
 	}
 }
 
 func setConfigValue(env *agent.EnvSettings, args []string) error {
-	if len(args) != 2 {
-		return fmt.Errorf("exactly two parameters are required: the setting name and its value")
-	}
-
 	hidden, err := agent.NewSettingsClient(env).Set(args[0], args[1])
 	if err != nil {
 		return err
@@ -116,10 +112,6 @@ func setConfigValue(env *agent.EnvSettings, args []string) error {
 }
 
 func getConfigValue(env *agent.EnvSettings, args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("a single setting name must be specified")
-	}
-
 	value, err := agent.NewSettingsClient(env).Get(args[0])
 	if err != nil {
 		return err

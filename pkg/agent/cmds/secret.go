@@ -49,7 +49,6 @@ func newReadSecretsCmd(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
 		Use:   "read",
 		Short: "Read secret from a directory",
-		Long:  ``,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return readSecrets(os.Stdin, os.Stdout, args[0])

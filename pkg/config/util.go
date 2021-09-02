@@ -100,8 +100,15 @@ func pathExists(path string) bool {
 //	return filepath.Join(C.RootDir, "etc")
 //}
 
-func ConfigFileUsed() string {
+func ConfigFilesUsed() string {
 	return strings.Join(C.ValueFiles, ",")
+}
+
+func ConfigFileUsed() string {
+	if len(C.ValueFiles) > 0 {
+		return C.ValueFiles[0]
+	}
+	return ""
 }
 
 // SanitizeAPIKey strips newlines and other control characters from a given string.

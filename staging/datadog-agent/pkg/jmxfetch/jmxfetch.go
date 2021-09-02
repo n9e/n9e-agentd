@@ -22,7 +22,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
-	auth "github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"gopkg.in/yaml.v2"
 )
@@ -281,8 +280,9 @@ func (j *JMXFetch) Start(manage bool) error {
 	// set environment + token
 	j.cmd.Env = append(
 		os.Environ(),
-		fmt.Sprintf("SESSION_TOKEN=%s", auth.GetAuthToken()),
+		fmt.Sprintf("SESSION_TOKEN=%s", config.C.Token),
 	)
+	log.Debugf("jmx fetch token %q", config.C.Token)
 
 	// forward the standard output to the Agent logger
 	stdout, err := j.cmd.StdoutPipe()

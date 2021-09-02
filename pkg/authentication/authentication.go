@@ -33,24 +33,27 @@ type Config struct {
 	AuthTokenFile        string `json:"auth_token_file" flag:"auth-token-file" env:"N9E_TOKEN_FILE" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	ClusterAuthTokenFile string `json:"cluster_auth_token_file" flag:"cluster-auth-token-file" description:"If set, the file that will be used to secure the secure port of the API server via token authentication."`
 	Fake                 bool   `json:"fake" flag:"fake-auth" default:"false" description:"If set, you can use auth token"`
-}
-
-func (p *Config) ValidatePath(rootDir string) error {
-	root := util.NewRootDir(rootDir)
-	p.AuthTokenFile = root.Abs(p.AuthTokenFile, "etc", "auth_token")
-	klog.V(1).InfoS("authentication", "auth_token_file", p.AuthTokenFile)
-
-	return nil
+	RootDir              string `json:"-"` // from agent.root_dir
+	Token                string `json:"-"` // generate from auth_token_file
+	ClusterToken         string `json:"-"` // generate from cluster_auth_token_file
 }
 
 func (p *Config) Validate() error {
+	root := util.NewRootDir(p.RootDir)
+	p.AuthTokenFile = root.Abs(p.AuthTokenFile, "etc", "auth_token")
+	klog.V(1).InfoS("authentication", "auth_token_file", p.AuthTokenFile)
+
+	var err error
+	if p.Token, err = p.fetchAuthToken(true); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 type authModule struct {
-	name   string
-	token  string
-	config *Config
+	*Config
+	name string
 }
 
 func newConfig() *Config {
@@ -58,17 +61,15 @@ func newConfig() *Config {
 }
 
 func (p *authModule) init(ctx context.Context) error {
-	c := proc.ConfigerMustFrom(ctx)
-
+	configer := proc.ConfigerMustFrom(ctx)
 	cf := newConfig()
-	if err := c.Read(modulePath, cf); err != nil {
+	cf.RootDir = configer.GetString("agent.root_dir")
+
+	if err := configer.Read(modulePath, cf); err != nil {
 		return err
 	}
-	p.config = cf
 
-	p.config.ValidatePath("")
-
-	auth, err := p.newAuthToken()
+	auth, err := p.newAuthenticator()
 	if err != nil {
 		return err
 	}
@@ -80,16 +81,11 @@ type TokenAuthenticator struct {
 	tokens map[string]*user.DefaultInfo
 }
 
-func (p *authModule) newAuthToken() (*TokenAuthenticator, error) {
-	authToken, err := CreateOrFetchToken()
-	if err != nil {
-		return nil, err
-	}
-
+func (p *authModule) newAuthenticator() (*TokenAuthenticator, error) {
 	tokens := map[string]*user.DefaultInfo{}
-	tokens[authToken] = &user.DefaultInfo{Name: "system:agentd", UID: "0"}
+	tokens[p.Token] = &user.DefaultInfo{Name: "system:agentd", UID: "0"}
 
-	if p.config.Fake {
+	if p.Fake {
 		tokens[fakeToken] = &user.DefaultInfo{Name: "system:fake", UID: "0"}
 	}
 

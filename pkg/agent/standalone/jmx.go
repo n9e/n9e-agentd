@@ -63,7 +63,7 @@ func execJmxCommand(env *agent.EnvSettings, command string, selectedChecks []str
 
 	runner.Reporter = reporter
 	runner.Command = command
-	runner.IPCPort = env.Apiserver.Port
+	runner.IPCPort = env.Agent.BindPort
 	runner.Output = output
 	runner.LogLevel = logLevel
 

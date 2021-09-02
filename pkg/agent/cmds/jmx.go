@@ -136,8 +136,8 @@ func (p *jmxCmd) newJmxCollectCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringSliceVar(&p.CliSelectedChecks, "checks", []string{}, "JMX checks (ex: jmx,tomcat)")
-	cmd.PersistentFlags().BoolVarP(&p.SaveFlare, "flare", "", false, "save jmx list results to the log dir so it may be reported in a flare")
+	cmd.Flags().StringSliceVar(&p.CliSelectedChecks, "checks", []string{}, "JMX checks (ex: jmx,tomcat)")
+	cmd.Flags().BoolVarP(&p.SaveFlare, "flare", "", false, "save jmx list results to the log dir so it may be reported in a flare")
 	return cmd
 }
 

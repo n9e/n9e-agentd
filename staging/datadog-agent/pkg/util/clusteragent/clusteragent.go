@@ -19,12 +19,10 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 
-	"github.com/DataDog/datadog-agent/pkg/api/util"
 	apiv1 "github.com/DataDog/datadog-agent/pkg/clusteragent/api/v1"
 	"github.com/DataDog/datadog-agent/pkg/clusteragent/clusterchecks/types"
 	"github.com/DataDog/datadog-agent/pkg/util/retry"
 	"github.com/DataDog/datadog-agent/pkg/version"
-	auth "github.com/n9e/n9e-agentd/pkg/authentication"
 	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
@@ -98,36 +96,38 @@ func GetClusterAgentClient() (DCAClientInterface, error) {
 }
 
 func (c *DCAClient) init() error {
-	var err error
+	/*
+		var err error
 
-	c.clusterAgentAPIEndpoint, err = getClusterAgentEndpoint()
-	if err != nil {
-		return err
-	}
+		c.clusterAgentAPIEndpoint, err = getClusterAgentEndpoint()
+		if err != nil {
+			return err
+		}
 
-	authToken, err := auth.GetClusterAgentAuthToken()
-	if err != nil {
-		return err
-	}
+		authToken, err := auth.GetClusterAgentAuthToken()
+		if err != nil {
+			return err
+		}
 
-	c.clusterAgentAPIRequestHeaders = http.Header{}
-	c.clusterAgentAPIRequestHeaders.Set(authorizationHeaderKey, fmt.Sprintf("Bearer %s", authToken))
-	podIP := config.C.CLCRunnerHost
-	c.clusterAgentAPIRequestHeaders.Set(RealIPHeader, podIP)
+		c.clusterAgentAPIRequestHeaders = http.Header{}
+		c.clusterAgentAPIRequestHeaders.Set(authorizationHeaderKey, fmt.Sprintf("Bearer %s", authToken))
+		podIP := config.C.CLCRunnerHost
+		c.clusterAgentAPIRequestHeaders.Set(RealIPHeader, podIP)
 
-	// TODO remove insecure
-	c.clusterAgentAPIClient = util.GetClient(false)
-	c.clusterAgentAPIClient.Timeout = 2 * time.Second
+		// TODO remove insecure
+		c.clusterAgentAPIClient = util.GetClient(false)
+		c.clusterAgentAPIClient.Timeout = 2 * time.Second
 
-	// Validate the cluster-agent client by checking the version
-	c.ClusterAgentVersion, err = c.GetVersion()
-	if err != nil {
-		return err
-	}
-	log.Infof("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String())
+		// Validate the cluster-agent client by checking the version
+		c.ClusterAgentVersion, err = c.GetVersion()
+		if err != nil {
+			return err
+		}
+		log.Infof("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String())
 
-	// Clone the http client in a new client with built-in redirect handler
-	c.leaderClient = newLeaderClient(c.clusterAgentAPIClient, c.clusterAgentAPIEndpoint)
+		// Clone the http client in a new client with built-in redirect handler
+		c.leaderClient = newLeaderClient(c.clusterAgentAPIClient, c.clusterAgentAPIEndpoint)
+	*/
 
 	return nil
 }

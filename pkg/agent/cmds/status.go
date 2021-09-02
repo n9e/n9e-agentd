@@ -41,6 +41,7 @@ func newStatusComponentCmd(env *agent.EnvSettings) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "component",
 		Short: "Print the component status",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("a component name must be specified")

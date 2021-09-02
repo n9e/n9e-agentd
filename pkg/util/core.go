@@ -4,6 +4,7 @@ package util
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -51,4 +52,9 @@ func IsDir(path string) bool {
 func IsFile(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && !fi.IsDir()
+}
+
+// writes auth token(s) to a file that is only readable/writable by the user running the agent
+func saveAuthToken(token, tokenPath string) error {
+	return ioutil.WriteFile(tokenPath, []byte(token), 0600)
 }

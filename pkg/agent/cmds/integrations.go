@@ -99,6 +99,7 @@ func (p *integrationsCmd) newInstallCmd() *cobra.Command {
 You must specify a version of the package to install using the syntax: <package>==<version>, with
  - <package> of the form datadog-<integration-name>
  - <version> of the form x.y.z`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := p.validateArgs(args); err != nil {
 				return err
@@ -118,6 +119,7 @@ func (p *integrationsCmd) newRemoveCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove [package]",
 		Short: "Remove Datadog integration core/extra packages",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := p.validateArgs(args); err != nil {
 				return err
@@ -131,7 +133,6 @@ func (p *integrationsCmd) newInfoCmd() *cobra.Command {
 		Use:   "info [package]",
 		Short: "Print out information about [package]",
 		Args:  cobra.ExactArgs(1),
-		Long:  ``,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := p.validateArgs(args); err != nil {
 				return err
@@ -288,12 +289,6 @@ func (p *integrationsCmd) getCommandPython() (string, error) {
 }
 
 func (p *integrationsCmd) validateArgs(args []string) error {
-	if len(args) > 1 {
-		return fmt.Errorf("Too many arguments")
-	} else if len(args) == 0 {
-		return fmt.Errorf("Missing package argument")
-	}
-
 	if !p.localWheel {
 		if !datadogPkgNameRe.MatchString(args[0]) {
 			return fmt.Errorf("invalid package name - this manager only handles datadog packages. Did you mean `datadog-%s`?", args[0])
@@ -921,4 +916,10 @@ func (p *integrationsCmd) info(pkg string) error {
 	}
 
 	return nil
+}
+
+func init() {
+	agent.RegisterCmd([]agent.CmdOps{
+		{CmdFactory: newIntegrationCmd, GroupNum: agent.CMD_G_GENERIC},
+	}...)
 }

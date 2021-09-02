@@ -2,11 +2,17 @@ package util
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"k8s.io/klog/v2"
 )
 
 // SleepContext sleeps until the context is closed or the duration is reached.
@@ -147,3 +153,47 @@ func ResolveRootPath(root string) (string, error) {
 //
 //	return filepath.Join(rootPath, path)
 //}
+
+const (
+	authTokenMinimalLen = 32
+)
+
+func FetchAuthToken(file string, tokenCreationAllowed bool) (string, error) {
+	authTokenFile := file
+
+	// Create a new token if it doesn't exist and if permitted by calling func
+	if _, e := os.Stat(authTokenFile); os.IsNotExist(e) && tokenCreationAllowed {
+		key := make([]byte, authTokenMinimalLen)
+		_, e = rand.Read(key)
+		if e != nil {
+			return "", fmt.Errorf("can't create agent authentication token value: %s", e)
+		}
+
+		// Write the auth token to the auth token file (platform-specific)
+		e = saveAuthToken(hex.EncodeToString(key), authTokenFile)
+		if e != nil {
+			return "", fmt.Errorf("error writing authentication token file on fs: %s", e)
+		}
+		klog.Infof("Saved a new authentication token to %s", authTokenFile)
+	}
+	// Read the token
+	authTokenRaw, e := ioutil.ReadFile(authTokenFile)
+	if e != nil {
+		return "", fmt.Errorf("unable to read authentication token file: " + e.Error())
+	}
+
+	// Do some basic validation
+	authToken := string(authTokenRaw)
+	if len(authToken) < authTokenMinimalLen {
+		return "", fmt.Errorf("invalid authentication token: must be at least %d characters in length", authTokenMinimalLen)
+	}
+
+	return authToken, nil
+}
+
+func validateAuthToken(authToken string) error {
+	if len(authToken) < authTokenMinimalLen {
+		return fmt.Errorf("agent authentication token length must be greater than %d, curently: %d", authTokenMinimalLen, len(authToken))
+	}
+	return nil
+}
