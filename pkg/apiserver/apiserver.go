@@ -11,6 +11,7 @@ import (
 	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/golib/proc"
 
+	_ "github.com/n9e/n9e-agentd/pkg/authentication"
 	_ "github.com/yubo/apiserver/pkg/authentication/register" // authn
 	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
 

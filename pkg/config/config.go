@@ -425,17 +425,8 @@ func (p *Config) Validate() error {
 	p.Alias = configEval(p.Alias)
 
 	// apiserver
-	p.BindHost = p.configer.GetString("apiserver.address")
+	p.BindHost = p.configer.GetString("apiserver.host")
 	p.BindPort, _ = p.configer.GetInt("apiserver.port")
-
-	// tokenFile
-	p.AuthTokenFile = p.configer.GetString("authentication.auth_token_file")
-	if p.AuthTokenFile != "" {
-		var err error
-		if p.Token, err = util.FetchAuthToken(p.AuthTokenFile, true); err != nil {
-			return fmt.Errorf("get token from %s err %s", p.AuthTokenFile, err)
-		}
-	}
 
 	p.ClusterAuthTokenFile = p.configer.GetString("authentication.cluster_auth_token_file")
 
@@ -453,6 +444,13 @@ func (p *Config) Validate() error {
 
 	if err := p.ValidatePath(); err != nil {
 		return err
+	}
+
+	if p.AuthTokenFile != "" {
+		var err error
+		if p.Token, err = util.FetchAuthToken(p.AuthTokenFile, true); err != nil {
+			return fmt.Errorf("get token from %s err %s", p.AuthTokenFile, err)
+		}
 	}
 
 	if p.EnableN9eProvider {
@@ -543,6 +541,10 @@ func (p *Config) ValidatePath() (err error) {
 	// jmx_log_file {root}/logs/jmxfetch.log
 	p.Jmx.LogFile = root.Abs(p.Jmx.LogFile, "logs", "jmxfetch.log")
 	p.JmxFlareDir = root.Abs(p.JmxFlareDir, "logs", "jmxinfo")
+
+	// tokenFile
+	p.AuthTokenFile = p.configer.GetString("authentication.auth_token_file")
+	p.AuthTokenFile = root.Abs(p.AuthTokenFile, "etc", "auth_token")
 
 	return nil
 }

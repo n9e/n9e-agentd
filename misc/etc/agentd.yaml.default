@@ -64,3 +64,15 @@ agent:
     ## Set this parameter to true to have statsd collects basic statistics (count/last seen)
     #
     # metricsStatsEnable: false
+
+  # tags:
+  #   - <KEY_1>:<VALUE_1>
+  #   - <KEY_2>:<VALUE_2>
+
+apiserver:
+  #enabled: false
+  #host: 127.0.0.1
+  #port: 8010
+
+authentication:
+  #auth_token_file:

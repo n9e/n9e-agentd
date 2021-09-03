@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"bytes"
+
 	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/config/settings"
 )
@@ -58,7 +60,7 @@ func (p *settingsClient) List() (map[string]settings.RuntimeSettingResponse, err
 }
 
 func (p *settingsClient) FullConfig() (string, error) {
-	var resp []byte
-	err := p.ApiCall("GET", "/api/v1/config", nil, nil, &resp)
-	return string(resp), err
+	resp := new(bytes.Buffer)
+	err := p.ApiCall("GET", "/api/v1/config", nil, nil, resp)
+	return resp.String(), err
 }

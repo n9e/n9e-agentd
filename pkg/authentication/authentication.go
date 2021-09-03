@@ -68,6 +68,7 @@ func (p *authModule) init(ctx context.Context) error {
 	if err := configer.Read(modulePath, cf); err != nil {
 		return err
 	}
+	p.Config = cf
 
 	auth, err := p.newAuthenticator()
 	if err != nil {
@@ -84,6 +85,7 @@ type TokenAuthenticator struct {
 func (p *authModule) newAuthenticator() (*TokenAuthenticator, error) {
 	tokens := map[string]*user.DefaultInfo{}
 	tokens[p.Token] = &user.DefaultInfo{Name: "system:agentd", UID: "0"}
+	klog.V(6).Infof("auth.token %s", p.Token)
 
 	if p.Fake {
 		tokens[fakeToken] = &user.DefaultInfo{Name: "system:fake", UID: "0"}
