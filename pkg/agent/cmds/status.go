@@ -24,28 +24,14 @@ func newStatusCmd(env *agent.EnvSettings) *cobra.Command {
 	var input statusInput
 
 	cmd := &cobra.Command{
-		Use:   "status [component [name]]",
+		Use:   "status [component-name]",
 		Short: "Print the current status",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return requestStatus(env, &input)
-		},
-	}
-
-	configer.AddFlags(cmd.Flags(), &input)
-	return cmd
-}
-
-func newStatusComponentCmd(env *agent.EnvSettings) *cobra.Command {
-	var input statusInput
-
-	cmd := &cobra.Command{
-		Use:   "component",
-		Short: "Print the component status",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return fmt.Errorf("a component name must be specified")
+			if len(args) == 0 {
+				return requestStatus(env, &input)
 			}
+
 			input.component = args[0]
 			return componentStatus(env, &input)
 		},
@@ -58,7 +44,7 @@ func newStatusComponentCmd(env *agent.EnvSettings) *cobra.Command {
 func componentStatus(env *agent.EnvSettings, in *statusInput) error {
 	var r []byte
 	if err := env.ApiCall("GET",
-		fmt.Sprintf("/api/v1/%s/status", in.component),
+		fmt.Sprintf("/api/v1/status/%s", in.component),
 		nil, nil, &r); err != nil {
 		return err
 	}

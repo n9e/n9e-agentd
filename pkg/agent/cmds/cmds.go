@@ -26,6 +26,8 @@ var (
 		{CmdFactory: newListchecksCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newReloadChecksCmd, GroupNum: CMD_G_GENERIC},
 		{CmdFactory: newFlareCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newSettingsCmd, GroupNum: CMD_G_GENERIC},
+		{CmdFactory: newTaggerListCmd, GroupNum: CMD_G_GENERIC},
 	}
 	loggerName    config.LoggerName = "CORE"
 	jmxLoggerName config.LoggerName = "JMXFETCH"

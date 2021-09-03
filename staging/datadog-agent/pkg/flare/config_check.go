@@ -10,27 +10,54 @@ import (
 	"io"
 
 	"github.com/fatih/color"
+	"github.com/yubo/apiserver/pkg/cmdcli"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
 	"github.com/DataDog/datadog-agent/pkg/collector/check"
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
+	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
-	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // configCheckURL contains the Agent API endpoint URL exposing the loaded checks
 var configCheckURL string
 
-// GetConfigCheck dump all loaded configurations to the writer
-func GetConfigCheck(w io.Writer, withDebug bool) error {
-	if w != color.Output {
-		color.NoColor = true
+func GetConfigCheck(w io.Writer, withDebug bool, queries ...string) error {
+	var in *api.QueryInput
+	if len(queries) > 0 {
+		in = &api.QueryInput{Query: queries[0]}
 	}
 
-	cr := response.ConfigCheckResponse{}
-	err := common.Client.ApiCall("GET", "/api/v1/config-check", nil, nil, &cr)
+	cr := &response.ConfigCheckResponse{}
+	err := common.Client.ApiCall("GET", "/api/v1/config/check", in, nil, cr)
 	if err != nil {
 		return err
+	}
+
+	return getConfigCheck(w, withDebug, cr)
+}
+
+// GetClusterAgentConfigCheck proxies GetConfigCheck overidding the URL
+func GetClusterAgentConfigCheck(w io.Writer, withDebug bool, queries ...string) error {
+	var in *api.QueryInput
+	if len(queries) > 0 {
+		in = &api.QueryInput{Query: queries[0]}
+	}
+
+	cli := common.Client
+	cr := &response.ConfigCheckResponse{}
+	err := cli.ApiCall("GET", "api/v1/config/check", in, nil,
+		cr, cmdcli.WithClient(cli.GetClient("cluster")))
+	if err != nil {
+		return err
+	}
+	return getConfigCheck(w, withDebug, cr)
+}
+
+// getConfigCheck dump all loaded configurations to the writer
+func getConfigCheck(w io.Writer, withDebug bool, cr *response.ConfigCheckResponse) error {
+	if w != color.Output {
+		color.NoColor = true
 	}
 
 	if len(cr.ConfigErrors) > 0 {
@@ -67,12 +94,6 @@ func GetConfigCheck(w io.Writer, withDebug bool) error {
 	}
 
 	return nil
-}
-
-// GetClusterAgentConfigCheck proxies GetConfigCheck overidding the URL
-func GetClusterAgentConfigCheck(w io.Writer, withDebug bool) error {
-	configCheckURL = fmt.Sprintf("https://localhost:%v/config-check", config.C.ClusterAgent.CmdPort)
-	return GetConfigCheck(w, withDebug)
 }
 
 // PrintConfig prints a human-readable representation of a configuration

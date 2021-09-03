@@ -14,7 +14,7 @@ import (
 
 func newTaggerListCmd(env *agent.EnvSettings) *cobra.Command {
 	return &cobra.Command{
-		Use:   "tagger-list",
+		Use:   "tagger",
 		Short: "Print the tagger content of a running agent",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return taggerList(env)
@@ -25,7 +25,7 @@ func newTaggerListCmd(env *agent.EnvSettings) *cobra.Command {
 func taggerList(env *agent.EnvSettings) error {
 	resp := &response.TaggerListResponse{}
 
-	if err := env.ApiCall("GET", "/api/v1/tagger-list", nil, nil, resp); err != nil {
+	if err := env.ApiCall("GET", "/api/v1/tagger", nil, nil, resp); err != nil {
 		return err
 	}
 

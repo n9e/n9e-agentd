@@ -545,6 +545,7 @@ func (p *Config) ValidatePath() (err error) {
 	// tokenFile
 	p.AuthTokenFile = p.configer.GetString("authentication.auth_token_file")
 	p.AuthTokenFile = root.Abs(p.AuthTokenFile, "etc", "auth_token")
+	klog.V(1).InfoS("agent", "auth_token_file", p.AuthTokenFile)
 
 	return nil
 }

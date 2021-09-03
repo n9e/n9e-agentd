@@ -282,7 +282,7 @@ func (j *JMXFetch) Start(manage bool) error {
 		os.Environ(),
 		fmt.Sprintf("SESSION_TOKEN=%s", config.C.Token),
 	)
-	log.Debugf("jmx fetch token %q", config.C.Token)
+	log.Debugf("jmx fetch auth_token %q", config.C.Token)
 
 	// forward the standard output to the Agent logger
 	stdout, err := j.cmd.StdoutPipe()

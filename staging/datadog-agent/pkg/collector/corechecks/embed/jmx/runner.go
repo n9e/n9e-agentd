@@ -27,7 +27,6 @@ func (r *runner) initRunner() {
 }
 
 func (r *runner) startRunner() error {
-
 	lifecycleMgmt := true
 	err := r.jmxfetch.Start(lifecycleMgmt)
 	if err != nil {

@@ -7,6 +7,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type QueryInput struct {
+	Query string `param:"query"`
+}
+
 type SettingInput struct {
 	Setting string `param:"path"`
 	Value   string `param:"query"`

@@ -168,12 +168,12 @@ func (p *module) installGenericWs(c rest.GoRestfulContainer) {
 			Desc:    "stop agent",
 		}, {
 			Method: "GET", Scope: "read",
-			SubPath: "/stream-logs",
+			SubPath: "/logs",
 			Handle:  streamLogs,
 			Desc:    "post stream logs",
 		}, {
 			Method: "GET", Scope: "read",
-			SubPath: "/tagger-list",
+			SubPath: "/tagger",
 			Handle:  getTaggerList,
 			Desc:    "get tagger list",
 		}, {

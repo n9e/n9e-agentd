@@ -14,7 +14,7 @@ func newStreamLogsCmd(env *agent.EnvSettings) *cobra.Command {
 	var filters diagnostic.Filters
 
 	cmd := &cobra.Command{
-		Use:   "stream-logs",
+		Use:   "logs",
 		Short: "Stream the logs being processed by a running agent",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return streamLogs(env, &filters)
@@ -31,7 +31,7 @@ func newStreamLogsCmd(env *agent.EnvSettings) *cobra.Command {
 
 func streamLogs(env *agent.EnvSettings, filters *diagnostic.Filters) error {
 	watching, err := env.Client.Get().
-		Prefix("/api/v1/stream-logs").
+		Prefix("/api/v1/logs").
 		Timeout(0).
 		Watch(context.Background(), new(string))
 	if err != nil {

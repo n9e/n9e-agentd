@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery"
@@ -118,15 +119,23 @@ func getHealth(w http.ResponseWriter, r *http.Request) (*health.Status, error) {
 //	w.Write([]byte(gui.CsrfToken))
 //}
 
-func getConfigCheck(w http.ResponseWriter, r *http.Request) (*response.ConfigCheckResponse, error) {
+func getConfigCheck(w http.ResponseWriter, r *http.Request, in *api.Query) (*response.ConfigCheckResponse, error) {
 	if common.AC == nil {
 		return nil, fmt.Errorf("Trying to use /config-check before the agent has been initialized.")
 	}
 
 	configs := common.AC.GetLoadedConfigs()
 	configSlice := make([]integration.Config, 0)
-	for _, config := range configs {
-		configSlice = append(configSlice, config)
+	if in.Query == "" {
+		for _, config := range configs {
+			configSlice = append(configSlice, config)
+		}
+	} else {
+		for _, config := range configs {
+			if strings.Contains(config.Name, in.Query) {
+				configSlice = append(configSlice, config)
+			}
+		}
 	}
 	sort.Slice(configSlice, func(i, j int) bool {
 		return configSlice[i].Name < configSlice[j].Name

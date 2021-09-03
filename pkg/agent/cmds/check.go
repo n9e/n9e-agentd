@@ -27,15 +27,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/n9e/n9e-agentd/cmd/agent/common"
 	"github.com/n9e/n9e-agentd/pkg/agent"
+	"github.com/n9e/n9e-agentd/pkg/agent/standalone"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/yubo/golib/configer"
 	"gopkg.in/yaml.v2"
-)
-
-const (
-	resolvedLogLevel = "info"
 )
 
 type checkCmd struct {
@@ -160,16 +157,16 @@ func (p *checkCmd) stripJmx() error {
 			// we'll mimic the check command behavior with JMXFetch by running
 			// it with the JSON reporter and the list_with_metrics command.
 			//fmt.Println("Please consider using the 'jmx' command instead of 'check jmx'")
-			//selectedChecks := []string{p.checkName}
-			//if p.checkRate {
-			//	if err := standalone.ExecJmxListWithRateMetricsJSON(selectedChecks, resolvedLogLevel); err != nil {
-			//		return fmt.Errorf("while running the jmx check: %v", err)
-			//	}
-			//} else {
-			//	if err := standalone.ExecJmxListWithMetricsJSON(selectedChecks, resolvedLogLevel); err != nil {
-			//		return fmt.Errorf("while running the jmx check: %v", err)
-			//	}
-			//}
+			selectedChecks := []string{p.checkName}
+			if p.CheckRate {
+				if err := standalone.ExecJmxListWithRateMetricsJSON(p.env, selectedChecks, p.LogLevel); err != nil {
+					return fmt.Errorf("while running the jmx check: %v", err)
+				}
+			} else {
+				if err := standalone.ExecJmxListWithMetricsJSON(p.env, selectedChecks, p.LogLevel); err != nil {
+					return fmt.Errorf("while running the jmx check: %v", err)
+				}
+			}
 
 			instances := []integration.Data{}
 
