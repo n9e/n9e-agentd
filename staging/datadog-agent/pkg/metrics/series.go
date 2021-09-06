@@ -77,8 +77,8 @@ func marshalPoints(points []Point) []*agentpayload.MetricsPayload_Sample_Point {
 // Marshal serialize timeseries using agent-payload definition
 func (series Series) Marshal() ([]byte, error) {
 	log.Debug("entering Marshal")
-	if config.C.N9eSeriesFormat {
-		return proto.Marshal(series.n9eSeries())
+	if config.C.EnableN9eProvider {
+		return proto.Marshal(Processor.Process(series))
 	}
 
 	payload := &agentpayload.MetricsPayload{
@@ -99,30 +99,6 @@ func (series Series) Marshal() ([]byte, error) {
 	}
 
 	return proto.Marshal(payload)
-}
-
-func (series Series) n9eSeries() *agentpayload.N9EMetricsPayload {
-	payload := &agentpayload.N9EMetricsPayload{
-		Samples:  []*agentpayload.N9EMetricsPayload_Sample{},
-		Metadata: &agentpayload.CommonMetadata{},
-	}
-
-	for _, serie := range series {
-		for _, point := range serie.Points {
-			payload.Samples = append(payload.Samples,
-				&agentpayload.N9EMetricsPayload_Sample{
-					Ident:          config.C.Ident,
-					Alias:          config.C.Alias,
-					Metric:         config.TransformMetric(serie.Name),
-					Tags:           config.TransformMapTags(serie.Tags),
-					Time:           int64(point.Ts),
-					Value:          point.Value,
-					Type:           serie.MType.String(), // extra, no used
-					SourceTypeName: serie.SourceTypeName, // extra, nouse
-				})
-		}
-	}
-	return payload
 }
 
 // MarshalStrings converts the timeseries to a sorted slice of string slices
@@ -200,8 +176,8 @@ func hasDeviceTag(serie *Serie) bool {
 //FIXME(maxime): to be removed when v2 endpoints are available
 func (series Series) MarshalJSON() ([]byte, error) {
 	log.Debug("entering MarshalJSON")
-	if config.C.N9eSeriesFormat {
-		return json.Marshal(series.n9eSeries())
+	if config.C.EnableN9eProvider {
+		return json.Marshal(Processor.Process(series))
 	}
 
 	// use an alias to avoid infinite recursion while serializing a Series

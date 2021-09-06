@@ -423,7 +423,9 @@ func (p *agentServer) startLogVersionRecord() error {
 
 func (p *agentServer) startAutoconfig() error {
 	// create and setup the Autoconfig instance
-	common.LoadComponents()
+	if err := common.LoadComponents(); err != nil {
+		return err
+	}
 	// start the autoconfig, this will immediately run any configured check
 	common.StartAutoConfig()
 

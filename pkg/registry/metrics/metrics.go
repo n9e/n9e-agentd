@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/cmd/agent/common"
 	"github.com/n9e/n9e-agentd/pkg/i18n"
 	"github.com/n9e/n9e-agentd/pkg/util"
 	"golang.org/x/text/message"
@@ -46,7 +46,7 @@ func (p MetricGroups) Output(lang *message.Printer) MetricGroups {
 		for k1, v1 := range v.MetricsDescs {
 			metricDescs[k1] = &MetricDesc{
 				Name:   v1.Name,
-				Metric: config.TransformMetric(v1.Metric),
+				Metric: processMetricName(v1.Metric),
 				Desc:   lang.Sprintf(v1.Name),
 				Extra:  v1.Extra,
 			}
@@ -121,4 +121,12 @@ func Handler() http.Handler {
 			}
 		}
 	})
+}
+
+func processMetricName(name string) string {
+	if common.PP == nil {
+		return name
+	}
+
+	return common.PP.MetricName(name)
 }

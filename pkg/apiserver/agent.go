@@ -119,7 +119,7 @@ func getHealth(w http.ResponseWriter, r *http.Request) (*health.Status, error) {
 //	w.Write([]byte(gui.CsrfToken))
 //}
 
-func getConfigCheck(w http.ResponseWriter, r *http.Request, in *api.Query) (*response.ConfigCheckResponse, error) {
+func getConfigCheck(w http.ResponseWriter, r *http.Request, in *api.QueryInput) (*response.ConfigCheckResponse, error) {
 	if common.AC == nil {
 		return nil, fmt.Errorf("Trying to use /config-check before the agent has been initialized.")
 	}

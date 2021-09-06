@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util/executable"
 	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/processor"
 	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
@@ -42,6 +43,9 @@ var (
 	_here, _ = executable.Folder()
 
 	Client api.Client
+
+	// PP is the payload processor
+	PP *processor.Processor
 )
 
 // GetPythonPaths returns the paths (in order of precedence) from where the agent

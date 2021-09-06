@@ -23,13 +23,13 @@ var currentStats = map[string]disk.IOCountersStat{
 		MergedReadCount:  41,
 		WriteCount:       41,
 		MergedWriteCount: 41,
-		ReadBytes:        42,
-		WriteBytes:       42,
+		ReadBytes:        42 * kB,
+		WriteBytes:       42 * kB,
 		ReadTime:         41,
 		WriteTime:        41,
 		IopsInProgress:   0,
 		IoTime:           41,
-		WeightedIO:       42,
+		WeightedIO:       42 * kB,
 		Name:             "sda",
 		SerialNumber:     "123456789WD",
 	},
@@ -96,8 +96,8 @@ func TestIoStatsOverflow(t *testing.T) {
 	mock.On("Rate", "system.io.w_s", 41.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
 	mock.On("Rate", "system.io.rrqm_s", 41.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
 	mock.On("Rate", "system.io.wrqm_s", 41.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
-	mock.On("Gauge", "system.io.rb_s", 42.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
-	mock.On("Gauge", "system.io.wb_s", 42.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
+	mock.On("Gauge", "system.io.rkb_s", 42.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
+	mock.On("Gauge", "system.io.wkb_s", 42.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
 	mock.On("Gauge", "system.io.avg_rq_sz", 2.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
 	mock.On("Gauge", "system.io.await", 1.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)
 	mock.On("Gauge", "system.io.r_await", 1.0, "", []string{"device:sda", "device_name:sda"}).Return().Times(1)

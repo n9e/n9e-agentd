@@ -10,21 +10,31 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/collector"
 	lsched "github.com/DataDog/datadog-agent/pkg/logs/scheduler"
 	lstatus "github.com/DataDog/datadog-agent/pkg/logs/status"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/tagger"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
 	"github.com/DataDog/datadog-agent/pkg/tagger/local"
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/processor"
 )
 
 // LoadComponents configures several common Agent components:
 // tagger, collector, scheduler and autodiscovery
-func LoadComponents() {
+func LoadComponents() error {
 	// start tagging system
 	collectors.Init()
 
 	tagger.SetDefaultTagger(local.NewTagger(collectors.DefaultCatalog))
 
 	tagger.Init()
+
+	// processors
+	if p, err := processor.NewProcessor(); err != nil {
+		return err
+	} else {
+		PP = p
+		metrics.Processor = p
+	}
 
 	// create the Collector instance and start all the components
 	// NOTICE: this will also setup the Python environment, if available
@@ -47,4 +57,6 @@ func LoadComponents() {
 	confSearchPaths := []string{config.C.ConfdPath}
 
 	AC = setupAutoDiscovery(confSearchPaths, metaScheduler)
+
+	return nil
 }

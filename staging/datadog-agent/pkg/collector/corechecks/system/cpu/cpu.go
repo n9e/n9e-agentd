@@ -9,7 +9,6 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/shirou/gopsutil/cpu"
 
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
@@ -79,9 +78,6 @@ func (c *Check) Run() error {
 		sender.Gauge("system.cpu.idle", idle*toPercent, "", nil)
 		sender.Gauge("system.cpu.stolen", stolen*toPercent, "", nil)
 		sender.Gauge("system.cpu.guest", guest*toPercent, "", nil)
-		if config.C.VerboseReport {
-			sender.Gauge("system.cpu.util", 100-(idle*toPercent), "", nil)
-		}
 	}
 
 	sender.Gauge("system.cpu.num_cores", c.nbCPU, "", nil)

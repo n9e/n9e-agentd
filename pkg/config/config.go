@@ -94,12 +94,14 @@ type Config struct {
 	PyChecksPath             string `json:"py_checks_path" description:"default {root}/checks.d"` // {root}/checks.d
 	HostnameFile             string `json:"hostname_file"`                                        // hostname_file
 
-	Ident             string   `json:"ident" flag:"ident" default:"$ip" description:"Ident of this host"`
-	Alias             string   `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
-	Lang              string   `json:"lang" flag:"lang" default:"zh" description:"Default lang(zh, en)"`
-	EnableN9eProvider bool     `json:"enable_n9e_provider" flag:"enable-n9e-provider" default:"true" description:"enable n9e server api as autodiscovery provider"`
-	N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                                               // the payload format for forwarder
-	Endpoints         []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000" env:"N9E_ENDPOINTS" description:"endpoints addresses of n9e server"` // site, dd_url
+	Ident                  string `json:"ident" flag:"ident" default:"$ip" description:"Ident of this host"`
+	Alias                  string `json:"alias" flag:"alias" default:"$hostname" description:"Alias of the host"`
+	Lang                   string `json:"lang" flag:"lang" default:"zh" description:"Default lang(zh, en)"`
+	EnableN9eProvider      bool   `json:"enable_n9e_provider" flag:"enable-n9e-provider" default:"true" description:"enable n9e server api as autodiscovery provider"`
+	PayloadProcessorConfig string `json:"payload_processor_config"`
+
+	//N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                                               // the payload format for forwarder
+	Endpoints []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000" env:"N9E_ENDPOINTS" description:"endpoints addresses of n9e server"` // site, dd_url
 
 	MetadataProviders       []MetadataProviders                 `json:"metadata_providers"`            // metadata_providers
 	Forwarder               forwarder.Config                    `json:"forwarder"`                     // fowarder_*
@@ -464,10 +466,6 @@ func (p *Config) Validate() error {
 		p.PythonVersion = DefaultPython
 	}
 
-	// transformer
-	if err := defaultTransformer.SetMetricFromFile(p.MetricTransformFile); err != nil {
-		return err
-	}
 	// TODO
 	p.DetectFeatures()
 	//applyOverrideFuncs(p)

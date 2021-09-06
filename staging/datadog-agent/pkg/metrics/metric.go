@@ -5,10 +5,41 @@
 
 package metrics
 
-import "fmt"
+import (
+	"fmt"
+
+	agentpayload "github.com/n9e/agent-payload/gogen"
+)
 
 // APIMetricType represents an API metric type
 type APIMetricType int
+
+var (
+	Processor PayloadProcessor
+)
+
+type PayloadProcessor interface {
+	Process(Series) *agentpayload.N9EMetricsPayload
+	ProcessSketch(SketchSeriesList) error
+	Tags([]string) []string
+	MetricName(string) string
+}
+
+func processTags(tags []string) []string {
+	if Processor == nil {
+		return tags
+	}
+
+	return Processor.Tags(tags)
+}
+
+func processMetricName(name string) string {
+	if Processor == nil {
+		return name
+	}
+
+	return Processor.MetricName(name)
+}
 
 // Enumeration of the existing API metric types
 const (

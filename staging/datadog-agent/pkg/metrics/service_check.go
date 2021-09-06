@@ -22,7 +22,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/telemetry"
 	utiljson "github.com/DataDog/datadog-agent/pkg/util/json"
 	agentpayload "github.com/n9e/agent-payload/gogen"
-	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // ServiceCheckStatus represents the status associated with a service check
@@ -101,12 +100,12 @@ func (sc ServiceChecks) Marshal() ([]byte, error) {
 	for _, c := range sc {
 		payload.ServiceChecks = append(payload.ServiceChecks,
 			&agentpayload.ServiceChecksPayload_ServiceCheck{
-				Name:    config.TransformMetric(c.CheckName),
+				Name:    processMetricName(c.CheckName),
 				Host:    c.Host,
 				Ts:      c.Ts,
 				Status:  int32(c.Status),
 				Message: c.Message,
-				Tags:    config.TransformTags(c.Tags),
+				Tags:    processTags(c.Tags),
 			})
 	}
 

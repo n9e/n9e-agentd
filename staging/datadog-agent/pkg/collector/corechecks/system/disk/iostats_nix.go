@@ -117,10 +117,10 @@ func (c *IOCheck) nixIO() error {
 			continue
 		}
 
-		// computing B/s
-		rbs := float64(incrementWithOverflow(ioStats.ReadBytes, lastIOStats.ReadBytes)) / deltaSecond
-		wbs := float64(incrementWithOverflow(ioStats.WriteBytes, lastIOStats.WriteBytes)) / deltaSecond
-		avgqusz := float64(incrementWithOverflow(ioStats.WeightedIO, lastIOStats.WeightedIO)) / deltaSecond
+		// computing kB/s
+		rkbs := float64(incrementWithOverflow(ioStats.ReadBytes, lastIOStats.ReadBytes)) / kB / deltaSecond
+		wkbs := float64(incrementWithOverflow(ioStats.WriteBytes, lastIOStats.WriteBytes)) / kB / deltaSecond
+		avgqusz := float64(incrementWithOverflow(ioStats.WeightedIO, lastIOStats.WeightedIO)) / kB / deltaSecond
 
 		rAwait := 0.0
 		wAwait := 0.0
@@ -157,8 +157,8 @@ func (c *IOCheck) nixIO() error {
 			svctime = util / tput
 		}
 
-		sender.Gauge("system.io.rb_s", roundFloat(rbs), "", tags)
-		sender.Gauge("system.io.wb_s", roundFloat(wbs), "", tags)
+		sender.Gauge("system.io.rkb_s", roundFloat(rkbs), "", tags)
+		sender.Gauge("system.io.wkb_s", roundFloat(wkbs), "", tags)
 		sender.Gauge("system.io.avg_rq_sz", roundFloat(avgrqsz), "", tags)
 		sender.Gauge("system.io.await", roundFloat(aWait), "", tags)
 		sender.Gauge("system.io.r_await", roundFloat(rAwait), "", tags)
