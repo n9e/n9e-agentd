@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/n9e/n9e-agentd/pkg/mocker"
 	_ "github.com/yubo/apiserver/pkg/apiserver/register"
+	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
 )
 
 func main() {

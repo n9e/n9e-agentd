@@ -61,5 +61,6 @@ build/envs.cmake: Makefile
 pkg/data/resources.go:
 	go-bindata --prefix pkg/data/resources -pkg data -o $@ pkg/data/resources/...
 
-build/mocker: $(find cmd/mocker -name "*.go")
-	go build -o $@ ./cmd/mocker
+.PHONY: mocker
+mocker:
+	go build -o ./build/mocker ./cmd/mocker

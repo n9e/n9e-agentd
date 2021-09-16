@@ -213,7 +213,7 @@ func (p *EnvSettings) Request(method, uri string, param, body, output interface{
 	}
 
 	if uri != "" {
-		opts = append(opts, cmdcli.WithPrifix(uri))
+		opts = append(opts, cmdcli.WithPrefix(uri))
 	}
 	if param != nil {
 		opts = append(opts, cmdcli.WithParam(param))

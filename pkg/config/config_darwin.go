@@ -8,4 +8,5 @@ package config
 const (
 	defaultSystemProbeAddress = "/opt/n9e/agentd/run/sysprobe.sock"
 	defaultGuiPort            = 5002
+	defaultSyslogURI          = "unixgram:///var/run/syslog"
 )

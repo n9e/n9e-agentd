@@ -21,6 +21,7 @@ setenv GOARCH      ${GOARCH:-$(go env GOARCH)}
 
 outfile=n9e-agentd
 
+if [[ ${GOOS} != $(go env GOHOSTOS) || ${GOARCH} != $( go env GOHOSTARCH) ]]; then
 case $GOOS in
 windows)
 	case $GOARCH in
@@ -36,7 +37,7 @@ windows)
 	esac
 	;;
 darwin)
-	case $goarch in
+	case $GOARCH in
 	amd64)
 		cc=o64-clang
 		cxx=o64-clang++
@@ -72,13 +73,14 @@ linux)
 	esac
 	;;
 esac
+fi
 
 setenv CC      ${cc}
 setenv CXX     ${cxx}
 setenv OUTFILE ${CWD}/build/${outfile}
 
 dd_root=/opt/data/${GOOS}/${GOARCH}/datadog-agent
-goflags="-tags=zlib,systemd,jmx,kubelet,secrets"
+goflags="-tags=zlib,jmx,kubelet,secrets"
 
 if [[ -d ${dd_root}/embedded/lib ]]; then
 	goflags="${goflags},python"
@@ -107,7 +109,7 @@ setenv GOFLAGS "${goflags}"
 # GO_BUILD_LDFLAGS
 setenv GO_BUILD_LDFLAGS "$($(cd $(dirname $0)/; pwd)/go-build-ldflags.sh LDFLAG)"
 
-case ${MODE,,} in
+case $MODE in
 "cmake")
 	for (( i=0; i<${#envs[@]}; i+=2 )); do
 		k=${envs[i]}
