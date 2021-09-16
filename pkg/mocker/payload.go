@@ -1,16 +1,8 @@
-package main
+package mocker
 
 import (
-	"compress/gzip"
-	"compress/zlib"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"reflect"
-
 	"github.com/n9e/agent-payload/gogen"
 	"github.com/n9e/n9e-agentd/pkg/api"
-	"k8s.io/klog/v2"
 )
 
 // datadog-agent/pkg/logs/processor/json.go
@@ -55,6 +47,7 @@ var (
 	}
 )
 
+/*
 func payloadHandle(payload interface{}) func(http.ResponseWriter, *http.Request) {
 	return func(_ http.ResponseWriter, r *http.Request) {
 		if payload != nil {
@@ -66,7 +59,7 @@ func payloadHandle(payload interface{}) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-type decode interface {
+type decoder interface {
 	Unmarshal(b []byte) error
 }
 
@@ -126,3 +119,4 @@ func readAll(r *http.Request, payload interface{}) {
 	buf, _ := json.Marshal(payload)
 	klog.InfoS("recf", "method", r.Method, "url", r.URL, "payload.size", len(b), "payload", string(buf))
 }
+*/

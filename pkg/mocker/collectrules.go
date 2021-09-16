@@ -1,9 +1,8 @@
-package main
+package mocker
 
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"sync"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 )
 
 var (
-	rules         CollectRules
 	flushInterval = time.Second * 5
 )
 
@@ -67,50 +65,36 @@ func (c *CollectRules) GetSummary() api.CollectRulesSummaryWrap {
 	}
 }
 
-func installCollectRules(confd string) {
-	http.HandleFunc(api.RoutePathGetCollectRules, getCollectRules)
-	http.HandleFunc(api.RoutePathGetCollectRulesSummary, getCollectRulesSummary)
+func (p *mocker) installCollectRules() error {
+	if !p.config.CollectRule {
+		return nil
+	}
 
-	go startCollectFileConfig(confd)
-}
-
-func startCollectFileConfig(path string) {
-	p := providers.NewFileConfigProvider([]string{path})
+	fp := providers.NewFileConfigProvider([]string{p.config.Confd})
 	t := time.NewTicker(flushInterval)
 
-	for {
-		<-t.C
-
-		configs, err := p.Collect(context.Background())
-		if err != nil {
-			klog.Errorf("collect err %s", err)
-			continue
-		}
-		for _, c := range configs {
-			for _, i := range c.Instances {
-				klog.V(6).Infof("%s", string(i))
+	go func() {
+		for {
+			select {
+			case <-p.ctx.Done():
+				return
+			case <-t.C:
+				configs, err := fp.Collect(context.Background())
+				if err != nil {
+					klog.Errorf("collect err %s", err)
+					continue
+				}
+				for _, c := range configs {
+					for _, i := range c.Instances {
+						klog.V(6).Infof("%s", string(i))
+					}
+				}
+				p.rules.Set(configs)
 			}
 		}
-		rules.Set(configs)
-	}
-}
+	}()
 
-func getCollectRules(w http.ResponseWriter, _ *http.Request) {
-	writeRawJSON(rules.GetRules(), w)
-}
-
-func getCollectRulesSummary(w http.ResponseWriter, _ *http.Request) {
-	writeRawJSON(rules.GetSummary(), w)
-}
-
-func writeRawJSON(object interface{}, w http.ResponseWriter) {
-	output, err := json.MarshalIndent(object, "", "  ")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(output)
+	return nil
 }
 
 func configToRule(config integration.Config) (rule api.CollectRule, err error) {

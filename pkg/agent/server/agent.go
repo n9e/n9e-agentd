@@ -190,12 +190,6 @@ func completionHandler(transaction *transaction.HTTPTransaction, statusCode int,
 	}
 }
 
-func init() {
-	proc.RegisterHooks(hookOps)
-
-	config.AddFlags()
-}
-
 func (p *agentServer) readConfig() error {
 	if config.TestConfig {
 		configer := proc.ConfigerMustFrom(p.ctx)
@@ -523,4 +517,10 @@ func setMaxProcs(max string) {
 		klog.Errorf(
 			"runtime: unhandled GOMAXPROCS value: %s", max)
 	}
+}
+
+func init() {
+	proc.RegisterHooks(hookOps)
+
+	config.AddFlags()
 }

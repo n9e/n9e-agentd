@@ -1,4 +1,4 @@
-package main
+package mocker
 
 import (
 	"fmt"
@@ -14,7 +14,11 @@ import (
 // https://docs.datadoghq.com/developers/dogstatsd/?tab=hostagent#client-instantiation-parameters
 // https://docs.datadoghq.com/developers/metrics/dogstatsd_metrics_submission/?tab=go#count
 
-func sendStart() error {
+func (p *mocker) installStatsdSender() error {
+	if !p.config.SendStatsd {
+		return nil
+	}
+
 	client, err := statsd.New("127.0.0.1:8125")
 	if err != nil {
 		return err
