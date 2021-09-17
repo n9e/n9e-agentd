@@ -296,6 +296,8 @@ func (s *Serializer) SendSeries(series marshaler.StreamJSONMarshaler) error {
 
 	useV1API := !config.C.UseV2Api.Series
 
+	useN9eAPI := config.C.EnableN9eProvider
+
 	var seriesPayloads forwarder.Payloads
 	var extraHeaders http.Header
 	var err error
@@ -308,6 +310,10 @@ func (s *Serializer) SendSeries(series marshaler.StreamJSONMarshaler) error {
 
 	if err != nil {
 		return fmt.Errorf("dropping series payload: %s", err)
+	}
+
+	if useN9eAPI {
+		return s.Forwarder.SubmitN9eSeries(seriesPayloads, extraHeaders)
 	}
 
 	if useV1API {

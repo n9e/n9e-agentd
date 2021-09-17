@@ -25,6 +25,9 @@ var (
 	transactionsIntakeDaemonSet   = expvar.Int{}
 	transactionsIntakeStatefulSet = expvar.Int{}
 
+	n9eV1SeriesEndpoint = transaction.Endpoint{Route: api.N9eV1SeriesEndpoint, Name: "n9e_series_v1"}
+	n9eSeriesEndpoint   = transaction.Endpoint{Route: api.N9eSeriesEndpoint, Name: "n9e_series_v2"}
+
 	v1SeriesEndpoint       = transaction.Endpoint{Route: api.V1SeriesEndpoint, Name: "series_v1"}
 	v1CheckRunsEndpoint    = transaction.Endpoint{Route: api.V1CheckRunsEndpoint, Name: "check_run_v1"}
 	v1IntakeEndpoint       = transaction.Endpoint{Route: api.V1IntakeEndpoint, Name: "intake"}
@@ -86,12 +89,12 @@ func initEndpointExpvars() {
 		processesEndpoint,
 		rtContainerEndpoint,
 		rtProcessesEndpoint,
-		seriesEndpoint,
+		n9eSeriesEndpoint,
 		serviceChecksEndpoint,
 		sketchSeriesEndpoint,
 		v1CheckRunsEndpoint,
 		v1IntakeEndpoint,
-		v1SeriesEndpoint,
+		n9eV1SeriesEndpoint,
 		v1SketchSeriesEndpoint,
 		v1ValidateEndpoint,
 	}

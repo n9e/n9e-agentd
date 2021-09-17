@@ -25,7 +25,7 @@ var (
 		pattern string
 		payload interface{}
 	}{
-		{api.V1SeriesEndpoint, gogen.N9EMetricsPayload{}},
+		{api.N9eV1SeriesEndpoint, gogen.N9EMetricsPayload{}},
 		{api.V1CheckRunsEndpoint, nil},
 		{api.V1IntakeEndpoint, nil},
 		{api.V1SketchSeriesEndpoint, nil},
