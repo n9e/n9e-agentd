@@ -125,7 +125,7 @@ func (events Events) Marshal() ([]byte, error) {
 				Ts:             e.Ts,
 				Priority:       string(e.Priority),
 				Host:           e.Host,
-				Tags:           processTags(e.Tags),
+				Tags:           ProcessTags(e.Tags),
 				AlertType:      string(e.AlertType),
 				AggregationKey: e.AggregationKey,
 				SourceTypeName: e.SourceTypeName,

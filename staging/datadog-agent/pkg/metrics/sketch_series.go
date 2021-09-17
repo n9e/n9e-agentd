@@ -140,9 +140,9 @@ func (sl SketchSeriesList) MarshalSplitCompress(bufferContext *marshaler.BufferC
 		}
 
 		sketch := gogen.SketchPayload_Sketch{
-			Metric:      processMetricName(ss.Name),
+			Metric:      ProcessMetricName(ss.Name),
 			Host:        ss.Host,
-			Tags:        processTags(ss.Tags),
+			Tags:        ProcessTags(ss.Tags),
 			Dogsketches: dsl[:len(ss.Points)],
 		}
 
@@ -259,9 +259,9 @@ func (sl SketchSeriesList) Marshal() ([]byte, error) {
 		}
 
 		pb.Sketches = append(pb.Sketches, gogen.SketchPayload_Sketch{
-			Metric:      processMetricName(ss.Name),
+			Metric:      ProcessMetricName(ss.Name),
 			Host:        ss.Host,
-			Tags:        processTags(ss.Tags),
+			Tags:        ProcessTags(ss.Tags),
 			Dogsketches: dsl,
 		})
 	}

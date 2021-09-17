@@ -8,37 +8,41 @@ package metrics
 import (
 	"fmt"
 
-	agentpayload "github.com/n9e/agent-payload/gogen"
+	"github.com/gogo/protobuf/proto"
 )
 
 // APIMetricType represents an API metric type
 type APIMetricType int
 
 var (
-	Processor PayloadProcessor
+	processor PayloadProcessor
 )
 
+func SetProcessor(p PayloadProcessor) {
+	processor = p
+}
+
 type PayloadProcessor interface {
-	Process(Series) *agentpayload.N9EMetricsPayload
+	Process(Series) proto.Message
 	ProcessSketch(SketchSeriesList) error
 	Tags([]string) []string
 	MetricName(string) string
 }
 
-func processTags(tags []string) []string {
-	if Processor == nil {
+func ProcessTags(tags []string) []string {
+	if processor == nil {
 		return tags
 	}
 
-	return Processor.Tags(tags)
+	return processor.Tags(tags)
 }
 
-func processMetricName(name string) string {
-	if Processor == nil {
+func ProcessMetricName(name string) string {
+	if processor == nil {
 		return name
 	}
 
-	return Processor.MetricName(name)
+	return processor.MetricName(name)
 }
 
 // Enumeration of the existing API metric types

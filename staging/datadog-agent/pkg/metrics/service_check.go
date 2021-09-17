@@ -100,12 +100,12 @@ func (sc ServiceChecks) Marshal() ([]byte, error) {
 	for _, c := range sc {
 		payload.ServiceChecks = append(payload.ServiceChecks,
 			&agentpayload.ServiceChecksPayload_ServiceCheck{
-				Name:    processMetricName(c.CheckName),
+				Name:    ProcessMetricName(c.CheckName),
 				Host:    c.Host,
 				Ts:      c.Ts,
 				Status:  int32(c.Status),
 				Message: c.Message,
-				Tags:    processTags(c.Tags),
+				Tags:    ProcessTags(c.Tags),
 			})
 	}
 

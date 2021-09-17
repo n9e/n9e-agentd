@@ -455,9 +455,9 @@ func (p *Config) Validate() error {
 		}
 	}
 
-	if p.EnableN9eProvider {
-		p.UseV2Api.Series = true
-	}
+	//if p.EnableN9eProvider {
+	//	p.UseV2Api.Series = true
+	//}
 
 	if ForceDefaultPython == "true" {
 		if p.PythonVersion != DefaultPython {

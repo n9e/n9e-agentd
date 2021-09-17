@@ -25,25 +25,28 @@ var (
 	transactionsIntakeDaemonSet   = expvar.Int{}
 	transactionsIntakeStatefulSet = expvar.Int{}
 
-	v1SeriesEndpoint       = transaction.Endpoint{Route: api.V1SeriesEndpoint, Name: "series_v1"}
-	v1CheckRunsEndpoint    = transaction.Endpoint{Route: api.V1CheckRunsEndpoint, Name: "check_run_v1"}
-	v1IntakeEndpoint       = transaction.Endpoint{Route: api.V1IntakeEndpoint, Name: "intake"}
-	v1SketchSeriesEndpoint = transaction.Endpoint{Route: api.V1SketchSeriesEndpoint, Name: "sketches_v1"} // nolint unused for now
-	v1ValidateEndpoint     = transaction.Endpoint{Route: api.V1ValidateEndpoint, Name: "validate_v1"}
+	n9eV1SeriesEndpoint = transaction.Endpoint{Route: api.N9eV1SeriesEndpoint, Name: "n9e_series_v1"}
+	n9eSeriesEndpoint   = transaction.Endpoint{Route: api.N9eSeriesEndpoint, Name: "n9e_series_v2"}
 
-	seriesEndpoint        = transaction.Endpoint{Route: api.SeriesEndpoint, Name: "series_v2"}
-	eventsEndpoint        = transaction.Endpoint{Route: api.EventsEndpoint, Name: "events_v2"}
-	serviceChecksEndpoint = transaction.Endpoint{Route: api.ServiceChecksEndpoint, Name: "services_checks_v2"}
-	sketchSeriesEndpoint  = transaction.Endpoint{Route: api.SketchSeriesEndpoint, Name: "sketches_v2"}
-	hostMetadataEndpoint  = transaction.Endpoint{Route: api.HostMetadataEndpoint, Name: "host_metadata_v2"}
-	metadataEndpoint      = transaction.Endpoint{Route: api.MetadataEndpoint, Name: "metadata_v2"}
+	v1SeriesEndpoint       = transaction.Endpoint{Route: "/api/v1/series", Name: "series_v1"}
+	v1CheckRunsEndpoint    = transaction.Endpoint{Route: "/api/v1/check_run", Name: "check_run_v1"}
+	v1IntakeEndpoint       = transaction.Endpoint{Route: "/api/v1/intake", Name: "intake"}
+	v1SketchSeriesEndpoint = transaction.Endpoint{Route: "/api/v1/sketches", Name: "sketches_v1"} // nolint unused for now
+	v1ValidateEndpoint     = transaction.Endpoint{Route: "/api/v1/validate", Name: "validate_v1"}
 
-	processesEndpoint    = transaction.Endpoint{Route: api.ProcessesEndpoint, Name: "process"}
-	rtProcessesEndpoint  = transaction.Endpoint{Route: api.RtProcessesEndpoint, Name: "rtprocess"}
-	containerEndpoint    = transaction.Endpoint{Route: api.ContainerEndpoint, Name: "container"}
-	rtContainerEndpoint  = transaction.Endpoint{Route: api.RtContainerEndpoint, Name: "rtcontainer"}
-	connectionsEndpoint  = transaction.Endpoint{Route: api.ConnectionsEndpoint, Name: "connections"}
-	orchestratorEndpoint = transaction.Endpoint{Route: api.OrchestratorEndpoint, Name: "orchestrator"}
+	seriesEndpoint        = transaction.Endpoint{Route: "/api/v2/series", Name: "series_v2"}
+	eventsEndpoint        = transaction.Endpoint{Route: "/api/v2/events", Name: "events_v2"}
+	serviceChecksEndpoint = transaction.Endpoint{Route: "/api/v2/service_checks", Name: "services_checks_v2"}
+	sketchSeriesEndpoint  = transaction.Endpoint{Route: "/api/beta/sketches", Name: "sketches_v2"}
+	hostMetadataEndpoint  = transaction.Endpoint{Route: "/api/v2/host_metadata", Name: "host_metadata_v2"}
+	metadataEndpoint      = transaction.Endpoint{Route: "/api/v2/metadata", Name: "metadata_v2"}
+
+	processesEndpoint    = transaction.Endpoint{Route: "/api/v1/collector", Name: "process"}
+	rtProcessesEndpoint  = transaction.Endpoint{Route: "/api/v1/collector", Name: "rtprocess"}
+	containerEndpoint    = transaction.Endpoint{Route: "/api/v1/container", Name: "container"}
+	rtContainerEndpoint  = transaction.Endpoint{Route: "/api/v1/container", Name: "rtcontainer"}
+	connectionsEndpoint  = transaction.Endpoint{Route: "/api/v1/collector", Name: "connections"}
+	orchestratorEndpoint = transaction.Endpoint{Route: "/api/v1/orchestrator", Name: "orchestrator"}
 
 	transactionsDroppedOnInput       = expvar.Int{}
 	transactionsInputBytesByEndpoint = expvar.Map{}
@@ -94,6 +97,9 @@ func initEndpointExpvars() {
 		v1SeriesEndpoint,
 		v1SketchSeriesEndpoint,
 		v1ValidateEndpoint,
+
+		n9eSeriesEndpoint,
+		n9eV1SeriesEndpoint,
 	}
 
 	for _, endpoint := range endpoints {

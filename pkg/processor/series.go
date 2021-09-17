@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/metrics"
+	"github.com/gogo/protobuf/proto"
 	agentpayload "github.com/n9e/agent-payload/gogen"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
@@ -57,7 +58,7 @@ func (p *seriesProcessor) ProcessSketch(sl metrics.SketchSeriesList) error {
 	return nil
 }
 
-func (p *seriesProcessor) Process(series metrics.Series) *agentpayload.N9EMetricsPayload {
+func (p *seriesProcessor) Process(series metrics.Series) proto.Message {
 	payload := &agentpayload.N9EMetricsPayload{
 		Samples:  []*agentpayload.N9EMetricsPayload_Sample{},
 		Metadata: &agentpayload.CommonMetadata{},

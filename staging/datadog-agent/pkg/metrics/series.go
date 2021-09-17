@@ -78,7 +78,7 @@ func marshalPoints(points []Point) []*agentpayload.MetricsPayload_Sample_Point {
 func (series Series) Marshal() ([]byte, error) {
 	log.Debug("entering Marshal")
 	if config.C.EnableN9eProvider {
-		return proto.Marshal(Processor.Process(series))
+		return proto.Marshal(processor.Process(series))
 	}
 
 	payload := &agentpayload.MetricsPayload{
@@ -177,7 +177,7 @@ func hasDeviceTag(serie *Serie) bool {
 func (series Series) MarshalJSON() ([]byte, error) {
 	log.Debug("entering MarshalJSON")
 	if config.C.EnableN9eProvider {
-		return json.Marshal(Processor.Process(series))
+		return json.Marshal(processor.Process(series))
 	}
 
 	// use an alias to avoid infinite recursion while serializing a Series
