@@ -48,7 +48,7 @@ type CollectRule struct {
 	Updater   string `json:"-"` // deprecated
 }
 
-type CollectRuleWrap struct {
+type CollectRulesWrap struct {
 	Data []CollectRule `json:"dat"`
 	Err  string        `json:"err"`
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/yubo/apiserver/pkg/options"
+	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/apiserver/pkg/rest/protobuf"
 	"github.com/yubo/golib/proc"
 )
@@ -59,6 +60,7 @@ func (p *mocker) installWs() error {
 		return fmt.Errorf("unable to get http server from the context")
 	}
 
+	rest.SwaggerTagRegister("api groups", "api groups")
 	p.installDatadogWs(http)
 	p.installN9eWs(http)
 

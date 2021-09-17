@@ -49,9 +49,9 @@ func nonHandle(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, profile flare.ProfileData) (string, error) {
+func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, profile *flare.ProfileData) (string, error) {
 	klog.Infof("Making a flare")
-	return flare.CreateArchive(false, config.C.DistPath, config.C.PyChecksPath, []string{}, profile)
+	return flare.CreateArchive(false, config.C.DistPath, config.C.PyChecksPath, []string{}, *profile)
 }
 
 func getStatus(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {

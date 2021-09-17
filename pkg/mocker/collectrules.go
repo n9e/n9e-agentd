@@ -46,22 +46,20 @@ type RulesPayload struct {
 	Err  string            `json:"err"`
 }
 
-func (c *CollectRules) GetRules() api.CollectRuleWrap {
+func (c *CollectRules) GetRules() []api.CollectRule {
 	c.RLock()
 	defer c.RUnlock()
 
-	return api.CollectRuleWrap{Data: c.rules}
+	return c.rules
 }
 
-func (c *CollectRules) GetSummary() api.CollectRulesSummaryWrap {
+func (c *CollectRules) GetSummary() *api.CollectRulesSummary {
 	c.RLock()
 	defer c.RUnlock()
 
-	return api.CollectRulesSummaryWrap{
-		Data: api.CollectRulesSummary{
-			LatestUpdatedAt: c.latestUpdatedAt,
-			Total:           len(c.rules),
-		},
+	return &api.CollectRulesSummary{
+		LatestUpdatedAt: c.latestUpdatedAt,
+		Total:           len(c.rules),
 	}
 }
 

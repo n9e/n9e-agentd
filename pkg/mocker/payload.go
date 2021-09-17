@@ -1,10 +1,5 @@
 package mocker
 
-import (
-	"github.com/n9e/agent-payload/gogen"
-	"github.com/n9e/n9e-agentd/pkg/api"
-)
-
 // datadog-agent/pkg/logs/processor/json.go
 type jsonPayload struct {
 	Message   string `json:"message"`
@@ -20,6 +15,7 @@ type jsonPayload struct {
 
 type LogsPayload []jsonPayload
 
+/*
 var (
 	routes = []struct {
 		pattern string
@@ -46,6 +42,7 @@ var (
 		{api.RoutePathLogs, LogsPayload{}},
 	}
 )
+*/
 
 /*
 func payloadHandle(payload interface{}) func(http.ResponseWriter, *http.Request) {

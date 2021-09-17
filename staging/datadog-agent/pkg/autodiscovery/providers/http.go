@@ -75,7 +75,7 @@ func (c *Client) getCollectRules() ([]api.CollectRule, error) {
 		return nil, err
 	}
 
-	var rules api.CollectRuleWrap
+	var rules api.CollectRulesWrap
 	if err := json.Unmarshal(b, &rules); err != nil {
 		return nil, err
 	}
