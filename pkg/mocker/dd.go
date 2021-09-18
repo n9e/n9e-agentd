@@ -10,7 +10,11 @@ import (
 	"github.com/n9e/agent-payload/gogen"
 	"github.com/n9e/agent-payload/process"
 	model "github.com/n9e/agent-payload/process"
+	"github.com/n9e/n9e-agentd/pkg/api"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 	"github.com/yubo/apiserver/pkg/rest"
+	"github.com/yubo/golib/util"
 	"k8s.io/klog/v2"
 )
 
@@ -18,7 +22,7 @@ func (p *mocker) routesDDLogs() []rest.WsRoute {
 	return []rest.WsRoute{{
 		Method:  "POST",
 		SubPath: "/v1/input",
-		Handle:  p.series,
+		Handle:  p.logsInput,
 	}}
 }
 
@@ -120,11 +124,19 @@ func (p *mocker) installDatadogWs(http rest.GoRestfulContainer) {
 }
 
 func (p *mocker) series(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *gogen.MetricsPayload) (string, error) {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.series")
+	defer sp.Finish()
+	sp.LogFields(log.Object("series", data))
+
 	klog.InfoS("series", "samples.len", len(data.Samples))
 	return "", nil
 }
 
 func (p *mocker) serviceChecks(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.ServiceChecks) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.service_checks")
+	defer sp.Finish()
+	sp.LogFields(log.Object("service_checks", data))
+
 	klog.InfoS("service_checks", "serviceChecks.len", len(*data))
 	return nil
 }
@@ -147,17 +159,29 @@ type IntakePayload struct {
 //   map[string]interface{} ./pkg/metadata/resources.go
 //   *v5.Payload github.com/DataDog/datadog-agent/pkg/metadata/v5.Payload  pkg/metadata/host.go
 func (p *mocker) intake(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *IntakePayload) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.intake")
+	defer sp.Finish()
+	sp.LogFields(log.Object("intake", data))
+
 	klog.InfoS("intake-host-metadata", "uuid", data.UUID)
-	klog.InfoS("intake-metadata", "hostname", data.Hostname)
+	klog.InfoS("intake-metadata", "hostname", data.Hostname, "payload", util.JsonStr(data))
 	return nil
 }
 
 func (p *mocker) events(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.Events) (string, error) {
-	klog.InfoS("series", "samples.len", len(*data))
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.events")
+	defer sp.Finish()
+	sp.LogFields(log.Object("events", data))
+
+	klog.InfoS("events", "samples.len", len(*data))
 	return "", nil
 }
 
 func (p *mocker) sketches(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.SketchSeriesList) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.sketches")
+	defer sp.Finish()
+	sp.LogFields(log.Object("sketches", data))
+
 	klog.InfoS("sketches", "sketches.len", len(*data))
 	return nil
 }
@@ -167,6 +191,10 @@ type validateInput struct {
 }
 
 func (p *mocker) validate(w http.ResponseWriter, req *http.Request, in *validateInput) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.validate")
+	defer sp.Finish()
+	sp.LogFields(log.Object("validate_param", in))
+
 	klog.InfoS("validate", "api_key", in.ApiKey)
 	return nil
 }
@@ -188,15 +216,26 @@ type collectorInput struct {
 // rtProcessesEndpoint
 // connectionsEndpoint
 func (p *mocker) collector(w http.ResponseWriter, req *http.Request, in *collectorInput) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.collector")
+	defer sp.Finish()
+
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		sp.LogFields(log.Error(err))
 		return err
 	}
 
 	m, err := model.DecodeMessage(b)
 	if err != nil {
+		sp.LogFields(log.Error(err))
 		return err
 	}
+
+	sp.LogFields(
+		log.Object("collector.params", in),
+		log.Object("collector.payload.header", m.Header),
+		log.String("collector.payload.body", m.Body.String()),
+	)
 
 	klog.InfoS("collector", "type", m.Header.Type.String(), "body.size", m.Body.Size())
 	return nil
@@ -205,33 +244,27 @@ func (p *mocker) collector(w http.ResponseWriter, req *http.Request, in *collect
 // containerEndpoint
 // rtContainerEndpoint
 func (p *mocker) container(w http.ResponseWriter, req *http.Request, in *collectorInput) error {
-	b, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return err
-	}
+	sp, ctx := opentracing.StartSpanFromContext(req.Context(), "dd.container")
+	defer sp.Finish()
 
-	m, err := model.DecodeMessage(b)
-	if err != nil {
-		return err
-	}
-
-	klog.InfoS("collector", "type", m.Header.Type.String(), "body.size", m.Body.Size())
-	return nil
+	return p.collector(w, req.WithContext(ctx), in)
 }
 
 // orchestratorEndpoint
 // SendOrchestratorMetadata
 func (p *mocker) orchestrator(w http.ResponseWriter, req *http.Request, in *collectorInput) error {
-	b, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return err
-	}
+	sp, ctx := opentracing.StartSpanFromContext(req.Context(), "dd.orchestrator")
+	defer sp.Finish()
 
-	m, err := model.DecodeMessage(b)
-	if err != nil {
-		return err
-	}
+	return p.collector(w, req.WithContext(ctx), in)
+}
 
-	klog.InfoS("orchestrator", "type", m.Header.Type.String(), "body.size", m.Body.Size())
+func (p *mocker) logsInput(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *api.LogsPayload) error {
+	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.collector")
+	defer sp.Finish()
+
+	sp.LogFields(log.Object("logs", data))
+
+	klog.InfoS("logs_input", "logs.len", len(*data))
 	return nil
 }

@@ -34,6 +34,34 @@ func (p *StatsdCaptureTriggerInput) Validate() error {
 	return nil
 }
 
+type CollectorInput struct {
+	// HostHeader contains the hostname of the payload
+	HostHeader string `param:"header" name:"X-Dd-Hostname"`
+	// ContainerCountHeader contains the container count in the payload
+	ContainerCountHeader int `param:"header" name:"X-Dd-ContainerCount"`
+	// ProcessVersionHeader holds the process agent version sending the payload
+	ProcessVersionHeader string `param:"header" name:"X-Dd-Processagentversion"`
+	// ClusterIDHeader contains the orchestrator cluster ID of this agent
+	ClusterIDHeader string `param:"header" name:"X-Dd-Orchestrator-ClusterID"`
+	// TimestampHeader contains the timestamp that the check data was created
+	TimestampHeader int64 `param:"header" name:"X-DD-Agent-Timestamp"`
+}
+
+// datadog-agent/pkg/logs/processor/json.go
+type LogPayload struct {
+	Message   string `json:"message"`
+	Status    string `json:"status"`
+	Timestamp int64  `json:"timestamp"`
+	Hostname  string `json:"hostname"`
+	Service   string `json:"service"`
+	Source    string `json:"source"`
+	Tags      string `json:"tags"`
+	Ident     string `json:"ident"`
+	Alias     string `json:"alias"`
+}
+
+type LogsPayload []LogPayload
+
 type CollectRule struct {
 	ID   int64  `json:"id"`   // option rule.ID
 	Name string `json:"name"` // option Config.instances[$] ruleID

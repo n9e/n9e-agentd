@@ -46,20 +46,20 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0
-	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
+	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/fatih/color v1.12.0
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/gosnmp/gosnmp v1.32.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 	github.com/n9e/agent-payload v0.0.0-20210803052830-38cc6d91cc21
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.23.0
@@ -80,7 +80,6 @@ require (
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.31.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
