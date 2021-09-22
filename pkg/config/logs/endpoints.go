@@ -7,6 +7,8 @@ package logs
 
 import (
 	"time"
+
+	"github.com/n9e/n9e-agentd/pkg/api"
 )
 
 // EPIntakeVersion is the events platform intake API version
@@ -31,15 +33,14 @@ const (
 
 // Endpoint holds all the organization and network parameters to send logs to Datadog.
 type Endpoint struct {
-	APIKey                   string        `json:"api_key"`
-	Host                     string        `json:"host"`
-	Port                     int           `json:"port"`
-	UseSSL                   bool          `json:"use_ssl"`
-	UseCompression           bool          `json:"use_compression"`
-	CompressionLevel         int           `json:"compression_level"`
-	ProxyAddress             string        `json:"proxy_address"`
-	ConnectionResetInterval  time.Duration `json:"-"`
-	ConnectionResetInterval_ int           `json:"connection_reset_interval"`
+	APIKey                  string       `json:"api_key"`
+	Host                    string       `json:"host"`
+	Port                    int          `json:"port"`
+	UseSSL                  bool         `json:"use_ssl"`
+	UseCompression          bool         `json:"use_compression"`
+	CompressionLevel        int          `json:"compression_level"`
+	ProxyAddress            string       `json:"proxy_address"`
+	ConnectionResetInterval api.Duration `json:"connection_reset_interval"`
 
 	BackoffFactor    float64
 	BackoffBase      float64
@@ -54,7 +55,6 @@ type Endpoint struct {
 }
 
 func (p *Endpoint) Validate() error {
-	p.ConnectionResetInterval = time.Second * time.Duration(p.ConnectionResetInterval_)
 	return nil
 }
 

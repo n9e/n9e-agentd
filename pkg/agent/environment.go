@@ -224,8 +224,8 @@ func (p *EnvSettings) Request(method, uri string, param, body, output interface{
 	if output != nil {
 		opts = append(opts, cmdcli.WithOutput(output))
 	}
-	if p.Agent.CliQueryTimeout > 0 {
-		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout))
+	if p.Agent.CliQueryTimeout.Duration > 0 {
+		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout.Duration))
 	}
 
 	return cmdcli.NewRequestWithClient(p.Client, opts...), nil

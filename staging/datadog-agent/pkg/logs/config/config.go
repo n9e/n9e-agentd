@@ -13,6 +13,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/snmp/traps"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/api"
 	coreConfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/n9e/n9e-agentd/pkg/config/logs"
 )
@@ -138,7 +139,7 @@ func buildTCPEndpoints(logsConfig *LogsConfigKeys) (*logs.Endpoints, error) {
 	main := logs.Endpoint{
 		APIKey:                  logsConfig.getLogsAPIKey(),
 		ProxyAddress:            proxyAddress,
-		ConnectionResetInterval: logsConfig.connectionResetInterval(),
+		ConnectionResetInterval: api.Duration{logsConfig.connectionResetInterval()},
 	}
 
 	if logsDDURL, defined := logsConfig.logsDDURL(); defined {
@@ -191,7 +192,7 @@ func BuildHTTPEndpointsWithConfig(logsConfig *LogsConfigKeys, endpointPrefix str
 		APIKey:                  logsConfig.getLogsAPIKey(),
 		UseCompression:          logsConfig.useCompression(),
 		CompressionLevel:        logsConfig.compressionLevel(),
-		ConnectionResetInterval: logsConfig.connectionResetInterval(),
+		ConnectionResetInterval: api.Duration{logsConfig.connectionResetInterval()},
 		BackoffBase:             logsConfig.senderBackoffBase(),
 		BackoffMax:              logsConfig.senderBackoffMax(),
 		BackoffFactor:           logsConfig.senderBackoffFactor(),

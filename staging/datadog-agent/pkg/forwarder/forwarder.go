@@ -141,7 +141,7 @@ func HasFeature(features, flag Features) bool { return features&flag != 0 }
 // NewOptions creates new Options with default values
 func NewOptions(keysPerDomain map[string][]string) *Options {
 	cf := config.C.Forwarder
-	validationInterval := cf.ApikeyValidationInterval
+	validationInterval := cf.ApikeyValidationInterval.Duration
 	if validationInterval <= 0 {
 		log.Warnf(
 			"'forwarder_apikey_validation_interval' set to invalid value (%d), defaulting to %d minute(s)",
@@ -165,11 +165,11 @@ func NewOptions(keysPerDomain map[string][]string) *Options {
 		RetryQueuePayloadsTotalMaxSize: retryQueuePayloadsTotalMaxSize,
 		APIKeyValidationInterval:       validationInterval,
 		KeysPerDomain:                  keysPerDomain,
-		ConnectionResetInterval:        cf.ConnectionResetInterval,
+		ConnectionResetInterval:        cf.ConnectionResetInterval.Duration,
 	}
 
 	if cf.RetryQueueMaxSize > 0 {
-		if cf.RetryQueuePayloadsMaxSize > 0 {
+		if cf.RetryQueuePayloadsMaxSize.Value() > 0 {
 			log.Warnf("'%v' is set, but as this setting is deprecated, '%v' is used instead.", forwarderRetryQueueMaxSizeKey, forwarderRetryQueuePayloadsMaxSizeKey)
 		} else {
 			forwarderRetryQueueMaxSize := cf.RetryQueueMaxSize
@@ -225,7 +225,7 @@ func NewDefaultForwarder(options *Options) *DefaultForwarder {
 
 	cf := config.C.Forwarder
 	var optionalRemovalPolicy *retry.FileRemovalPolicy
-	storageMaxSize := cf.StorageMaxSizeInBytes
+	storageMaxSize := cf.StorageMaxSizeInBytes.Value()
 
 	// Disk Persistence is a core-only feature for now.
 	if storageMaxSize == 0 {
@@ -353,7 +353,7 @@ func (f *DefaultForwarder) Stop() {
 
 	f.internalState = Stopped
 
-	purgeTimeout := config.C.Forwarder.StopTimeout
+	purgeTimeout := config.C.Forwarder.StopTimeout.Duration
 	if purgeTimeout > 0 {
 		var wg sync.WaitGroup
 

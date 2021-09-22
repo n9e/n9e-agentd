@@ -140,7 +140,7 @@ func start(getAC func() *autodiscovery.AutoConfig, serverless bool, logsChan cha
 	// but ensure that it is enabled after the AutoConfig initialization
 	if source := config.ContainerCollectAllSource(); source != nil {
 		go func() {
-			BlockUntilAutoConfigRanOnce(getAC, coreConfig.C.AcLoadTimeout)
+			BlockUntilAutoConfigRanOnce(getAC, coreConfig.C.AcLoadTimeout.Duration)
 			log.Debug("Adding ContainerCollectAll source to the Logs Agent")
 			sources.AddSource(source)
 		}()

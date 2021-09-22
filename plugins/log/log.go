@@ -321,13 +321,13 @@ func (a *Agent) work(id int) {
 
 func NewAgent() (*Agent, error) {
 	health := health.RegisterLiveness("plugins-logs")
-	auditorTTL := coreConfig.C.Logs.AuditorTTL
+	auditorTTL := coreConfig.C.Logs.AuditorTTL.Duration
 	auditor := auditor.New(coreConfig.C.Logs.RunPath, DefaultRegistryFilename, auditorTTL, health)
 	sources := config.NewLogSources()
 	msgCh := make(chan *message.Message, 10)
 	pipelineProvider := NewChProvider(msgCh)
 	scanner := file.NewScanner(sources, coreConfig.C.Logs.OpenFilesLimit, pipelineProvider, auditor, file.DefaultSleepDuration,
-		coreConfig.C.Logs.ValidatePodContainerId, time.Duration(coreConfig.C.Logs.FileScanPeriod)*time.Second)
+		coreConfig.C.Logs.ValidatePodContainerId, coreConfig.C.Logs.FileScanPeriod.Duration)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Agent{

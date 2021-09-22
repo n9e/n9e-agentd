@@ -119,7 +119,7 @@ func (l *LogsConfigKeys) getLogsAPIKey() string {
 }
 
 func (l *LogsConfigKeys) connectionResetInterval() time.Duration {
-	return l.c.ConnectionResetInterval
+	return l.c.ConnectionResetInterval.Duration
 }
 
 func (l *LogsConfigKeys) getAdditionalEndpoints() []logs.Endpoint {
@@ -127,15 +127,15 @@ func (l *LogsConfigKeys) getAdditionalEndpoints() []logs.Endpoint {
 }
 
 func (l *LogsConfigKeys) expectedTagsDuration() time.Duration {
-	return l.c.ExpectedTagsDuration
+	return l.c.ExpectedTagsDuration.Duration
 }
 
 func (l *LogsConfigKeys) taggerWarmupDuration() time.Duration {
-	return l.c.TaggerWarmupDuration
+	return l.c.TaggerWarmupDuration.Duration
 }
 
 func (l *LogsConfigKeys) batchWait() time.Duration {
-	return l.c.BatchWait
+	return l.c.BatchWait.Duration
 }
 
 func (l *LogsConfigKeys) batchMaxConcurrentSend() int {
@@ -172,7 +172,7 @@ func (l *LogsConfigKeys) senderRecoveryReset() bool {
 
 // AggregationTimeout is used when performing aggregation operations
 func (l *LogsConfigKeys) aggregationTimeout() time.Duration {
-	return l.c.AggregationTimeout
+	return l.c.AggregationTimeout.Duration
 }
 
 func (l *LogsConfigKeys) useV2API() bool {

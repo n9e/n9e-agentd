@@ -147,7 +147,7 @@ func (cm *ConnectionManager) address() string {
 // ShouldReset returns whether the connection should be reset, depending on the endpoint's config
 // and the passed connection creation time.
 func (cm *ConnectionManager) ShouldReset(connCreationTime time.Time) bool {
-	return cm.endpoint.ConnectionResetInterval != 0 && time.Since(connCreationTime) > cm.endpoint.ConnectionResetInterval
+	return cm.endpoint.ConnectionResetInterval.Duration != 0 && time.Since(connCreationTime) > cm.endpoint.ConnectionResetInterval.Duration
 }
 
 // CloseConnection closes a connection on the client side

@@ -84,7 +84,7 @@ func newDestination(endpoint logs.Endpoint, contentType string, destinationsCont
 		apiKey:              endpoint.APIKey,
 		contentType:         contentType,
 		contentEncoding:     buildContentEncoding(endpoint),
-		client:              httputils.NewResetClient(endpoint.ConnectionResetInterval, httpClientFactory(timeout)),
+		client:              httputils.NewResetClient(endpoint.ConnectionResetInterval.Duration, httpClientFactory(timeout)),
 		destinationsContext: destinationsContext,
 		climit:              make(chan struct{}, maxConcurrentBackgroundSends),
 		backoff:             policy,

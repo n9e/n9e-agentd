@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build kubelet
 // +build kubelet
 
 package listeners
@@ -93,7 +94,7 @@ func NewKubeletListener() (ServiceListener, error) {
 		watcher:  watcher,
 		filters:  filters,
 		services: make(map[string]Service),
-		ticker:   time.NewTicker(config.C.KubeletListenerPollingInterval),
+		ticker:   time.NewTicker(config.C.KubeletListenerPollingInterval.Duration),
 		stop:     make(chan bool),
 		health:   health.RegisterLiveness("ad-kubeletlistener"),
 	}, nil

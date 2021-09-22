@@ -96,7 +96,7 @@ func NewConfig(configer *configer.Configer) *Config {
 
 	cf.Statsd.MetricNamespaceBlacklist = StandardStatsdPrefixes
 	cf.Jmx.CheckPeriod = int(defaults.DefaultCheckInterval / time.Millisecond)
-	cf.Logs.AuditorTTL = DefaultAuditorTTL
+	cf.Logs.AuditorTTL.Duration = DefaultAuditorTTL
 	cf.PythonVersion = DefaultPython
 
 	return cf

@@ -57,7 +57,7 @@ func NewAgent(sources *config.LogSources, services *service.Services, processing
 	// setup the auditor
 	// We pass the health handle to the auditor because it's the end of the pipeline and the most
 	// critical part. Arguably it could also be plugged to the destination.
-	auditor := auditor.New(cf.RunPath, auditor.DefaultRegistryFilename, cf.AuditorTTL, health)
+	auditor := auditor.New(cf.RunPath, auditor.DefaultRegistryFilename, cf.AuditorTTL.Duration, health)
 	destinationsCtx := client.NewDestinationsContext()
 	diagnosticMessageReceiver := diagnostic.NewBufferedMessageReceiver()
 
@@ -69,7 +69,7 @@ func NewAgent(sources *config.LogSources, services *service.Services, processing
 			IsAvailable: docker.IsAvailable,
 			Launcher: func() restart.Restartable {
 				return docker.NewLauncher(
-					cf.DockerClientReadTimeout,
+					cf.DockerClientReadTimeout.Duration,
 					sources,
 					services,
 					pipelineProvider,
@@ -97,7 +97,7 @@ func NewAgent(sources *config.LogSources, services *service.Services, processing
 	// setup the inputs
 	inputs := []restart.Restartable{
 		file.NewScanner(sources, cf.OpenFilesLimit, pipelineProvider, auditor,
-			file.DefaultSleepDuration, validatePodContainerID, time.Duration(cf.FileScanPeriod)*time.Second),
+			file.DefaultSleepDuration, validatePodContainerID, cf.FileScanPeriod.Duration),
 		listener.NewLauncher(sources, cf.FrameSize, pipelineProvider),
 		journald.NewLauncher(sources, pipelineProvider, auditor),
 		windowsevent.NewLauncher(sources, pipelineProvider),
@@ -189,7 +189,7 @@ func (a *Agent) Stop() {
 		stopper.Stop()
 		close(c)
 	}()
-	timeout := coreConfig.C.Logs.StopGracePeriod
+	timeout := coreConfig.C.Logs.StopGracePeriod.Duration
 	select {
 	case <-c:
 	case <-time.After(timeout):

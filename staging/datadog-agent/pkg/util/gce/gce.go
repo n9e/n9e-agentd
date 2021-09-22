@@ -181,7 +181,7 @@ func getResponseWithMaxLength(ctx context.Context, endpoint string, maxLength in
 func getResponse(ctx context.Context, url string) (string, error) {
 	client := http.Client{
 		Transport: httputils.CreateHTTPTransport(),
-		Timeout:   config.C.GCEMetadataTimeout,
+		Timeout:   config.C.GCEMetadataTimeout.Duration,
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

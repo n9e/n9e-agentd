@@ -256,7 +256,7 @@ func extractClusterName(tags []string) (string, error) {
 func doHTTPRequest(ctx context.Context, url string, method string, headers map[string]string, useToken bool) (*http.Response, error) {
 	client := http.Client{
 		Transport: httputils.CreateHTTPTransport(),
-		Timeout:   config.C.EC2MetadataTimeout,
+		Timeout:   config.C.EC2MetadataTimeout.Duration,
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, url, nil)
@@ -305,7 +305,7 @@ func getToken(ctx context.Context) (string, error) {
 
 	client := http.Client{
 		Transport: httputils.CreateHTTPTransport(),
-		Timeout:   config.C.EC2MetadataTimeout,
+		Timeout:   config.C.EC2MetadataTimeout.Duration,
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, tokenURL, nil)
@@ -318,7 +318,7 @@ func getToken(ctx context.Context) (string, error) {
 	// Set the local expiration date before requesting the metadata endpoint so the local expiration date will always
 	// expire before the expiration date computed on the AWS side. The expiration date is set minus the renewal window
 	// to ensure the token will be refreshed before it expires.
-	token.expirationDate = time.Now().Add(tokenLifetime - tokenRenewalWindow)
+	token.expirationDate = time.Now().Add(tokenLifetime.Duration - tokenRenewalWindow)
 	res, err := client.Do(req)
 	if err != nil {
 		// Re-mark the token as expired now, so it will be refreshed next time

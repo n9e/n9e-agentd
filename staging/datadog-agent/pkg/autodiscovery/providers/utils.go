@@ -213,7 +213,7 @@ func GetPollInterval(cp config.ConfigurationProviders) time.Duration {
 			return customInterval
 		}
 	}
-	return config.C.AdConfigPollInterval
+	return config.C.AdConfigPollInterval.Duration
 }
 
 func ParseJSONConfig(data []byte) (*integration.Config, error) {
