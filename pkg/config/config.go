@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/common/types"
+	"github.com/DataDog/datadog-agent/pkg/collector/check/defaults"
+	"github.com/DataDog/datadog-agent/pkg/secrets"
 	"github.com/n9e/n9e-agentd/pkg/api"
 	apm "github.com/n9e/n9e-agentd/pkg/config/apm"
 	forwarder "github.com/n9e/n9e-agentd/pkg/config/forwarder"
@@ -19,10 +21,10 @@ import (
 	statsd "github.com/n9e/n9e-agentd/pkg/config/statsd"
 	systemprobe "github.com/n9e/n9e-agentd/pkg/system-probe/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
-	"github.com/n9e/n9e-agentd/pkg/version"
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -318,6 +320,12 @@ type Config struct {
 
 	SecretBackendSkipChecks              bool `json:"secret_backend_skip_checks"`
 	CheckSamplerBucketCommitsCountExpiry int  `json:"check_sampler_bucket_commits_count_expiry"`
+
+	SecretBackendCommand                   string   `json:"secret_backend_command"`
+	SecretBackendArguments                 []string `json:"secret_backend_arguments"`
+	SecretBackendTimeout                   int      `json:"secret_backend_timeout" default:"30"`
+	SecretBackendOutputMaxSize             int      `json:"secret_backend_output_max_size" default:"1024"`
+	SecretBackendCommandAllowGroupExecPerm bool     `json:"secret_backend_command_allow_group_exec_perm"`
 } // end of Config
 
 func (p *Config) IsSet(path string) bool {
@@ -910,22 +918,97 @@ func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error)
 	return keysPerDomain, nil
 }
 
-// AddAgentVersionToDomain prefixes the domain with the agent version: X-Y-Z.domain
-func AddAgentVersionToDomain(DDURL string, app string) (string, error) {
-	u, err := url.Parse(DDURL)
-	if err != nil {
-		return "", err
+func NewConfig(configer *configer.Configer) *Config {
+	cf := &Config{
+		m:          new(sync.RWMutex),
+		configer:   configer,
+		ValueFiles: configer.ValueFiles(),
+	}
+	klog.V(1).Infof("configFiles %v", cf.ValueFiles)
+
+	if IsContainerized() {
+		// In serverless-containerized environments (e.g Fargate)
+		// it's impossible to mount host volumes.
+		// Make sure the host paths exist before setting-up the default values.
+		// Fallback to the container paths if host paths aren't mounted.
+		if pathExists("/host/proc") {
+			cf.ProcfsPath = "/host/proc"
+			cf.ContainerProcRoot = "/host/proc"
+
+			// Used by some librairies (like gopsutil)
+			if v := os.Getenv("HOST_PROC"); v == "" {
+				os.Setenv("HOST_PROC", "/host/proc")
+			}
+		} else {
+			cf.ProcfsPath = "/proc"
+			cf.ContainerProcRoot = "/proc"
+		}
+		if pathExists("/host/sys/fs/cgroup/") {
+			cf.ContainerCgroupRoot = "/host/sys/fs/cgroup/"
+		} else {
+			cf.ContainerCgroupRoot = "/sys/fs/cgroup/"
+		}
+	} else {
+		cf.ContainerProcRoot = "/proc"
+		// for amazon linux the cgroup directory on host is /cgroup/
+		// we pick memory.stat to make sure it exists and not empty
+		if _, err := os.Stat("/cgroup/memory/memory.stat"); !os.IsNotExist(err) {
+			cf.ContainerCgroupRoot = "/cgroup/"
+		} else {
+			cf.ContainerCgroupRoot = "/sys/fs/cgroup/"
+		}
+
 	}
 
-	subdomain := strings.Split(u.Host, ".")[0]
-	newSubdomain := getDomainPrefix(app)
+	cf.Statsd.MetricNamespaceBlacklist = StandardStatsdPrefixes
+	cf.Jmx.CheckPeriod = int(defaults.DefaultCheckInterval / time.Millisecond)
+	cf.Logs.AuditorTTL.Duration = DefaultAuditorTTL
+	cf.PythonVersion = DefaultPython
 
-	u.Host = strings.Replace(u.Host, subdomain, newSubdomain, 1)
-	return u.String(), nil
+	if cf.SecretBackendCommand != "" {
+
+	}
+
+	return cf
 }
 
-// getDomainPrefix provides the right prefix for agent X.Y.Z
-func getDomainPrefix(app string) string {
-	v, _ := version.Agent()
-	return fmt.Sprintf("%d-%d-%d-%s.agent", v.Major, v.Minor, v.Patch, app)
+// ResolveSecrets merges all the secret values from origin into config. Secret values
+// are identified by a value of the form "ENC[key]" where key is the secret key.
+// See: https://github.com/DataDog/datadog-agent/blob/main/docs/agent/secrets.md
+func ResolveSecrets(config *Config) error {
+	// We have to init the secrets package before we can use it to decrypt
+	// anything.
+	secrets.Init(
+		config.SecretBackendCommand,
+		config.SecretBackendArguments,
+		config.SecretBackendTimeout,
+		config.SecretBackendOutputMaxSize,
+		config.SecretBackendCommandAllowGroupExecPerm,
+	)
+
+	if config.SecretBackendCommand != "" {
+		// Viper doesn't expose the final location of the file it
+		// loads. Since we are searching for 'datadog.yaml' in multiple
+		// locations we let viper determine the one to use before
+		// updating it.
+		yamlConf, err := yaml.Marshal(config.configer.GetRaw(""))
+		if err != nil {
+			return fmt.Errorf("unable to marshal configuration to YAML to decrypt secrets: %v", err)
+		}
+
+		finalYamlConf, err := secrets.Decrypt(yamlConf, "default")
+		if err != nil {
+			return fmt.Errorf("unable to decrypt secret from configer: %v", err)
+		}
+
+		m := map[string]interface{}{}
+		if err := yaml.Unmarshal(finalYamlConf, &m); err != nil {
+			return fmt.Errorf("unable to unmarshal secret from configer: %v", err)
+		}
+
+		if err = config.configer.Set("", m); err != nil {
+			return fmt.Errorf("could not update main configuration after decrypting secrets: %v", err)
+		}
+	}
+	return nil
 }

@@ -1,12 +1,15 @@
 package config
 
 import (
+	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 func configEval(value string) string {
@@ -219,4 +222,24 @@ func getValidHostAliasesWithConfig() []string {
 	}
 
 	return aliases
+}
+
+// AddAgentVersionToDomain prefixes the domain with the agent version: X-Y-Z.domain
+func AddAgentVersionToDomain(DDURL string, app string) (string, error) {
+	u, err := url.Parse(DDURL)
+	if err != nil {
+		return "", err
+	}
+
+	subdomain := strings.Split(u.Host, ".")[0]
+	newSubdomain := getDomainPrefix(app)
+
+	u.Host = strings.Replace(u.Host, subdomain, newSubdomain, 1)
+	return u.String(), nil
+}
+
+// getDomainPrefix provides the right prefix for agent X.Y.Z
+func getDomainPrefix(app string) string {
+	v, _ := version.Agent()
+	return fmt.Sprintf("%d-%d-%d-%s.agent", v.Major, v.Minor, v.Patch, app)
 }
