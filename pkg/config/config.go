@@ -449,7 +449,7 @@ func (p *Config) ValidatePath() (err error) {
 	// {root}/run
 	p.RunPath = root.Abs(p.RunPath, "run")
 	if !util.IsDir(p.RunPath) {
-		return fmt.Errorf("agent.run_path %s does not exist, please create it", p.RunPath)
+		klog.Warningf("agent.run_path %s does not exist, please create it", p.RunPath)
 	}
 
 	// pid
@@ -918,7 +918,7 @@ func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error)
 	return keysPerDomain, nil
 }
 
-func NewConfig(configer *configer.Configer) *Config {
+func NewConfig(configer *configer.Configer) (*Config, error) {
 	cf := &Config{
 		m:          new(sync.RWMutex),
 		configer:   configer,
@@ -966,10 +966,13 @@ func NewConfig(configer *configer.Configer) *Config {
 	cf.PythonVersion = DefaultPython
 
 	if cf.SecretBackendCommand != "" {
+		if err := ResolveSecrets(cf); err != nil {
+			return nil, err
+		}
 
 	}
 
-	return cf
+	return cf, nil
 }
 
 // ResolveSecrets merges all the secret values from origin into config. Secret values
@@ -991,7 +994,7 @@ func ResolveSecrets(config *Config) error {
 		// loads. Since we are searching for 'datadog.yaml' in multiple
 		// locations we let viper determine the one to use before
 		// updating it.
-		yamlConf, err := yaml.Marshal(config.configer.GetRaw(""))
+		yamlConf, err := yaml.Marshal(config)
 		if err != nil {
 			return fmt.Errorf("unable to marshal configuration to YAML to decrypt secrets: %v", err)
 		}
@@ -1001,12 +1004,13 @@ func ResolveSecrets(config *Config) error {
 			return fmt.Errorf("unable to decrypt secret from configer: %v", err)
 		}
 
-		m := map[string]interface{}{}
-		if err := yaml.Unmarshal(finalYamlConf, &m); err != nil {
+		// set config
+		if err := yaml.Unmarshal(finalYamlConf, config); err != nil {
 			return fmt.Errorf("unable to unmarshal secret from configer: %v", err)
 		}
 
-		if err = config.configer.Set("", m); err != nil {
+		// set configer.data
+		if err = config.configer.Set("agent", config); err != nil {
 			return fmt.Errorf("could not update main configuration after decrypting secrets: %v", err)
 		}
 	}

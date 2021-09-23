@@ -14,7 +14,6 @@ import (
 	"github.com/yubo/golib/cli/globalflag"
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
-	"k8s.io/klog/v2"
 
 	_ "github.com/n9e/n9e-agentd/pkg/agent/cmds"
 	_ "github.com/n9e/n9e-agentd/pkg/agent/server"
@@ -50,14 +49,15 @@ func newRootCmd() *cobra.Command {
 			https://github.com/n9e/n9e-agentd`),
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			override := map[string]string{
-				"agent": fmt.Sprintf(`is_cli_runner: %v`, cmd != settings.ServerCmd),
+			override := map[string]string{}
+			switch cmd.Use {
+			case "version":
+				return nil
+			case "start":
+				override["agent"] = fmt.Sprintf("is_cli_runner: true")
 			}
 
-			if err := settings.Init(override); err != nil {
-				klog.Error(err)
-			}
-			return nil
+			return settings.Init(override)
 		},
 	}
 

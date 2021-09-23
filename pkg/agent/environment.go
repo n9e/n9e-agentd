@@ -82,10 +82,20 @@ func (p *EnvSettings) Init(override map[string]string) error {
 	}
 	p.configer = c
 
-	p.Agent = config.NewConfig(c)
-	if err := c.Read("agent", p.Agent); err != nil {
+	agentConfig, err := config.NewConfig(c)
+	if err != nil {
 		return err
 	}
+
+	if err := c.Read("agent", agentConfig); err != nil {
+		return err
+	}
+
+	if err := config.ResolveSecrets(agentConfig); err != nil {
+		return err
+	}
+
+	p.Agent = agentConfig
 	config.C = p.Agent
 
 	// client
