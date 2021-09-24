@@ -8,8 +8,8 @@ const (
 	//authTokenName = "auth_token"
 
 	// DefaultSite is the default site the Agent sends data to.
-	//DefaultSite    = "datadoghq.com"
-	//infraURLPrefix = "https://app."
+	DefaultSite    = "datadoghq.com"
+	infraURLPrefix = "https://app."
 
 	// DefaultNumWorkers default number of workers for our check runner
 	DefaultNumWorkers = 4

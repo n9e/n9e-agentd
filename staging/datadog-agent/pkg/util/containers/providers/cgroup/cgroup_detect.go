@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build linux
 // +build linux
 
 package cgroup
@@ -19,8 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 var (
@@ -111,7 +112,7 @@ func cgroupMountPoints() (map[string]string, error) {
 }
 
 func parseCgroupMountPoints(r io.Reader) map[string]string {
-	cgroupRoot := config.Datadog.GetString("container_cgroup_root")
+	cgroupRoot := config.C.Container.CgroupRoot
 	mountPoints := make(map[string]string)
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -161,7 +162,7 @@ func scrapeAllCgroups() (map[string]*ContainerCgroup, error) {
 		return cgs, err
 	}
 
-	prefix := config.Datadog.GetString("container_cgroup_prefix")
+	prefix := config.C.Container.CgroupPrefix
 
 	for _, dirName := range dirNames {
 		pid, err := strconv.ParseInt(dirName, 10, 32)

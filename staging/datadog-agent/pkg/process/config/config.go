@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -21,6 +20,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo"
 	"github.com/DataDog/datadog-agent/pkg/util/fargate"
 	ddgrpc "github.com/DataDog/datadog-agent/pkg/util/grpc"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	model "github.com/n9e/agent-payload/process"
 	"github.com/n9e/n9e-agentd/pkg/config"
@@ -93,19 +93,19 @@ type AgentConfig struct {
 	MaxConnsPerMessage        int
 	AllowRealTime             bool
 	Transport                 *http.Transport `json:"-"`
-	DDAgentBin                string
-	StatsdHost                string
-	StatsdPort                int
-	ProcessExpVarPort         int
-	ProfilingEnabled          bool
-	ProfilingSite             string
-	ProfilingURL              string
-	ProfilingEnvironment      string
-	ProfilingPeriod           time.Duration
-	ProfilingCPUDuration      time.Duration
-	ProfilingMutexFraction    int
-	ProfilingBlockRate        int
-	ProfilingWithGoroutines   bool
+	//DDAgentBin                string
+	StatsdHost              string
+	StatsdPort              int
+	ProcessExpVarPort       int
+	ProfilingEnabled        bool
+	ProfilingSite           string
+	ProfilingURL            string
+	ProfilingEnvironment    string
+	ProfilingPeriod         time.Duration
+	ProfilingCPUDuration    time.Duration
+	ProfilingMutexFraction  int
+	ProfilingBlockRate      int
+	ProfilingWithGoroutines bool
 	// host type of the agent, used to populate container payload with additional host information
 	ContainerHostType model.ContainerHostType
 
@@ -145,7 +145,7 @@ func (a AgentConfig) CheckInterval(checkName string) time.Duration {
 }
 
 const (
-	defaultProcessEndpoint         = "https://process.datadoghq.com"
+	defaultProcessEndpoint         = "http://localhost:8000"
 	maxMessageBatch                = 100
 	defaultMaxCtrProcsMessageBatch = 10000
 	maxCtrProcsMessageBatch        = 30000
@@ -251,123 +251,115 @@ func NewDefaultAgentConfig(canAccessContainers bool) *AgentConfig {
 	return ac
 }
 
-func loadConfigIfExists(path string) error {
-	//if path != "" {
-	//	if util.PathExists(path) {
-	//		config.Datadog.AddConfigPath(path)
-	//		if strings.HasSuffix(path, ".yaml") { // If they set a config file directly, let's try to honor that
-	//			config.Datadog.SetConfigFile(path)
-	//		}
+//func loadConfigIfExists(path string) error {
+//if path != "" {
+//	if util.PathExists(path) {
+//		config.Datadog.AddConfigPath(path)
+//		if strings.HasSuffix(path, ".yaml") { // If they set a config file directly, let's try to honor that
+//			config.Datadog.SetConfigFile(path)
+//		}
 
-	//		if _, err := config.LoadWithoutSecret(); err != nil {
-	//			return err
-	//		}
-	//	} else {
-	//		log.Infof("no config exists at %s, ignoring...", path)
-	//	}
-	//}
-	log.Infof("unsupported load config")
-	return errors.New("unsupported load config")
-}
+//		if _, err := config.LoadWithoutSecret(); err != nil {
+//			return err
+//		}
+//	} else {
+//		log.Infof("no config exists at %s, ignoring...", path)
+//	}
+//}
+//	return nil
+//}
 
 // NewAgentConfig returns an AgentConfig using a configuration file. It can be nil
 // if there is no file available. In this case we'll configure only via environment.
-func NewAgentConfig(loggerName config.LoggerName, yamlPath, netYamlPath string) (*AgentConfig, error) {
-	return nil, errors.New("unsupported")
-	//var err error
+//func NewAgentConfig(loggerName config.LoggerName, yamlPath, netYamlPath string) (*AgentConfig, error) {
+func NewAgentConfig() (*AgentConfig, error) {
+	var err error
 
-	//// For Agent 6 we will have a YAML config file to use.
+	// For Agent 6 we will have a YAML config file to use.
 	//if err := loadConfigIfExists(yamlPath); err != nil {
 	//	return nil, err
 	//}
 
-	//// Note: This only considers container sources that are already setup. It's possible that container sources may
-	////       need a few minutes to be ready on newly provisioned hosts.
-	//_, err = util.GetContainers()
-	//canAccessContainers := err == nil
+	// Note: This only considers container sources that are already setup. It's possible that container sources may
+	//       need a few minutes to be ready on newly provisioned hosts.
+	_, err = util.GetContainers()
+	canAccessContainers := err == nil
 
-	//cfg := NewDefaultAgentConfig(canAccessContainers)
+	cfg := NewDefaultAgentConfig(canAccessContainers)
 
-	//if err := cfg.LoadProcessYamlConfig(yamlPath); err != nil {
-	//	return nil, err
-	//}
+	if err := cfg.LoadProcessYamlConfig(); err != nil {
+		return nil, err
+	}
 
-	//if err := cfg.Orchestrator.Load(); err != nil {
-	//	return nil, err
-	//}
+	if err := cfg.Orchestrator.Load(); err != nil {
+		return nil, err
+	}
 
-	//// (Re)configure the logging from our configuration
+	// (Re)configure the logging from our configuration
 	//if err := setupLogger(loggerName, cfg.LogFile, cfg); err != nil {
 	//	log.Errorf("failed to setup configured logger: %s", err)
 	//	return nil, err
 	//}
 
-	//// For system probe, there is an additional config file that is shared with the system-probe
-	//syscfg, err := sysconfig.Merge(netYamlPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if syscfg.Enabled {
-	//	cfg.EnableSystemProbe = true
-	//	cfg.MaxConnsPerMessage = syscfg.MaxConnsPerMessage
-	//	cfg.SystemProbeAddress = syscfg.SocketAddress
+	// For system probe, there is an additional config file that is shared with the system-probe
+	syscfg := &config.C.SystemProbe
+	if syscfg.Enabled {
+		cfg.EnableSystemProbe = true
+		cfg.MaxConnsPerMessage = syscfg.MaxConnsPerMessage
+		cfg.SystemProbeAddress = syscfg.SysprobeSocket
 
-	//	// enable corresponding checks to system-probe modules
-	//	for mod := range syscfg.EnabledModules {
-	//		if checks, ok := moduleCheckMap[mod]; ok {
-	//			cfg.EnabledChecks = append(cfg.EnabledChecks, checks...)
-	//		}
-	//	}
+		// enable corresponding checks to system-probe modules
+		for mod := range syscfg.EnabledModules {
+			if checks, ok := moduleCheckMap[sysconfig.ModuleName(mod)]; ok {
+				cfg.EnabledChecks = append(cfg.EnabledChecks, checks...)
+			}
+		}
 
-	//	if !cfg.Enabled {
-	//		log.Info("enabling process-agent for connections check as the system-probe is enabled")
-	//		cfg.Enabled = true
-	//	}
-	//}
+		if !cfg.Enabled {
+			log.Info("enabling process-agent for connections check as the system-probe is enabled")
+			cfg.Enabled = true
+		}
+	}
 
-	//// TODO: Once proxies have been moved to common config util, remove this
-	//if cfg.proxy, err = proxyFromEnv(cfg.proxy); err != nil {
-	//	log.Errorf("error parsing environment proxy settings, not using a proxy: %s", err)
-	//	cfg.proxy = nil
-	//}
+	// TODO: Once proxies have been moved to common config util, remove this
+	if cfg.proxy, err = proxyFromEnv(cfg.proxy); err != nil {
+		log.Errorf("error parsing environment proxy settings, not using a proxy: %s", err)
+		cfg.proxy = nil
+	}
 
-	//// Python-style log level has WARNING vs WARN
-	//if strings.ToLower(cfg.LogLevel) == "warning" {
-	//	cfg.LogLevel = "warn"
-	//}
+	// Python-style log level has WARNING vs WARN
+	if strings.ToLower(cfg.LogLevel) == "warning" {
+		cfg.LogLevel = "warn"
+	}
 
-	//if err := validate.ValidHostname(cfg.HostName); err != nil {
-	//	// lookup hostname if there is no config override or if the override is invalid
-	//	if hostname, err := getHostname(context.TODO(), cfg.DDAgentBin, cfg.grpcConnectionTimeout); err == nil {
-	//		cfg.HostName = hostname
-	//	} else {
-	//		log.Errorf("Cannot get hostname: %v", err)
-	//	}
-	//}
+	if err := validate.ValidHostname(cfg.HostName); err != nil {
+		// lookup hostname if there is no config override or if the override is invalid
+		log.Errorf("Cannot get hostname: %v", err)
+	}
 
-	//cfg.ContainerHostType = getContainerHostType()
+	cfg.ContainerHostType = getContainerHostType()
 
-	//if cfg.proxy != nil {
-	//	cfg.Transport.Proxy = cfg.proxy
-	//}
+	if cfg.proxy != nil {
+		cfg.Transport.Proxy = cfg.proxy
+	}
 
-	//// sanity check. This element is used with the modulo operator (%), so it can't be zero.
-	//// if it is, log the error, and assume the config was attempting to disable
-	//if cfg.Windows.ArgsRefreshInterval == 0 {
-	//	log.Warnf("invalid configuration: windows_collect_skip_new_args was set to 0.  Disabling argument collection")
-	//	cfg.Windows.ArgsRefreshInterval = -1
-	//}
+	// sanity check. This element is used with the modulo operator (%), so it can't be zero.
+	// if it is, log the error, and assume the config was attempting to disable
+	if cfg.Windows.ArgsRefreshInterval == 0 {
+		log.Warnf("invalid configuration: windows_collect_skip_new_args was set to 0.  Disabling argument collection")
+		cfg.Windows.ArgsRefreshInterval = -1
+	}
 
-	//// activate the pod collection if enabled and we have the cluster name set
-	//if cfg.Orchestrator.OrchestrationCollectionEnabled {
-	//	if cfg.Orchestrator.KubeClusterName != "" {
-	//		cfg.EnabledChecks = append(cfg.EnabledChecks, PodCheckName)
-	//	} else {
-	//		log.Warnf("Failed to auto-detect a Kubernetes cluster name. Pod collection will not start. To fix this, set it manually via the cluster_name config option")
-	//	}
-	//}
+	// activate the pod collection if enabled and we have the cluster name set
+	if cfg.Orchestrator.OrchestrationCollectionEnabled {
+		if cfg.Orchestrator.KubeClusterName != "" {
+			cfg.EnabledChecks = append(cfg.EnabledChecks, PodCheckName)
+		} else {
+			log.Warnf("Failed to auto-detect a Kubernetes cluster name. Pod collection will not start. To fix this, set it manually via the cluster_name config option")
+		}
+	}
 
-	//return cfg, nil
+	return cfg, nil
 }
 
 // getContainerHostType uses the fargate library to detect container environment and returns the protobuf version of it

@@ -120,6 +120,10 @@ func (p *agentServer) start(ctx context.Context) error {
 		return err
 	}
 
+	if err := p.startProcess(); err != nil {
+		return err
+	}
+
 	if err := p.startDetectCloudProvider(); err != nil {
 		return nil
 	}

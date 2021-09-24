@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build linux
 // +build linux
 
 package cgroup
@@ -46,7 +47,7 @@ func readLines(filename string) ([]string, error) {
 // hostProc returns the location of a host's procfs. This can and will be
 // overridden when running inside a container.
 func hostProc(combineWith ...string) string {
-	parts := append([]string{config.Datadog.GetString("container_proc_root")}, combineWith...)
+	parts := append([]string{config.C.ProcRoot}, combineWith...)
 	return filepath.Join(parts...)
 }
 

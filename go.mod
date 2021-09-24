@@ -7,6 +7,7 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/util/log => ./staging/datadog-agent/pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
 	github.com/DataDog/mmh3 => github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a
+	github.com/n9e/n9e-agentd => ../n9e-agentd
 	github.com/yubo/apiserver => ../apiserver
 	github.com/yubo/golib => ../golib
 )
@@ -17,6 +18,7 @@ replace (
 
 // Internal deps fix version
 replace (
+	code.cloudfoundry.org/consuladapter => code.cloudfoundry.org/consuladapter v0.0.0-20200131002136-ac1daf48ba97
 	github.com/cihub/seelog => github.com/cihub/seelog v0.0.0-20151216151435-d2c6e5aa9fbf // v2.6
 	github.com/coreos/go-systemd => github.com/coreos/go-systemd v0.0.0-20180202092358-40e2722dffea
 	github.com/docker/distribution => github.com/docker/distribution v2.7.1-0.20190104202606-0ac367fd6bee+incompatible
@@ -36,6 +38,7 @@ replace (
 )
 
 require (
+	code.cloudfoundry.org/executor v0.1441.2 // indirect
 	github.com/DataDog/datadog-agent v0.0.0-20210730134932-2365d4a4f838
 	github.com/DataDog/datadog-agent/pkg/util/log v0.30.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.30.0-rc.7
@@ -44,7 +47,6 @@ require (
 	github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
-	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/fatih/color v1.12.0
@@ -56,6 +58,7 @@ require (
 	github.com/gosnmp/gosnmp v1.32.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
+	github.com/ianlancetaylor/cgosymbolizer v0.0.0-20210303021718-7cb7081f6b86 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 	github.com/n9e/agent-payload v0.0.0-20210803052830-38cc6d91cc21
 	github.com/olekukonko/tablewriter v0.0.5
@@ -71,12 +74,12 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	github.com/yubo/apiserver v0.0.0-20210827105854-e08676c3df33
-	github.com/yubo/golib v0.0.0-20210818091248-62b6daa0f29d
-	go.etcd.io/etcd v3.3.25+incompatible // indirect
+	github.com/tklauser/go-sysconf v0.3.9 // indirect
+	github.com/yubo/apiserver v0.0.0-20210918082128-653f7fb53aa9
+	github.com/yubo/golib v0.0.0-20210922085935-91c4ef1612a4
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
-	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
+	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 	golang.org/x/text v0.3.6
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0

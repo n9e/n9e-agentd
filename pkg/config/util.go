@@ -205,6 +205,56 @@ func GetMainEndpoint() (host string) {
 	return
 }
 
+// GetMultipleEndpoints returns the api keys per domain specified in the main agent config
+func GetMultipleEndpoints() (map[string][]string, error) {
+	return getMultipleEndpointsWithConfig(C)
+}
+
+// getMultipleEndpointsWithConfig implements the logic to extract the api keys per domain from an agent config
+func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error) {
+	endpoints := strings.Join(config.Endpoints, ",")
+
+	keysPerDomain := map[string][]string{
+		endpoints: {config.ApiKey},
+	}
+
+	additionalEndpoints := config.Forwarder.AdditionalEndpoints
+	// merge additional endpoints into keysPerDomain
+	for _, addition := range additionalEndpoints {
+		endpoints := strings.Join(addition.Endpoints, ",")
+
+		if _, ok := keysPerDomain[endpoints]; ok {
+			for _, apiKey := range addition.ApiKeys {
+				keysPerDomain[endpoints] = append(keysPerDomain[endpoints], apiKey)
+			}
+		} else {
+			keysPerDomain[endpoints] = addition.ApiKeys
+		}
+	}
+
+	// dedupe api keys and remove domains with no api keys (or empty ones)
+	// for endpoints, apiKeys := range keysPerDomain {
+	// 	dedupedAPIKeys := make([]string, 0, len(apiKeys))
+	// 	seen := make(map[string]bool)
+	// 	for _, apiKey := range apiKeys {
+	// 		trimmedAPIKey := strings.TrimSpace(apiKey)
+	// 		if _, ok := seen[trimmedAPIKey]; !ok && trimmedAPIKey != "" {
+	// 			seen[trimmedAPIKey] = true
+	// 			dedupedAPIKeys = append(dedupedAPIKeys, trimmedAPIKey)
+	// 		}
+	// 	}
+
+	// 	if len(dedupedAPIKeys) > 0 {
+	// 		keysPerDomain[endpoints] = dedupedAPIKeys
+	// 	} else {
+	// 		klog.Infof("No API key provided for domain \"%s\", removing domain from endpoints", endpoints)
+	// 		delete(keysPerDomain, endpoints)
+	// 	}
+	// }
+
+	return keysPerDomain, nil
+}
+
 // GetValidHostAliases validates host aliases set in `host_aliases` variable and returns
 // only valid ones.
 func GetValidHostAliases() []string {

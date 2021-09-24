@@ -60,8 +60,8 @@ var (
 	// set to a non-empty string, we log the build information at process startup.
 	LogBuildInfoAtStartup string
 
-	// goVersion is the current runtime version.
-	goVersion = runtime.Version()
+	// GoVersion is the current runtime version.
+	GoVersion = runtime.Version()
 
 	goOs   = runtime.GOOS
 	goArch = runtime.GOARCH
@@ -77,7 +77,7 @@ var (
 
 // LogBuildInfo logs the build information to the provided logger.
 func LogBuildInfo() {
-	klog.Infof("Go Runtime version: %s\n", goVersion)
+	klog.Infof("Go Runtime version: %s\n", GoVersion)
 	klog.Infof("OS:                 %s\n", goOs)
 	klog.Infof("Arch:               %s\n", goArch)
 	klog.Infof("Build Version:      %s\n", Version)
@@ -128,8 +128,8 @@ func (b *buildReporter) Start() error {
 }
 
 func (b *buildReporter) _report() {
-	b.buildInfoGauge.Set(1.0, Revision, Branch, BuildDate, Version, goVersion)
-	b.buildAgeGauge.Set(float64(time.Since(b.buildTime)), Revision, Branch, BuildDate, Version, goVersion)
+	b.buildInfoGauge.Set(1.0, Revision, Branch, BuildDate, Version, GoVersion)
+	b.buildAgeGauge.Set(float64(time.Since(b.buildTime)), Revision, Branch, BuildDate, Version, GoVersion)
 }
 
 func (b *buildReporter) report() {
@@ -194,7 +194,7 @@ func NewVersionCmd() *cobra.Command {
 }
 
 func VersionCmd(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Go Runtime version: %s\n", goVersion)
+	fmt.Printf("Go Runtime version: %s\n", GoVersion)
 	fmt.Printf("OS:                 %s\n", goOs)
 	fmt.Printf("Arch:               %s\n", goArch)
 	fmt.Printf("Build Version:      %s\n", Version)

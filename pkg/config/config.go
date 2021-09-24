@@ -21,6 +21,7 @@ import (
 	statsd "github.com/n9e/n9e-agentd/pkg/config/statsd"
 	systemprobe "github.com/n9e/n9e-agentd/pkg/system-probe/config"
 	"github.com/n9e/n9e-agentd/pkg/util"
+	"github.com/yubo/golib/api/resource"
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
@@ -105,11 +106,15 @@ type Config struct {
 	//N9eSeriesFormat   bool     `json:"n9e_series_format" default:"true"`                                                                                               // the payload format for forwarder
 	Endpoints []string `json:"endpoints" flag:"endpoints" default:"http://localhost:8000" env:"N9E_ENDPOINTS" description:"endpoints addresses of n9e server"` // site, dd_url
 
-	MetadataProviders       []MetadataProviders                 `json:"metadata_providers"`            // metadata_providers
-	Forwarder               forwarder.Config                    `json:"forwarder"`                     // fowarder_*
-	PrometheusScrape        PrometheusScrape                    `json:"prometheus_scrape"`             // prometheus_scrape
-	Autoconfig              Autoconfig                          `json:"autoconfig"`                    //
-	Container               Container                           `json:"container"`                     //
+	MetadataProviders []MetadataProviders `json:"metadata_providers"` // metadata_providers
+	Forwarder         forwarder.Config    `json:"forwarder"`          // fowarder_*
+	PrometheusScrape  PrometheusScrape    `json:"prometheus_scrape"`  // prometheus_scrape
+	Autoconfig        Autoconfig          `json:"autoconfig"`         //
+
+	Container             Container `json:"container"`                             //
+	ContainerdNamespace   string    `json:"containerd_namespace" default:"k8s.io"` // containerd_namespace
+	ExcludePauseContainer bool      `json:"exclude_pause_container"`               // exclude_pause_container
+
 	SnmpTraps               snmp.TrapsConfig                    `json:"snmp_traps"`                    // snmp_traps_config
 	SnmpListener            snmp.ListenerConfig                 `json:"snmp_listener"`                 // snmp_listener
 	ClusterAgent            ClusterAgent                        `json:"cluster_agent"`                 // cluster_agent
@@ -194,10 +199,6 @@ type Config struct {
 	CollectKubernetesEvents      bool         `json:"collect_kubernetes_events"`                                                                                             // collect_kubernetes_events
 	ComplianceConfigDir          string       `json:"compliance_config_dir" description:"default {root}/compliance.d"`                                                       // compliance_config.dir
 	ComplianceConfigEnabled      bool         `json:"compliance_config_enabled"`                                                                                             // compliance_config.enabled
-	ContainerCgroupPrefix        string       `json:"container_cgroup_prefix"`                                                                                               // container_cgroup_prefix
-	ContainerCgroupRoot          string       `json:"container_cgroup_root"`                                                                                                 // container_cgroup_root
-	ContainerProcRoot            string       `json:"container_proc_root"`                                                                                                   // container_proc_root
-	ContainerdNamespace          string       `json:"containerd_namespace" default:"k8s.io"`                                                                                 // containerd_namespace
 	CriConnectionTimeout         api.Duration `json:"cri_connection_timeout" flag:"cri-connection-timeout" default:"1s" description:"cri connection timeout"`                // cri_connection_timeout
 	CriQueryTimeout              api.Duration `json:"cri_query_timeout" flag:"cri-query-timeout" default:"5s" description:"cri query timeout"`                               // cri_query_timeout
 	DatadogCluster               bool         `json:"datadog_cluster"`                                                                                                       // datadog-cluster
@@ -216,7 +217,6 @@ type Config struct {
 
 	ExcludeGCETags []string `json:"exclude_gce_tags" default:"kube-env,kubelet-config,containerd-configure-sh,startup-script,shutdown-script,configure-sh,sshKeys,ssh-keys,user-data,cli-cert,ipsec-cert,ssl-cert,google-container-manifest,boshSettings,windows-startup-script-ps1,common-psm1,k8s-node-setup-psm1,serial-port-logging-enable,enable-oslogin,disable-address-manager,disable-legacy-endpoints,windows-keys,kubeconfig"` // exclude_gce_tags
 
-	ExcludePauseContainer             bool              `json:"exclude_pause_container"`                                                                                                                              // exclude_pause_container
 	ExternalMetricsAggregator         string            `json:"external_metrics_aggregator" default:"avg"`                                                                                                            // external_metrics.aggregator
 	ExtraListeners                    []string          `json:"extra_listeners"`                                                                                                                                      // extra_listeners
 	FullSketches                      bool              `json:"full_sketches"`                                                                                                                                        // full-sketches
@@ -246,7 +246,7 @@ type Config struct {
 	KubernetesKubeletHost             string            `json:"kubernetes_kubelet_host"`                                                                                                                              // kubernetes_kubelet_host
 	KubernetesKubeletNodename         string            `json:"kubernetes_kubelet_nodename"`                                                                                                                          // kubernetes_kubelet_nodename
 	KubernetesMapServicesOnIp         bool              `json:"kubernetes_map_services_on_ip"`                                                                                                                        // kubernetes_map_services_on_ip
-	KubernetesMetadataTagUpdateFreq_  int               `json:"kubernetes_metadata_tag_update_freq" flag:"kubernetes-metadata-tag-update-freq" default:"60" description:"kubernetesMetadataTagUpdateFreq(Second)"`    // kubernetes_metadata_tag_update_freq
+	KubernetesMetadataTagUpdateFreq   api.Duration      `json:"kubernetes_metadata_tag_update_freq" flag:"kubernetes-metadata-tag-update-freq" default:"60" description:"kubernetesMetadataTagUpdateFreq"`            // kubernetes_metadata_tag_update_freq
 	KubernetesNamespaceLabelsAsTags   bool              `json:"kubernetes_namespace_labels_as_tags"`                                                                                                                  // kubernetes_namespace_labels_as_tags
 	KubernetesNodeLabelsAsTags        bool              `json:"kubernetes_node_labels_as_tags"`                                                                                                                       // kubernetes_node_labels_as_tags
 	KubernetesPodAnnotationsAsTags    map[string]string `json:"kubernetes_pod_annotations_as_tags"`                                                                                                                   // kubernetes_pod_annotations_as_tags
@@ -338,6 +338,12 @@ func (p *Config) Get(path string) interface{} {
 	p.m.RLock()
 	defer p.m.RUnlock()
 	return p.configer.GetRaw("agent." + path)
+}
+
+func (p *Config) GetString(path string) string {
+	p.m.RLock()
+	defer p.m.RUnlock()
+	return p.configer.GetString("agent." + path)
 }
 
 func (p *Config) Set(k string, v interface{}) error {
@@ -483,7 +489,7 @@ func (p *Config) ValidatePath() (err error) {
 	klog.V(1).InfoS("agent", "check_flare_dir", p.CheckFlareDir)
 
 	p.RuntimeSecurity.PoliciesDir = root.Abs(p.RuntimeSecurity.PoliciesDir, "etc", "runtime-security.d")
-	p.SystemProbe.SocketAddress = root.Abs(p.SystemProbe.SocketAddress, "run", "sysprobe.sock")
+	p.SystemProbe.SysprobeSocket = root.Abs(p.SystemProbe.SysprobeSocket, "run", "sysprobe.sock")
 	p.SystemProbe.LogFile = root.Abs(p.SystemProbe.LogFile, "logs", "system-probe.log")
 	p.ComplianceConfigDir = root.Abs(p.ComplianceConfigDir, "compliance.d")
 	p.AutoconfTemplateDir = root.Abs(p.AutoconfTemplateDir, "check_configs")
@@ -507,14 +513,20 @@ type UseV2Api struct {
 }
 
 type Container struct {
-	DockerHost            string   `json:"-"`
-	EksFargate            bool     `json:"eks_fargate"`
-	CriSocketPath         string   `json:"cri_socket_path"`
-	IncludeMetrics        []string `json:"include_metrics"`         // container_include, container_include_metrics, ac_include
-	ExcludeMetrics        []string `json:"exclude_metrics"`         // container_exclude, container_exclude_metrics, ac_exclude
-	IncludeLogs           []string `json:"include_logs"`            // container_include_logs
-	ExcludeLogs           []string `json:"exclude_logs"`            // container_exclude_logs
-	ExcludePauseContainer bool     `json:"exclude_parse_container"` // exclude_pause_container
+	DockerHost     string   `json:"-"`
+	EksFargate     bool     `json:"eks_fargate"`
+	CriSocketPath  string   `json:"cri_socket_path"`
+	IncludeMetrics []string `json:"include_metrics"` // container_include, container_include_metrics, ac_include
+	ExcludeMetrics []string `json:"exclude_metrics"` // container_exclude, container_exclude_metrics, ac_exclude
+	IncludeLogs    []string `json:"include_logs"`    // container_include_logs
+	ExcludeLogs    []string `json:"exclude_logs"`    // container_exclude_logs
+	CgroupRoot     string   `json:"cgroup_root"`     // container_cgroup_root
+	CgroupPrefix   string   `json:"cgroup_prefix"`   // container_cgroup_prefix
+	ProcRoot       string   `json:"proc_root"`       // container_proc_root
+
+	//ContainerProcRoot     string `json:"container_proc_root"`     // container_proc_root
+	//ContainerCgroupPrefix string `json:"container_cgroup_prefix"` // container_cgroup_prefix
+	//ContainerCgroupRoot   string `json:"container_cgroup_root"`   // container_cgroup_root
 }
 
 func (p *Container) Validate() error {
@@ -522,9 +534,48 @@ func (p *Container) Validate() error {
 }
 
 type ProcessConfig struct {
-	Enabled                         bool                `json:"enabled"`                           // process_config.enabled
+	Enabled      bool `json:"enabled" flag:"process-enable" env:"N9E_PROCESS_AGENT_ENABLED" description:"true: collect containers and processes, false: only collect containers, disabled: disabled altogether and won't start"` // process_config.enabled
+	ProcessCheck bool `json:"process_check" description:"check process & rtprocess"`
+
 	OrchestratorAdditionalEndpoints map[string][]string `json:"orchestrator_additional_endpoints"` // process_config.orchestrator_additional_endpoints
 	Url                             string              `json:"url"`                               // process_config.orchestrator_dd_url
+	LogFile                         string              `json:"log_file"`                          // process_config.log_file
+
+	BlacklistPatterns    []string `json:"blacklist_patterns"`
+	ExpvarPort           int      `json:"expvar_port" default:"6062"` // process_config.expvar_port
+	ScrubArgs            bool     `json:"scrub_args" default:"true"`
+	CustomSensitiveWords []string `json:"custom_sensitive_words"` // custom_sensitive_words
+
+	StripProcArguments bool `json:"strip_proc_arguments"`
+
+	QueueSize                 int               `json:"queue_size" default:"256"`
+	QueueBytes                resource.Quantity `json:"queue_bytes" default:"60M"` // process_queue_bytes
+	MaxPerMessage             int               `json:"max_per_message" default:"100"`
+	MaxCtrProcessesPerMessage int               `json:"max_ctr_procs_per_message" default:"10000"`
+	GrpcConnectionTimeout     api.Duration      `json:"grpc_connection_timeout" default:"60s"`
+
+	Intervals ProcessIntervals `json:"intervals"`
+
+	Windows ProcessWindows `json:"windows"`
+
+	AdditionalEndpoints map[string][]string `json:"additional_endpoints"`
+
+	InternalProfiling internalprofiling.InternalProfiling `json:"internal_profiling"` // internal_profiling
+
+	ContainerSource []string `json:"container_source"`
+}
+
+type ProcessWindows struct {
+	ArgsRefreshInterval int  `json:"args_refresh_interval" default:"15" description:"Sets windows process table refresh rate (in number of check runs)"`
+	AddNewArgs          bool `json:"add_new_args" default:"true" description:"Controls getting process arguments immediately when a new process is discovered"`
+}
+
+type ProcessIntervals struct {
+	Container   api.Duration `json:"container"`
+	RTContainer api.Duration `json:"rtcontainer"`
+	Process     api.Duration `json:"process"`
+	RTProcess   api.Duration `json:"rtprocess"`
+	Connections api.Duration `json:"connections"`
 }
 
 type Experimental struct {
@@ -868,56 +919,6 @@ type Warnings struct {
 	TraceMallocEnabledWithPy2 bool
 }
 
-// GetMultipleEndpoints returns the api keys per domain specified in the main agent config
-func GetMultipleEndpoints() (map[string][]string, error) {
-	return getMultipleEndpointsWithConfig(C)
-}
-
-// getMultipleEndpointsWithConfig implements the logic to extract the api keys per domain from an agent config
-func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error) {
-	endpoints := strings.Join(config.Endpoints, ",")
-
-	keysPerDomain := map[string][]string{
-		endpoints: {config.ApiKey},
-	}
-
-	additionalEndpoints := config.Forwarder.AdditionalEndpoints
-	// merge additional endpoints into keysPerDomain
-	for _, addition := range additionalEndpoints {
-		endpoints := strings.Join(addition.Endpoints, ",")
-
-		if _, ok := keysPerDomain[endpoints]; ok {
-			for _, apiKey := range addition.ApiKeys {
-				keysPerDomain[endpoints] = append(keysPerDomain[endpoints], apiKey)
-			}
-		} else {
-			keysPerDomain[endpoints] = addition.ApiKeys
-		}
-	}
-
-	// dedupe api keys and remove domains with no api keys (or empty ones)
-	// for endpoints, apiKeys := range keysPerDomain {
-	// 	dedupedAPIKeys := make([]string, 0, len(apiKeys))
-	// 	seen := make(map[string]bool)
-	// 	for _, apiKey := range apiKeys {
-	// 		trimmedAPIKey := strings.TrimSpace(apiKey)
-	// 		if _, ok := seen[trimmedAPIKey]; !ok && trimmedAPIKey != "" {
-	// 			seen[trimmedAPIKey] = true
-	// 			dedupedAPIKeys = append(dedupedAPIKeys, trimmedAPIKey)
-	// 		}
-	// 	}
-
-	// 	if len(dedupedAPIKeys) > 0 {
-	// 		keysPerDomain[endpoints] = dedupedAPIKeys
-	// 	} else {
-	// 		klog.Infof("No API key provided for domain \"%s\", removing domain from endpoints", endpoints)
-	// 		delete(keysPerDomain, endpoints)
-	// 	}
-	// }
-
-	return keysPerDomain, nil
-}
-
 func NewConfig(configer *configer.Configer) (*Config, error) {
 	cf := &Config{
 		m:          new(sync.RWMutex),
@@ -933,7 +934,7 @@ func NewConfig(configer *configer.Configer) (*Config, error) {
 		// Fallback to the container paths if host paths aren't mounted.
 		if pathExists("/host/proc") {
 			cf.ProcfsPath = "/host/proc"
-			cf.ContainerProcRoot = "/host/proc"
+			cf.Container.ProcRoot = "/host/proc"
 
 			// Used by some librairies (like gopsutil)
 			if v := os.Getenv("HOST_PROC"); v == "" {
@@ -941,23 +942,22 @@ func NewConfig(configer *configer.Configer) (*Config, error) {
 			}
 		} else {
 			cf.ProcfsPath = "/proc"
-			cf.ContainerProcRoot = "/proc"
+			cf.Container.ProcRoot = "/proc"
 		}
 		if pathExists("/host/sys/fs/cgroup/") {
-			cf.ContainerCgroupRoot = "/host/sys/fs/cgroup/"
+			cf.Container.CgroupRoot = "/host/sys/fs/cgroup/"
 		} else {
-			cf.ContainerCgroupRoot = "/sys/fs/cgroup/"
+			cf.Container.CgroupRoot = "/sys/fs/cgroup/"
 		}
 	} else {
-		cf.ContainerProcRoot = "/proc"
+		cf.Container.ProcRoot = "/proc"
 		// for amazon linux the cgroup directory on host is /cgroup/
 		// we pick memory.stat to make sure it exists and not empty
 		if _, err := os.Stat("/cgroup/memory/memory.stat"); !os.IsNotExist(err) {
-			cf.ContainerCgroupRoot = "/cgroup/"
+			cf.Container.CgroupRoot = "/cgroup/"
 		} else {
-			cf.ContainerCgroupRoot = "/sys/fs/cgroup/"
+			cf.Container.CgroupRoot = "/sys/fs/cgroup/"
 		}
-
 	}
 
 	cf.Statsd.MetricNamespaceBlacklist = StandardStatsdPrefixes
