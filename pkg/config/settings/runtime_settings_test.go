@@ -6,10 +6,10 @@
 package settings
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/yubo/golib/configer"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -40,9 +40,9 @@ func (t *runtimeTestSetting) Hidden() bool {
 }
 
 func setupConf() config.Config {
-	conf := config.NewConfig("datadog", "DD", strings.NewReplacer(".", "_"))
-	config.InitConfig(conf)
-	return conf
+	configer, _ := configer.NewConfiger().Parse()
+	conf, _ := config.NewConfig(configer)
+	return *conf
 }
 
 func cleanRuntimeSetting() {
@@ -53,7 +53,7 @@ func TestRuntimeSettings(t *testing.T) {
 	cleanRuntimeSetting()
 	runtimeSetting := runtimeTestSetting{1}
 
-	err := RegisterRuntimeSetting(&runtimeSetting)
+	err := RegisterRuntimeSetting(&runtimeSetting, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(RuntimeSettings()))
 
@@ -68,7 +68,7 @@ func TestRuntimeSettings(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 123, v)
 
-	err = RegisterRuntimeSetting(&runtimeSetting)
+	err = RegisterRuntimeSetting(&runtimeSetting, nil)
 	assert.NotNil(t, err)
 	assert.Equal(t, "duplicated settings detected", err.Error())
 }
@@ -77,7 +77,7 @@ func TestLogLevel(t *testing.T) {
 	cleanRuntimeSetting()
 	config.SetupLogger("TEST", "debug", "", "", true, true, true)
 
-	ll := LogLevelRuntimeSetting{}
+	ll := LogLevelRuntimeSetting("")
 	assert.Equal(t, "log_level", ll.Name())
 
 	err := ll.Set("off")

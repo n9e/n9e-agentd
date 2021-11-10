@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/DataDog/datadog-agent/pkg/process/net"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
+	gorilla "github.com/gorilla/mux"
 	"github.com/n9e/n9e-agentd/pkg/system-probe/api/module"
 	"github.com/n9e/n9e-agentd/pkg/system-probe/config"
 	"github.com/n9e/n9e-agentd/pkg/system-probe/modules"
 	"github.com/n9e/n9e-agentd/pkg/system-probe/utils"
-	"github.com/DataDog/datadog-agent/pkg/process/net"
-	"github.com/DataDog/datadog-agent/pkg/util/log"
-	gorilla "github.com/gorilla/mux"
 )
 
 // StartServer starts the HTTP server for the system-probe, which registers endpoints from all enabled modules.
 func StartServer(cfg *config.Config) error {
-	conn, err := net.NewListener(cfg.SocketAddress)
+	conn, err := net.NewListener(cfg.SysprobeSocket)
 	if err != nil {
 		return fmt.Errorf("error creating IPC socket: %s", err)
 	}
@@ -33,7 +33,8 @@ func StartServer(cfg *config.Config) error {
 		utils.WriteAsJSON(w, stats)
 	})
 
-	setupConfigHandlers(mux)
+	// TODO
+	//setupConfigHandlers(mux)
 
 	// Module-restart handler
 	mux.HandleFunc("/module-restart/{module-name}", restartModuleHandler).Methods("POST")

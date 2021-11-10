@@ -21,19 +21,19 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 
-	pb "github.com/n9e/n9e-agentd/pkg/apiserver/pb"
 	"github.com/DataDog/datadog-agent/pkg/tagger"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
 	"github.com/DataDog/datadog-agent/pkg/tagger/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/tagger/types"
 	"github.com/DataDog/datadog-agent/pkg/util/grpc"
+	pb "github.com/n9e/n9e-agentd/pkg/apiserver/pb"
 )
 
 const (
 	taggerStreamSendTimeout = 1 * time.Minute
 )
 
-type server struct {
+type grpcServer struct {
 	pb.UnimplementedAgentServer
 	hostname string
 }
@@ -42,7 +42,7 @@ type serverSecure struct {
 	pb.UnimplementedAgentServer
 }
 
-func (s *server) GetHostname(ctx context.Context, in *pb.HostnameRequest) (*pb.HostnameReply, error) {
+func (s *grpcServer) GetHostname(ctx context.Context, in *pb.HostnameRequest) (*pb.HostnameReply, error) {
 	return &pb.HostnameReply{Hostname: s.hostname}, nil
 }
 
@@ -50,7 +50,7 @@ func (s *server) GetHostname(ctx context.Context, in *pb.HostnameRequest) (*pb.H
 // override of the AuthFunc registered with the unary interceptor.
 //
 // see: https://godoc.org/github.com/grpc-ecosystem/go-grpc-middleware/auth#ServiceAuthFuncOverride
-func (s *server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (s *grpcServer) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	return ctx, nil
 }
 

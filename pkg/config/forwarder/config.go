@@ -27,7 +27,7 @@ type Config struct {
 	Timeout                  api.Duration         `json:"timeout" flag:"forwarder-timeout" default:"20s" description:"timeout"`                                                        // forwarder_timeout
 
 	HighPrioBufferSize        int               `json:"high_prio_buffer_size" default:"100"`                             //forwarder_high_prio_buffer_size
-	LowPrioBufferSize         int               `json:"low_prio_buffer_size" default:100`                                //forwarder_low_prio_buffer_size
+	LowPrioBufferSize         int               `json:"low_prio_buffer_size" default:"100"`                              //forwarder_low_prio_buffer_size
 	RequeueBufferSize         int               `json:"requeue_buffer_size" default:"100"`                               //forwarder_requeue_buffer_size
 	RetryQueueMaxSize         int               `json:"retry_queue_max_size"`                                            // forwarder_retry_queue_max_size
 	RetryQueuePayloadsMaxSize resource.Quantity `json:"retry_queue_payloads_max_size" default:"15Mi" description:"15Mi"` // forwarder_retry_queue_payloads_max_size

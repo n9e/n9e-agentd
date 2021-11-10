@@ -195,13 +195,6 @@ func completionHandler(transaction *transaction.HTTPTransaction, statusCode int,
 }
 
 func (p *agentServer) readConfig() error {
-	if config.TestConfig {
-		configer := proc.ConfigerMustFrom(p.ctx)
-		configer.PrintFlags()
-		fmt.Printf("agentd: configuration test is successful\n")
-		os.Exit(0)
-	}
-
 	p.config = config.C
 	return nil
 }

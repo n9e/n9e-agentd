@@ -49,7 +49,7 @@ func nonHandle(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, profile *flare.ProfileData) (string, error) {
+func makeFlare(w http.ResponseWriter, r *http.Request, _ *rest.NonParam, profile *flare.ProfileData) (string, error) {
 	klog.Infof("Making a flare")
 	return flare.CreateArchive(false, config.C.DistPath, config.C.PyChecksPath, []string{}, *profile)
 }
@@ -196,7 +196,7 @@ func secretInfo(w http.ResponseWriter, r *http.Request) (*secrets.SecretInfo, er
 	return secrets.GetDebugInfo()
 }
 
-func statsdCaptureTrigger(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, input *api.StatsdCaptureTriggerInput) (*string, error) {
+func statsdCaptureTrigger(w http.ResponseWriter, r *http.Request, _ *rest.NonParam, input *api.StatsdCaptureTriggerInput) (*string, error) {
 	err := common.DSD.Capture(time.Second*time.Duration(input.Duration), input.Compressed)
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func statsdCaptureTrigger(w http.ResponseWriter, r *http.Request, _ *rest.NonePa
 	return &path, nil
 }
 
-func statsdSetTaggerStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, req *pb.TaggerState) (*pb.TaggerStateResponse, error) {
+func statsdSetTaggerStatus(w http.ResponseWriter, r *http.Request, _ *rest.NonParam, req *pb.TaggerState) (*pb.TaggerStateResponse, error) {
 	// Reset and return if no state pushed
 	if req == nil || req.State == nil {
 		log.Debugf("API: empty request or state")

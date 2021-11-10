@@ -14,11 +14,11 @@ func newStartCmd(env *agent.EnvSettings) *cobra.Command {
 		Short:        "start agent deamon",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if klog.V(5).Enabled() {
+			if klog.V(10).Enabled() {
 				fs := cmd.Flags()
 				flag.PrintFlags(fs)
 			}
-			return proc.Start()
+			return proc.Start(cmd)
 		},
 	}
 	env.ServerCmd = cmd

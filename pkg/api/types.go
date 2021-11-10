@@ -202,7 +202,13 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	var str string
 	err := json.Unmarshal(b, &str)
 	if err != nil {
-		return err
+		// try int
+		var pd int64
+		if err := json.Unmarshal(b, &pd); err != nil {
+			return err
+		}
+		d.Duration = time.Duration(pd)
+		return nil
 	}
 
 	pd, err := time.ParseDuration(str)
@@ -215,5 +221,33 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (d Duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Duration.String())
+	s := d.Duration.String()
+
+	// configer isZero checker, "0s" is not supported
+	if s == "0s" {
+		return json.Marshal(0)
+	}
+	return json.Marshal(s)
+}
+
+func (d Duration) String() string {
+	return d.Duration.String()
+}
+
+func (d *Duration) Set(val string) error {
+	v, err := time.ParseDuration(val)
+	*d = Duration{v}
+	return err
+}
+
+func (d *Duration) Type() string {
+	return "duration"
+}
+
+// IsZero returns true if the value is nil or time is zero.
+func (d *Duration) IsZero() bool {
+	if d == nil {
+		return true
+	}
+	return d.Duration == 0
 }

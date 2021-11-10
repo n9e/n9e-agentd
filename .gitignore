@@ -6,3 +6,4 @@ etc/mocker.d/
 .cache/
 
 *.log
+*.tar.gz

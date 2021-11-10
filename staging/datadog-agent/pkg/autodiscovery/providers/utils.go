@@ -17,6 +17,7 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/api"
 	"github.com/n9e/n9e-agentd/pkg/config"
 	"gopkg.in/yaml.v2"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -207,6 +208,7 @@ func extractLogsTemplatesFromMap(key string, input map[string]string, prefix str
 
 // GetPollInterval computes the poll interval from the config
 func GetPollInterval(cp config.ConfigurationProviders) time.Duration {
+	klog.Infof("--->> cp %s, %s", config.C.AdConfigPollInterval.Duration, cp.PollInterval)
 	if cp.PollInterval != "" {
 		customInterval, err := time.ParseDuration(cp.PollInterval)
 		if err == nil {

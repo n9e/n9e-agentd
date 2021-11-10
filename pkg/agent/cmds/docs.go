@@ -47,7 +47,7 @@ func newDocsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlags(cmd.Flags(), dc)
+	configer.RegisterConfigFields(cmd.Flags(), "docs", dc)
 
 	return cmd
 }

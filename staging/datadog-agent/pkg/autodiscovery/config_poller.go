@@ -8,6 +8,7 @@ package autodiscovery
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/autodiscovery/integration"
@@ -58,6 +59,7 @@ func (pd *configPoller) stop() {
 
 // start starts polling the provider descriptor
 func (pd *configPoller) start(ac *AutoConfig) {
+	debug.PrintStack()
 	if !pd.canPoll {
 		return
 	}

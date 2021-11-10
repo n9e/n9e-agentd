@@ -53,7 +53,7 @@ func (p *mocker) installN9eWs(http rest.GoRestfulContainer) {
 
 }
 
-func (p *mocker) n9eSeries(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *gogen.N9EMetricsPayload) (string, error) {
+func (p *mocker) n9eSeries(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *gogen.N9EMetricsPayload) (string, error) {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "n9e.series")
 	defer sp.Finish()
 	sp.LogFields(log.Object("series", data))
@@ -67,7 +67,7 @@ func (p *mocker) getCollectRules(w http.ResponseWriter, req *http.Request) ([]ap
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "n9e.get_collect_rules")
 	defer sp.Finish()
 
-	klog.Infof("%+v", p.rules)
+	klog.Infof("%s", p.rules.String())
 
 	return p.rules.GetRules(), nil
 }
@@ -76,7 +76,7 @@ func (p *mocker) getCollectRulesSummary(w http.ResponseWriter, req *http.Request
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "n9e.get_collect_rules_summary")
 	defer sp.Finish()
 
-	klog.Infof("%+v", p.rules)
+	klog.Infof("%s", p.rules.String())
 
 	return p.rules.GetSummary(), nil
 }

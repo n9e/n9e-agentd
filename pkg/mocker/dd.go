@@ -123,7 +123,7 @@ func (p *mocker) installDatadogWs(http rest.GoRestfulContainer) {
 
 }
 
-func (p *mocker) series(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *gogen.MetricsPayload) (string, error) {
+func (p *mocker) series(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *gogen.MetricsPayload) (string, error) {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.series")
 	defer sp.Finish()
 	sp.LogFields(log.Object("series", data))
@@ -132,7 +132,7 @@ func (p *mocker) series(w http.ResponseWriter, req *http.Request, _ *rest.NonePa
 	return "", nil
 }
 
-func (p *mocker) serviceChecks(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.ServiceChecks) error {
+func (p *mocker) serviceChecks(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *metrics.ServiceChecks) error {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.service_checks")
 	defer sp.Finish()
 	sp.LogFields(log.Object("service_checks", data))
@@ -158,7 +158,7 @@ type IntakePayload struct {
 // SendProcessesMetadata
 //   map[string]interface{} ./pkg/metadata/resources.go
 //   *v5.Payload github.com/DataDog/datadog-agent/pkg/metadata/v5.Payload  pkg/metadata/host.go
-func (p *mocker) intake(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *IntakePayload) error {
+func (p *mocker) intake(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *IntakePayload) error {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.intake")
 	defer sp.Finish()
 	sp.LogFields(log.Object("intake", data))
@@ -168,7 +168,7 @@ func (p *mocker) intake(w http.ResponseWriter, req *http.Request, _ *rest.NonePa
 	return nil
 }
 
-func (p *mocker) events(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.Events) (string, error) {
+func (p *mocker) events(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *metrics.Events) (string, error) {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.events")
 	defer sp.Finish()
 	sp.LogFields(log.Object("events", data))
@@ -177,7 +177,7 @@ func (p *mocker) events(w http.ResponseWriter, req *http.Request, _ *rest.NonePa
 	return "", nil
 }
 
-func (p *mocker) sketches(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *metrics.SketchSeriesList) error {
+func (p *mocker) sketches(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *metrics.SketchSeriesList) error {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.sketches")
 	defer sp.Finish()
 	sp.LogFields(log.Object("sketches", data))
@@ -259,7 +259,7 @@ func (p *mocker) orchestrator(w http.ResponseWriter, req *http.Request, in *coll
 	return p.collector(w, req.WithContext(ctx), in)
 }
 
-func (p *mocker) logsInput(w http.ResponseWriter, req *http.Request, _ *rest.NoneParam, data *api.LogsPayload) error {
+func (p *mocker) logsInput(w http.ResponseWriter, req *http.Request, _ *rest.NonParam, data *api.LogsPayload) error {
 	sp, _ := opentracing.StartSpanFromContext(req.Context(), "dd.collector")
 	defer sp.Finish()
 

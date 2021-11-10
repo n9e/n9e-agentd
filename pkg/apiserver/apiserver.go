@@ -5,19 +5,12 @@ import (
 	"fmt"
 
 	"github.com/n9e/n9e-agentd/pkg/options"
-	"github.com/yubo/apiserver/pkg/apiserver"
-	"github.com/yubo/apiserver/pkg/authorization" // authz
 	apioptions "github.com/yubo/apiserver/pkg/options"
 	"github.com/yubo/apiserver/pkg/rest"
+	"github.com/yubo/apiserver/pkg/server"
+	"github.com/yubo/apiserver/plugin/authorizer/abac/api"
+	"github.com/yubo/apiserver/plugin/authorizer/abac/register"
 	"github.com/yubo/golib/proc"
-
-	_ "github.com/n9e/n9e-agentd/pkg/authentication"
-	_ "github.com/yubo/apiserver/pkg/authentication/register" // authn
-	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
-
-	// authz.login
-	"github.com/yubo/apiserver/pkg/authorization/abac/api"
-	"github.com/yubo/apiserver/pkg/authorization/abac/register" // authz.login
 )
 
 const (
@@ -25,8 +18,8 @@ const (
 )
 
 type module struct {
-	name string
-	http apioptions.ApiServer
+	name   string
+	server server.APIServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -50,9 +43,9 @@ var (
 )
 
 func (p *module) start(ctx context.Context) error {
-	server, ok := apioptions.ApiServerFrom(ctx)
+	server, ok := apioptions.APIServerFrom(ctx)
 	if !ok {
-		return fmt.Errorf("unable to get http server from the context")
+		return fmt.Errorf("unable to get server server from the context")
 	}
 
 	p.installWs(server)
@@ -74,17 +67,13 @@ func (p *module) stop(ctx context.Context) error {
 func init() {
 	proc.RegisterHooks(hookOps)
 
-	// httpserver
-	apiserver.RegisterHooks()
+	// register server module
+	//servermodule.RegisterHooks()
+	//proc.RegisterFlags("apiserver", "apiserver", &Config{})
 
-	// authz
-	authorization.RegisterHooks()
-
-	// override apiserver config's flags & envs
-	proc.RegisterFlags("apiserver", "apiserver", &Config{})
-
-	// override authorization config's flags & envs
-	proc.RegisterFlags("authorization", "authorization", &authzConfig{})
+	// register authz
+	//authzmodule.RegisterHooks()
+	//proc.RegisterFlags("authorization", "authorization", &authzConfig{})
 
 	register.PolicyList = []*api.Policy{
 		{Spec: api.PolicySpec{

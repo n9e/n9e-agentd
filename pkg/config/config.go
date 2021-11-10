@@ -33,7 +33,7 @@ var (
 
 	// Deprecated
 	//Configfile string
-	TestConfig bool
+	//TestConfig bool
 
 	C *Config
 
@@ -47,15 +47,11 @@ var (
 
 func AddFlags() {
 	proc.RegisterFlags("agent", "agent generic", &Config{})
-
-	fs := proc.NamedFlagSets().FlagSet("global")
-	//fs.StringVarP(&Configfile, "config", "c", "", "Config file path of n9e agentd server.(Deprecated, use -f instead of it)")
-	fs.BoolVarP(&TestConfig, "test-config", "t", false, "test configuratioin and exit")
 }
 
 type Config struct {
 	m        *sync.RWMutex
-	configer *configer.Configer
+	configer configer.ParsedConfiger
 
 	IsCliRunner bool `json:"is_cli_runner"`
 
@@ -88,6 +84,7 @@ type Config struct {
 	RunPath                  string `json:"run_path"`                                             // run_path
 	JmxPath                  string `json:"jmx_path" description:"default {root}/dist/jmx"`       // jmx_path
 	ConfdPath                string `json:"confd_path" description:"default {root}/conf.d"`       // confd_path
+	EtcPath                  string `json:"etc_path" description:"default {root}/etc"`            // etc_path
 	CriSocketPath            string `json:"cri_socket_path"`                                      // cri_socket_path
 	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                              // kubelet_auth_token_path
 	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`                           // kubernetes_kubeconfig_path
@@ -447,15 +444,21 @@ func (p *Config) ValidatePath() (err error) {
 
 	// {root}/conf.d
 	p.ConfdPath = root.Abs(p.ConfdPath, "conf.d")
-	if !util.IsDir(p.ConfdPath) {
-		klog.Warningf("agent.confd_path %s does not exist, please create it", p.ConfdPath)
+	if err := util.ValidateDir(p.ConfdPath); err != nil {
+		return fmt.Errorf("agent.confd_path err: %s", err)
 	}
 	klog.V(1).InfoS("agent", "confd_path", p.ConfdPath)
 
+	// {root}/etc
+	p.EtcPath = root.Abs(p.EtcPath, "etc")
+	if err := util.ValidateDir(p.EtcPath); err != nil {
+		return fmt.Errorf("agent.etc_path err: %s", err)
+	}
+
 	// {root}/run
 	p.RunPath = root.Abs(p.RunPath, "run")
-	if !util.IsDir(p.RunPath) {
-		klog.Warningf("agent.run_path %s does not exist, please create it", p.RunPath)
+	if err := util.ValidateDir(p.RunPath); err != nil {
+		return fmt.Errorf("agent.run_path err: %s", err)
 	}
 
 	// pid
@@ -919,7 +922,7 @@ type Warnings struct {
 	TraceMallocEnabledWithPy2 bool
 }
 
-func NewConfig(configer *configer.Configer) (*Config, error) {
+func NewConfig(configer configer.ParsedConfiger) (*Config, error) {
 	cf := &Config{
 		m:          new(sync.RWMutex),
 		configer:   configer,

@@ -9,8 +9,8 @@ import (
 	"github.com/yubo/apiserver/pkg/rest/protobuf"
 	"github.com/yubo/golib/proc"
 
-	_ "github.com/yubo/apiserver/pkg/apiserver/register"
 	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
+	_ "github.com/yubo/apiserver/pkg/server/register"
 	_ "github.com/yubo/apiserver/pkg/tracing/register"
 )
 
@@ -65,7 +65,7 @@ func (p *mocker) start(ctx context.Context) error {
 }
 
 func (p *mocker) installWs() error {
-	http, ok := options.ApiServerFrom(p.ctx)
+	http, ok := options.APIServerFrom(p.ctx)
 	if !ok {
 		return fmt.Errorf("unable to get http server from the context")
 	}

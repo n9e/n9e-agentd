@@ -519,7 +519,7 @@ func _compile_service_check_statuses(modifiers mapinterface) (mapinterface, erro
 		case "OK", "WARNING", "CRITICAL", "UNKNOWN":
 			status_map[value] = s
 		default:
-			return nil, fmt.Errorf("invalid status `{}` for value `{}` of parameter `status_map`", status_string, value)
+			return nil, fmt.Errorf("invalid status `%s` for value `%s` of parameter `status_map`", status_string, value)
 		}
 	}
 	return status_map, nil
@@ -575,7 +575,7 @@ func _compile_match_items(transformers, modifiers mapinterface) (map[string]sour
 
 		transform_source, ok := transform_source_.(string)
 		if !ok {
-			return nil, fmt.Errorf("the `source` parameter for item `%` must be a string", item)
+			return nil, fmt.Errorf("the `source` parameter for item `%s` must be a string", item)
 		}
 
 		transform_modifiers := make(mapinterface)

@@ -31,14 +31,7 @@ replace (
 	github.com/ugorji/go => github.com/ugorji/go v1.1.7
 )
 
-// pinned to grpc v1.27.0
-replace (
-	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
-	google.golang.org/grpc => github.com/grpc/grpc-go v1.27.0
-)
-
 require (
-	code.cloudfoundry.org/executor v0.1441.2 // indirect
 	github.com/DataDog/datadog-agent v0.0.0-20210730134932-2365d4a4f838
 	github.com/DataDog/datadog-agent/pkg/util/log v0.30.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.30.0-rc.7
@@ -79,10 +72,10 @@ require (
 	github.com/yubo/golib v0.0.0-20210922085935-91c4ef1612a4
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
-	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
-	golang.org/x/text v0.3.6
-	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
-	google.golang.org/grpc v1.38.0
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
+	golang.org/x/text v0.3.7
+	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4
+	google.golang.org/grpc v1.41.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
@@ -118,6 +111,12 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.5
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.20.5
 	k8s.io/sample-controller => k8s.io/sample-controller v0.20.5
+)
+
+// pinned to grpc v1.27.0
+replace (
+	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
+	google.golang.org/grpc => github.com/grpc/grpc-go v1.27.0
 )
 
 replace gopkg.in/DataDog/dd-trace-go.v1 => gopkg.in/DataDog/dd-trace-go.v1 v1.30.0

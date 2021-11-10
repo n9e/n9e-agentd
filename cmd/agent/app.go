@@ -15,6 +15,13 @@ import (
 	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 
+	// apiserver
+	_ "github.com/yubo/apiserver/pkg/authentication/register"
+	_ "github.com/yubo/apiserver/pkg/authorization/register"
+	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
+	_ "github.com/yubo/apiserver/pkg/server/register"
+	_ "github.com/yubo/apiserver/plugin/authorizer/abac/register"
+
 	_ "github.com/n9e/n9e-agentd/pkg/agent/cmds"
 	_ "github.com/n9e/n9e-agentd/pkg/agent/server"
 	_ "github.com/n9e/n9e-agentd/pkg/apiserver"
@@ -34,10 +41,7 @@ func newRootCmd() *cobra.Command {
 	rand.Seed(time.Now().UnixNano())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx := newContext()
-	settings := agent.NewSettings(ctx)
-
-	proc.WithContext(ctx)
+	settings := agent.NewSettings(context.TODO())
 
 	cmd := &cobra.Command{
 		Use:   AppName,
@@ -57,7 +61,7 @@ func newRootCmd() *cobra.Command {
 				override["agent"] = fmt.Sprintf("is_cli_runner: true")
 			}
 
-			return settings.Init(override)
+			return settings.Init(cmd, override)
 		},
 	}
 
@@ -67,23 +71,17 @@ func newRootCmd() *cobra.Command {
 	return cmd
 }
 
-func newContext() context.Context {
-	ctx := proc.WithName(context.Background(), AppName)
-	ctx = proc.WithAttr(ctx, make(map[interface{}]interface{}))
-
-	return ctx
-}
-
 func setupCommand(cmd *cobra.Command, settings *agent.EnvSettings) {
 	settings.TopCmd = cmd
 	fs := cmd.PersistentFlags()
 
 	// add flags
-	configer.SetOptions(true, false, 5, fs)
-	namedFlagSets := proc.NamedFlagSets()
-	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), AppName)
-	configer.GlobalOptions.AddFlags(namedFlagSets.FlagSet("global"))
-	for _, f := range namedFlagSets.FlagSets {
+	nfs := proc.NamedFlagSets()
+	globalflag.AddGlobalFlags(nfs.FlagSet("global"))
+	configer.AddFlags(nfs.FlagSet("global"))
+	proc.AddFlags(nfs.FlagSet("global"))
+
+	for _, f := range nfs.FlagSets {
 		fs.AddFlagSet(f)
 	}
 

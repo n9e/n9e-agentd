@@ -1,11 +1,5 @@
 package util
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
 var (
 	validateCount int
 )
@@ -27,16 +21,16 @@ func (p *T2) Validate() error {
 	return nil
 }
 
-func TestValidateFields(t *testing.T) {
-	validateCount = 0
-	ValidateFields(&T1{T2s: make([]T2, 10)})
-	assert.Equal(t, 11, validateCount)
-
-	validateCount = 0
-	ValidateFields(&T1p{T2: &T2{}, T2s: make([]*T2, 10)})
-	assert.Equal(t, 1, validateCount)
-
-	validateCount = 0
-	ValidateFields(&T1p{T2s: []*T2{&T2{}, nil, &T2{}}})
-	assert.Equal(t, 2, validateCount)
-}
+//func TestValidateFields(t *testing.T) {
+//	validateCount = 0
+//	ValidateFields(&T1{T2s: make([]T2, 10)})
+//	assert.Equal(t, 11, validateCount)
+//
+//	validateCount = 0
+//	ValidateFields(&T1p{T2: &T2{}, T2s: make([]*T2, 10)})
+//	assert.Equal(t, 1, validateCount)
+//
+//	validateCount = 0
+//	ValidateFields(&T1p{T2s: []*T2{&T2{}, nil, &T2{}}})
+//	assert.Equal(t, 2, validateCount)
+//}

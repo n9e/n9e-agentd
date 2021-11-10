@@ -1,6 +1,7 @@
-package cmds
-
+//go:build secrets
 // +build secrets
+
+package cmds
 
 import (
 	"encoding/json"

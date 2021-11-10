@@ -58,14 +58,29 @@ type EnvSettings struct {
 
 	TopCmd    *cobra.Command
 	ServerCmd *cobra.Command
-	configer  *configer.Configer
+	configer  configer.ParsedConfiger
 	fs        *pflag.FlagSet
 }
 
-func (p *EnvSettings) Init(override map[string]string) error {
-	opts, _ := proc.ConfigOptsFrom(p.ctx)
+const (
+	insecureServingConfig = `apiserver:
+  secureServing:
+    enabled: false
+  insecureServing
+    enabled: true
+`
+)
 
-	if len(configer.GlobalOptions.ValueFiles()) == 0 {
+// Init: init proc
+func (p *EnvSettings) Init(cmd *cobra.Command, override map[string]string) error {
+	opts := []configer.ConfigerOption{
+		configer.WithFlagSet(cmd.Flags()),
+		configer.WithEnv(true, false),
+		configer.WithMaxDepth(5),
+		configer.WithDefaultYaml("", insecureServingConfig),
+	}
+
+	if len(configer.ValueFiles()) == 0 {
 		if f := util.DefaultConfigfile(); util.IsFile(f) {
 			klog.V(1).Infof("use default config file %s", f)
 			opts = append(opts, configer.WithValueFile(f))
@@ -76,7 +91,7 @@ func (p *EnvSettings) Init(override map[string]string) error {
 		opts = append(opts, configer.WithOverrideYaml(k, v))
 	}
 
-	c, err := configer.New(opts...)
+	c, err := configer.Parse(opts...)
 	if err != nil {
 		return err
 	}
@@ -103,10 +118,14 @@ func (p *EnvSettings) Init(override map[string]string) error {
 		return err
 	}
 
+	// proc
 	proc.WithConfiger(p.ctx, p.configer)
+	proc.DefaultProcess = proc.NewProcess(
+		proc.WithContext(p.ctx),
+	)
 	common.Client = p
 
-	klog.V(10).Infof("config %s", p)
+	//klog.V(10).Infof("config %s", p)
 
 	return nil
 }

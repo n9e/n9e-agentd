@@ -146,7 +146,7 @@ func (p *Query) compile(column_transformers, extra_transformers mapinterface) er
 		}
 		if s, ok := sources[extra_name]; ok {
 
-			return fmt.Errorf("the name %s of %s was already defined in {} #%d",
+			return fmt.Errorf("the name %s of %s was already defined in %s #%d",
 				extra_name, query_name, s.Type, s.Index)
 		}
 

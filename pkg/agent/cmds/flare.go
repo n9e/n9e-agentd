@@ -27,7 +27,7 @@ type flareCmd struct {
 }
 
 func newFlareCmd(env *agent.EnvSettings) *cobra.Command {
-	var in flareCmd
+	in := &flareCmd{}
 	cmd := &cobra.Command{
 		Use:   "flare [caseID]",
 		Short: "Collect a flare and send it to Datadog",
@@ -50,7 +50,7 @@ func newFlareCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlags(cmd.Flags(), &in)
+	configer.RegisterConfigFields(cmd.Flags(), "flare", in)
 	cmd.SetArgs([]string{"caseID"})
 	return cmd
 

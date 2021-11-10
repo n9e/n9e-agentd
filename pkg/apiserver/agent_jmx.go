@@ -7,6 +7,7 @@
 // This group of endpoints is meant to provide high-level functionalities
 // at the agent level.
 
+//go:build jmx
 // +build jmx
 
 package apiserver
@@ -81,6 +82,6 @@ func getJMXConfigs(w http.ResponseWriter, r *http.Request) (*JMXConfigs, error) 
 	return &JMXConfigs{Configs: configs, Timestamp: time.Now().Unix()}, nil
 }
 
-func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NoneParam, jmxStatus *status.JMXStatus) {
+func setJMXStatus(w http.ResponseWriter, r *http.Request, _ *rest.NonParam, jmxStatus *status.JMXStatus) {
 	status.SetJMXStatus(*jmxStatus)
 }

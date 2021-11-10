@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/system-probe/config"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gorilla/mux"
+	"github.com/n9e/n9e-agentd/pkg/system-probe/config"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +38,7 @@ type loader struct {
 func Register(cfg *config.Config, httpMux *mux.Router, factories []Factory) error {
 	router := NewRouter(httpMux)
 	for _, factory := range factories {
-		if !cfg.ModuleIsEnabled(factory.Name) {
+		if !cfg.ModuleIsEnabled(string(factory.Name)) {
 			log.Infof("%s module disabled", factory.Name)
 			continue
 		}

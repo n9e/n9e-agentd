@@ -3,6 +3,7 @@ package mocker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -21,6 +22,14 @@ type CollectRules struct {
 	sync.RWMutex
 	rules           []api.CollectRule
 	latestUpdatedAt int64
+}
+
+func (c *CollectRules) String() string {
+	if c == nil {
+		return "null"
+	}
+
+	return fmt.Sprintf("len: %d, lasted %s", len(c.rules), time.Unix(c.latestUpdatedAt, 0))
 }
 
 func (c *CollectRules) Set(configs []integration.Config) {

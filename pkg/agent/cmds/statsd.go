@@ -38,7 +38,7 @@ func newStatsdCmd(env *agent.EnvSettings) *cobra.Command {
 }
 
 func newStatsdCaptureCmd(env *agent.EnvSettings) *cobra.Command {
-	var input api.StatsdCaptureTriggerInput
+	input := &api.StatsdCaptureTriggerInput{}
 
 	cmd := &cobra.Command{
 		Use:   "statsd-capture",
@@ -54,23 +54,23 @@ func newStatsdCaptureCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlags(cmd.Flags(), &input)
+	configer.AddFlagsVar(cmd.Flags(), input)
 
 	return cmd
 }
 
 func newStatsdReplayCmd(env *agent.EnvSettings) *cobra.Command {
-	var input api.StatsdReplayInput
+	input := &api.StatsdReplayInput{}
 
 	cmd := &cobra.Command{
 		Use:   "statsd-replay",
 		Short: "Replay statsd traffic",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return statsdReplay(env, &input)
+			return statsdReplay(env, input)
 		},
 	}
 
-	configer.AddFlags(cmd.Flags(), &input)
+	configer.AddFlagsVar(cmd.Flags(), input)
 
 	return cmd
 }
@@ -195,7 +195,7 @@ func newStatsdStatsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlags(cmd.Flags(), &input)
+	configer.AddFlagsVar(cmd.Flags(), &input)
 
 	return cmd
 }

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
+	server "github.com/yubo/apiserver/pkg/server/module"
 	"github.com/yubo/golib/logs"
 	"github.com/yubo/golib/proc"
 
@@ -15,8 +15,9 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	ctx := proc.WithName(context.Background(), "mocker")
-	if err := proc.NewRootCmd(ctx).Execute(); err != nil {
+	if err := proc.NewRootCmd(
+		server.WithInsecureServing(),
+	).Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
