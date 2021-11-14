@@ -50,7 +50,7 @@ func newFlareCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.RegisterConfigFields(cmd.Flags(), "flare", in)
+	configer.FlagSet(cmd.Flags(), in)
 	cmd.SetArgs([]string{"caseID"})
 	return cmd
 

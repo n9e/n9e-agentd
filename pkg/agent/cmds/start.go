@@ -18,9 +18,8 @@ func newStartCmd(env *agent.EnvSettings) *cobra.Command {
 				fs := cmd.Flags()
 				flag.PrintFlags(fs)
 			}
-			return proc.Start(cmd)
+			return proc.Start(cmd.Flags())
 		},
 	}
-	env.ServerCmd = cmd
 	return cmd
 }

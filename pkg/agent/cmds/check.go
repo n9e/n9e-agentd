@@ -83,7 +83,7 @@ func newCheckCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.RegisterConfigFields(cmd.Flags(), "check", cc)
+	configer.FlagSet(cmd.Flags(), cc)
 	cmd.SetArgs([]string{"checkName"})
 	return cmd
 }

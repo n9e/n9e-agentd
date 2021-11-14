@@ -524,5 +524,5 @@ func setMaxProcs(max string) {
 func init() {
 	proc.RegisterHooks(hookOps)
 
-	config.AddFlags()
+	proc.RegisterFlags("agent", "agent generic", config.DefaultConfig())
 }

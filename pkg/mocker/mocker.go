@@ -7,6 +7,7 @@ import (
 	"github.com/yubo/apiserver/pkg/options"
 	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/apiserver/pkg/rest/protobuf"
+	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 
 	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
@@ -43,7 +44,7 @@ type mocker struct {
 }
 
 func (p *mocker) start(ctx context.Context) error {
-	c := proc.ConfigerMustFrom(ctx)
+	c := configer.ConfigerMustFrom(ctx)
 
 	cf := &Config{}
 	if err := c.Read(moduleName, cf); err != nil {

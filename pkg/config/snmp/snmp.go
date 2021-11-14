@@ -83,7 +83,7 @@ type Config struct {
 	Network                     string          `json:"network_address"`
 	Port                        uint16          `json:"port"`
 	Version                     string          `json:"snmp_version"`
-	Timeout                     api.Duration    `json:"timeout" default:"5s" description:"dial timeout"`
+	Timeout                     api.Duration    `json:"timeout" description:"dial timeout"`
 	Retries                     int             `json:"retries"`
 	OidBatchSize                int             `json:"oid_batch_size"`
 	Community                   string          `json:"community_string"`

@@ -8,8 +8,6 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
 	github.com/DataDog/mmh3 => github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a
 	github.com/n9e/n9e-agentd => ../n9e-agentd
-	github.com/yubo/apiserver => ../apiserver
-	github.com/yubo/golib => ../golib
 )
 
 // NOTE: Prefer using simple `require` directives instead of using `replace` if possible.
@@ -32,7 +30,7 @@ replace (
 )
 
 require (
-	github.com/DataDog/datadog-agent v0.0.0-20210730134932-2365d4a4f838
+	github.com/DataDog/datadog-agent v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-agent/pkg/util/log v0.30.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.30.0-rc.7
 	github.com/DataDog/datadog-go v4.8.0+incompatible
@@ -68,8 +66,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
-	github.com/yubo/apiserver v0.0.0-20210918082128-653f7fb53aa9
-	github.com/yubo/golib v0.0.0-20210922085935-91c4ef1612a4
+	github.com/yubo/apiserver v0.0.1
+	github.com/yubo/golib v0.0.2-0.20211114094711-541fb5329deb
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c

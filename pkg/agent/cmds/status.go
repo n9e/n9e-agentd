@@ -37,7 +37,7 @@ func newStatusCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlagsVar(cmd.Flags(), &input)
+	configer.FlagSet(cmd.Flags(), &input)
 	return cmd
 }
 

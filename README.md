@@ -58,3 +58,13 @@ cd {n9e-agentd-dir}
 source ./etc/agentd.rc
 ./bin/n9e-agentd start -f ./etc/agentd.yaml
 ```
+
+## use mocker instead of n9e-server
+```
+# build
+go build -o ./build/mocker ./cmd/mocker
+
+# run
+./build/mocker
+
+```

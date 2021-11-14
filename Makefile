@@ -28,7 +28,7 @@ var:
 	./scripts/go-build-envs.sh
 
 clean:
-	sudo rm -rf build/*
+	rm -rf build/*
 
 release:
 	VERSION=${VERSION} RELEASE=${RELEASE} ./scripts/release.sh

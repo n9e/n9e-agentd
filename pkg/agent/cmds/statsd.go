@@ -54,7 +54,7 @@ func newStatsdCaptureCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlagsVar(cmd.Flags(), input)
+	configer.FlagSet(cmd.Flags(), input)
 
 	return cmd
 }
@@ -70,7 +70,7 @@ func newStatsdReplayCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlagsVar(cmd.Flags(), input)
+	configer.FlagSet(cmd.Flags(), input)
 
 	return cmd
 }
@@ -195,7 +195,7 @@ func newStatsdStatsCmd(env *agent.EnvSettings) *cobra.Command {
 		},
 	}
 
-	configer.AddFlagsVar(cmd.Flags(), &input)
+	configer.FlagSet(cmd.Flags(), &input)
 
 	return cmd
 }

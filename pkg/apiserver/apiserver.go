@@ -8,8 +8,6 @@ import (
 	apioptions "github.com/yubo/apiserver/pkg/options"
 	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/apiserver/pkg/server"
-	"github.com/yubo/apiserver/plugin/authorizer/abac/api"
-	"github.com/yubo/apiserver/plugin/authorizer/abac/register"
 	"github.com/yubo/golib/proc"
 )
 
@@ -66,28 +64,4 @@ func (p *module) stop(ctx context.Context) error {
 
 func init() {
 	proc.RegisterHooks(hookOps)
-
-	// register server module
-	//servermodule.RegisterHooks()
-	//proc.RegisterFlags("apiserver", "apiserver", &Config{})
-
-	// register authz
-	//authzmodule.RegisterHooks()
-	//proc.RegisterFlags("authorization", "authorization", &authzConfig{})
-
-	register.PolicyList = []*api.Policy{
-		{Spec: api.PolicySpec{
-			Group:           "system:unauthenticated",
-			Readonly:        true,
-			NonResourcePath: "/swagger*",
-		}}, {Spec: api.PolicySpec{
-			Group:           "system:unauthenticated",
-			Readonly:        true,
-			NonResourcePath: "/apidocs.json",
-		}}, {Spec: api.PolicySpec{
-			Group:           "system:authenticated",
-			NonResourcePath: "*",
-			Resource:        "*",
-		}},
-	}
 }
