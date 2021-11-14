@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2017-present Datadog, Inmetrics.
 
+//go:build linux
 // +build linux
 
 package cgroup
@@ -14,10 +15,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/util/containers"
 	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/containers/providers"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // provider is a Cgroup implementation of the ContainerImplementation interface
@@ -151,7 +152,7 @@ func (mp *provider) GetNetworkMetrics(containerID string, networks map[string]st
 
 // GetAgentCID returns the container ID where the current agent is running
 func (mp *provider) GetAgentCID() (string, error) {
-	prefix := config.Datadog.GetString("container_cgroup_prefix")
+	prefix := config.C.Container.CgroupPrefix
 	cID, _, err := readCgroupsForPath("/proc/self/cgroup", prefix)
 	if err != nil {
 		return "", err
@@ -177,7 +178,7 @@ func (mp *provider) GetPIDs(containerID string) ([]int32, error) {
 // containerd / cri-o default Kubernetes cgroups
 func (mp *provider) ContainerIDForPID(pid int) (string, error) {
 	cgPath := hostProc(strconv.Itoa(pid), "cgroup")
-	prefix := config.Datadog.GetString("container_cgroup_prefix")
+	prefix := config.C.Container.CgroupPrefix
 
 	containerID, _, err := readCgroupsForPath(cgPath, prefix)
 

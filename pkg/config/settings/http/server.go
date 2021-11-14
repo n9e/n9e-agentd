@@ -5,10 +5,10 @@ import (
 	"html"
 	"net/http"
 
-	ddconfig "github.com/n9e/n9e-agentd/pkg/config"
-	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gorilla/mux"
+	ddconfig "github.com/n9e/n9e-agentd/pkg/config"
+	"github.com/n9e/n9e-agentd/pkg/config/settings"
 	"gopkg.in/yaml.v2"
 )
 
@@ -27,20 +27,15 @@ var Server = struct {
 
 func getFullConfig(namespace string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		var nsSettings interface{}
-		allSettings := ddconfig.Datadog.AllSettings()
-		if namespace != "" {
-			for k, v := range allSettings {
-				if k == namespace {
-					nsSettings = v
-					break
-				}
-			}
-		} else {
-			nsSettings = allSettings
+		settings := map[string]interface{}{}
+		if err := ddconfig.C.Read(namespace, &settings); err != nil {
+			log.Errorf("Unable to marshal runtime config response: %s", err)
+			body, _ := json.Marshal(map[string]string{"error": err.Error()})
+			http.Error(w, string(body), http.StatusInternalServerError)
+			return
 		}
 
-		runtimeConfig, err := yaml.Marshal(nsSettings)
+		runtimeConfig, err := yaml.Marshal(settings)
 		if err != nil {
 			log.Errorf("Unable to marshal runtime config response: %s", err)
 			body, _ := json.Marshal(map[string]string{"error": err.Error()})

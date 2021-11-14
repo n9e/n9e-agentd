@@ -56,36 +56,87 @@ type EnvSettings struct {
 	Client  *rest.RESTClient
 	Clients map[string]*rest.RESTClient // metrcs/cmd
 
-	TopCmd    *cobra.Command
-	ServerCmd *cobra.Command
-	configer  *configer.Configer
-	fs        *pflag.FlagSet
+	TopCmd   *cobra.Command
+	configer configer.ParsedConfiger
+	fs       *pflag.FlagSet
 }
 
-func (p *EnvSettings) Init(override map[string]string) error {
-	opts, _ := proc.ConfigOptsFrom(p.ctx)
+const (
+	defaultConfig = `apiserver:
+  secureServing:
+    enabled: false
+  insecureServing:
+    enabled: true
+    bindAddress: 127.0.0.1
+    bindPort: 8010
 
-	if len(configer.GlobalOptions.ValueFiles()) == 0 {
+authorization:
+  modes:
+  - AlwaysAllow
+  alwaysAllowPaths:
+  - /healthz
+  - /readyz
+  - /livez
+  - /swagger*
+  - /apidocs.json
+`
+)
+
+// Init: init proc
+func (p *EnvSettings) Init(cmd *cobra.Command) error {
+	p.TopCmd = cmd
+
+	opts := []configer.ConfigerOption{
+		configer.WithEnv(true, false),
+		configer.WithMaxDepth(5),
+		configer.WithDefaultYaml("", defaultConfig),
+	}
+
+	if len(configer.ValueFiles()) == 0 {
 		if f := util.DefaultConfigfile(); util.IsFile(f) {
-			klog.V(1).Infof("use default config file %s", f)
+			klog.Infof("use default config file %s", f)
 			opts = append(opts, configer.WithValueFile(f))
 		}
 	}
 
+	// proc
+	proc.Init(cmd,
+		proc.WithContext(p.ctx),
+		proc.WithConfigOptions(opts...),
+	)
+
+	return nil
+}
+
+func (p *EnvSettings) Parse(fs *pflag.FlagSet, override map[string]string) error {
+	klog.V(10).Infof("entering setting parse")
+	defer klog.V(10).Infof("leaving setting parse")
+	opts := []configer.ConfigerOption{}
 	for k, v := range override {
 		opts = append(opts, configer.WithOverrideYaml(k, v))
 	}
 
-	c, err := configer.New(opts...)
+	c, err := proc.Parse(fs, opts...)
 	if err != nil {
 		return err
 	}
+
 	p.configer = c
 
-	p.Agent = config.NewConfig(c)
-	if err := c.Read("agent", p.Agent); err != nil {
+	agentConfig, err := config.NewConfig(c)
+	if err != nil {
 		return err
 	}
+
+	if err := c.Read("agent", agentConfig); err != nil {
+		return err
+	}
+
+	if err := config.ResolveSecrets(agentConfig); err != nil {
+		return err
+	}
+
+	p.Agent = agentConfig
 	config.C = p.Agent
 
 	// client
@@ -93,10 +144,9 @@ func (p *EnvSettings) Init(override map[string]string) error {
 		return err
 	}
 
-	proc.WithConfiger(p.ctx, p.configer)
 	common.Client = p
 
-	klog.V(10).Infof("config %s", p)
+	//klog.V(10).Infof("config %s", p)
 
 	return nil
 }
@@ -224,8 +274,8 @@ func (p *EnvSettings) Request(method, uri string, param, body, output interface{
 	if output != nil {
 		opts = append(opts, cmdcli.WithOutput(output))
 	}
-	if p.Agent.CliQueryTimeout > 0 {
-		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout))
+	if p.Agent.CliQueryTimeout.Duration > 0 {
+		opts = append(opts, cmdcli.WithTimeout(p.Agent.CliQueryTimeout.Duration))
 	}
 
 	return cmdcli.NewRequestWithClient(p.Client, opts...), nil

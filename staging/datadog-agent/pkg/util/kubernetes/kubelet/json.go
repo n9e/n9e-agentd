@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build kubelet
 // +build kubelet
 
 package kubelet
@@ -34,7 +35,7 @@ type podUnmarshaller struct {
 
 func newPodUnmarshaller() *podUnmarshaller {
 	pu := &podUnmarshaller{
-		podExpirationDuration: config.C.KubernetesPodExpirationDuration,
+		podExpirationDuration: config.C.KubernetesPodExpirationDuration.Duration,
 		timeNowFunction:       time.Now,
 	}
 

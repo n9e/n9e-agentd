@@ -16,5 +16,5 @@ const CloudProviderName = "AWS"
 
 // MetadataTimeout defines timeout for ECS metadata endpoints
 func MetadataTimeout() time.Duration {
-	return config.C.ECSMetadataTimeout
+	return config.C.ECSMetadataTimeout.Duration
 }

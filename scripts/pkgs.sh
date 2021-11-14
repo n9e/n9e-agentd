@@ -7,7 +7,7 @@ APP_NAME=${APP_NAME:-n9e-agentd}
 # https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63
 # go tool dist list
 #lists="darwin/amd64 linux/amd64 linux/arm64 linux/arm windows/amd64"
-lists="darwin/amd64"
+lists="linux/amd64"
 
 for str in ${lists}; do
 	arr=(${str//\// })

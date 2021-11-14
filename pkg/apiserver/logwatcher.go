@@ -5,7 +5,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/logs"
 	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
-	"github.com/yubo/apiserver/pkg/watch"
+	"github.com/yubo/golib/watch"
 	"k8s.io/klog/v2"
 )
 

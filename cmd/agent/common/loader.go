@@ -32,8 +32,7 @@ func LoadComponents() error {
 	if p, err := processor.NewProcessor(); err != nil {
 		return err
 	} else {
-		PP = p
-		metrics.Processor = p
+		metrics.SetProcessor(p)
 	}
 
 	// create the Collector instance and start all the components

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"sigs.k8s.io/yaml"
 )
@@ -34,6 +35,34 @@ func (p *StatsdCaptureTriggerInput) Validate() error {
 	return nil
 }
 
+type CollectorInput struct {
+	// HostHeader contains the hostname of the payload
+	HostHeader string `param:"header" name:"X-Dd-Hostname"`
+	// ContainerCountHeader contains the container count in the payload
+	ContainerCountHeader int `param:"header" name:"X-Dd-ContainerCount"`
+	// ProcessVersionHeader holds the process agent version sending the payload
+	ProcessVersionHeader string `param:"header" name:"X-Dd-Processagentversion"`
+	// ClusterIDHeader contains the orchestrator cluster ID of this agent
+	ClusterIDHeader string `param:"header" name:"X-Dd-Orchestrator-ClusterID"`
+	// TimestampHeader contains the timestamp that the check data was created
+	TimestampHeader int64 `param:"header" name:"X-DD-Agent-Timestamp"`
+}
+
+// datadog-agent/pkg/logs/processor/json.go
+type LogPayload struct {
+	Message   string `json:"message"`
+	Status    string `json:"status"`
+	Timestamp int64  `json:"timestamp"`
+	Hostname  string `json:"hostname"`
+	Service   string `json:"service"`
+	Source    string `json:"source"`
+	Tags      string `json:"tags"`
+	Ident     string `json:"ident"`
+	Alias     string `json:"alias"`
+}
+
+type LogsPayload []LogPayload
+
 type CollectRule struct {
 	ID   int64  `json:"id"`   // option rule.ID
 	Name string `json:"name"` // option Config.instances[$] ruleID
@@ -48,7 +77,7 @@ type CollectRule struct {
 	Updater   string `json:"-"` // deprecated
 }
 
-type CollectRuleWrap struct {
+type CollectRulesWrap struct {
 	Data []CollectRule `json:"dat"`
 	Err  string        `json:"err"`
 }
@@ -159,4 +188,66 @@ type ProcCollectFormat struct {
 type HealthStatus struct {
 	Healthy   []string
 	Unhealthy []string
+}
+
+// Duration is a wrapper around time.Duration which supports correct
+// marshaling to YAML and JSON. In particular, it marshals into strings, which
+// can be used as map keys in json.
+type Duration struct {
+	time.Duration `protobuf:"varint,1,opt,name=duration,casttype=time.Duration"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaller interface.
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var str string
+	err := json.Unmarshal(b, &str)
+	if err != nil {
+		// try int
+		var pd int64
+		if err := json.Unmarshal(b, &pd); err != nil {
+			return err
+		}
+		d.Duration = time.Duration(pd)
+		return nil
+	}
+
+	pd, err := time.ParseDuration(str)
+	if err != nil {
+		return err
+	}
+	d.Duration = pd
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d Duration) MarshalJSON() ([]byte, error) {
+	s := d.Duration.String()
+
+	// configer isZero checker, "0s" is not supported
+	if s == "0s" {
+		return json.Marshal(0)
+	}
+	return json.Marshal(s)
+}
+
+func (d Duration) String() string {
+	return d.Duration.String()
+}
+
+func (d *Duration) Set(val string) error {
+	v, err := time.ParseDuration(val)
+	*d = Duration{v}
+	return err
+}
+
+func (d *Duration) Type() string {
+	return "duration"
+}
+
+// IsZero returns true if the value is nil or time is zero.
+func (d *Duration) IsZero() bool {
+	if d == nil {
+		return true
+	}
+	return d.Duration == 0
 }

@@ -70,12 +70,9 @@ func (p *authModule) init(ctx context.Context) error {
 	}
 	p.Config = cf
 
-	auth, err := p.newAuthenticator()
-	if err != nil {
-		return err
-	}
-
-	return authentication.RegisterTokenAuthn(auth)
+	return authentication.RegisterTokenAuthn(func(_ context.Context) (authenticator.Token, error) {
+		return p.newAuthenticator()
+	})
 }
 
 type TokenAuthenticator struct {

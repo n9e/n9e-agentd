@@ -11,10 +11,13 @@ import (
 	"github.com/n9e/n9e-agentd/pkg/options"
 	"github.com/n9e/n9e-agentd/pkg/util/templates"
 	"github.com/spf13/cobra"
-	"github.com/yubo/golib/cli/globalflag"
-	"github.com/yubo/golib/configer"
-	"github.com/yubo/golib/proc"
-	"k8s.io/klog/v2"
+
+	// apiserver
+	_ "github.com/yubo/apiserver/pkg/authentication/register"
+	_ "github.com/yubo/apiserver/pkg/authorization/register"
+	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
+	_ "github.com/yubo/apiserver/pkg/server/register"
+	_ "github.com/yubo/apiserver/plugin/authorizer/alwaysallow/register"
 
 	_ "github.com/n9e/n9e-agentd/pkg/agent/cmds"
 	_ "github.com/n9e/n9e-agentd/pkg/agent/server"
@@ -35,10 +38,7 @@ func newRootCmd() *cobra.Command {
 	rand.Seed(time.Now().UnixNano())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	ctx := newContext()
-	settings := agent.NewSettings(ctx)
-
-	proc.WithContext(ctx)
+	settings := agent.NewSettings(context.TODO())
 
 	cmd := &cobra.Command{
 		Use:   AppName,
@@ -48,16 +48,15 @@ func newRootCmd() *cobra.Command {
 
 			Find more information at:
 			https://github.com/n9e/n9e-agentd`),
-		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			override := map[string]string{
-				"agent": fmt.Sprintf(`is_cli_runner: %v`, cmd != settings.ServerCmd),
+			override := map[string]string{}
+			switch cmd.Use {
+			case "version":
+				return nil
+			case "start":
+				override["agent"] = fmt.Sprintf("is_cli_runner: true")
 			}
-
-			if err := settings.Init(override); err != nil {
-				klog.Error(err)
-			}
-			return nil
+			return settings.Parse(cmd.Flags(), override)
 		},
 	}
 
@@ -67,30 +66,14 @@ func newRootCmd() *cobra.Command {
 	return cmd
 }
 
-func newContext() context.Context {
-	ctx := proc.WithName(context.Background(), AppName)
-	ctx = proc.WithAttr(ctx, make(map[interface{}]interface{}))
-
-	return ctx
-}
-
 func setupCommand(cmd *cobra.Command, settings *agent.EnvSettings) {
-	settings.TopCmd = cmd
-	fs := cmd.PersistentFlags()
-
-	// add flags
-	configer.SetOptions(true, false, 5, fs)
-	namedFlagSets := proc.NamedFlagSets()
-	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), AppName)
-	configer.GlobalOptions.AddFlags(namedFlagSets.FlagSet("global"))
-	for _, f := range namedFlagSets.FlagSets {
-		fs.AddFlagSet(f)
-	}
+	settings.Init(cmd)
 
 	otherCmds, groups := agent.GetHookGroups(settings)
+
 	groups.Add(cmd)
-	filters := []string{"options"}
-	templates.ActsAsRootCommand(cmd, filters, groups...)
 
 	cmd.AddCommand(otherCmds...)
+
+	templates.ActsAsRootCommand(cmd, []string{"options"}, groups...)
 }

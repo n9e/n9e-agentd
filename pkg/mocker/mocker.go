@@ -5,8 +5,14 @@ import (
 	"fmt"
 
 	"github.com/yubo/apiserver/pkg/options"
+	"github.com/yubo/apiserver/pkg/rest"
 	"github.com/yubo/apiserver/pkg/rest/protobuf"
+	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
+
+	_ "github.com/yubo/apiserver/pkg/rest/swagger/register"
+	_ "github.com/yubo/apiserver/pkg/server/register"
+	_ "github.com/yubo/apiserver/pkg/tracing/register"
 )
 
 const (
@@ -23,6 +29,12 @@ var (
 	}}
 )
 
+type Config struct {
+	Port        int    `flag:"port" default:"8000" env:"N9E_MOCKER_PORT" description:"listen port"`
+	CollectRule bool   `flag:"collect-rule" description:"enable send statsd sample data"`
+	SendStatsd  bool   `flag:"send-statsd" description:"enable collect rule provider"`
+	Confd       string `flag:"confd" default:"./etc/mocker.d" description:"config dir"`
+}
 type mocker struct {
 	config *Config
 	name   string
@@ -32,7 +44,7 @@ type mocker struct {
 }
 
 func (p *mocker) start(ctx context.Context) error {
-	c := proc.ConfigerMustFrom(ctx)
+	c := configer.ConfigerMustFrom(ctx)
 
 	cf := &Config{}
 	if err := c.Read(moduleName, cf); err != nil {
@@ -54,11 +66,12 @@ func (p *mocker) start(ctx context.Context) error {
 }
 
 func (p *mocker) installWs() error {
-	http, ok := options.ApiServerFrom(p.ctx)
+	http, ok := options.APIServerFrom(p.ctx)
 	if !ok {
 		return fmt.Errorf("unable to get http server from the context")
 	}
 
+	rest.SwaggerTagRegister("api groups", "api groups")
 	p.installDatadogWs(http)
 	p.installN9eWs(http)
 

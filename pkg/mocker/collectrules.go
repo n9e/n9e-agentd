@@ -3,6 +3,7 @@ package mocker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -21,6 +22,14 @@ type CollectRules struct {
 	sync.RWMutex
 	rules           []api.CollectRule
 	latestUpdatedAt int64
+}
+
+func (c *CollectRules) String() string {
+	if c == nil {
+		return "null"
+	}
+
+	return fmt.Sprintf("len: %d, lasted %s", len(c.rules), time.Unix(c.latestUpdatedAt, 0))
 }
 
 func (c *CollectRules) Set(configs []integration.Config) {
@@ -46,22 +55,20 @@ type RulesPayload struct {
 	Err  string            `json:"err"`
 }
 
-func (c *CollectRules) GetRules() api.CollectRuleWrap {
+func (c *CollectRules) GetRules() []api.CollectRule {
 	c.RLock()
 	defer c.RUnlock()
 
-	return api.CollectRuleWrap{Data: c.rules}
+	return c.rules
 }
 
-func (c *CollectRules) GetSummary() api.CollectRulesSummaryWrap {
+func (c *CollectRules) GetSummary() *api.CollectRulesSummary {
 	c.RLock()
 	defer c.RUnlock()
 
-	return api.CollectRulesSummaryWrap{
-		Data: api.CollectRulesSummary{
-			LatestUpdatedAt: c.latestUpdatedAt,
-			Total:           len(c.rules),
-		},
+	return &api.CollectRulesSummary{
+		LatestUpdatedAt: c.latestUpdatedAt,
+		Total:           len(c.rules),
 	}
 }
 

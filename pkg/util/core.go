@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package util
@@ -11,6 +12,7 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/unix"
+	"k8s.io/klog/v2"
 )
 
 // SetupCoreDump enables core dumps and sets the core dump size limit based on configuration
@@ -40,6 +42,32 @@ func DefaultConfigfile() string {
 	}
 
 	return filepath.Join(root, "etc", "agentd.yaml")
+}
+
+func ValidateDirs(paths ...string) error {
+	for _, path := range paths {
+		if err := ValidateDir(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ValidateDir(path string) error {
+	fi, err := os.Stat(path)
+	if err != nil {
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return err
+		}
+		klog.Infof("directory %s does not exist, created", path)
+		return nil
+	}
+	if fi.IsDir() {
+		return nil
+	}
+
+	return fmt.Errorf("Cannot create directory since %s already exists", path)
 }
 
 func IsDir(path string) bool {

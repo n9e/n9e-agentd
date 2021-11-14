@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build linux
 // +build linux
 
 package cgroup
@@ -17,10 +18,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/util/containers"
 	"github.com/DataDog/datadog-agent/pkg/util/containers/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 // collectNetworkStats retrieves the network statistics for a given pid.
@@ -181,7 +182,7 @@ func defaultHostIPs() ([]string, error) {
 // The returned value would be ["enp0s3","00000000","0202000A","0003","0","0","0","00000000","0","0","0"]
 //
 func defaultGatewayFields() ([]string, error) {
-	procRoot := config.Datadog.GetString("proc_root")
+	procRoot := config.C.ProcRoot
 	netRouteFile := filepath.Join(procRoot, "net", "route")
 	f, err := os.Open(netRouteFile)
 	if err != nil {

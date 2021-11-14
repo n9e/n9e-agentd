@@ -47,7 +47,7 @@ func (c inventoriesCollector) Send(ctx context.Context, s *serializer.Serializer
 
 // Init initializes the inventory metadata collection
 func (c inventoriesCollector) Init() error {
-	return inventories.StartMetadataUpdatedGoroutine(c.sc, config.C.InventoriesMinInterval)
+	return inventories.StartMetadataUpdatedGoroutine(c.sc, config.C.InventoriesMinInterval.Duration)
 }
 
 // SetupInventoriesExpvar init the expvar function for inventories
@@ -72,7 +72,7 @@ func SetupInventories(sc *Scheduler, ac inventories.AutoConfigInterface, coll in
 	}
 	RegisterCollector("inventories", ic)
 
-	if err := sc.AddCollector("inventories", config.C.InventoriesMaxInterval); err != nil {
+	if err := sc.AddCollector("inventories", config.C.InventoriesMaxInterval.Duration); err != nil {
 		return err
 	}
 

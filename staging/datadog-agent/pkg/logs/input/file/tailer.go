@@ -95,7 +95,7 @@ func NewTailer(outputChan chan *message.Message, file *File, sleepDuration time.
 	}
 
 	forwardContext, stopForward := context.WithCancel(context.Background())
-	closeTimeout := coreConfig.C.Logs.CloseTimeout
+	closeTimeout := coreConfig.C.Logs.CloseTimeout.Duration
 
 	return &Tailer{
 		file:           file,

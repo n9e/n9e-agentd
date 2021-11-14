@@ -98,12 +98,12 @@ func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) erro
 	collectorAdded := map[string]interface{}{}
 	log.Debugf("Adding configured providers to the metadata collector")
 	for _, c := range config.C.MetadataProviders {
-		if c.Interval == 0 {
+		if c.Interval.Duration == 0 {
 			log.Infof("Interval of metadata provider '%v' set to 0, skipping provider", c.Name)
 			continue
 		}
 
-		intl := c.Interval * time.Second
+		intl := c.Interval.Duration * time.Second
 		if err := addCollector(c.Name, intl, sch); err != nil {
 			log.Error(err.Error())
 		} else {

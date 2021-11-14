@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2018-present Datadog, Inc.
 
+//go:build python
 // +build python
 
 package python
@@ -29,7 +30,7 @@ type warning struct {
 
 // validatePython3 checks that a check can run on python 3.
 func validatePython3(moduleName string, modulePath string) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.C.Python3LinterTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), config.C.Python3LinterTimeout.Duration)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, pythonBinPath, "-m", "pylint", "-f", "json", "--py3k", "-d", "W1618", "--persistent", "no", "--exit-zero", modulePath)

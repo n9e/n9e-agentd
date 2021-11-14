@@ -75,7 +75,7 @@ func NewUDPListener(packetOut chan packets.Packets, sharedPacketPoolManager *pac
 
 	bufferSize := cf.BufferSize
 	packetsBufferSize := cf.PacketBufferSize
-	flushTimeout := cf.PacketBufferFlushTimeout
+	flushTimeout := cf.PacketBufferFlushTimeout.Duration
 
 	buffer := make([]byte, bufferSize)
 	packetsBuffer := packets.NewBuffer(uint(packetsBufferSize), flushTimeout, packetOut)

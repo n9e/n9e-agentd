@@ -120,6 +120,10 @@ func (p *agentServer) start(ctx context.Context) error {
 		return err
 	}
 
+	if err := p.startProcess(); err != nil {
+		return err
+	}
+
 	if err := p.startDetectCloudProvider(); err != nil {
 		return nil
 	}
@@ -191,13 +195,6 @@ func completionHandler(transaction *transaction.HTTPTransaction, statusCode int,
 }
 
 func (p *agentServer) readConfig() error {
-	if config.TestConfig {
-		configer := proc.ConfigerMustFrom(p.ctx)
-		configer.PrintFlags()
-		fmt.Printf("agentd: configuration test is successful\n")
-		os.Exit(0)
-	}
-
 	p.config = config.C
 	return nil
 }
@@ -327,7 +324,12 @@ func (p *agentServer) startForwarder() error {
 	options.EnabledFeatures = forwarder.SetFeature(options.EnabledFeatures, forwarder.CoreFeatures)
 	options.CompletionHandler = completionHandler
 
-	f := forwarder.NewDefaultForwarder(options)
+	var f forwarder.Forwarder
+	if p.config.EnableN9eProvider {
+		f = forwarder.NewN9eForwarder(options)
+	} else {
+		f = forwarder.NewDefaultForwarder(options)
+	}
 	klog.V(5).Infof("Starting forwarder")
 	f.Start() //nolint:errcheck
 	klog.V(5).Infof("Forwarder started")
@@ -522,5 +524,5 @@ func setMaxProcs(max string) {
 func init() {
 	proc.RegisterHooks(hookOps)
 
-	config.AddFlags()
+	proc.RegisterFlags("agent", "agent generic", config.DefaultConfig())
 }

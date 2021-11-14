@@ -1,12 +1,15 @@
 package config
 
 import (
+	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/version"
 )
 
 func configEval(value string) string {
@@ -202,6 +205,56 @@ func GetMainEndpoint() (host string) {
 	return
 }
 
+// GetMultipleEndpoints returns the api keys per domain specified in the main agent config
+func GetMultipleEndpoints() (map[string][]string, error) {
+	return getMultipleEndpointsWithConfig(C)
+}
+
+// getMultipleEndpointsWithConfig implements the logic to extract the api keys per domain from an agent config
+func getMultipleEndpointsWithConfig(config *Config) (map[string][]string, error) {
+	endpoints := strings.Join(config.Endpoints, ",")
+
+	keysPerDomain := map[string][]string{
+		endpoints: {config.ApiKey},
+	}
+
+	additionalEndpoints := config.Forwarder.AdditionalEndpoints
+	// merge additional endpoints into keysPerDomain
+	for _, addition := range additionalEndpoints {
+		endpoints := strings.Join(addition.Endpoints, ",")
+
+		if _, ok := keysPerDomain[endpoints]; ok {
+			for _, apiKey := range addition.ApiKeys {
+				keysPerDomain[endpoints] = append(keysPerDomain[endpoints], apiKey)
+			}
+		} else {
+			keysPerDomain[endpoints] = addition.ApiKeys
+		}
+	}
+
+	// dedupe api keys and remove domains with no api keys (or empty ones)
+	// for endpoints, apiKeys := range keysPerDomain {
+	// 	dedupedAPIKeys := make([]string, 0, len(apiKeys))
+	// 	seen := make(map[string]bool)
+	// 	for _, apiKey := range apiKeys {
+	// 		trimmedAPIKey := strings.TrimSpace(apiKey)
+	// 		if _, ok := seen[trimmedAPIKey]; !ok && trimmedAPIKey != "" {
+	// 			seen[trimmedAPIKey] = true
+	// 			dedupedAPIKeys = append(dedupedAPIKeys, trimmedAPIKey)
+	// 		}
+	// 	}
+
+	// 	if len(dedupedAPIKeys) > 0 {
+	// 		keysPerDomain[endpoints] = dedupedAPIKeys
+	// 	} else {
+	// 		klog.Infof("No API key provided for domain \"%s\", removing domain from endpoints", endpoints)
+	// 		delete(keysPerDomain, endpoints)
+	// 	}
+	// }
+
+	return keysPerDomain, nil
+}
+
 // GetValidHostAliases validates host aliases set in `host_aliases` variable and returns
 // only valid ones.
 func GetValidHostAliases() []string {
@@ -219,4 +272,24 @@ func getValidHostAliasesWithConfig() []string {
 	}
 
 	return aliases
+}
+
+// AddAgentVersionToDomain prefixes the domain with the agent version: X-Y-Z.domain
+func AddAgentVersionToDomain(DDURL string, app string) (string, error) {
+	u, err := url.Parse(DDURL)
+	if err != nil {
+		return "", err
+	}
+
+	subdomain := strings.Split(u.Host, ".")[0]
+	newSubdomain := getDomainPrefix(app)
+
+	u.Host = strings.Replace(u.Host, subdomain, newSubdomain, 1)
+	return u.String(), nil
+}
+
+// getDomainPrefix provides the right prefix for agent X.Y.Z
+func getDomainPrefix(app string) string {
+	v, _ := version.Agent()
+	return fmt.Sprintf("%d-%d-%d-%s.agent", v.Major, v.Minor, v.Patch, app)
 }

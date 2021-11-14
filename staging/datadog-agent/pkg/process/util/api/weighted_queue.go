@@ -7,6 +7,7 @@ package api
 
 import (
 	"container/list"
+	"context"
 	"sync"
 )
 
@@ -72,10 +73,10 @@ func (q *WeightedQueue) Weight() int64 {
 // Poll retrieves the head of the queue or blocks until an item is available.  The provided exit channel can be closed
 // to interrupt the blocking operation.  Returns the head of the queue and true or nil, false if the poll was
 // interrupted by the closing of the exit channel
-func (q *WeightedQueue) Poll(exit chan struct{}) (WeightedItem, bool) {
+func (q *WeightedQueue) Poll(ctx context.Context) (WeightedItem, bool) {
 	for {
 		select {
-		case <-exit:
+		case <-ctx.Done():
 			return nil, false
 		default:
 
@@ -90,7 +91,7 @@ func (q *WeightedQueue) Poll(exit chan struct{}) (WeightedItem, bool) {
 			select {
 			case <-q.dataAvailable:
 				continue
-			case <-exit:
+			case <-ctx.Done():
 				return nil, false
 			}
 		}

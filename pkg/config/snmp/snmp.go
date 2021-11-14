@@ -12,12 +12,13 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gosnmp/gosnmp"
+	"github.com/n9e/n9e-agentd/pkg/api"
 )
 
 const (
 	// snmp
 	defaultPort    = 161
-	defaultTimeout = 5
+	defaultTimeout = 5 * time.Second
 	defaultRetries = 3
 
 	// traps
@@ -51,8 +52,8 @@ func (c *ListenerConfig) Validate() error {
 		if config.Port == 0 {
 			config.Port = defaultPort
 		}
-		if config.Timeout == 0 {
-			config.Timeout = defaultTimeout
+		if config.Timeout.Duration == 0 {
+			config.Timeout.Duration = defaultTimeout
 		}
 		if config.Retries == 0 {
 			config.Retries = defaultRetries
@@ -82,7 +83,7 @@ type Config struct {
 	Network                     string          `json:"network_address"`
 	Port                        uint16          `json:"port"`
 	Version                     string          `json:"snmp_version"`
-	Timeout                     int             `json:"timeout"`
+	Timeout                     api.Duration    `json:"timeout" description:"dial timeout"`
 	Retries                     int             `json:"retries"`
 	OidBatchSize                int             `json:"oid_batch_size"`
 	Community                   string          `json:"community_string"`
@@ -202,7 +203,7 @@ func (c *Config) BuildSNMPParams(deviceIP string) (*gosnmp.GoSNMP, error) {
 		Community:       c.Community,
 		Transport:       "udp",
 		Version:         version,
-		Timeout:         time.Duration(c.Timeout) * time.Second,
+		Timeout:         c.Timeout.Duration,
 		Retries:         c.Retries,
 		SecurityModel:   gosnmp.UserSecurityModel,
 		MsgFlags:        msgFlags,

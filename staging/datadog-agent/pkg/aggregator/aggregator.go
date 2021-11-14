@@ -685,7 +685,7 @@ func (agg *BufferedAggregator) Flush(start time.Time, waitForSerializer bool) {
 func (agg *BufferedAggregator) Stop() {
 	agg.stopChan <- struct{}{}
 
-	timeout := config.C.Logs.AggregationTimeout
+	timeout := config.C.Logs.AggregationTimeout.Duration
 	if timeout > 0 {
 		done := make(chan struct{})
 		go func() {

@@ -101,7 +101,7 @@ func NewUDSListener(packetOut chan packets.Packets, sharedPacketPoolManager *pac
 		OriginDetection: originDetection,
 		conn:            conn,
 		packetsBuffer: packets.NewBuffer(uint(cf.PacketBufferSize),
-			cf.PacketBufferFlushTimeout, packetOut),
+			cf.PacketBufferFlushTimeout.Duration, packetOut),
 		sharedPacketPoolManager: sharedPacketPoolManager,
 		trafficCapture:          capture,
 	}

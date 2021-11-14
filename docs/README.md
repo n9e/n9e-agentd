@@ -1,4 +1,5 @@
 ## Documents
+  - [develop](develop.md)
   - [metrics](metrics.md)
   - [statsd](statsd.md)
   - [integrations](./integrations)

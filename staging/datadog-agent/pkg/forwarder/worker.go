@@ -60,7 +60,7 @@ func newHTTPClient() *http.Client {
 	transport := httputils.CreateHTTPTransport()
 
 	return &http.Client{
-		Timeout:   config.C.Forwarder.Timeout,
+		Timeout:   config.C.Forwarder.Timeout.Duration,
 		Transport: transport,
 	}
 }
