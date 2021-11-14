@@ -59,12 +59,10 @@ source ./etc/agentd.rc
 ./bin/n9e-agentd start -f ./etc/agentd.yaml
 ```
 
-## use mocker instead of n9e-server
-```
-# build
-go build -o ./build/mocker ./cmd/mocker
-
-# run
-./build/mocker
-
-```
+## See Also
+  - [develop](./docs/develop.md)
+  - [metrics](./docs/metrics.md)
+  - [statsd](./docs/statsd.md)
+  - [integrations](./docs/integrations)
+    * [snmp](./docs/integrations/snmp.md)
+  - [statsd client](./docs/examples/statsd_client)
