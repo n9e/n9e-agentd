@@ -66,7 +66,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
-	github.com/yubo/apiserver v0.0.1
+	github.com/yubo/apiserver v0.0.2-0.20211114161003-1faa9e2192bd
 	github.com/yubo/golib v0.0.2-0.20211114094711-541fb5329deb
 	go.uber.org/automaxprocs v1.4.0
 	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f
