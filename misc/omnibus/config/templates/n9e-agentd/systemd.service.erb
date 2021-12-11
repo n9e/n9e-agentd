@@ -1,0 +1,19 @@
+[Unit]
+Description=N9e Agent
+After=network.target
+#Wants=datadog-agent-trace.service datadog-agent-process.service datadog-agent-sysprobe.service datadog-agent-security.service
+
+[Service]
+Type=simple
+WorkingDirectory=<%= install_dir %>
+#PIDFile=<%= install_dir %>/run/agent.pid
+User=dd-agent
+Restart=on-failure
+ExecStart=<%= install_dir %>/bin/n9e-agentd -f /etc/n9e-agentd/agentd.yaml
+# Since systemd 229, should be in [Unit] but in order to support systemd <229,
+# it is also supported to have it here.
+StartLimitInterval=10
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target

@@ -3,16 +3,17 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build (linux || freebsd || netbsd || openbsd || solaris || dragonfly || aix) && !android
 // +build linux freebsd netbsd openbsd solaris dragonfly aix
 // +build !android
 
 package config
 
 const (
-	defaultConfdPath            = "/opt/n9e/agentd/conf.d"
-	defaultAdditionalChecksPath = "/opt/n9e/agentd/checks.d"
-	defaultRunPath              = "/opt/n9e/agentd/run"
-	defaultSystemProbeAddress   = "/opt/n9e/agentd/run/sysprobe.sock"
+	defaultConfdPath            = "/etc/n9e-agentd/conf.d"
+	defaultAdditionalChecksPath = "/etc/n9e-agentd/checks.d"
+	defaultRunPath              = "/opt/n9e-agentd/run"
+	defaultSystemProbeAddress   = "/opt/n9e-agentd/run/sysprobe.sock"
 	defaultSyslogURI            = "unixgram:///dev/log"
 	defaultGuiPort              = -1
 	// defaultSecurityAgentLogFile points to the log file that will be used by the security-agent if not configured

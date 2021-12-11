@@ -1,6 +1,0 @@
-requirements-agent-release.txt
-final_constraints-py3.txt
-agent_requirements-py3.txt
-version-manifest.json
-embedded/
-conf.d/

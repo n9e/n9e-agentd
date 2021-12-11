@@ -6,9 +6,12 @@
 package config
 
 var (
-	defaultSyslogURI          = ""
-	defaultGuiPort            = 5002
-	defaultSystemProbeAddress = "localhost:3333"
+	defaultConfdPath            = "c:\\programdata\\n9e\\conf.d"
+	defaultAdditionalChecksPath = "c:\\programdata\\n9e\\checks.d"
+	defaultRunPath              = "c:\\programdata\\n9e\\run"
+	defaultSyslogURI            = ""
+	defaultGuiPort              = 5002
+	defaultSystemProbeAddress   = "localhost:3333"
 )
 
-const ServiceName = "n9e-agent"
+const ServiceName = "n9e-agentd"

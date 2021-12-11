@@ -1,2 +1,0 @@
-export LD_LIBRARY_PATH=/opt/n9e/agentd/embedded/lib
-export PATH=/opt/n9e/agentd/bin:/opt/n9e/agentd/embedded/bin:$PATH

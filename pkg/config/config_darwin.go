@@ -6,7 +6,9 @@
 package config
 
 const (
-	defaultSystemProbeAddress = "/opt/n9e/agentd/run/sysprobe.sock"
-	defaultGuiPort            = 5002
-	defaultSyslogURI          = "unixgram:///var/run/syslog"
+	defaultConfdPath            = "/etc/n9e-agentd/conf.d"
+	defaultAdditionalChecksPath = "/etc/n9e-agentd/checks.d"
+	defaultSystemProbeAddress   = "/opt/n9e-agentd/run/sysprobe.sock"
+	defaultGuiPort              = 5002
+	defaultSyslogURI            = "unixgram:///var/run/syslog"
 )

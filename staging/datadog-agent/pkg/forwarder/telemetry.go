@@ -89,12 +89,10 @@ func initEndpointExpvars() {
 		processesEndpoint,
 		rtContainerEndpoint,
 		rtProcessesEndpoint,
-		n9eSeriesEndpoint,
 		serviceChecksEndpoint,
 		sketchSeriesEndpoint,
 		v1CheckRunsEndpoint,
 		v1IntakeEndpoint,
-		n9eV1SeriesEndpoint,
 		v1SketchSeriesEndpoint,
 		v1ValidateEndpoint,
 

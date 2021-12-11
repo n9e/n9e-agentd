@@ -6,7 +6,7 @@ replace (
 	github.com/DataDog/datadog-agent => ../datadog-agent
 	github.com/DataDog/datadog-agent/pkg/util/log => ./pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./pkg/util/winutil
-	github.com/n9e/n9e-agentd => ../../../n9e-agentd
+	github.com/n9e/n9e-agentd => ../../
 )
 
 // NOTE: Prefer using simple `require` directives instead of using `replace` if possible.

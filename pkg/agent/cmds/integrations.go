@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2016-present Datadog, Inc.
 
+//go:build python
 // +build python
 
 package cmds
@@ -68,7 +69,7 @@ type integrationsCmd struct {
 }
 
 func newIntegrationCmd(env *agent.EnvSettings) *cobra.Command {
-	ic := &integrationsCmd{env: env}
+	ic := &integrationsCmd{env: env, pythonMajorVersion: "3"}
 
 	cmd := &cobra.Command{
 		Use:   "integration [command]",
@@ -79,7 +80,7 @@ func newIntegrationCmd(env *agent.EnvSettings) *cobra.Command {
 	fs.CountVar(&ic.verbose, "verbose", "enable verbose logging")
 	fs.BoolVarP(&ic.allowRoot, "allow-root", "r", false, "flag to enable root to install packages")
 	fs.BoolVarP(&ic.useSysPython, "use-sys-python", "p", false, "use system python instead [dev flag]")
-	fs.StringVarP(&ic.pythonMajorVersion, "python", "", "", "the version of Python to act upon (2 or 3). defaults to the python_version setting in datadog.yaml")
+	//fs.StringVarP(&ic.pythonMajorVersion, "python", "", "", "the version of Python to act upon (2 or 3). defaults to the python_version setting in datadog.yaml")
 	// Power user flags - mark as hidden
 	fs.MarkHidden("use-sys-python") //nolint:errcheck
 

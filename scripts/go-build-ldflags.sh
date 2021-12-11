@@ -6,14 +6,13 @@ if [ "$MODE" != "LDFLAG" ] && [ "$MODE" != "ECHO" ]; then
     exit 1
 fi
 
-export GIT_REVISION=$(git rev-parse --short HEAD)
-export GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-export GIT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo unknown)
-export BUILD_DATE=$(date '+%F-%T') # outputs something in this format 2017-08-21-18:58:45
-export BUILD_TS_UNIX=$(date '+%s') # second since epoch
-export BASE_PACKAGE=github.com/n9e/n9e-agentd/pkg/options
-export BUILDER=$(whoami)@$(hostname)
-export RELEASE=$(whoami)@$(hostname)
+GIT_REVISION=$(git rev-parse --short HEAD)
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GIT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo unknown)
+BUILD_DATE=$(date '+%F-%T') # outputs something in this format 2017-08-21-18:58:45
+BUILD_TS_UNIX=$(date '+%s') # second since epoch
+BASE_PACKAGE=github.com/n9e/n9e-agentd/pkg/options
+BUILDER=$(whoami)@$(hostname)
 
 if [ "$MODE" = "LDFLAG" ]; then
   LD_FLAGS="-w -s -X ${BASE_PACKAGE}.Revision=${GIT_REVISION} \

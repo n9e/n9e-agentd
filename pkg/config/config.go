@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -61,6 +62,7 @@ type Config struct {
 
 	//path
 	RootDir           string `json:"root_dir" flag:"root" env:"N9E_ROOT_DIR" description:"root dir path"` // e.g. /opt/n9e/agentd
+	ConfigPath        string `json:"config_path"`                                                         // {home}/.n9e
 	PidfilePath       string `json:"pidfile_path" flag:"pid" env:"N9E_AGENT_PIDFILE" description:"default {root}/run/agentd.pid"`
 	AdditionalChecksd string `json:"additional_checksd" description:"custom py checks dir"` // additional_checksd
 	CheckFlareDir     string `json:"check_flare_dir" description:"check flare directory default {root}/logs/checks"`
@@ -83,18 +85,18 @@ type Config struct {
 	PageSize        int          `json:"page_size" flag:"page-size" env:"AGENTD_PAGE_SIZE"`
 	NoColor         bool         `json:"no_color" flag:"no-color,n" env:"AGENTD_NO_COLOR" description:"disable color output"`
 
-	RunPath                  string `json:"run_path"`                                             // run_path
-	JmxPath                  string `json:"jmx_path" description:"default {root}/dist/jmx"`       // jmx_path
-	ConfdPath                string `json:"confd_path" description:"default {root}/conf.d"`       // confd_path
-	EtcPath                  string `json:"etc_path" description:"default {root}/etc"`            // etc_path
-	CriSocketPath            string `json:"cri_socket_path"`                                      // cri_socket_path
-	KubeletAuthTokenPath     string `json:"kubelet_auth_token_path"`                              // kubelet_auth_token_path
-	KubernetesKubeconfigPath string `json:"kubernetes_kubeconfig_path"`                           // kubernetes_kubeconfig_path
-	ProcfsPath               string `json:"procfs_path"`                                          // procfs_path
-	WindowsUsePythonpath     string `json:"windows_use_pythonpath"`                               // windows_use_pythonpath
-	DistPath                 string `json:"dist_path" description:"default {root}/dist"`          // {root}/dist
-	PyChecksPath             string `json:"py_checks_path" description:"default {root}/checks.d"` // {root}/checks.d
-	HostnameFile             string `json:"hostname_file"`                                        // hostname_file
+	RunPath                  string   `json:"run_path"`                                       // run_path
+	JmxPath                  string   `json:"jmx_path" description:"default {root}/dist/jmx"` // jmx_path
+	ConfdPath                []string `json:"confd_path" description:"conf.d path"`           // conf.d
+	PyChecksPath             string   `json:"py_checks_path" description:"checks.d path"`     // checks.d
+	EtcPath                  string   `json:"etc_path" description:"default {root}/etc"`      // etc_path
+	CriSocketPath            string   `json:"cri_socket_path"`                                // cri_socket_path
+	KubeletAuthTokenPath     string   `json:"kubelet_auth_token_path"`                        // kubelet_auth_token_path
+	KubernetesKubeconfigPath string   `json:"kubernetes_kubeconfig_path"`                     // kubernetes_kubeconfig_path
+	ProcfsPath               string   `json:"procfs_path"`                                    // procfs_path
+	WindowsUsePythonpath     string   `json:"windows_use_pythonpath"`                         // windows_use_pythonpath
+	DistPath                 string   `json:"dist_path" description:"default {root}/dist"`    // {root}/dist
+	HostnameFile             string   `json:"hostname_file"`                                  // hostname_file
 
 	Ident                  string `json:"ident" flag:"ident" description:"Ident of this host"`
 	Alias                  string `json:"alias" flag:"alias" description:"Alias of the host"`
@@ -450,10 +452,17 @@ func (p *Config) ValidatePath() (err error) {
 
 	root := util.NewRootDir(p.RootDir)
 
-	// {root}/conf.d
-	p.ConfdPath = root.Abs(p.ConfdPath, "conf.d")
-	if err := util.ValidateDir(p.ConfdPath); err != nil {
-		return fmt.Errorf("agent.confd_path err: %s", err)
+	// {root}/conf.d & /etc/defaultConfdPath
+	if len(p.ConfdPath) == 0 {
+		// {root}/conf.d
+		for _, path := range []string{
+			filepath.Join(p.RootDir, "conf.d"),
+			defaultConfdPath,
+		} {
+			if err := util.ValidateDir(path); err == nil {
+				p.ConfdPath = append(p.ConfdPath, path)
+			}
+		}
 	}
 	klog.V(1).InfoS("agent", "confd_path", p.ConfdPath)
 

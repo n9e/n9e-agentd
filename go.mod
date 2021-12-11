@@ -7,7 +7,7 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/util/log => ./staging/datadog-agent/pkg/util/log
 	github.com/DataDog/datadog-agent/pkg/util/winutil => ./staging/datadog-agent/pkg/util/winutil
 	github.com/DataDog/mmh3 => github.com/DataDog/mmh3 v0.0.0-20200805151601-30884ca2197a
-	github.com/n9e/n9e-agentd => ../n9e-agentd
+	github.com/n9e/n9e-agentd => ./
 )
 
 // NOTE: Prefer using simple `require` directives instead of using `replace` if possible.
