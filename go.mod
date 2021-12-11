@@ -75,6 +75,7 @@ require (
 	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4
 	google.golang.org/grpc v1.41.0
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/client-go v12.0.0+incompatible // indirect
 	k8s.io/component-base v0.20.6
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.0.0

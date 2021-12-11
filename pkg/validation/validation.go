@@ -8,7 +8,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/collector/corechecks"
 )
 
-func dataValidateJSONConfig(checkName string, data []byte) error {
+func ValidateJSONConfig(checkName string, data []byte) error {
 	config, err := providers.ParseJSONConfig(data)
 	if err != nil {
 		return err

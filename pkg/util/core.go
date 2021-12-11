@@ -77,6 +77,7 @@ func IsDir(path string) bool {
 	}
 	return fi.IsDir()
 }
+
 func IsFile(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && !fi.IsDir()

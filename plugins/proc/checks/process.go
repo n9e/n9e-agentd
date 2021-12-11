@@ -19,7 +19,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const emptyCtrID = ""
+const emptyCtrID int32 = -1
 
 var (
 	// Process is a singleton ProcessCheck.

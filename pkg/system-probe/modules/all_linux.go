@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package modules
@@ -10,10 +11,10 @@ import (
 
 // All System Probe modules should register their factories here
 var All = []module.Factory{
-	NetworkTracer,
+	//NetworkTracer,
 	TCPQueueLength,
 	OOMKillProbe,
-	SecurityRuntime,
+	//SecurityRuntime,
 	Process,
 }
 

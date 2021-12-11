@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	ddconfig "github.com/n9e/n9e-agentd/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/ebpf"
-	"github.com/DataDog/datadog-agent/pkg/util/kernel"
-	"github.com/DataDog/datadog-agent/pkg/util/log"
+	//"github.com/DataDog/datadog-agent/pkg/util/kernel"
+	//"github.com/DataDog/datadog-agent/pkg/util/log"
+	//ddconfig "github.com/n9e/n9e-agentd/pkg/config"
 )
 
 const (
@@ -152,79 +152,79 @@ func join(pieces ...string) string {
 }
 
 // New creates a config for the network tracer
-func New() *Config {
-	cfg := ddconfig.Datadog
-	ddconfig.InitSystemProbeConfig(cfg)
-
-	c := &Config{
-		Config: *ebpf.NewConfig(),
-
-		CollectTCPConns:  !cfg.GetBool(join(spNS, "disable_tcp")),
-		TCPConnTimeout:   2 * time.Minute,
-		TCPClosedTimeout: 1 * time.Second,
-
-		CollectUDPConns:  !cfg.GetBool(join(spNS, "disable_udp")),
-		UDPConnTimeout:   defaultUDPTimeoutSeconds * time.Second,
-		UDPStreamTimeout: defaultUDPStreamTimeoutSeconds * time.Second,
-
-		CollectIPv6Conns:               !cfg.GetBool(join(spNS, "disable_ipv6")),
-		OffsetGuessThreshold:           uint64(cfg.GetInt64(join(spNS, "offset_guess_threshold"))),
-		ExcludedSourceConnections:      cfg.GetStringMapStringSlice(join(spNS, "source_excludes")),
-		ExcludedDestinationConnections: cfg.GetStringMapStringSlice(join(spNS, "dest_excludes")),
-
-		MaxTrackedConnections:        uint(cfg.GetInt(join(spNS, "max_tracked_connections"))),
-		MaxClosedConnectionsBuffered: cfg.GetInt(join(spNS, "max_closed_connections_buffered")),
-		ClosedChannelSize:            cfg.GetInt(join(spNS, "closed_channel_size")),
-		MaxConnectionsStateBuffered:  cfg.GetInt(join(spNS, "max_connection_state_buffered")),
-		ClientStateExpiry:            2 * time.Minute,
-
-		DNSInspection:       !cfg.GetBool(join(spNS, "disable_dns_inspection")),
-		CollectDNSStats:     cfg.GetBool(join(spNS, "collect_dns_stats")),
-		CollectLocalDNS:     cfg.GetBool(join(spNS, "collect_local_dns")),
-		CollectDNSDomains:   cfg.GetBool(join(spNS, "collect_dns_domains")),
-		MaxDNSStats:         cfg.GetInt(join(spNS, "max_dns_stats")),
-		MaxDNSStatsBuffered: 75000,
-		DNSTimeout:          time.Duration(cfg.GetInt(join(spNS, "dns_timeout_in_s"))) * time.Second,
-
-		EnableHTTPMonitoring: cfg.GetBool(join(netNS, "enable_http_monitoring")),
-		MaxHTTPStatsBuffered: 100000,
-
-		EnableConntrack:              cfg.GetBool(join(spNS, "enable_conntrack")),
-		ConntrackMaxStateSize:        cfg.GetInt(join(spNS, "conntrack_max_state_size")),
-		ConntrackRateLimit:           cfg.GetInt(join(spNS, "conntrack_rate_limit")),
-		EnableConntrackAllNamespaces: cfg.GetBool(join(spNS, "enable_conntrack_all_namespaces")),
-		IgnoreConntrackInitFailure:   cfg.GetBool(join(netNS, "ignore_conntrack_init_failure")),
-		ConntrackInitTimeout:         cfg.GetDuration(join(netNS, "conntrack_init_timeout")),
-
-		EnableGatewayLookup: cfg.GetBool(join(netNS, "enable_gateway_lookup")),
-
-		EnableMonotonicCount: cfg.GetBool(join(spNS, "windows.enable_monotonic_count")),
-		DriverBufferSize:     cfg.GetInt(join(spNS, "windows.driver_buffer_size")),
-
-		RecordedQueryTypes: cfg.GetStringSlice(join(netNS, "dns_recorded_query_types")),
-	}
-
-	if c.OffsetGuessThreshold > maxOffsetThreshold {
-		log.Warn("offset_guess_threshold exceeds maximum of 3000. Setting it to the default of 400")
-		c.OffsetGuessThreshold = defaultOffsetThreshold
-	}
-
-	if !kernel.IsIPv6Enabled() {
-		c.CollectIPv6Conns = false
-		log.Info("network tracer IPv6 tracing disabled by system")
-	} else if !c.CollectIPv6Conns {
-		log.Info("network tracer IPv6 tracing disabled by configuration")
-	}
-
-	if !c.CollectUDPConns {
-		log.Info("network tracer UDP tracing disabled by configuration")
-	}
-	if !c.CollectTCPConns {
-		log.Info("network tracer TCP tracing disabled by configuration")
-	}
-	if !c.DNSInspection {
-		log.Info("network tracer DNS inspection disabled by configuration")
-	}
-
-	return c
-}
+//func New() *Config {
+//	cfg := ddconfig.C
+//	ddconfig.InitSystemProbeConfig(cfg)
+//
+//	c := &Config{
+//		Config: *ebpf.NewConfig(),
+//
+//		CollectTCPConns:  !cfg.GetBool(join(spNS, "disable_tcp")),
+//		TCPConnTimeout:   2 * time.Minute,
+//		TCPClosedTimeout: 1 * time.Second,
+//
+//		CollectUDPConns:  !cfg.GetBool(join(spNS, "disable_udp")),
+//		UDPConnTimeout:   defaultUDPTimeoutSeconds * time.Second,
+//		UDPStreamTimeout: defaultUDPStreamTimeoutSeconds * time.Second,
+//
+//		CollectIPv6Conns:               !cfg.GetBool(join(spNS, "disable_ipv6")),
+//		OffsetGuessThreshold:           uint64(cfg.GetInt64(join(spNS, "offset_guess_threshold"))),
+//		ExcludedSourceConnections:      cfg.GetStringMapStringSlice(join(spNS, "source_excludes")),
+//		ExcludedDestinationConnections: cfg.GetStringMapStringSlice(join(spNS, "dest_excludes")),
+//
+//		MaxTrackedConnections:        uint(cfg.GetInt(join(spNS, "max_tracked_connections"))),
+//		MaxClosedConnectionsBuffered: cfg.GetInt(join(spNS, "max_closed_connections_buffered")),
+//		ClosedChannelSize:            cfg.GetInt(join(spNS, "closed_channel_size")),
+//		MaxConnectionsStateBuffered:  cfg.GetInt(join(spNS, "max_connection_state_buffered")),
+//		ClientStateExpiry:            2 * time.Minute,
+//
+//		DNSInspection:       !cfg.GetBool(join(spNS, "disable_dns_inspection")),
+//		CollectDNSStats:     cfg.GetBool(join(spNS, "collect_dns_stats")),
+//		CollectLocalDNS:     cfg.GetBool(join(spNS, "collect_local_dns")),
+//		CollectDNSDomains:   cfg.GetBool(join(spNS, "collect_dns_domains")),
+//		MaxDNSStats:         cfg.GetInt(join(spNS, "max_dns_stats")),
+//		MaxDNSStatsBuffered: 75000,
+//		DNSTimeout:          time.Duration(cfg.GetInt(join(spNS, "dns_timeout_in_s"))) * time.Second,
+//
+//		EnableHTTPMonitoring: cfg.GetBool(join(netNS, "enable_http_monitoring")),
+//		MaxHTTPStatsBuffered: 100000,
+//
+//		EnableConntrack:              cfg.GetBool(join(spNS, "enable_conntrack")),
+//		ConntrackMaxStateSize:        cfg.GetInt(join(spNS, "conntrack_max_state_size")),
+//		ConntrackRateLimit:           cfg.GetInt(join(spNS, "conntrack_rate_limit")),
+//		EnableConntrackAllNamespaces: cfg.GetBool(join(spNS, "enable_conntrack_all_namespaces")),
+//		IgnoreConntrackInitFailure:   cfg.GetBool(join(netNS, "ignore_conntrack_init_failure")),
+//		ConntrackInitTimeout:         cfg.GetDuration(join(netNS, "conntrack_init_timeout")),
+//
+//		EnableGatewayLookup: cfg.GetBool(join(netNS, "enable_gateway_lookup")),
+//
+//		EnableMonotonicCount: cfg.GetBool(join(spNS, "windows.enable_monotonic_count")),
+//		DriverBufferSize:     cfg.GetInt(join(spNS, "windows.driver_buffer_size")),
+//
+//		RecordedQueryTypes: cfg.GetStringSlice(join(netNS, "dns_recorded_query_types")),
+//	}
+//
+//	if c.OffsetGuessThreshold > maxOffsetThreshold {
+//		log.Warn("offset_guess_threshold exceeds maximum of 3000. Setting it to the default of 400")
+//		c.OffsetGuessThreshold = defaultOffsetThreshold
+//	}
+//
+//	if !kernel.IsIPv6Enabled() {
+//		c.CollectIPv6Conns = false
+//		log.Info("network tracer IPv6 tracing disabled by system")
+//	} else if !c.CollectIPv6Conns {
+//		log.Info("network tracer IPv6 tracing disabled by configuration")
+//	}
+//
+//	if !c.CollectUDPConns {
+//		log.Info("network tracer UDP tracing disabled by configuration")
+//	}
+//	if !c.CollectTCPConns {
+//		log.Info("network tracer TCP tracing disabled by configuration")
+//	}
+//	if !c.DNSInspection {
+//		log.Info("network tracer DNS inspection disabled by configuration")
+//	}
+//
+//	return c
+//}

@@ -7,20 +7,18 @@ package remote
 
 import (
 	"context"
-	"crypto/tls"
+	//"crypto/tls"
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	//"github.com/cenkalti/backoff"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	//"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/metadata"
+	//"google.golang.org/grpc/metadata"
 
-	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
-	"github.com/DataDog/datadog-agent/pkg/api/security"
-	"github.com/n9e/n9e-agentd/pkg/config"
+	//"github.com/DataDog/datadog-agent/pkg/api/security"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo"
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	"github.com/DataDog/datadog-agent/pkg/tagger/collectors"
@@ -29,6 +27,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util"
 	grpcutil "github.com/DataDog/datadog-agent/pkg/util/grpc"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/apiserver/response"
+	//"github.com/n9e/n9e-agentd/pkg/config"
 )
 
 const (
@@ -72,46 +72,47 @@ func NewTagger() *Tagger {
 // Init initializes the connection to the remote tagger and starts watching for
 // events.
 func (t *Tagger) Init() error {
-	t.health = health.RegisterLiveness("tagger")
-	t.telemetryTicker = time.NewTicker(1 * time.Minute)
+	return errors.New("todo")
+	//t.health = health.RegisterLiveness("tagger")
+	//t.telemetryTicker = time.NewTicker(1 * time.Minute)
 
-	t.ctx, t.cancel = context.WithCancel(context.Background())
+	//t.ctx, t.cancel = context.WithCancel(context.Background())
 
-	// NOTE: we're using InsecureSkipVerify because the gRPC server only
-	// persists its TLS certs in memory, and we currently have no
-	// infrastructure to make them available to clients. This is NOT
-	// equivalent to grpc.WithInsecure(), since that assumes a non-TLS
-	// connection.
-	creds := credentials.NewTLS(&tls.Config{
-		InsecureSkipVerify: true,
-	})
+	//// NOTE: we're using InsecureSkipVerify because the gRPC server only
+	//// persists its TLS certs in memory, and we currently have no
+	//// infrastructure to make them available to clients. This is NOT
+	//// equivalent to grpc.WithInsecure(), since that assumes a non-TLS
+	//// connection.
+	//creds := credentials.NewTLS(&tls.Config{
+	//	InsecureSkipVerify: true,
+	//})
 
-	var err error
-	t.conn, err = grpc.DialContext(
-		t.ctx,
-		fmt.Sprintf(":%v", config.Datadog.GetInt("cmd_port")),
-		grpc.WithTransportCredentials(creds),
-	)
-	if err != nil {
-		return err
-	}
+	//var err error
+	//t.conn, err = grpc.DialContext(
+	//	t.ctx,
+	//	fmt.Sprintf(":%v", config.C.CmdPort),
+	//	grpc.WithTransportCredentials(creds),
+	//)
+	//if err != nil {
+	//	return err
+	//}
 
-	t.client = pb.NewAgentSecureClient(t.conn)
+	//t.client = pb.NewAgentSecureClient(t.conn)
 
-	err = t.startTaggerStream(defaultTimeout)
-	if err != nil {
-		// tagger stopped before being connected
-		if err == errTaggerStreamNotStarted {
-			return nil
-		}
-		return err
-	}
+	//err = t.startTaggerStream(defaultTimeout)
+	//if err != nil {
+	//	// tagger stopped before being connected
+	//	if err == errTaggerStreamNotStarted {
+	//		return nil
+	//	}
+	//	return err
+	//}
 
-	log.Info("remote tagger initialized successfully")
+	//log.Info("remote tagger initialized successfully")
 
-	go t.run()
+	//go t.run()
 
-	return nil
+	//return nil
 }
 
 // Stop closes the connection to the remote tagger and stops event collection.
@@ -298,44 +299,45 @@ func (t *Tagger) processResponse(response *pb.StreamTagsResponse) error {
 // retrying with an exponential backoff until maxElapsed (or forever if
 // maxElapsed == 0) or the tagger is stopped.
 func (t *Tagger) startTaggerStream(maxElapsed time.Duration) error {
-	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.InitialInterval = 500 * time.Millisecond
-	expBackoff.MaxInterval = 5 * time.Minute
-	expBackoff.MaxElapsedTime = maxElapsed
+	return errors.New("todo")
+	//expBackoff := backoff.NewExponentialBackOff()
+	//expBackoff.InitialInterval = 500 * time.Millisecond
+	//expBackoff.MaxInterval = 5 * time.Minute
+	//expBackoff.MaxElapsedTime = maxElapsed
 
-	return backoff.Retry(func() error {
-		select {
-		case <-t.ctx.Done():
-			return errTaggerStreamNotStarted
-		default:
-		}
+	//return backoff.Retry(func() error {
+	//	select {
+	//	case <-t.ctx.Done():
+	//		return errTaggerStreamNotStarted
+	//	default:
+	//	}
 
-		token, err := security.FetchAuthToken()
-		if err != nil {
-			err = fmt.Errorf("unable to fetch authentication token: %w", err)
-			log.Infof("unable to establish stream, will possibly retry: %s", err)
-			return err
-		}
+	//	token, err := security.FetchAuthToken()
+	//	if err != nil {
+	//		err = fmt.Errorf("unable to fetch authentication token: %w", err)
+	//		log.Infof("unable to establish stream, will possibly retry: %s", err)
+	//		return err
+	//	}
 
-		t.streamCtx, t.streamCancel = context.WithCancel(
-			metadata.NewOutgoingContext(t.ctx, metadata.MD{
-				"authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			}),
-		)
+	//	t.streamCtx, t.streamCancel = context.WithCancel(
+	//		metadata.NewOutgoingContext(t.ctx, metadata.MD{
+	//			"authorization": []string{fmt.Sprintf("Bearer %s", token)},
+	//		}),
+	//	)
 
-		t.stream, err = t.client.TaggerStreamEntities(t.streamCtx, &pb.StreamTagsRequest{
-			Cardinality: pb.TagCardinality_HIGH,
-		})
+	//	t.stream, err = t.client.TaggerStreamEntities(t.streamCtx, &pb.StreamTagsRequest{
+	//		Cardinality: pb.TagCardinality_HIGH,
+	//	})
 
-		if err != nil {
-			log.Infof("unable to establish stream, will possibly retry: %s", err)
-			return err
-		}
+	//	if err != nil {
+	//		log.Infof("unable to establish stream, will possibly retry: %s", err)
+	//		return err
+	//	}
 
-		log.Info("tagger stream established successfully")
+	//	log.Info("tagger stream established successfully")
 
-		return nil
-	}, expBackoff)
+	//	return nil
+	//}, expBackoff)
 }
 
 func convertEventType(t pb.EventType) (types.EventType, error) {

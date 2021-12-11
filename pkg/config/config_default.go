@@ -13,6 +13,7 @@ import (
 	logs "github.com/n9e/n9e-agentd/pkg/config/logs"
 	statsd "github.com/n9e/n9e-agentd/pkg/config/statsd"
 	systemprobe "github.com/n9e/n9e-agentd/pkg/system-probe/config"
+	"github.com/n9e/n9e-agentd/pkg/util"
 	"github.com/yubo/golib/api"
 	"github.com/yubo/golib/api/resource"
 	"k8s.io/client-go/util/homedir"
@@ -63,13 +64,27 @@ const (
 func DefaultConfig() *Config {
 	cf := defaultConfig()
 
+	// conf.d
 	for _, path := range []string{
+		filepath.Join(cf.ConfigDir, "conf.d"),
 		filepath.Join(cf.RootDir, "conf.d"),
 		defaultConfdPath,
-		filepath.Join(cf.ConfigDir, "conf.d"),
 	} {
-		if err := util.ValidateDir(path); err == nil {
-			p.ConfdPath = append(p.ConfdPath, path)
+		if util.IsDir(path) {
+			cf.ConfdPath = path
+			break
+		}
+	}
+
+	// checks.d
+	for _, path := range []string{
+		filepath.Join(cf.ConfigDir, "checks.d"),
+		filepath.Join(cf.RootDir, "checks.d"),
+		defaultAdditionalChecksPath,
+	} {
+		if util.IsDir(path) {
+			cf.PyChecksPath = path
+			break
 		}
 	}
 
@@ -112,9 +127,9 @@ func DefaultConfig() *Config {
 func defaultConfig() *Config {
 	root, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	return &Config{
-		RootDir:                                 root,
-		ConfigPath:                              path.Join(homedir.HomeDir(), ".n9e"),
-		PyChecksPath:                            defaultAdditionalChecksPath,
+		RootDir:   root,
+		ConfigDir: path.Join(homedir.HomeDir(), ".n9e"),
+		//PyChecksPath:                            defaultAdditionalChecksPath,
 		m:                                       new(sync.RWMutex),
 		CliQueryTimeout:                         api.NewDuration("5s"),
 		DisablePage:                             false,

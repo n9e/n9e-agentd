@@ -250,7 +250,7 @@ func getPartialConfig() map[string]string {
 	conf["log_file"] = config.C.LogFile
 	conf["log_level"] = config.C.LogLevel
 	conf["confd_path"] = config.C.ConfdPath
-	conf["additional_checksd"] = config.C.AdditionalChecksd
+	conf["additional_checksd"] = config.C.PyChecksPath
 	return conf
 }
 

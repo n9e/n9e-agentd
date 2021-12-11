@@ -8,6 +8,7 @@ import (
 	"github.com/yubo/apiserver/pkg/authentication/authenticator"
 	"github.com/yubo/apiserver/pkg/authentication/user"
 	"github.com/yubo/apiserver/pkg/options"
+	"github.com/yubo/golib/configer"
 	"github.com/yubo/golib/proc"
 	"k8s.io/klog/v2"
 )
@@ -61,11 +62,11 @@ func newConfig() *Config {
 }
 
 func (p *authModule) init(ctx context.Context) error {
-	configer := proc.ConfigerMustFrom(ctx)
+	c := configer.ConfigerMustFrom(ctx)
 	cf := newConfig()
-	cf.RootDir = configer.GetString("agent.root_dir")
+	cf.RootDir = c.GetString("agent.root_dir")
 
-	if err := configer.Read(modulePath, cf); err != nil {
+	if err := c.Read(modulePath, cf); err != nil {
 		return err
 	}
 	p.Config = cf

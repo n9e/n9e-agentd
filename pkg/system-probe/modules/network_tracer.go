@@ -1,26 +1,23 @@
+//go:build linux || windows
 // +build linux windows
 
 package modules
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"time"
 
-	"github.com/n9e/n9e-agentd/pkg/system-probe/api/module"
-	"github.com/n9e/n9e-agentd/pkg/system-probe/config"
-	"github.com/n9e/n9e-agentd/pkg/system-probe/utils"
 	"github.com/DataDog/datadog-agent/pkg/network"
-	networkconfig "github.com/DataDog/datadog-agent/pkg/network/config"
 	"github.com/DataDog/datadog-agent/pkg/network/encoding"
 	"github.com/DataDog/datadog-agent/pkg/network/http/debugging"
 	"github.com/DataDog/datadog-agent/pkg/network/tracer"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
+	"github.com/n9e/n9e-agentd/pkg/system-probe/api/module"
+	"github.com/n9e/n9e-agentd/pkg/system-probe/utils"
 )
 
 // ErrSysprobeUnsupported is the unsupported error prefix, for error-class matching from callers
@@ -30,22 +27,22 @@ const inactivityLogDuration = 10 * time.Minute
 const inactivityRestartDuration = 20 * time.Minute
 
 // NetworkTracer is a factory for NPM's tracer
-var NetworkTracer = module.Factory{
-	Name: config.NetworkTracerModule,
-	Fn: func(cfg *config.Config) (module.Module, error) {
-		ncfg := networkconfig.New()
-
-		// Checking whether the current OS + kernel version is supported by the tracer
-		if supported, msg := tracer.IsTracerSupportedByOS(ncfg.ExcludedBPFLinuxVersions); !supported {
-			return nil, fmt.Errorf("%w: %s", ErrSysprobeUnsupported, msg)
-		}
-
-		log.Infof("Creating tracer for: %s", filepath.Base(os.Args[0]))
-
-		t, err := tracer.NewTracer(ncfg)
-		return &networkTracer{tracer: t}, err
-	},
-}
+//var NetworkTracer = module.Factory{
+//	Name: config.NetworkTracerModule,
+//	Fn: func(cfg *config.Config) (module.Module, error) {
+//		ncfg := networkconfig.New()
+//
+//		// Checking whether the current OS + kernel version is supported by the tracer
+//		if supported, msg := tracer.IsTracerSupportedByOS(ncfg.ExcludedBPFLinuxVersions); !supported {
+//			return nil, fmt.Errorf("%w: %s", ErrSysprobeUnsupported, msg)
+//		}
+//
+//		log.Infof("Creating tracer for: %s", filepath.Base(os.Args[0]))
+//
+//		t, err := tracer.NewTracer(ncfg)
+//		return &networkTracer{tracer: t}, err
+//	},
+//}
 
 var _ module.Module = &networkTracer{}
 

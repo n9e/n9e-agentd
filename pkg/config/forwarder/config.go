@@ -37,7 +37,7 @@ type Config struct {
 	BackoffFactor            float64              `json:"backoff_factor"`                                                                                                // forwarder_backoff_factor
 	BackoffMax               float64              `json:"backoff_max"`                                                                                                   // forwarder_backoff_max
 	ConnectionResetInterval  api.Duration         `json:"connection_reset_interval" flag:"forwarder-connection-reset-interval" description:"connectionResetInterval"`    // forwarder_connection_reset_interval
-	FlushToDiskMemRatio      float64              `json:"flush_to_disk_mem_ratio""`                                                                                      // forwarder_flush_to_disk_mem_ratio
+	FlushToDiskMemRatio      float64              `json:"flush_to_disk_mem_ratio"`                                                                                       // forwarder_flush_to_disk_mem_ratio
 	NumWorkers               int                  `json:"num_workers"`                                                                                                   // forwarder_num_workers
 	OutdatedFileInDays       int                  `json:"outdated_file_in_days"`                                                                                         // forwarder_outdated_file_in_days
 	RecoveryInterval         int                  `json:"recovery_interval"`                                                                                             // forwarder_recovery_interval
@@ -46,7 +46,7 @@ type Config struct {
 	StorageMaxDiskRatio      float64              `json:"storage_max_disk_ratio"`                                                                                        // forwarder_storage_max_disk_ratio
 	StorageMaxSizeInBytes    resource.Quantity    `json:"storage_max_size_in_bytes"`                                                                                     // forwarder_storage_max_size_in_bytes
 	StoragePath              string               `json:"storage_path" description:"default {root}/transactions_to_retry"`                                               // forwarder_storage_path
-	Timeout                  api.Duration         `json:"timeout" flag:"forwarder-timeout"description:"timeout"`                                                         // forwarder_timeout
+	Timeout                  api.Duration         `json:"timeout" flag:"forwarder-timeout" description:"timeout"`                                                        // forwarder_timeout
 
 	HighPrioBufferSize        int               `json:"high_prio_buffer_size"`                            //forwarder_high_prio_buffer_size
 	LowPrioBufferSize         int               `json:"low_prio_buffer_size"`                             //forwarder_low_prio_buffer_size
