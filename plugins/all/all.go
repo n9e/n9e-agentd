@@ -5,9 +5,10 @@ import (
 	_ "github.com/n9e/n9e-agentd/plugins/demo"
 	_ "github.com/n9e/n9e-agentd/plugins/log"
 	_ "github.com/n9e/n9e-agentd/plugins/port"
-	_ "github.com/n9e/n9e-agentd/plugins/proc"
 	_ "github.com/n9e/n9e-agentd/plugins/prometheus"
 	_ "github.com/n9e/n9e-agentd/plugins/script"
+
+	//_ "github.com/n9e/n9e-agentd/plugins/proc"
 
 	// register core checks
 	_ "github.com/DataDog/datadog-agent/pkg/collector/corechecks/cluster/ksm"
